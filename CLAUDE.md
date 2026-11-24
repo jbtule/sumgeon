@@ -46,3 +46,6 @@ Voice, achievements, players and linking copy the sibling project `../sound-box-
 - Sound effects and attack animations
 - Player character and items (heal potion, shield, skip)
 - Split into modules (monsters, problems, game loop, UI) once it grows
+
+## License
+PolyForm Noncommercial 1.0.0 (`LICENSE.md`). Its first line is the `Required Notice:` copyright, which must travel with copies. When you add a dependency, font or asset, list it with its license in the README's License section.
