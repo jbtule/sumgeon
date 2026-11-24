@@ -484,7 +484,8 @@ function show(h, kind = "page") {
 function hide() { $("ov").hidden = true; }
 
 /* ---------- pausing ----------
-   ⏸ by the hearts (or Escape) stops the clock mid-problem: Keep fighting, Settings, or Exit to
+   ⏸ by the hearts (or Escape) stops the clock mid-problem: Keep fighting, Monsters & Heroes,
+   Settings, or Exit to
    the start screen (a second tap confirms, since it ends the run). */
 function pause() {
   if (!G.paused) {
@@ -494,9 +495,10 @@ function pause() {
   stopSpeech();
   show(`<h2>Paused</h2>
   <p>Floor ${G.floor + 1} of ${G.floors.length}: <strong>${esc(G.floors[G.floor].n)}</strong></p>
-  <div class="pause-btns"><button class="small" type="button" id="pSettings">⚙ Settings</button><button class="small danger" type="button" id="pExit">Exit the dungeon</button></div>
+  <div class="pause-btns"><button class="small" type="button" id="pBook">📖 Monsters &amp; Heroes</button><button class="small" type="button" id="pSettings">⚙ Settings</button><button class="small danger" type="button" id="pExit">Exit the dungeon</button></div>
   <div class="btns"><button class="big" id="resume">Keep fighting</button></div>`, "float");
   $("resume").onclick = resume;
+  $("pBook").onclick = bookPage;
   $("pSettings").onclick = () => settings(true);
   $("pExit").onclick = () => {
     const b = $("pExit");
@@ -652,7 +654,8 @@ function bookPage() {
   <h3 class="book-title">Heroes <small>${freed} of 10 on your team</small></h3>
   <div class="hero-grid">${heroes}</div>
   <div class="btns"><button class="big" id="bookBack">Back</button></div>`);
-  $("bookBack").onclick = menu;
+  // Back to the pause screen mid-run, or to the start screen.
+  $("bookBack").onclick = () => G.paused ? pause() : menu();
 }
 // "How the hints work": how Sumgeon teaches, and each strategy with the game's own drawing and
 // a plain explanation, for grown-ups who learned math another way (DESIGN.md §5.3).
