@@ -32,4 +32,5 @@ const alone = curseCaptain(five);
 assert.deepEqual([alone.captain, alone.rescued], [null, []]);
 assert.ok(freePick(alone), "a player whose only hero was cursed picks any of the ten");
 assert.deepEqual(pickHero(alone, 9).rescued, [9]);
+assert.deepEqual([pickHero(alone, 5).captain, pickHero(alone, 5).rescued], [5, [5]], "including the same hero again");
 console.log("✓ heroes");
