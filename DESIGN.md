@@ -380,7 +380,7 @@ Each milestone should be playable and shippable on its own.
 
 1. **M1 — Feel and foundations** ✅ (2026-11-23). Recorded clips: whole clips for every line in `js/lines.js` (about 1,290), on the `sumgeon-audio` Pages project.
    Split into modules, the storage upgrade plus players (§15.1), Web Audio sound effects, the Start button, `say()` with recorded clips for UI phrases and monster names (§13), the projectile attack animation, monster counterattack on a miss, and a streak flame.
-2. **M2 — Learning engine**
+2. **M2 — Learning engine** ✅ (2026-11-23). Sprout and Apprentice bands with mastery-opened levels (in place of a rolling-accuracy range), fact records, Leitner selection, the retry queue, fading hints with the classroom models, and "For grown-ups" notes. Adept and Master wait for the new answer keys (M5).
    Fact records, Leitner selection, the retry queue, hints after repeated misses, adaptive range within a band, and content bands replacing raw Easy/Medium/Hard.
 3. **M3 — Wings and the Bestiary**
    Split the operator monsters into the Counting Cellar and the Tables Tower, add the digit heroes (captain pick, summon attack, rescue floors, Heroes page; §6.6), the Wing map, per-floor stars, the Bestiary with mastery rings, and monster traits.

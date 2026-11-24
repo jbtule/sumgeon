@@ -3,7 +3,7 @@
    PICTURE: the current glyph monster, large, bobbing over a lit stone floor
    COLOUR and TYPE: slate chalkboard, chalk white, coral + gold accents; Bungee + Nunito
    LAYOUT: arena on top, problem + number pad below; side by side when wide */
-:root{color-scheme:dark;--bg:#12242b;--panel:#1a313a;--line:#2a4852;--ink:#f3efe4;--muted:#a9bec1;--coral:#ff5a4e;--gold:#ffc93c;--dark:#0c171c}
+:root{color-scheme:dark;--hint-empty:#3a5560;--hint-line:#3a5560;--bg:#12242b;--panel:#1a313a;--line:#2a4852;--ink:#f3efe4;--muted:#a9bec1;--coral:#ff5a4e;--gold:#ffc93c;--dark:#0c171c}
 *{box-sizing:border-box;min-width:0}
 body{margin:0;background:var(--bg);color:var(--ink);font:600 16px/1.5 Nunito,system-ui,sans-serif;overflow-x:clip;min-height:100vh}
 button{font:inherit;color:inherit;cursor:pointer}
@@ -126,4 +126,18 @@ h1 b{color:var(--coral);font-weight:400}
 .small{min-height:44px;padding:0 14px;border-radius:12px;border:2px solid #3a5560;background:#24414b;font-weight:900}
 .small.danger{border-color:#ff8a7f;color:#ff8a7f;background:none}
 
+/* Hints: the classroom model, its words, and a note for grown-ups (DESIGN.md §5.3) */
+.hint{display:grid;justify-items:center;gap:8px;padding:12px;border-radius:14px;background:var(--dark);border:2px solid var(--line);text-align:center}
+.hint[hidden]{display:none}
+.hint .model{max-width:100%;overflow-x:auto}
+.hint .model svg{display:block;max-width:100%;height:auto}
+.hint .hsay{margin:0;font-weight:900;font-size:17px}
+.hint .grown{font-size:14px;color:var(--muted);max-width:52ch}
+.hint .grown summary{cursor:pointer;font-weight:800;min-height:32px;display:flex;align-items:center;justify-content:center}
+.hint .grown p{margin:4px 0 0}
+.hint .big{min-height:48px}
+.hint-btn{font-size:20px}
+.hint-btn[hidden]{display:none}
+.level{margin:2px 0 0;color:var(--muted);font-weight:800;font-size:14px}
+.chip span small{font-weight:700;opacity:.8;margin-left:6px}
 @media(prefers-reduced-motion:reduce){.mon,.mon.hit,.mon.dead,.mon.lunge,.arena.shake,.flame svg{animation:none}.mon.dead{opacity:0}.pop{animation-duration:.01s}.hearts .crack{animation:none;opacity:0}}

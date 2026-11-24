@@ -5,7 +5,10 @@ A math-practice dungeon crawler. The player fights anthropomorphic monsters buil
 ## Current state
 - Plain static files, no build step: `index.html` (markup), `styles.css`, and browser ES modules in `js/`:
   - `app.js`: everything on screen (game loop, menu and players, attack animations)
-  - `problems.js`: problem generation and spoken text (`spoken`, `spokenProblem`, `spokenFact`)
+  - `problems.js`: facts and spoken text (`facts`, `spoken`, `spokenProblem`, `spokenFact`)
+  - `learn.js`: the learning engine: bands and levels, fact records, choosing problems, monster HP
+  - `hints.js`: the classroom models for hints (`hintFor`)
+  - `lines.js`: every line the game says
   - `monsters.js`: monster data and SVG art
   - `store.js`: saved data (players, storage upgrade)
   - `sfx.js`: Web Audio sound effects
@@ -21,7 +24,7 @@ A math-practice dungeon crawler. The player fights anthropomorphic monsters buil
 - `sumgeon:@<id>:` holds one player's data. Every key saved there must be in `OWN_KEYS` in `store.js`, which throws on any other key.
 - Storage version 2 moved the prototype's single `sumgeon` key into the `default` player, resumably.
 - Names belong to the device. Remove only appears on a device with two or more players, never for the one playing, confirms with a second tap, and only affects this device.
-- Settings (`ops`, `diff`, `timer`, `sfx`, `voice`) are per player and save as they change in the menu.
+- Settings (`band`, `timer`, `sfx`, `voice`) are per player and save as they change in the menu. `ops` and `diff` are the prototype's, kept only so a player who practiced × or ÷ starts in Apprentice.
 
 ## Sound and voice
 - `sfx.js` synthesizes every effect with Web Audio. The context is created on the first tap and woken on later taps, for iOS.
@@ -40,11 +43,23 @@ A math-practice dungeon crawler. The player fights anthropomorphic monsters buil
 - The game speaks: monster names on arrival, "Crits on!" at 3 in a row, the right answer after a miss ("seven plus eight is fifteen"), floor clears, and the 🔊 buttons (the problem, the menu intro).
 
 ## Core rules
-- Damage = the correct answer. Three correct in a row turns on crits (double damage) until a miss.
+- Damage = the correct answer. Three correct in a row turns on crits (double damage) until a miss. A hinted answer still hits but doesn't build the streak.
+- Problems come from the learning engine (`learn.js`, DESIGN.md §5), not at random:
+  - Each player has a record per fact (`facts`): box 0–4, times seen and right, average answer time, last seen.
+  - A right, unhinted answer moves a fact up a box (two when fast, from box 1). A miss sends it to box 0. A hinted answer changes nothing.
+  - Each problem is about 60% learning facts (box 0–2, box 0 favored), 25% review facts that are due (box 3 after 10 minutes, box 4 after a day), and 15% new facts from the newest open level. The monster's operation is preferred 70% of the time. The last 3 facts don't repeat.
+  - A missed fact comes back 2–4 problems later.
+- Bands (`BANDS`) replace the prototype's operations and Easy/Medium/Hard:
+  - **Sprout** (K–1st, 7 hearts): within 5 → within 10 → 10 and some more → within 20.
+  - **Apprentice** (2nd–3rd, 5 hearts): within 20 → ×2, 5, 10 → ÷ → ×3, 4 → ÷ → ×6–9 → ÷ → ×÷ 11, 12.
+  - A level opens when 70% of the level before is learned (box 3+). Every banded fact is one of the 633 recorded facts, so every problem has the recorded voice.
+- Hints (`hints.js`, DESIGN.md §5.3) follow how classrooms teach now: ten-frames, 10 and some more, make 10, doubles plus one, draw and cross out, think addition on a number line, arrays, break apart, ×9 as ×10 minus a group, think multiplication.
+  - A new fact shows its hint by itself. A fact being learned gets a 💡 button. A fact in review gets none.
+  - After a miss, the worked example (with the answer) stays up until "Got it" or Enter.
+  - Every hint has a "For grown-ups" note. The timer stops while a hint is open.
 - Wrong answer or timeout: the monster lunges, lose 1 of 5 hearts, and the correct answer is shown and said.
 - Clearing a floor restores 1 heart.
-- Monster HP = average answer for that monster's problem mix × its `hits` value, so fights last about the same number of solves on any difficulty.
-- Each monster prefers its own operation 70% of the time when that operation is enabled. `mix` monsters use any enabled operation.
+- Monster HP = the average answer of the player's open facts (the monster's operation weighted 70%) × its `hits` value, so fights last about the same number of solves at any level.
 
 ## Monsters (7 floors)
 | Floor | Name | Glyph | Op | hits |
@@ -60,9 +75,9 @@ A math-practice dungeon crawler. The player fights anthropomorphic monsters buil
 Monsters are inline SVG drawn from simple shapes (no fonts), using the `solid()` and `line()` helpers. Each helper draws a dark outline, then a color fill, then a white sheen gradient.
 
 ## Settings
-- Operations: any mix of + − × ÷.
-- Difficulty: Easy (add ≤10, × ≤5, 15 s), Medium (≤20, ≤10, 12 s), Hard (≤50, ≤12, 10 s).
-- Optional countdown timer.
+- Band: Sprout or Apprentice (per player). Changing band starts a fresh dungeon.
+- Optional countdown timer: 15 s in Sprout, 12 s in Apprentice.
+- Sound effects and voice.
 - Settings and best floor are saved per player (see Players and saving).
 
 ## Design direction

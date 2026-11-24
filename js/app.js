@@ -1,7 +1,9 @@
 // Everything on screen: the game loop, the menu and players, and the attack animations.
 // Problems, monsters, saving, sound and speech live in their own modules.
 import { MON, svg } from "./monsters.js";
-import { DIFF, OPS, gen, pickOp, monsterHP, spokenProblem, spokenFact } from "./problems.js";
+import { spokenProblem, spokenFact } from "./problems.js";
+import { BANDS, choose, factOf, record as recordAnswer, helpFor, openLevel, monsterHP } from "./learn.js";
+import { hintFor } from "./hints.js";
 import { openStore, displayName } from "./store.js";
 import { PHRASE, monsterName, monsterCleared, monsterWon } from "./lines.js";
 import * as sfx from "./sfx.js";
@@ -10,7 +12,6 @@ import { say, stopSpeech, setVoice } from "./speech.js";
 const $ = (id) => document.getElementById(id);
 const reduced = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
 const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
-const MAX_HEARTS = 5;
 
 // localStorage can be missing or throw (private browsing); then progress lasts this visit only.
 function safeStorage() {
@@ -24,11 +25,13 @@ const store = openStore(safeStorage());
 store.upgrade();
 
 /* ---------- the player ---------- */
-let PID, st, best;
+let PID, st, best, recs;
+const band = () => BANDS[st.band] || BANDS.sprout;
 function loadPlayer() {
   PID = store.active();
   st = store.settings(PID);
   best = store.player(PID).get("best", 0);
+  recs = store.player(PID).get("facts", {}) || {};
   sfx.setSfx(st.sfx);
   setVoice(st.voice);
   soundUI(); whoUI();
@@ -61,19 +64,23 @@ $("who").onclick = () => openMenu();
 $("menuBtn").onclick = () => openMenu();
 
 /* ---------- the run ---------- */
-let G = { floor: 0, hearts: MAX_HEARTS, hp: 0, max: 0, streak: 0, solved: 0, tries: 0, cur: null, input: "", busy: true, tEnd: 0, running: false };
+// retry: missed facts waiting to come back ({ key, after: problems to go }); recent: the last few
+// keys, so a fact doesn't repeat right away; hinted: a hint is open for this problem.
+let G = { floor: 0, hearts: 5, hp: 0, max: 0, streak: 0, solved: 0, tries: 0, cur: null, input: "", busy: true, tEnd: 0, running: false,
+  retry: [], recent: [], hinted: false, t0: 0, next: false };
 
 function heartsUI(cracking) {
   const h = $("hearts");
   h.innerHTML = "";
-  for (let i = 0; i < MAX_HEARTS; i++) {
+  const max = band().hearts;
+  for (let i = 0; i < max; i++) {
     const s = document.createElement("span");
     s.textContent = "♥";
     if (i === cracking) s.className = "crack";
     else if (i >= G.hearts) s.className = "gone";
     h.appendChild(s);
   }
-  h.setAttribute("aria-label", `${G.hearts} of ${MAX_HEARTS} hearts`);
+  h.setAttribute("aria-label", `${G.hearts} of ${max} hearts`);
 }
 function hpUI() { $("hpBar").style.width = Math.max(0, G.hp / G.max * 100) + "%"; $("hpTxt").textContent = `${Math.max(0, G.hp)} / ${G.max} HP`; }
 
@@ -93,7 +100,7 @@ function ansUI() { $("ans").textContent = G.input; }
 function loadMonster(i, quiet) {
   const m = MON[i];
   G.floor = i;
-  G.max = G.hp = monsterHP(m, st.ops, st.diff);
+  G.max = G.hp = monsterHP(m, st.band, recs);
   const el = $("mon");
   el.className = "mon";
   el.innerHTML = svg(m);
@@ -105,17 +112,28 @@ function loadMonster(i, quiet) {
   if (m.boss) say("p", PHRASE.boss);
   say("m", monsterName(m));
 }
+// The next problem, chosen by the learning engine (learn.js): a missed fact when it's due back,
+// otherwise learning, review or new facts, with the monster's operation preferred.
 function newProblem() {
-  G.cur = gen(pickOp(MON[G.floor], st.ops), st.diff);
-  G.input = ""; G.busy = false;
+  G.next = false;
+  G.retry.forEach((r) => r.after--);
+  const due = G.retry.find((r) => r.after <= 0);
+  if (due) G.retry.splice(G.retry.indexOf(due), 1);
+  const m = MON[G.floor];
+  const key = choose(st.band, recs, { now: Date.now(), recent: G.recent, retry: due ? due.key : null, op: m.op === "mix" ? null : m.op });
+  G.cur = factOf(key);
+  G.recent = [key].concat(G.recent).slice(0, 3);
+  G.input = ""; G.busy = false; G.hinted = false; G.t0 = performance.now();
   $("prob").textContent = G.cur.q + " =";
   ansUI();
-  $("timer").hidden = !st.timer;
-  if (st.timer) { G.tEnd = performance.now() + DIFF[st.diff].time * 1000; requestAnimationFrame(tick); }
+  if ($("msg").classList.contains("bad")) setMsg("Your answer is your attack.");
+  showHelp(helpFor(recs[key]));
+  $("timer").hidden = !st.timer || G.hinted;
+  if (st.timer && !G.hinted) { G.tEnd = performance.now() + band().seconds * 1000; requestAnimationFrame(tick); }
 }
 function tick() {
-  if (!st.timer || G.busy) return;
-  const total = DIFF[st.diff].time * 1000, left = G.tEnd - performance.now();
+  if (!st.timer || G.busy || G.hinted) return;
+  const total = band().seconds * 1000, left = G.tEnd - performance.now();
   $("tBar").style.width = Math.max(0, left / total * 100) + "%";
   if (left <= 0) miss("Too slow!"); else requestAnimationFrame(tick);
 }
@@ -176,35 +194,70 @@ function burst(crit) {
   }
 }
 
+/* ---------- hints (DESIGN.md §5.3) ----------
+   A new fact shows its model by itself; a fact being learned gets a 💡 button; a fact in review
+   gets nothing. After a miss, the worked example stays up until "Got it". A hinted answer still
+   hits, but doesn't build the streak or count toward mastery, and the timer stops while it's open. */
+function showHelp(mode) {
+  $("hintBtn").hidden = mode !== "button";
+  if (mode === "show") openHint(false); else $("hint").hidden = true;
+}
+function openHint(worked) {
+  const h = hintFor(G.cur, worked), box = $("hint");
+  box.innerHTML = `<div class="model">${h.model}</div><p class="hsay">${esc(h.say)}</p>
+    <details class="grown"><summary>For grown-ups</summary><p>${esc(h.grownups)}</p></details>
+    ${worked ? '<button class="big" type="button" id="gotIt">Got it</button>' : ""}`;
+  box.hidden = false;
+  $("hintBtn").hidden = true;
+  if (!worked) { G.hinted = true; $("timer").hidden = true; }
+  else $("gotIt").onclick = nextAfterMiss;
+}
+$("hintBtn").onclick = () => { if (!G.busy) openHint(false); };
+
+// Saves the answer to the fact's record; says so when it opens a new level.
+function learnFrom(ok) {
+  const before = openLevel(st.band, recs), key = G.cur.key;
+  recs[key] = recordAnswer(recs[key], { ok, ms: performance.now() - G.t0, hinted: G.hinted, now: Date.now(), fluentMs: band().fluentMs });
+  store.player(PID).set("facts", recs);
+  const after = openLevel(st.band, recs);
+  return after > before ? band().levels[after].name : null;
+}
+
 function submit() {
+  if (G.next) return nextAfterMiss();
   if (G.busy || G.input === "") return;
   G.tries++;
   if (Number(G.input) === G.cur.ans) {
-    G.busy = true; G.streak++; G.solved++;
+    G.busy = true; G.solved++;
+    if (!G.hinted) G.streak++;
     const crit = G.streak >= 3, dmg = G.cur.ans * (crit ? 2 : 1), typed = G.input;
+    const level = learnFrom(true);
     G.input = ""; ansUI();
+    $("hint").hidden = true; $("hintBtn").hidden = true;
     sfx.launch(G.streak);
-    if (G.streak === 3) say("p", PHRASE.crits);
+    if (G.streak === 3 && !G.hinted) say("p", PHRASE.crits);
     fly(typed, crit).then(() => {
       sfx.impact(crit); burst(crit);
       G.hp -= dmg;
       pop((crit ? "Crit! " : "") + "−" + dmg, crit);
       restartAnim($("mon"), "hit");
       if (crit) restartAnim($("arena"), "shake");
-      setMsg(crit ? `Critical hit for ${dmg}!` : `Hit for ${dmg}!`, "good");
+      setMsg(level ? `New level: ${level}!` : crit ? `Critical hit for ${dmg}!` : `Hit for ${dmg}!`, "good");
       hpUI(); streakUI();
       if (G.hp <= 0) { setTimeout(() => { $("mon").className = "mon dead"; }, 300); setTimeout(cleared, 1100); }
-      else setTimeout(newProblem, 450);
+      else setTimeout(newProblem, level ? 1200 : 450);
     });
   } else miss("Ouch!");
 }
 
-// A wrong answer or timeout: the monster lunges, a heart cracks off, and the right answer is
-// shown and said.
+// A wrong answer or timeout: the monster lunges, a heart cracks off, the right answer is shown
+// and said with the worked example, and the fact comes back 2–4 problems later.
 function miss(why) {
   G.busy = true; G.streak = 0;
   G.hearts--;
   const lost = G.hearts;
+  learnFrom(false);
+  G.retry = G.retry.filter((r) => r.key !== G.cur.key).concat([{ key: G.cur.key, after: 2 + Math.floor(Math.random() * 3) }]);
   sfx.miss();
   restartAnim($("mon"), "lunge");
   streakUI();
@@ -217,7 +270,16 @@ function miss(why) {
     setTimeout(() => $("arena").classList.remove("hurt"), 450);
     setTimeout(() => heartsUI(), 720);
   }, reduced() ? 0 : 220);
-  if (G.hearts <= 0) setTimeout(() => end(false), 1700); else setTimeout(newProblem, 1800);
+  if (G.hearts <= 0) { setTimeout(() => end(false), 1700); return; }
+  // The worked example stays until "Got it" (or Enter), so there's time to look.
+  $("timer").hidden = true;
+  setTimeout(() => { openHint(true); G.next = true; const g = $("gotIt"); if (g) g.focus(); }, 500);
+}
+function nextAfterMiss() {
+  if (!G.next) return;
+  G.next = false;
+  $("hint").hidden = true;
+  newProblem();
 }
 
 function record() {
@@ -228,7 +290,7 @@ function record() {
 function cleared() {
   const m = MON[G.floor];
   if (G.floor === MON.length - 1) return end(true);
-  const healed = G.hearts < MAX_HEARTS;
+  const healed = G.hearts < band().hearts;
   if (healed) G.hearts++;
   record();
   sfx.cleared();
@@ -275,13 +337,18 @@ function playersHTML() {
   return `<ul class="players">${rows}</ul>
   <div class="prow"><input type="text" id="newName" maxlength="24" placeholder="New player's name" aria-label="New player's name"><button class="small" type="button" id="addPlayer">Add a player</button></div>`;
 }
+// "Level 2 of 4: Within 10", from the player's own fact records.
+function levelLine() {
+  const L = openLevel(st.band, recs);
+  return `Level ${L + 1} of ${band().levels.length}: ${band().levels[L].name}`;
+}
 function menu() {
   show(`<div class="cardhead"><h2>Crawl the Sumgeon</h2><button class="icon-btn" id="sayIntro" type="button" aria-label="Read this aloud">${SPEAKER}</button></div>
   <p>Seven glyph monsters guard seven floors. <strong>Your answer is your attack</strong>: solve 7 × 8 and you hit for 56. Three right in a row and every hit is doubled. A wrong answer costs a heart, and you see the right one.</p>
   <div class="lineup">${MON.map((m) => svg(m, m.boss ? "boss" : "")).join("")}</div>
   <div class="grp"><span>Players</span><div id="players">${playersHTML()}</div></div>
-  <div class="grp"><span>Problems</span><div class="chips">${OPS.map(([o, l]) => chip("checkbox", "op", o, st.ops.includes(o), `${o === "-" ? "−" : o} ${l}`)).join("")}</div></div>
-  <div class="grp"><span>Numbers</span><div class="chips">${Object.entries(DIFF).map(([k, v]) => chip("radio", "df", k, st.diff === k, v.label)).join("")}</div></div>
+  <div class="grp"><span>Band</span><div class="chips">${Object.entries(BANDS).map(([k, b]) => chip("radio", "band", k, st.band === k, `${b.label} <small>${b.grades}</small>`)).join("")}</div>
+    <p class="level" id="levelLine">${levelLine()}</p></div>
   <div class="grp"><span>Pressure</span><div class="chips">${chip("checkbox", "tm", "1", st.timer, "Timer on", "tm")}</div></div>
   <div class="grp"><span>Sounds</span><div class="chips">${chip("checkbox", "sfx", "1", st.sfx, "Sound effects", "sfxOn")}${chip("checkbox", "voice", "1", st.voice, "Voice", "voiceOn")}</div></div>
   <div class="warn" id="warn"></div>
@@ -289,13 +356,13 @@ function menu() {
   const card = $("card");
   $("sayIntro").onclick = () => say("p", PHRASE.intro, true);
   // Settings save as they change, for the player who's playing.
-  card.querySelectorAll("input[name=op]").forEach((i) => i.onchange = () => {
-    const ops = [...card.querySelectorAll("input[name=op]:checked")].map((x) => x.value);
-    if (!ops.length) { i.checked = true; $("warn").textContent = "Pick at least one kind of problem."; return; }
-    $("warn").textContent = "";
-    st.ops = ops; saveSettings();
+  // A different band is a fresh dungeon: its own facts and hearts.
+  card.querySelectorAll("input[name=band]").forEach((i) => i.onchange = () => {
+    st.band = i.value; saveSettings();
+    $("levelLine").textContent = levelLine();
+    G.running = false; loadMonster(0, true);
+    if ($("resume")) $("resume").remove();
   });
-  card.querySelectorAll("input[name=df]").forEach((i) => i.onchange = () => { st.diff = i.value; saveSettings(); });
   $("tm").onchange = () => { st.timer = $("tm").checked; saveSettings(); };
   $("sfxOn").onchange = () => { st.sfx = $("sfxOn").checked; sfx.setSfx(st.sfx); saveSettings(); soundUI(); };
   $("voiceOn").onchange = () => { st.voice = $("voiceOn").checked; setVoice(st.voice); saveSettings(); soundUI(); };
@@ -334,7 +401,7 @@ function switchTo(id) {
 
 function start() {
   hide();
-  Object.assign(G, { hearts: MAX_HEARTS, streak: 0, solved: 0, tries: 0, running: true });
+  Object.assign(G, { hearts: band().hearts, streak: 0, solved: 0, tries: 0, running: true, retry: [], recent: [], next: false });
   stopSpeech();
   loadMonster(0);
   setMsg("Your answer is your attack.");
@@ -343,6 +410,7 @@ function start() {
 
 /* ---------- input ---------- */
 function press(k) {
+  if (G.next && k === "go") return nextAfterMiss();
   if (G.busy) return;
   if (k === "go") return submit();
   sfx.tick();

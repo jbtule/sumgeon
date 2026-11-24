@@ -13,8 +13,10 @@ export var DEVICE = "sumgeon:";
 export var STORAGE_VERSION = 2;
 // Every key saved per player. Add new ones here (the check fails on a key that isn't listed),
 // so Start over, removing a player and (later) sync can't miss one.
-export var OWN_KEYS = ["settings", "best"];
-export var DEFAULT_SETTINGS = { ops: ["+", "-"], diff: "easy", timer: false, sfx: true, voice: true };
+export var OWN_KEYS = ["settings", "best", "facts"];
+// band: "sprout" or "apprentice" (learn.js BANDS). ops and diff are the prototype's, kept only to
+// pick a band for a player who had them.
+export var DEFAULT_SETTINGS = { band: "sprout", ops: ["+", "-"], diff: "easy", timer: false, sfx: true, voice: true };
 
 export function profilePrefix(id) { return DEVICE + "@" + id + ":"; }
 
@@ -70,6 +72,7 @@ export function openStore(ls) {
         if (p.get("settings", null) == null) {
           var s = Object.assign({}, DEFAULT_SETTINGS);
           if (Array.isArray(o.ops) && o.ops.length) s.ops = o.ops;
+          if (s.ops.some(function (x) { return x === "×" || x === "÷"; })) s.band = "apprentice";
           if (o.diff) s.diff = o.diff;
           if (typeof o.timer === "boolean") s.timer = o.timer;
           p.set("settings", s);
@@ -112,7 +115,12 @@ export function openStore(ls) {
       saveProfiles(profiles().filter(function (p) { return p.id !== id; }));
       return true;
     },
-    settings: function (id) { return Object.assign({}, DEFAULT_SETTINGS, player(id).get("settings", {})); }
+    settings: function (id) {
+      var saved = player(id).get("settings", {}) || {}, s = Object.assign({}, DEFAULT_SETTINGS, saved);
+      // Before bands: a player who practiced × or ÷ starts in Apprentice.
+      if (!saved.band && Array.isArray(saved.ops) && saved.ops.some(function (o) { return o === "×" || o === "÷"; })) s.band = "apprentice";
+      return s;
+    }
   };
 }
 
