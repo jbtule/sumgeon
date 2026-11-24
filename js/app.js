@@ -322,7 +322,7 @@ function openWorked() {
   show(`<div class="worked"><h2>Oops!</h2>
     <p class="worked-fact">${esc(G.cur.q)} = <b>${G.cur.ans}</b></p>
     <div class="model">${h.model}</div><p class="hsay">${esc(h.say)}</p>
-    <div class="btns"><button class="big" type="button" id="gotIt">Got it</button></div></div>`);
+    <div class="btns"><button class="big" type="button" id="gotIt">Got it</button></div></div>`, "float");
   $("gotIt").onclick = nextAfterMiss;
 }
 $("hintBtn").onclick = () => { if (!G.busy) openHint(); };
@@ -450,13 +450,13 @@ function cleared() {
     <p><strong>${h.n} joins your team.</strong> When your answer has a ${h.d}, ${h.n} jumps in and hits harder.</p>
     ${stars}
     ${next.replace('class="cardmon"', 'class="cardmon small"')}
-    <div class="btns"><button class="big" id="next">Floor ${G.floor + 2}</button></div>`);
+    <div class="btns"><button class="big" id="next">Floor ${G.floor + 2}</button></div>`, "float");
   } else {
     say("p", monsterCleared(m));
     show(`<h2>${m.n} ${m.quip}</h2>
   ${stars}
   ${next}
-  <div class="btns"><button class="big" id="next">Floor ${G.floor + 2}</button></div>`);
+  <div class="btns"><button class="big" id="next">Floor ${G.floor + 2}</button></div>`, "float");
   }
   $("next").onclick = () => { hide(); loadMonster(G.floor + 1); newProblem(); };
 }
@@ -470,6 +470,7 @@ function end(win) {
   const opened = WINGS.find((x) => !before.includes(x.id) && openWings(progress, recs, st.start).includes(x.id));
   if (win) { sfx.victory(); say("p", wingCleared(w)); if (opened) say("p", wingOpened(opened)); } else say("p", monsterWon(m));
   const left = !win ? "" : opened ? `<p><strong>${opened.name} is open!</strong> Pick it in the menu.</p>` : nextWingHint();
+  pickOpen = false;
   show(`<h2>${win ? wingCleared(w) : `${m.n} won this round`}</h2>
   ${win ? "" : `<div class="cardmon">${monsterArt(m)}</div>`}
   <p>${win ? `${m.n} is beaten. Every floor of ${w.name} is yours.` : "Every miss shows the right answer, so the next run goes deeper."}</p>
@@ -477,17 +478,22 @@ function end(win) {
   ${left}
   <div class="stats"><div><b>${f}</b><small>floors cleared</small></div><div><b>${G.solved}</b><small>solved</small></div><div><b>${acc}%</b><small>accuracy</small></div></div>
   <p>Best run: <strong>${progress[w.id].best} of ${G.floors.length} floors</strong></p>
-  ${captainHTML().replace(">Your hero<", ">Your hero for the next run<")}
-  <div class="btns"><button class="big" id="again">Play again</button><button class="big alt" id="set">Menu</button></div>`);
+  ${captainHTML("Next run")}
+  <div class="btns"><button class="big alt" id="set">Menu</button><button class="big" id="again">Play again</button></div>`);
   wireCaptain();
   $("again").onclick = start;
   $("set").onclick = () => openMenu();
 }
 // A card over the game. It opens at the top, and its main button gets focus (Enter presses it)
-// without scrolling down to it.
-function show(h) {
-  G.busy = true; $("card").innerHTML = h; $("ov").hidden = false; $("ov").scrollTop = 0;
-  const b = $("card").querySelector("button.big"); if (b) b.focus({ preventScroll: true });
+// without scrolling down to it. kind "page" (the menu, Settings, the book, a run's end) fills a
+// phone's screen with its buttons docked at the bottom; "float" (a floor cleared, a miss) floats
+// over the game.
+function show(h, kind = "page") {
+  G.busy = true; $("card").innerHTML = h; $("card").className = "card " + kind;
+  $("ov").className = "ov " + kind; $("ov").hidden = false; $("ov").scrollTop = 0;
+  // The main button is the last one in the row (Menu, then Play again).
+  const bs = $("card").querySelectorAll(".btns button.big"), b = bs[bs.length - 1] || $("card").querySelector("button.big");
+  if (b) b.focus({ preventScroll: true });
 }
 function hide() { $("ov").hidden = true; }
 
@@ -502,13 +508,13 @@ function chip(type, name, value, checked, label, id) {
 }
 function playersHTML() {
   const list = store.profiles();
-  const rows = list.map((p, i) => `<li class="prow" data-id="${esc(p.id)}">
+  const rows = list.map((p, i) => `<li class="prow${p.id === PID ? " me" : ""}" data-id="${esc(p.id)}">
     <input type="text" maxlength="24" value="${esc(p.name)}" placeholder="Player ${i + 1}" aria-label="Player ${i + 1}'s name (optional)">
-    ${p.id === PID ? '<span class="now">playing now</span>' : '<button class="small" type="button" data-act="play">Play</button>'}
-    ${store.canRemove(p.id) ? '<button class="small danger" type="button" data-act="remove">Remove</button>' : ""}
+    ${p.id === PID ? '<span class="now">Playing</span>' : '<button class="small" type="button" data-act="play">Play</button>'}
+    ${store.canRemove(p.id) ? '<button class="small danger" type="button" data-act="remove" aria-label="Remove">✕</button>' : ""}
   </li>`).join("");
-  return `<ul class="players">${rows}</ul>
-  <div class="prow"><input type="text" id="newName" maxlength="24" placeholder="Name (optional)" aria-label="New player's name (optional)"><button class="small" type="button" id="addPlayer">Add a player</button></div>`;
+  return `<ul class="players">${rows}
+  <li class="prow"><input type="text" id="newName" maxlength="24" placeholder="New player (name optional)" aria-label="New player's name (optional)"><button class="small" type="button" id="addPlayer">+ Add</button></li></ul>`;
 }
 // "Level 2 of 4: Within 10", from the player's own fact records.
 function levelLine() {
@@ -523,25 +529,23 @@ function wingsHTML() {
     let note;
     const ws = wingStars(w, progress);
     if (isOpen) note = (p.boss ? `Cleared ${p.boss}×` : p.best ? `Best: ${p.best} of ${w.floors.length + 1} floors` : "Not tried yet") + (ws.got ? ` · ★ ${ws.got} of ${ws.max}` : "");
-    else { const t = toOpen(w, progress, recs); note = `🔒 Beat ${t.prev.boss} ${t.boss ? "✓" : ""} · learn ${Math.round(t.need * 100)}% of ${t.prev.name} (${Math.round(t.share * 100)}%)`; }
+    else { const t = toOpen(w, progress, recs); note = `🔒 Beat ${t.prev.boss}${t.boss ? " ✓" : ""} and learn ${Math.round(t.need * 100)}% of the ${t.prev.name.replace(/^The /, "")} (now ${Math.round(t.share * 100)}%)`; }
     return `<label class="wing${here ? " here" : ""}${isOpen ? "" : " locked"}"><input type="radio" name="wing" value="${w.id}" ${here ? "checked" : ""} ${isOpen ? "" : "disabled"}>
-      <span><b>${w.name}</b><small>${b.label} · ${b.grades}</small><em>${note}</em></span></label>`;
+      <span><b>${w.name}</b><small>${b.label} · ${b.grades}</small><em>${note}</em>${here ? `<em class="level" id="levelLine">${levelLine()}</em>` : ""}</span></label>`;
   }).join("");
 }
-// The start screen: pick your hero and a Wing, then go. Players, chalk color, the timer and sounds
-// are in Settings, as in Sound Box. Names are optional.
+// The start screen, top to bottom: the title, your hero, the Wings, the book and Settings, and
+// "Enter the dungeon" docked at the bottom. Players, chalk color, the timer and sounds are in
+// Settings, as in Sound Box. Names are optional.
 function menu() {
   const list = store.profiles();
-  show(`<div class="cardhead"><h2>Crawl the Sumgeon</h2><button class="icon-btn" id="sayIntro" type="button" aria-label="Read this aloud">${SPEAKER}</button></div>
-  <p>Monsters made of math guard every floor. <strong>Your answer is your attack</strong>: get it right and your digits fly at the monster.</p>
+  show(`<div class="cardhead logo-head"><h2 class="logo">Sum<b>geon</b></h2><button class="icon-btn" id="sayIntro" type="button" aria-label="Read this aloud">${SPEAKER}</button></div>
+  <p class="tag"><strong>Your answer is your attack.</strong> Get it right and your digits fly at the monster.</p>
   ${list.length > 1 ? `<p class="playing">Playing as <b>${esc(displayName(list, PID))}</b> <button class="link" type="button" id="switchPlayer">Switch</button></p>` : ""}
   ${captainHTML()}
-  <div class="grp"><span>Wings</span><div class="wings">${wingsHTML()}</div>
-    <p class="level" id="levelLine">${levelLine()}</p></div>
-  <button class="small book-btn" type="button" id="openBook">📖 Monsters &amp; Heroes</button>
-  <div class="warn" id="warn"></div>
-  <div class="btns">${G.running ? '<button class="big alt" id="resume">Keep fighting</button>' : ""}<button class="big" id="go">Enter the dungeon</button></div>
-  <button class="link settings-link" type="button" id="openSettings">⚙ Settings</button>`);
+  <div class="grp"><span>Pick a Wing</span><div class="wings">${wingsHTML()}</div></div>
+  <div class="menu-links"><button class="small" type="button" id="openBook">📖 Monsters &amp; Heroes</button><button class="small" type="button" id="openSettings">⚙ Settings</button></div>
+  <div class="btns"><p class="warn" id="warn" role="status"></p>${G.running ? '<button class="big alt" id="resume">Keep fighting</button>' : ""}<button class="big" id="go">Enter the dungeon</button></div>`);
   const card = $("card");
   $("sayIntro").onclick = () => say("p", PHRASE.intro, true);
   // A different Wing is a fresh dungeon: its own facts and hearts.
@@ -555,22 +559,30 @@ function menu() {
   $("openBook").onclick = bookPage;
   if ($("switchPlayer")) $("switchPlayer").onclick = settings;
   $("go").onclick = () => {
-    if (!hasCaptain()) { $("warn").textContent = "Pick your hero first."; $("captain").scrollIntoView({ block: "center" }); return; }
+    if (!hasCaptain()) { $("warn").textContent = "Pick your hero first."; $("captain").scrollIntoView({ block: "center", behavior: "smooth" }); return; }
     start();
   };
   if ($("resume")) $("resume").onclick = () => { hide(); newProblem(); };
 }
 
-// Settings: players (names optional), chalk color, the timer and sounds. All save as they change.
+// Settings, as a list: players (names optional), chalk color, the timer and sounds as on/off
+// switches, and the help page. All save as they change.
+function toggle(id, title, sub, on) {
+  return `<label class="switch-row"><span><b>${title}</b>${sub ? `<small>${sub}</small>` : ""}</span>
+    <input type="checkbox" role="switch" id="${id}" ${on ? "checked" : ""}><i aria-hidden="true"></i></label>`;
+}
 function settings() {
   show(`<div class="cardhead"><h2>Settings</h2></div>
   <div class="grp"><span>Players</span><div id="players">${playersHTML()}</div></div>
   <div class="grp"><span>Chalk color</span><div class="swatches" id="swatches">${swatchesHTML()}</div></div>
-  <div class="grp"><span>Pressure</span><div class="chips">${chip("checkbox", "tm", "1", st.timer, "Timer on", "tm")}</div></div>
-  <div class="grp"><span>Sounds</span><div class="chips">${chip("checkbox", "sfx", "1", st.sfx, "Sound effects", "sfxOn")}${chip("checkbox", "voice", "1", st.voice, "Voice", "voiceOn")}</div></div>
-  <div class="grp"><span>Help</span><button class="small" type="button" id="openHelp">How the hints work</button></div>
-  <div class="btns"><button class="big" id="done">Done</button></div>
-  ${badgesCopy()}`);
+  <div class="grp"><span>Play</span><div class="list">
+    ${toggle("tm", "Timer", `${band().seconds} seconds a problem`, st.timer)}
+    ${toggle("sfxOn", "Sound effects", "", st.sfx)}
+    ${toggle("voiceOn", "Voice", "Reads monsters and answers aloud", st.voice)}
+    <button class="list-link" type="button" id="openHelp"><span><b>How the hints work</b><small>For grown-ups</small></span><i aria-hidden="true">›</i></button>
+  </div></div>
+  ${badgesCopy()}
+  <div class="btns"><button class="big" id="done">Done</button></div>`);
   $("openHelp").onclick = helpPage;
   $("tm").onchange = () => { st.timer = $("tm").checked; saveSettings(); };
   $("sfxOn").onchange = () => { st.sfx = $("sfxOn").checked; sfx.setSfx(st.sfx); saveSettings(); soundUI(); };
@@ -579,6 +591,7 @@ function settings() {
   wirePlayers();
   $("done").onclick = menu;
 }
+
 // The footer's badges (deployed version, license), repeated in Settings, since phones hide the footer.
 function badgesCopy() {
   const f = document.querySelector("footer.badges");
@@ -653,21 +666,32 @@ function wireSwatches() {
   });
 }
 
-// Choosing a hero, on the start screen and after a run ends: the first time, any of the ten;
-// after that, anyone on your team (your heroes and everyone you've rescued; the rest show cursed).
-function captainHTML() {
+// Choosing a hero, on the start screen and after a run ends. With a hero picked, it's one line
+// (the hero, big, and "Change"); "Change" opens the grid. The first time, any of the ten; after
+// that, anyone on your team (your heroes and everyone you've rescued; the rest show cursed).
+let pickOpen = false;
+function captainHTML(label) {
   const first = !hasCaptain();
+  if (!first && !pickOpen) {
+    const h = HEROES[team.captain];
+    return `<div class="grp" id="captain"><span>${label || "Your hero"}</span>
+      <div class="cap-row"><div class="cap-art">${heroSvg(h, { color: team.color })}</div>
+        <div class="cap-text"><b>${esc(h.n)}</b><small>${esc(h.cls)} · power hits on ${h.d}s</small></div>
+        <button class="small" type="button" id="changeHero">Change</button></div></div>`;
+  }
   const heroes = HEROES.map((h) => {
     const can = first || onTeam(h.d), on = h.d === team.captain;
     return `<button type="button" class="hpick${on ? " on" : ""}" data-d="${h.d}" ${can ? "" : "disabled"} aria-pressed="${on}" aria-label="${can ? h.n : "Cursed, not rescued yet"}">
       ${heroSvg(h, { color: on ? team.color : null, cursed: !can })}<small>${can ? h.n : "???"}</small></button>`;
   }).join("");
-  return `<div class="grp" id="captain"><span>${first ? "Pick your hero" : "Your hero"}</span>
+  return `<div class="grp" id="captain"><span>${first ? "Pick your hero" : label || "Your hero"}</span>
     ${first ? '<p class="level">When your answer has your hero\'s digit, it\'s a power hit! Rescue more heroes on the way down.</p>' : ""}
     <div class="heroes">${heroes}</div></div>`;
 }
 function wireCaptain() {
-  const box = $("captain");
+  const box = $("captain"), label = box.firstElementChild.textContent;
+  const redraw = () => { const n = $("captain"); n.outerHTML = captainHTML(label === "Pick your hero" ? "" : label); wireCaptain(); };
+  if ($("changeHero")) $("changeHero").onclick = () => { pickOpen = true; redraw(); };
   box.querySelectorAll(".hpick:not([disabled])").forEach((b) => b.onclick = () => {
     team.captain = Number(b.dataset.d);
     // The first pick joins the team for good, so it can be picked again later.
@@ -676,9 +700,10 @@ function wireCaptain() {
     say("m", heroName(HEROES[team.captain]), true);
     captainUI(); whoUI();
     if ($("warn")) $("warn").textContent = "";
-    box.outerHTML = captainHTML(); wireCaptain();
+    pickOpen = false; redraw();
   });
 }
+
 function wirePlayers() {
   const box = $("players");
   box.querySelectorAll(".players .prow").forEach((row) => {
@@ -689,7 +714,7 @@ function wirePlayers() {
     const rm = row.querySelector("[data-act=remove]");
     // A second tap confirms, as in Sound Box. From this device only.
     if (rm) rm.onclick = () => {
-      if (rm.dataset.sure !== "1") { rm.dataset.sure = "1"; rm.textContent = "Remove from this device?"; return; }
+      if (rm.dataset.sure !== "1") { rm.dataset.sure = "1"; rm.textContent = "Remove?"; return; }
       store.removeProfile(id);
       refreshPlayers();
     };
