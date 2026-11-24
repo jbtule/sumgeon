@@ -554,19 +554,18 @@ function wingsHTML() {
       <span><b>${w.name}</b><small>${b.label} · ${b.grades}</small><em>${note}</em>${here ? `<em class="level" id="levelLine">${levelLine()}</em>` : ""}</span></label>`;
   }).join("");
 }
-// The start screen, top to bottom: the title (with 🔊 and ⚙ Settings), your hero, the Wings, and
+// The start screen, top to bottom: the title (with ⚙ Settings), your hero, the Wings, and
 // "Enter the dungeon" docked at the bottom. Monsters & Heroes is on the pause screen. Players, chalk color, the timer and sounds are in
 // Settings, as in Sound Box. Names are optional.
 function menu() {
   const list = store.profiles();
-  show(`<div class="cardhead logo-head"><h2 class="logo">Sum<b>geon</b></h2><button class="icon-btn" id="sayIntro" type="button" aria-label="Read this aloud">${SPEAKER}</button><button class="icon-btn" id="openSettings" type="button" aria-label="Settings">${GEAR}</button></div>
+  show(`<div class="cardhead logo-head"><h2 class="logo">Sum<b>geon</b></h2><button class="icon-btn" id="openSettings" type="button" aria-label="Settings">${GEAR}</button></div>
   <p class="tag"><strong>Your answer is your attack.</strong> Get it right and your digits fly at the monster.</p>
   ${list.length > 1 ? `<p class="playing">Playing as <b>${esc(displayName(list, PID))}</b> <button class="link" type="button" id="switchPlayer">Switch</button></p>` : ""}
   ${captainHTML()}
   <div class="grp"><span>Pick a Wing</span><div class="wings">${wingsHTML()}</div></div>
   <div class="btns"><p class="warn" id="warn" role="status"></p><button class="big" id="go">Enter the dungeon</button></div>`);
   const card = $("card");
-  $("sayIntro").onclick = () => say("p", PHRASE.intro, true);
   // A different Wing is a fresh dungeon: its own facts and hearts.
   card.querySelectorAll("input[name=wing]").forEach((i) => i.onchange = () => {
     st.band = wingOf(i.value).band; saveSettings();
