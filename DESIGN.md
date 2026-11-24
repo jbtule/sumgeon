@@ -316,7 +316,7 @@ Each milestone should be playable and shippable on its own.
 3. **M3 — Wings and the Bestiary**
    Split the operator monsters into the Counting Cellar and the Tables Tower, add the digit heroes (captain pick, summon attack, rescue floors, Heroes page; §6.6), the Wing map, per-floor stars, the Bestiary with mastery rings, and monster traits.
 4. **M4 — Replay**
-   Achievements with spoken cards, the 🏆 sheet and share cards (§14), between-floor item choices, Endless Descent, Daily Dungeon, the player character and cosmetics.
+   Achievements with spoken cards, the 🏆 sheet and share cards (§14), between-floor item choices, Endless Descent, Daily Dungeon, and captain cosmetics.
 5. **M5 — New math**
    Extended input (±, ., fractions, comparisons), the Fraction Forge and Balance Hall, then the Negative Zone, Root Cellar and Pirate Cove.
 6. **M6 — Grown-ups' corner and PWA**
