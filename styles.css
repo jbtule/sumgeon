@@ -13,7 +13,7 @@ h1{font:400 clamp(24px,5vw,34px)/1.05 Bungee,sans-serif;margin:0;color:var(--gol
 h1 b{color:var(--coral);font-weight:400}
 .floor{font:400 14px Bungee,sans-serif;color:var(--muted);white-space:nowrap}
 .game{display:grid;gap:14px;padding:0 max(4vw,14px) 20px;max-width:1100px;margin:0 auto}
-@media(min-width:760px){.game{grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);align-items:stretch}}
+
 .arena{position:relative;border-radius:22px;padding:14px;background:radial-gradient(ellipse 70% 55% at 50% 78%,#2f5560 0,#1a313a 55%,#10202600 100%),repeating-linear-gradient(0deg,#16292f 0 38px,#13252b 38px 40px);border:2px solid var(--line);overflow:hidden;transition:box-shadow .2s}
 .arena.hurt{box-shadow:inset 0 0 0 4px var(--coral),inset 0 0 60px #ff5a4e66}
 .mhead{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
@@ -274,4 +274,35 @@ h1 b{color:var(--coral);font-weight:400}
   .game{gap:5px}
   .pad{gap:5px}
   .pad button{min-height:38px;font-size:20px}
+}
+
+/* iPad and desktop: two columns with the same split as phones. The left column is the
+   monster's box: its nameplate across the top, the monster filling the box, and messages as a
+   pill under it. The right column is your side: the problem, hint, answer and number pad, with
+   your hero and hearts under the pad. .arena and .panel dissolve (display: contents) so their
+   parts can be placed in one grid; their boxes are drawn by .game::before and ::after. */
+@media (min-width: 760px) {
+  .game{grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);column-gap:14px;row-gap:10px;
+    grid-template-rows:auto auto auto auto auto auto minmax(0,1fr);
+    grid-template-areas:"mhead prob" "stage timer" "stage hint" "stage ans" "stage pad" "stage you" "stage ."}
+  .arena,.panel{display:contents}
+  .game::before,.game::after{content:"";grid-row:1/-1;border-radius:22px;border:2px solid var(--line)}
+  .game::before{grid-column:1;background:radial-gradient(ellipse 70% 55% at 50% 78%,#2f5560 0,#1a313a 55%,#10202600 100%),repeating-linear-gradient(0deg,#16292f 0 38px,#13252b 38px 40px)}
+  .game::after{grid-column:2;background:var(--panel)}
+  .game:has(.arena.hurt)::before{box-shadow:inset 0 0 0 4px var(--coral),inset 0 0 60px #ff5a4e66}
+  .game:has(.arena.shake)::before{animation:shake .35s}
+  .mhead{grid-area:mhead;align-self:start;padding:16px 16px 0;z-index:1}
+  .stage{grid-area:stage;height:auto;min-height:280px;container-type:size;z-index:1;margin:0 16px 16px}
+  .mon{width:min(70cqw,calc(100cqh - 24px),340px)}
+  /* Messages float as a pill under the monster, as on phones. */
+  .msg{grid-area:stage;align-self:end;justify-self:center;z-index:2;min-height:0;margin-bottom:20px;padding:4px 14px;border-radius:999px;background:#0c171cb0}
+  .msg:empty{display:none}
+  .timer,.probrow,.hint,.ans,.pad,.you{margin-inline:16px;z-index:1}
+  .timer{grid-area:timer}
+  .probrow{grid-area:prob;margin-top:16px}
+  .hint{grid-area:hint}
+  .ans{grid-area:ans}
+  .pad{grid-area:pad}
+  /* Your hero and hearts sit under the number pad, on your side. */
+  .you{grid-area:you;margin-bottom:16px}
 }
