@@ -8,7 +8,7 @@
 // - The footer's GitHub badge shows the short sha (which version is deployed); it links to
 //   the repo's front page (README), not the commit.
 // The source files stay runnable as-is; locally the badge just reads "dev".
-import { readFileSync, writeFileSync, rmSync, mkdirSync, cpSync, readdirSync } from "node:fs";
+import { readFileSync, writeFileSync, rmSync, mkdirSync, cpSync, readdirSync, existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { join } from "node:path";
 
@@ -24,12 +24,15 @@ const root = fileURLToPath(new URL("..", import.meta.url));
 const out = join(root, "_site");
 // Every file the site serves. New top-level site files go here.
 const SITE = ["index.html", "LICENSE.md", "styles.css", "js"];
+// Written by scripts/audio/build.mjs in the deploy; without it the game uses the device voice.
+const OPTIONAL = ["audio.json"];
 // Attributes in index.html that load a local file, e.g. 'src="js/app.js"'.
 const STAMPED = ['href="styles.css"', 'src="js/app.js"'];
 
 rmSync(out, { recursive: true, force: true });
 mkdirSync(out);
 for (const f of SITE) cpSync(join(root, f), join(out, f), { recursive: true });
+for (const f of OPTIONAL) if (existsSync(join(root, f))) cpSync(join(root, f), join(out, f));
 
 let html = readFileSync(join(root, "index.html"), "utf8");
 // Each replacement must match exactly once, so a markup change can't silently skip one.

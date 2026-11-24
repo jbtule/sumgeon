@@ -3,6 +3,7 @@
 import { MON, svg } from "./monsters.js";
 import { DIFF, OPS, gen, pickOp, monsterHP, spokenProblem, spokenFact } from "./problems.js";
 import { openStore, displayName } from "./store.js";
+import { PHRASE, monsterName, monsterCleared, monsterWon } from "./lines.js";
 import * as sfx from "./sfx.js";
 import { say, stopSpeech, setVoice } from "./speech.js";
 
@@ -101,8 +102,8 @@ function loadMonster(i, quiet) {
   hpUI(); heartsUI(); streakUI();
   if (quiet) return;
   sfx.appear(m.boss);
-  if (m.boss) say("p", "Boss floor!");
-  say("m", m.n + "!");
+  if (m.boss) say("p", PHRASE.boss);
+  say("m", monsterName(m));
 }
 function newProblem() {
   G.cur = gen(pickOp(MON[G.floor], st.ops), st.diff);
@@ -183,7 +184,7 @@ function submit() {
     const crit = G.streak >= 3, dmg = G.cur.ans * (crit ? 2 : 1), typed = G.input;
     G.input = ""; ansUI();
     sfx.launch(G.streak);
-    if (G.streak === 3) say("p", "Crits on!");
+    if (G.streak === 3) say("p", PHRASE.crits);
     fly(typed, crit).then(() => {
       sfx.impact(crit); burst(crit);
       G.hp -= dmg;
@@ -231,7 +232,7 @@ function cleared() {
   if (healed) G.hearts++;
   record();
   sfx.cleared();
-  say("p", `${m.n} ${m.quip}`);
+  say("p", monsterCleared(m));
   const nx = MON[G.floor + 1];
   show(`<h2>${m.n} ${m.quip}</h2>
   <div class="cardmon">${svg(nx)}</div>
@@ -242,7 +243,7 @@ function cleared() {
 function end(win) {
   G.running = false;
   const f = record(), acc = G.tries ? Math.round(G.solved / G.tries * 100) : 0, m = MON[G.floor];
-  if (win) { sfx.victory(); say("p", "You cleared the Sumgeon!"); } else say("p", `${m.n} won this round.`);
+  if (win) { sfx.victory(); say("p", PHRASE.win); } else say("p", monsterWon(m));
   show(`<h2>${win ? "You cleared the Sumgeon!" : `${m.n} won this round`}</h2>
   ${win ? "" : `<div class="cardmon">${svg(m)}</div>`}
   <p>${win ? "Sigma Rex is scattered across the chalkboard. Try a harder setting, or switch on the timer." : "Every miss shows the right answer, so the next run goes deeper."}</p>
@@ -256,8 +257,6 @@ function show(h) { G.busy = true; $("card").innerHTML = h; $("ov").hidden = fals
 function hide() { $("ov").hidden = true; }
 
 /* ---------- the menu: players and settings ---------- */
-const INTRO = "Seven glyph monsters guard seven floors. Your answer is your attack: solve 7 × 8 and you hit for 56. Three right in a row and every hit is doubled. A wrong answer costs a heart, and you see the right one.";
-
 function openMenu() {
   G.busy = true;
   stopSpeech();
@@ -288,7 +287,7 @@ function menu() {
   <div class="warn" id="warn"></div>
   <div class="btns">${G.running ? '<button class="big alt" id="resume">Keep fighting</button>' : ""}<button class="big" id="go">Enter the dungeon</button></div>`);
   const card = $("card");
-  $("sayIntro").onclick = () => say("p", INTRO, true);
+  $("sayIntro").onclick = () => say("p", PHRASE.intro, true);
   // Settings save as they change, for the player who's playing.
   card.querySelectorAll("input[name=op]").forEach((i) => i.onchange = () => {
     const ops = [...card.querySelectorAll("input[name=op]:checked")].map((x) => x.value);

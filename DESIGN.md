@@ -378,7 +378,7 @@ The corner holds:
 
 Each milestone should be playable and shippable on its own.
 
-1. **M1 — Feel and foundations** ✅ (2026-11-23), except recorded clips: `say()` is in place and uses the device voice until the Kokoro audio build and its Cloudflare host are set up.
+1. **M1 — Feel and foundations** ✅ (2026-11-23). Recorded clips: whole clips for every line in `js/lines.js` (about 1,290), on the `sumgeon-audio` Pages project.
    Split into modules, the storage upgrade plus players (§15.1), Web Audio sound effects, the Start button, `say()` with recorded clips for UI phrases and monster names (§13), the projectile attack animation, monster counterattack on a miss, and a streak flame.
 2. **M2 — Learning engine**
    Fact records, Leitner selection, the retry queue, hints after repeated misses, adaptive range within a band, and content bands replacing raw Easy/Medium/Hard.
@@ -417,6 +417,7 @@ A pre-reader can't use a menu she can't hear, and the device voice is hit and mi
 | `m` monster / hero | Monster names, boss intros, taunts and quips; hero names and rescue lines ("High Five is on your team!") | "Sigma Rex!", Timesaur: "I multiply. You divide." | a second voice for monsters, as Sound Box uses Bella for quips; the boss gets a third |
 | `a` achievement | Achievement card lines | "New achievement!", "Wing Champion!", "Counting Cellar." | `af_heart`, excited |
 
+- **Decided by a listen test (2026-11-23): whole clips, not stitched.** Stitched numbers (cut from real sentences, joined) sounded choppy in 7 of 10 lines even after a fix, while every whole clip passed.
 - **Problems are recorded per fact, not stitched from parts.** Stitching "seven" + "plus" + "eight" sounds choppy. The fact set is finite: about 800 for Sprout and Apprentice (± within 20, ×÷ to 12×12) and a few thousand by Master. Anything outside the recorded set uses the device voice.
 - Following Sound Box's lesson that **Kokoro misreads short text said alone**, numbers and short words are said at the end of a carrier phrase and cut out (`generate.py`'s method).
 - Number words go through one function (`spoken(n)`: 56 → "fifty-six", −3 → "negative three", ¾ → "three quarters") that the audio build and the app share, so the text keys always match.

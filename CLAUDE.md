@@ -27,8 +27,16 @@ A math-practice dungeon crawler. The player fights anthropomorphic monsters buil
 - `sfx.js` synthesizes every effect with Web Audio. The context is created on the first tap and woken on later taps, for iOS.
 - `speech.js` `say(kind, text)` plays a recorded clip from `audio.json` when there is one, or falls back to the device voice.
   - Kinds: `p` phrase, `m` monster line, `n` number, `q` problem.
-  - The Kokoro recording build (DESIGN.md §13) isn't set up yet, so `audio.json` 404s and the device voice speaks.
-  - Text keys come from `problems.js`'s spoken functions, so the future audio build records exactly what the app asks for.
+  - Every line the game says lives in `js/lines.js` (`PHRASE`, monster lines, and `facts()` from `problems.js`: sums and differences within 20, the 2–12 tables and their division facts, each as the problem and as "… is …"). `app.js` only says lines from there; `scripts/lines.test.mjs` fails on any other `say()`.
+  - `scripts/audio/build.mjs` (patterned on Sound Box's) records each line as one whole clip with Kokoro (`af_heart`, speed 0.95). Whole clips won a listen test against stitched numbers, which sounded choppy.
+    - Clip names hash model, voice, encoding, method, speed, kind and text, so a clip never changes once made.
+    - Each build reads the live `index.json` from the audio host and records only missing clips.
+    - `audio.json` lists only clips that are live, so a line without one uses the device voice.
+    - With `GENERATE=false` (CI without the Cloudflare token) nothing is recorded.
+    - Bigger problems (Hard mode, sums over 20) aren't recorded and use the device voice.
+  - The audio host is the Cloudflare Pages project `sumgeon-audio` (https://sumgeon-audio.pages.dev/). CI's `audio-deploy` job uploads new clips; it needs the `CLOUDFLARE_API_TOKEN` secret.
+  - To record locally on a Mac: `ASSET_BASE=https://sumgeon-audio.pages.dev/ KOKORO=container KOKORO_DIR=<folder for the model and venv> node scripts/audio/build.mjs`. Kokoro runs in Apple's `container` (the macOS espeak wheel is broken). Then upload with `npx wrangler pages deploy _audio --project-name sumgeon-audio --branch main`.
+  - `scripts/audio/listen-test.sh` renders the whole-vs-stitched comparison, for any future method change picked by ear.
 - The game speaks: monster names on arrival, "Crits on!" at 3 in a row, the right answer after a miss ("seven plus eight is fifteen"), floor clears, and the 🔊 buttons (the problem, the menu intro).
 
 ## Core rules

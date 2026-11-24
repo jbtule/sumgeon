@@ -61,3 +61,15 @@ var OP_WORDS = { "+": "plus", "-": "minus", "×": "times", "÷": "divided by" };
 export function spokenProblem(p) { return spoken(p.x) + " " + OP_WORDS[p.op] + " " + spoken(p.y); }
 // "seven plus eight is fifteen" (said after a miss, with the right answer)
 export function spokenFact(p) { return spokenProblem(p) + " is " + spoken(p.ans); }
+
+/* ---------- facts ----------
+   The facts that get recorded clips (DESIGN.md §13): sums and differences within 20 and the
+   2–12 times tables with their division facts. Bigger problems use the device voice. */
+export function facts() {
+  var out = [], x, y, q;
+  for (x = 1; x <= 19; x++) for (y = 1; x + y <= 20; y++) out.push(make("+", x, y, x + y));
+  for (x = 2; x <= 20; x++) for (y = 1; y < x; y++) out.push(make("-", x, y, x - y));
+  for (x = 2; x <= 12; x++) for (y = 2; y <= 12; y++) out.push(make("×", x, y, x * y));
+  for (y = 2; y <= 12; y++) for (q = 1; q <= 12; q++) out.push(make("÷", y * q, y, q));
+  return out;
+}
