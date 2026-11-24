@@ -68,7 +68,7 @@ A math-practice dungeon crawler. The player fights anthropomorphic monsters buil
   - A level opens when 70% of the level before is learned (box 3+). Every banded fact is one of the 633 recorded facts, so every problem has the recorded voice.
 - Hints (`hints.js`, DESIGN.md §5.3) follow how classrooms teach now: ten-frames, 10 and some more, make 10, doubles plus one, draw and cross out, think addition on a number line, arrays, break apart, ×9 as ×10 minus a group, think multiplication.
   - A new fact shows its hint by itself. A fact being learned gets a 💡 button. A fact in review gets none.
-  - After a miss, the worked example (with the answer) stays up until "Got it" or Enter.
+  - After a miss, the voice says "Oops!" then the right answer ("Oops! Seven plus eight is fifteen."), and the worked example opens as a card over the game: "Oops!", the fact with its answer, the drawing and the worked line, until "Got it" or Enter. The message under the monster says "Oops!" too ("Too slow!" for a timeout).
   - The timer stops while a hint is open.
   - Hints in play show only the drawing and its words. The explanation for grown-ups (`grownups` in `hintFor`) lives on ⚙ Settings → **How the hints work**: how the game teaches, then one card per strategy (`STRATEGIES` in `hints.js`) with the game's drawing.
 - Wrong answer or timeout: the monster lunges, lose 1 of 5 hearts, and the correct answer is shown and said.
