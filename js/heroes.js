@@ -95,3 +95,21 @@ export function heroSvg(h, opts) {
   return `<svg viewBox="-10 -24 220 234" class="${cls}" role="img" aria-label="${o.cursed ? "Cursed " : ""}${h.n}">${defs}<defs>${curse}</defs>${body}</svg>`;
 }
 export const heroOf = (d) => HEROES[d];
+
+// Picking a captain. With no hero on the team (a new player, or one whose only hero was cursed),
+// any of the ten can start; otherwise only heroes on the team can lead.
+export function freePick(team) {
+  return team.rescued.length === 0;
+}
+// The team after picking digit d, or null when d can't be picked.
+export function pickHero(team, d) {
+  if (freePick(team)) return Object.assign({}, team, { captain: d, rescued: [d] });
+  if (!team.rescued.includes(d)) return null;
+  return Object.assign({}, team, { captain: d });
+}
+// Losing all your hearts curses the hero who led the run: it leaves the team (to be rescued again
+// on a rescue floor) and someone else has to be picked to lead.
+export function curseCaptain(team) {
+  if (team.captain == null) return team;
+  return Object.assign({}, team, { captain: null, rescued: team.rescued.filter((d) => d !== team.captain) });
+}

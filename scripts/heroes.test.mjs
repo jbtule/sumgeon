@@ -1,6 +1,6 @@
 // The digit heroes: all ten draw, plain and cursed, and in a captain's chalk color.
 import assert from "node:assert/strict";
-import { HEROES, CHALK, heroSvg } from "../js/heroes.js";
+import { HEROES, CHALK, heroSvg, freePick, pickHero, curseCaptain } from "../js/heroes.js";
 
 assert.deepEqual(HEROES.map((h) => h.d), [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]);
 assert.equal(new Set(HEROES.map((h) => h.n)).size, 10, "every hero has its own name");
@@ -15,4 +15,22 @@ for (const h of HEROES) {
   assert.ok(h.move && h.cls, h.n);
 }
 assert.ok(heroSvg(HEROES[8], { cursed: true }).includes("ellipse") || heroSvg(HEROES[8], { cursed: true }).length > 0);
+// Picking, and losing a run: the hero who led it is cursed.
+const none = { captain: null, color: CHALK[0], rescued: [] };
+assert.ok(freePick(none));
+const five = pickHero(none, 5);
+assert.deepEqual([five.captain, five.rescued], [5, [5]]);
+assert.ok(!freePick(five));
+assert.equal(pickHero(five, 2), null, "with a team, only the team can lead");
+const team = Object.assign({}, five, { rescued: [5, 0, 1] });
+const lost = curseCaptain(team);
+assert.deepEqual([lost.captain, lost.rescued], [null, [0, 1]], "the captain is cursed and leaves the team");
+assert.ok(!freePick(lost), "the rest of the team can still lead");
+assert.equal(pickHero(lost, 5), null, "a cursed hero can't lead until rescued");
+assert.equal(pickHero(lost, 0).captain, 0);
+const alone = curseCaptain(five);
+assert.deepEqual([alone.captain, alone.rescued], [null, []]);
+assert.ok(freePick(alone), "a player whose only hero was cursed picks any of the ten");
+assert.deepEqual(pickHero(alone, 9).rescued, [9]);
+assert.deepEqual([pickHero(alone, 5).captain, pickHero(alone, 5).rescued], [5, [5]], "including the same hero again");
 console.log("✓ heroes");
