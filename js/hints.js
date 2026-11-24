@@ -111,6 +111,15 @@ export function hintFor(f, worked) {
         say: `${rows} × 9 is ${rows} × 10, minus one group of ${rows}: ${rows * 10} − ${rows} = ${end(ans)}`,
         grownups: "Nines as tens minus one: 9 × 7 is 10 × 7 = 70, take away one 7. (The standards teach this, not the finger trick.)" };
     }
+    // Doubling: ×4 is double ×2, and ×8 is double ×4. The array is split down the middle. Small ×4
+    // facts (× 3 and × 4) stay as plain arrays, the first model for ×.
+    const d = x === 8 || y === 8 ? 8 : x === 4 || y === 4 ? 4 : 0, other = d && ans / d;
+    if (d && other <= 10 && (other >= 5 || d === 8)) {
+      const half = (d / 2) * other;
+      return { model: array(other, d, d / 2),
+        say: `Double it: ${d} × ${other} is double ${d / 2} × ${other}. ${half} + ${half} = ${end(ans)}`,
+        grownups: `Doubling: × 4 is double × 2, and × 8 is double × 4, so kids build on facts they already know. ${d} × ${other} is two groups of ${d / 2} × ${other} = ${half}.` };
+    }
     if (rows >= 6 && cols > 5) {
       return { model: array(rows, cols, 5),
         say: `Break apart: ${rows} × 5 + ${rows} × ${cols - 5} = ${rows * 5} + ${rows * (cols - 5)} = ${end(ans)}`,
@@ -136,7 +145,8 @@ export const STRATEGIES = [
   { title: "Doubles plus one", grade: "1st", f: { op: "+", x: 6, y: 7 } },
   { title: "Think addition", grade: "1st", f: { op: "-", x: 12, y: 8 } },
   { title: "Arrays", grade: "2nd–3rd", f: { op: "×", x: 3, y: 4 } },
-  { title: "Break apart", grade: "3rd", f: { op: "×", x: 8, y: 7 } },
+  { title: "Doubling", grade: "3rd", f: { op: "×", x: 4, y: 7 } },
+  { title: "Break apart", grade: "3rd", f: { op: "×", x: 6, y: 7 } },
   { title: "Nines as tens", grade: "3rd", f: { op: "×", x: 9, y: 7 } },
   { title: "Think multiplication", grade: "3rd", f: { op: "÷", x: 32, y: 8 } }
 ].map((s) => Object.assign(s, { f: Object.assign({ ans: { "+": s.f.x + s.f.y, "-": s.f.x - s.f.y, "×": s.f.x * s.f.y, "÷": s.f.x / s.f.y }[s.f.op] }, s.f) }));

@@ -167,7 +167,7 @@ The game should **teach first, then fade the help out** as a fact gets learned, 
 | Count by 1s and 10s, then 5s, then 2s | Hops on a number line or hundred chart | K.NS.A.1, 1.NS.A.4, 2.RA.B.1 |
 | Coins | Coin pictures with their values ("A nickel is worth five cents"), then counted biggest first | K.GM.B.5 (names), 1.GM.C.9 (values), 2.GM.D.12 (combinations with $ and ¢) |
 | Add/subtract within 100 | Open number line with jumps of 10s and 1s, and "10 more, 10 less" | 1.NBT.B, 2.NBT.B |
-| Multiply | **Arrays** (rows of dots), **turn-around facts** (6 × 4 = 4 × 6), **break apart**: 8 × 7 = 8 × 5 + 8 × 2. For ×9, use 9 × 7 = 70 − 7 (not the finger trick) | 2.RA.B.2 (arrays), 3.RA.B.1, 3.RA.C.1 |
+| Multiply | **Arrays** (rows of dots), **turn-around facts** (6 × 4 = 4 × 6), **doubling**: × 4 is double × 2 and × 8 is double × 4 (8 × 7 = 28 + 28), **break apart**: 6 × 7 = 6 × 5 + 6 × 2. For ×9, use 9 × 7 = 70 − 7 (not the finger trick) | 2.RA.B.2 (arrays), 3.RA.B.1, 3.RA.C.1 |
 | Divide | **Think multiplication**: 32 ÷ 8 → "8 × ? = 32" | 3.RA.A.5, 3.RA.C.1 |
 | Multi-digit × and ÷ | **Area model** (23 × 4 as 20 × 4 + 3 × 4) and partial quotients | 4.NBT.A.6–7 |
 | Fractions | Fraction bars, pies and number lines | 3.NF, 4.NF |
