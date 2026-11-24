@@ -23,7 +23,7 @@ A math-practice dungeon crawler. The player fights anthropomorphic monsters buil
   - The number pad docks at the bottom, clear of the home bar, with your hero and hearts under it, on your side of the screen and apart from the monster's.
   - Short phones (under 700px tall) get a tighter variant.
   - The footer badges are hidden on phones and repeated in Settings.
-- iPad and desktop (760px and wider) use two columns with the same split: the left column is the monster's box (nameplate across the top, the monster, messages as a pill under it); the right column is your side (the problem, hint, answer and number pad, with your hero and hearts under the pad). As on phones, `.arena` and `.panel` are `display: contents`; their boxes are `.game::before` and `::after`.
+- iPad and desktop (760px and wider) use two columns with the same split: the left column is the monster's box (nameplate across the top, the monster, messages as a pill under it); the right column is your side (an open hint, then the problem and answer as one line, then the number pad, with your hero and hearts under it). The nameplate is pinned to the top of the monster's box, so an open hint doesn't move the monster. As on phones, `.arena` and `.panel` are `display: contents`; their boxes are `.game::before` and `::after`.
 - Check layout changes at iPhone SE, iPhone 14, iPad (both orientations) and desktop sizes.
 - Fonts: Bungee (titles, numbers) and Nunito (body), from Google Fonts.
 - Palette: chalkboard slate `#12242b`, panel `#1a313a`, chalk `#f3efe4`, coral `#ff5a4e`, gold `#ffc93c`, outline `#0c171c`.
