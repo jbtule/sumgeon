@@ -100,7 +100,7 @@ function loadPlayer() {
   if (!openWings(progress, recs, st.start).includes(wingFor(st.band).id)) { st.band = WINGS[0].band; saveSettings(); }
   sfx.setSfx(st.sfx);
   setVoice(st.voice);
-  soundUI(); whoUI(); captainUI();
+  whoUI(); captainUI();
 }
 function saveTeam() { store.player(PID).set("heroes", team); }
 const hasCaptain = () => team.captain != null;
@@ -117,19 +117,7 @@ function captainUI() {
 function saveSettings() { store.player(PID).set("settings", st); }
 
 const SPEAKER = '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></svg>';
-const MUTED = '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor"/><path d="M17 9l5 6M22 9l-5 6"/></svg>';
-function soundUI() {
-  const on = st.sfx || st.voice, b = $("soundBtn");
-  b.innerHTML = on ? SPEAKER : MUTED;
-  b.setAttribute("aria-pressed", on ? "true" : "false");
-  b.setAttribute("aria-label", on ? "Sound on" : "Sound off");
-}
-// The header speaker mutes everything, or brings both back.
-$("soundBtn").onclick = () => {
-  const on = !(st.sfx || st.voice);
-  st.sfx = st.voice = on;
-  sfx.setSfx(on); setVoice(on); saveSettings(); soundUI();
-};
+const GEAR = '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1"/><circle cx="12" cy="12" r="6.5"/></svg>';
 $("sayProb").innerHTML = SPEAKER;
 $("sayProb").onclick = () => { if (G.cur) say("q", spokenProblem(G.cur), true); };
 
@@ -138,8 +126,6 @@ function whoUI() {
   w.hidden = list.length < 2;
   w.innerHTML = `Playing as ${hasCaptain() ? `<span class="who-cap">${heroArt(team.captain)}</span>` : ""}<b>${esc(displayName(list, PID))}</b>`;
 }
-$("who").onclick = () => { openMenu(); settings(); };
-$("menuBtn").onclick = () => openMenu();
 
 /* ---------- the run ---------- */
 // retry: missed facts waiting to come back ({ key, after: problems to go }); recent: the last few
@@ -322,7 +308,7 @@ function openWorked() {
   show(`<div class="worked"><h2>Oops!</h2>
     <p class="worked-fact">${esc(G.cur.q)} = <b>${G.cur.ans}</b></p>
     <div class="model">${h.model}</div><p class="hsay">${esc(h.say)}</p>
-    <div class="btns"><button class="big" type="button" id="gotIt">Got it</button></div></div>`);
+    <div class="btns"><button class="big" type="button" id="gotIt">Got it</button></div></div>`, "float");
   $("gotIt").onclick = nextAfterMiss;
 }
 $("hintBtn").onclick = () => { if (!G.busy) openHint(); };
@@ -450,13 +436,13 @@ function cleared() {
     <p><strong>${h.n} joins your team.</strong> When your answer has a ${h.d}, ${h.n} jumps in and hits harder.</p>
     ${stars}
     ${next.replace('class="cardmon"', 'class="cardmon small"')}
-    <div class="btns"><button class="big" id="next">Floor ${G.floor + 2}</button></div>`);
+    <div class="btns"><button class="big" id="next">Floor ${G.floor + 2}</button></div>`, "float");
   } else {
     say("p", monsterCleared(m));
     show(`<h2>${m.n} ${m.quip}</h2>
   ${stars}
   ${next}
-  <div class="btns"><button class="big" id="next">Floor ${G.floor + 2}</button></div>`);
+  <div class="btns"><button class="big" id="next">Floor ${G.floor + 2}</button></div>`, "float");
   }
   $("next").onclick = () => { hide(); loadMonster(G.floor + 1); newProblem(); };
 }
@@ -470,6 +456,7 @@ function end(win) {
   const opened = WINGS.find((x) => !before.includes(x.id) && openWings(progress, recs, st.start).includes(x.id));
   if (win) { sfx.victory(); say("p", wingCleared(w)); if (opened) say("p", wingOpened(opened)); } else say("p", monsterWon(m));
   const left = !win ? "" : opened ? `<p><strong>${opened.name} is open!</strong> Pick it in the menu.</p>` : nextWingHint();
+  pickOpen = false;
   show(`<h2>${win ? wingCleared(w) : `${m.n} won this round`}</h2>
   ${win ? "" : `<div class="cardmon">${monsterArt(m)}</div>`}
   <p>${win ? `${m.n} is beaten. Every floor of ${w.name} is yours.` : "Every miss shows the right answer, so the next run goes deeper."}</p>
@@ -477,19 +464,58 @@ function end(win) {
   ${left}
   <div class="stats"><div><b>${f}</b><small>floors cleared</small></div><div><b>${G.solved}</b><small>solved</small></div><div><b>${acc}%</b><small>accuracy</small></div></div>
   <p>Best run: <strong>${progress[w.id].best} of ${G.floors.length} floors</strong></p>
-  ${captainHTML().replace(">Your hero<", ">Your hero for the next run<")}
-  <div class="btns"><button class="big" id="again">Play again</button><button class="big alt" id="set">Menu</button></div>`);
+  ${captainHTML("Next run")}
+  <div class="btns"><button class="big alt" id="set">Menu</button><button class="big" id="again">Play again</button></div>`);
   wireCaptain();
   $("again").onclick = start;
   $("set").onclick = () => openMenu();
 }
 // A card over the game. It opens at the top, and its main button gets focus (Enter presses it)
-// without scrolling down to it.
-function show(h) {
-  G.busy = true; $("card").innerHTML = h; $("ov").hidden = false; $("ov").scrollTop = 0;
-  const b = $("card").querySelector("button.big"); if (b) b.focus({ preventScroll: true });
+// without scrolling down to it. kind "page" (the menu, Settings, the book, a run's end) fills a
+// phone's screen with its buttons docked at the bottom; "float" (a floor cleared, a miss) floats
+// over the game.
+function show(h, kind = "page") {
+  G.busy = true; $("card").innerHTML = h; $("card").className = "card " + kind;
+  $("ov").className = "ov " + kind; $("ov").hidden = false; $("ov").scrollTop = 0;
+  // The main button is the last one in the row (Menu, then Play again).
+  const bs = $("card").querySelectorAll(".btns button.big"), b = bs[bs.length - 1] || $("card").querySelector("button.big");
+  if (b) b.focus({ preventScroll: true });
 }
 function hide() { $("ov").hidden = true; }
+
+/* ---------- pausing ----------
+   ⏸ by the hearts (or Escape) stops the clock mid-problem: Keep fighting, Monsters & Heroes,
+   Settings, or Exit to
+   the start screen (a second tap confirms, since it ends the run). */
+function pause() {
+  if (!G.paused) {
+    if (!G.running || G.busy || G.next) return;
+    G.paused = { at: performance.now(), left: G.tEnd - performance.now() };
+  }
+  stopSpeech();
+  show(`<h2>Paused</h2>
+  <p>Floor ${G.floor + 1} of ${G.floors.length}: <strong>${esc(G.floors[G.floor].n)}</strong></p>
+  <div class="pause-btns"><button class="small" type="button" id="pBook">📖 Monsters &amp; Heroes</button><button class="small" type="button" id="pSettings">⚙ Settings</button><button class="small danger" type="button" id="pExit">Exit the dungeon</button></div>
+  <div class="btns"><button class="big" id="resume">Keep fighting</button></div>`, "float");
+  $("resume").onclick = resume;
+  $("pBook").onclick = bookPage;
+  $("pSettings").onclick = () => settings(true);
+  $("pExit").onclick = () => {
+    const b = $("pExit");
+    if (b.dataset.sure !== "1") { b.dataset.sure = "1"; b.textContent = "Exit? This run ends"; return; }
+    G.paused = null; G.running = false; record();
+    newRun(); loadMonster(0, true);
+    menu();
+  };
+}
+// Back to the same problem, with the time that was left.
+function resume() {
+  const p = G.paused; if (!p) return;
+  G.paused = null; hide(); G.busy = false;
+  G.t0 += performance.now() - p.at;
+  if (st.timer && !G.hinted) { G.tEnd = performance.now() + p.left; requestAnimationFrame(tick); }
+}
+$("pauseBtn").onclick = pause;
 
 /* ---------- the menu: players and settings ---------- */
 function openMenu() {
@@ -502,13 +528,13 @@ function chip(type, name, value, checked, label, id) {
 }
 function playersHTML() {
   const list = store.profiles();
-  const rows = list.map((p, i) => `<li class="prow" data-id="${esc(p.id)}">
+  const rows = list.map((p, i) => `<li class="prow${p.id === PID ? " me" : ""}" data-id="${esc(p.id)}">
     <input type="text" maxlength="24" value="${esc(p.name)}" placeholder="Player ${i + 1}" aria-label="Player ${i + 1}'s name (optional)">
-    ${p.id === PID ? '<span class="now">playing now</span>' : '<button class="small" type="button" data-act="play">Play</button>'}
-    ${store.canRemove(p.id) ? '<button class="small danger" type="button" data-act="remove">Remove</button>' : ""}
+    ${p.id === PID ? '<span class="now">Playing</span>' : '<button class="small" type="button" data-act="play">Play</button>'}
+    ${store.canRemove(p.id) ? '<button class="small danger" type="button" data-act="remove" aria-label="Remove">✕</button>' : ""}
   </li>`).join("");
-  return `<ul class="players">${rows}</ul>
-  <div class="prow"><input type="text" id="newName" maxlength="24" placeholder="Name (optional)" aria-label="New player's name (optional)"><button class="small" type="button" id="addPlayer">Add a player</button></div>`;
+  return `<ul class="players">${rows}
+  <li class="prow"><input type="text" id="newName" maxlength="24" placeholder="New player (name optional)" aria-label="New player's name (optional)"><button class="small" type="button" id="addPlayer">+ Add</button></li></ul>`;
 }
 // "Level 2 of 4: Within 10", from the player's own fact records.
 function levelLine() {
@@ -523,27 +549,23 @@ function wingsHTML() {
     let note;
     const ws = wingStars(w, progress);
     if (isOpen) note = (p.boss ? `Cleared ${p.boss}×` : p.best ? `Best: ${p.best} of ${w.floors.length + 1} floors` : "Not tried yet") + (ws.got ? ` · ★ ${ws.got} of ${ws.max}` : "");
-    else { const t = toOpen(w, progress, recs); note = `🔒 Beat ${t.prev.boss} ${t.boss ? "✓" : ""} · learn ${Math.round(t.need * 100)}% of ${t.prev.name} (${Math.round(t.share * 100)}%)`; }
+    else { const t = toOpen(w, progress, recs); note = `🔒 Beat ${t.prev.boss}${t.boss ? " ✓" : ""} and learn ${Math.round(t.need * 100)}% of the ${t.prev.name.replace(/^The /, "")} (now ${Math.round(t.share * 100)}%)`; }
     return `<label class="wing${here ? " here" : ""}${isOpen ? "" : " locked"}"><input type="radio" name="wing" value="${w.id}" ${here ? "checked" : ""} ${isOpen ? "" : "disabled"}>
-      <span><b>${w.name}</b><small>${b.label} · ${b.grades}</small><em>${note}</em></span></label>`;
+      <span><b>${w.name}</b><small>${b.label} · ${b.grades}</small><em>${note}</em>${here ? `<em class="level" id="levelLine">${levelLine()}</em>` : ""}</span></label>`;
   }).join("");
 }
-// The start screen: pick your hero and a Wing, then go. Players, chalk color, the timer and sounds
-// are in Settings, as in Sound Box. Names are optional.
+// The start screen, top to bottom: the title (with ⚙ Settings), your hero, the Wings, and
+// "Enter the dungeon" docked at the bottom. Monsters & Heroes is on the pause screen. Players, chalk color, the timer and sounds are in
+// Settings, as in Sound Box. Names are optional.
 function menu() {
   const list = store.profiles();
-  show(`<div class="cardhead"><h2>Crawl the Sumgeon</h2><button class="icon-btn" id="sayIntro" type="button" aria-label="Read this aloud">${SPEAKER}</button></div>
-  <p>Monsters made of math guard every floor. <strong>Your answer is your attack</strong>: get it right and your digits fly at the monster.</p>
+  show(`<div class="cardhead logo-head"><h2 class="logo">Sum<b>geon</b></h2><button class="icon-btn" id="openSettings" type="button" aria-label="Settings">${GEAR}</button></div>
+  <p class="tag"><strong>Your answer is your attack.</strong> Get it right and your digits fly at the monster.</p>
   ${list.length > 1 ? `<p class="playing">Playing as <b>${esc(displayName(list, PID))}</b> <button class="link" type="button" id="switchPlayer">Switch</button></p>` : ""}
   ${captainHTML()}
-  <div class="grp"><span>Wings</span><div class="wings">${wingsHTML()}</div>
-    <p class="level" id="levelLine">${levelLine()}</p></div>
-  <button class="small book-btn" type="button" id="openBook">📖 Monsters &amp; Heroes</button>
-  <div class="warn" id="warn"></div>
-  <div class="btns">${G.running ? '<button class="big alt" id="resume">Keep fighting</button>' : ""}<button class="big" id="go">Enter the dungeon</button></div>
-  <button class="link settings-link" type="button" id="openSettings">⚙ Settings</button>`);
+  <div class="grp"><span>Pick a Wing</span><div class="wings">${wingsHTML()}</div></div>
+  <div class="btns"><p class="warn" id="warn" role="status"></p><button class="big" id="go">Enter the dungeon</button></div>`);
   const card = $("card");
-  $("sayIntro").onclick = () => say("p", PHRASE.intro, true);
   // A different Wing is a fresh dungeon: its own facts and hearts.
   card.querySelectorAll("input[name=wing]").forEach((i) => i.onchange = () => {
     st.band = wingOf(i.value).band; saveSettings();
@@ -551,34 +573,43 @@ function menu() {
     menu();
   });
   wireCaptain();
-  $("openSettings").onclick = settings;
-  $("openBook").onclick = bookPage;
-  if ($("switchPlayer")) $("switchPlayer").onclick = settings;
+  $("openSettings").onclick = () => settings();
+  if ($("switchPlayer")) $("switchPlayer").onclick = () => settings();
   $("go").onclick = () => {
-    if (!hasCaptain()) { $("warn").textContent = "Pick your hero first."; $("captain").scrollIntoView({ block: "center" }); return; }
+    if (!hasCaptain()) { $("warn").textContent = "Pick your hero first."; $("captain").scrollIntoView({ block: "center", behavior: "smooth" }); return; }
     start();
   };
-  if ($("resume")) $("resume").onclick = () => { hide(); newProblem(); };
 }
 
-// Settings: players (names optional), chalk color, the timer and sounds. All save as they change.
-function settings() {
-  show(`<div class="cardhead"><h2>Settings</h2></div>
-  <div class="grp"><span>Players</span><div id="players">${playersHTML()}</div></div>
-  <div class="grp"><span>Chalk color</span><div class="swatches" id="swatches">${swatchesHTML()}</div></div>
-  <div class="grp"><span>Pressure</span><div class="chips">${chip("checkbox", "tm", "1", st.timer, "Timer on", "tm")}</div></div>
-  <div class="grp"><span>Sounds</span><div class="chips">${chip("checkbox", "sfx", "1", st.sfx, "Sound effects", "sfxOn")}${chip("checkbox", "voice", "1", st.voice, "Voice", "voiceOn")}</div></div>
-  <div class="grp"><span>Help</span><button class="small" type="button" id="openHelp">How the hints work</button></div>
-  <div class="btns"><button class="big" id="done">Done</button></div>
-  ${badgesCopy()}`);
-  $("openHelp").onclick = helpPage;
-  $("tm").onchange = () => { st.timer = $("tm").checked; saveSettings(); };
-  $("sfxOn").onchange = () => { st.sfx = $("sfxOn").checked; sfx.setSfx(st.sfx); saveSettings(); soundUI(); };
-  $("voiceOn").onchange = () => { st.voice = $("voiceOn").checked; setVoice(st.voice); saveSettings(); soundUI(); };
-  wireSwatches();
-  wirePlayers();
-  $("done").onclick = menu;
+// Settings, as a list: players (names optional), chalk color, the timer and sounds as on/off
+// switches, and the help page. All save as they change.
+function toggle(id, title, sub, on) {
+  return `<label class="switch-row"><span><b>${title}</b>${sub ? `<small>${sub}</small>` : ""}</span>
+    <input type="checkbox" role="switch" id="${id}" ${on ? "checked" : ""}><i aria-hidden="true"></i></label>`;
 }
+// From the pause screen (paused: true) it leaves out Players, since switching would end the run,
+// and Done goes back to the pause screen.
+function settings(paused) {
+  show(`<div class="cardhead"><h2>Settings</h2></div>
+  ${paused ? "" : `<div class="grp"><span>Players</span><div id="players">${playersHTML()}</div></div>`}
+  <div class="grp"><span>Chalk color</span><div class="swatches" id="swatches">${swatchesHTML()}</div></div>
+  <div class="grp"><span>Play</span><div class="list">
+    ${toggle("tm", "Timer", `${band().seconds} seconds a problem`, st.timer)}
+    ${toggle("sfxOn", "Sound effects", "", st.sfx)}
+    ${toggle("voiceOn", "Voice", "Reads monsters and answers aloud", st.voice)}
+    <button class="list-link" type="button" id="openHelp"><span><b>How the hints work</b><small>For grown-ups</small></span><i aria-hidden="true">›</i></button>
+  </div></div>
+  ${badgesCopy()}
+  <div class="btns"><button class="big" id="done">Done</button></div>`);
+  $("openHelp").onclick = () => { helpFrom = !!paused; helpPage(); };
+  $("tm").onchange = () => { st.timer = $("tm").checked; saveSettings(); };
+  $("sfxOn").onchange = () => { st.sfx = $("sfxOn").checked; sfx.setSfx(st.sfx); saveSettings(); };
+  $("voiceOn").onchange = () => { st.voice = $("voiceOn").checked; setVoice(st.voice); saveSettings(); };
+  wireSwatches();
+  if (!paused) wirePlayers();
+  $("done").onclick = paused ? pause : menu;
+}
+
 // The footer's badges (deployed version, license), repeated in Settings, since phones hide the footer.
 function badgesCopy() {
   const f = document.querySelector("footer.badges");
@@ -620,10 +651,12 @@ function bookPage() {
   <h3 class="book-title">Heroes <small>${freed} of 10 on your team</small></h3>
   <div class="hero-grid">${heroes}</div>
   <div class="btns"><button class="big" id="bookBack">Back</button></div>`);
-  $("bookBack").onclick = menu;
+  // Back to the pause screen mid-run, or to the start screen.
+  $("bookBack").onclick = () => G.paused ? pause() : menu();
 }
 // "How the hints work": how Sumgeon teaches, and each strategy with the game's own drawing and
 // a plain explanation, for grown-ups who learned math another way (DESIGN.md §5.3).
+let helpFrom = false;
 function helpPage() {
   const cards = STRATEGIES.map((s) => {
     const h = hintFor(s.f, true);
@@ -641,7 +674,7 @@ function helpPage() {
   <h3 class="strats-title">The strategies</h3>
   <div class="strats">${cards}</div>
   <div class="btns"><button class="big" id="back">Back to Settings</button></div>`);
-  $("back").onclick = settings;
+  $("back").onclick = () => settings(helpFrom);
 }
 function swatchesHTML() {
   return CHALK.map((c) => `<button type="button" class="swatch${c === team.color ? " on" : ""}" data-c="${c}" style="--sw:${c}" aria-pressed="${c === team.color}" aria-label="Chalk color ${c}"></button>`).join("");
@@ -653,21 +686,32 @@ function wireSwatches() {
   });
 }
 
-// Choosing a hero, on the start screen and after a run ends: the first time, any of the ten;
-// after that, anyone on your team (your heroes and everyone you've rescued; the rest show cursed).
-function captainHTML() {
+// Choosing a hero, on the start screen and after a run ends. With a hero picked, it's one line
+// (the hero, big, and "Change"); "Change" opens the grid. The first time, any of the ten; after
+// that, anyone on your team (your heroes and everyone you've rescued; the rest show cursed).
+let pickOpen = false;
+function captainHTML(label) {
   const first = !hasCaptain();
+  if (!first && !pickOpen) {
+    const h = HEROES[team.captain];
+    return `<div class="grp" id="captain"><span>${label || "Your hero"}</span>
+      <div class="cap-row"><div class="cap-art">${heroSvg(h, { color: team.color })}</div>
+        <div class="cap-text"><b>${esc(h.n)}</b><small>Power hits on ${h.d}s</small></div>
+        <button class="small" type="button" id="changeHero">Change</button></div></div>`;
+  }
   const heroes = HEROES.map((h) => {
     const can = first || onTeam(h.d), on = h.d === team.captain;
     return `<button type="button" class="hpick${on ? " on" : ""}" data-d="${h.d}" ${can ? "" : "disabled"} aria-pressed="${on}" aria-label="${can ? h.n : "Cursed, not rescued yet"}">
       ${heroSvg(h, { color: on ? team.color : null, cursed: !can })}<small>${can ? h.n : "???"}</small></button>`;
   }).join("");
-  return `<div class="grp" id="captain"><span>${first ? "Pick your hero" : "Your hero"}</span>
+  return `<div class="grp" id="captain"><span>${first ? "Pick your hero" : label || "Your hero"}</span>
     ${first ? '<p class="level">When your answer has your hero\'s digit, it\'s a power hit! Rescue more heroes on the way down.</p>' : ""}
     <div class="heroes">${heroes}</div></div>`;
 }
 function wireCaptain() {
-  const box = $("captain");
+  const box = $("captain"), label = box.firstElementChild.textContent;
+  const redraw = () => { const n = $("captain"); n.outerHTML = captainHTML(label === "Pick your hero" ? "" : label); wireCaptain(); };
+  if ($("changeHero")) $("changeHero").onclick = () => { pickOpen = true; redraw(); };
   box.querySelectorAll(".hpick:not([disabled])").forEach((b) => b.onclick = () => {
     team.captain = Number(b.dataset.d);
     // The first pick joins the team for good, so it can be picked again later.
@@ -676,9 +720,10 @@ function wireCaptain() {
     say("m", heroName(HEROES[team.captain]), true);
     captainUI(); whoUI();
     if ($("warn")) $("warn").textContent = "";
-    box.outerHTML = captainHTML(); wireCaptain();
+    pickOpen = false; redraw();
   });
 }
+
 function wirePlayers() {
   const box = $("players");
   box.querySelectorAll(".players .prow").forEach((row) => {
@@ -689,7 +734,7 @@ function wirePlayers() {
     const rm = row.querySelector("[data-act=remove]");
     // A second tap confirms, as in Sound Box. From this device only.
     if (rm) rm.onclick = () => {
-      if (rm.dataset.sure !== "1") { rm.dataset.sure = "1"; rm.textContent = "Remove from this device?"; return; }
+      if (rm.dataset.sure !== "1") { rm.dataset.sure = "1"; rm.textContent = "Remove?"; return; }
       store.removeProfile(id);
       refreshPlayers();
     };
@@ -719,7 +764,7 @@ function nextWingHint() {
 function start() {
   hide();
   newRun();
-  Object.assign(G, { hearts: band().hearts, streak: 0, solved: 0, tries: 0, running: true, retry: [], recent: [], next: false });
+  Object.assign(G, { hearts: band().hearts, streak: 0, solved: 0, tries: 0, running: true, retry: [], recent: [], next: false, paused: null });
   stopSpeech();
   loadMonster(0);
   newProblem();
@@ -738,6 +783,7 @@ function press(k) {
 $("pad").innerHTML = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "del", "0", "go"].map((k) => `<button type="button" data-k="${k}" class="${k === "go" ? "go" : k === "del" ? "del" : ""}" aria-label="${k === "del" ? "Delete" : k === "go" ? "Attack" : k}">${k === "del" ? "⌫" : k === "go" ? "Hit!" : k}</button>`).join("");
 $("pad").addEventListener("click", (e) => { const b = e.target.closest("button"); if (b) press(b.dataset.k); });
 document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") { if (G.paused) { if ($("resume")) resume(); } else if ($("ov").hidden) pause(); return; }
   if (!$("ov").hidden) return;
   if (/^[0-9]$/.test(e.key)) press(e.key);
   else if (e.key === "Backspace") press("del");

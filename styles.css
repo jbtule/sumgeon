@@ -64,6 +64,9 @@ h1 b{color:var(--coral);font-weight:400}
 .chip input:checked+span{background:var(--gold);border-color:var(--gold);color:var(--dark)}
 .chip input:focus-visible+span{outline:3px solid var(--ink);outline-offset:2px}
 .btns{display:flex;gap:10px;flex-wrap:wrap}
+.btns .big{flex:1 1 0;white-space:nowrap}
+.btns .warn{flex:1 0 100%;margin:0;min-height:0;text-align:center}
+.btns .warn:empty{display:none}
 .big{min-height:52px;padding:0 22px;border-radius:16px;border:0;background:var(--coral);color:#fff;font:400 18px Bungee,sans-serif;box-shadow:0 4px 0 var(--dark)}
 .big.alt{background:#2f4f5a}
 .stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;text-align:center}
@@ -83,7 +86,7 @@ h1 b{color:var(--coral);font-weight:400}
 .icon-btn{display:inline-grid;place-items:center;width:44px;height:44px;border-radius:14px;border:2px solid var(--line);background:var(--panel);color:var(--ink);padding:0}
 .icon-btn svg{width:22px;height:22px}
 .icon-btn:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
-.who{display:block;margin:-6px auto 8px;padding:4px 12px;border:0;background:none;color:var(--muted);font-weight:800;font-size:14px;min-height:32px}
+.who{display:block;width:max-content;margin:-6px auto 8px;padding:4px 12px;border:0;background:none;color:var(--muted);font-weight:800;font-size:14px;min-height:32px}
 .who[hidden]{display:none}
 .who b{color:var(--ink)}
 
@@ -153,8 +156,8 @@ h1 b{color:var(--coral);font-weight:400}
 .hpick.on{border-color:var(--gold);background:#ffc93c1f}
 .hpick.on small{color:var(--gold)}
 .hpick[disabled]{opacity:.55;cursor:default}
-.swatches{display:flex;flex-wrap:wrap;gap:8px}
-.swatch{width:40px;height:40px;border-radius:50%;border:3px solid var(--dark);background:var(--sw);box-shadow:0 0 0 2px #3a5560}
+.swatches{display:flex;gap:8px;overflow-x:auto;padding:4px 3px;scrollbar-width:none}
+.swatch{flex:none;width:38px;height:38px;border-radius:50%;border:3px solid var(--dark);background:var(--sw);box-shadow:0 0 0 2px #3a5560}
 .swatch.on{box-shadow:0 0 0 3px var(--ink)}
 /* Monster traits (traits.js): a badge on the nameplate, ⚡ on a charged problem, Divvy's split */
 .trait{flex:none;padding:1px 8px;border-radius:999px;background:var(--dark);border:1.5px solid var(--line);font-size:12px;font-weight:900;color:var(--muted);white-space:nowrap}
@@ -174,7 +177,6 @@ h1 b{color:var(--coral);font-weight:400}
 @keyframes starpop{0%{transform:scale(0) rotate(-40deg);opacity:0}70%{transform:scale(1.3) rotate(8deg);opacity:1}100%{transform:none}}
 @media(prefers-reduced-motion:reduce){.star.on b{animation:none}}
 /* Monsters & Heroes (bookPage) */
-.book-btn{justify-self:start}
 .book-title{font:400 18px Bungee,sans-serif;color:var(--gold);margin:6px 0 0;display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
 .book-title small{font:800 13px Nunito,sans-serif;color:var(--muted)}
 .book-wing{margin:4px 0 0;font:400 14px Bungee,sans-serif;color:var(--muted)}
@@ -217,17 +219,18 @@ h1 b{color:var(--coral);font-weight:400}
 .strat .why{margin:0;color:var(--muted);max-width:52ch;text-align:left}
 /* Start screen links */
 .link{background:none;border:0;padding:4px 2px;min-height:44px;color:var(--gold);font-weight:900;text-decoration:underline;text-underline-offset:3px}
-.settings-link{justify-self:start;color:var(--muted)}
 .playing{color:var(--muted);font-weight:800}
 .playing b{color:var(--ink)}
 /* The Wing map and rescues */
 .wings{display:grid;gap:8px}
 .wing{position:relative;display:block}
 .wing input{position:absolute;opacity:0;inset:0;margin:0}
-.wing span{display:grid;gap:2px;padding:10px 14px;border-radius:14px;border:2px solid #3a5560;cursor:pointer}
+.wing span{display:grid;gap:0;padding:8px 14px;border-radius:14px;border:2px solid #3a5560;cursor:pointer}
 .wing b{font:400 16px Bungee,sans-serif}
 .wing small{color:var(--muted);font-weight:800}
-.wing em{font-style:normal;font-size:13px;color:var(--muted)}
+.wing em{font-style:normal;font-size:13px;color:var(--muted);line-height:1.35}
+.wing em.level{margin:2px 0 0;color:var(--ink)}
+.wing.locked em{font-size:12px}
 .wing input:checked+span{border-color:var(--gold);background:#ffc93c1f}
 .wing input:focus-visible+span{outline:3px solid var(--ink);outline-offset:2px}
 .wing.locked span{opacity:.6;cursor:default}
@@ -236,6 +239,86 @@ h1 b{color:var(--coral);font-weight:400}
 @keyframes freed{0%{filter:grayscale(1) brightness(.5);transform:scale(.8)}60%{filter:none;transform:scale(1.1)}100%{transform:none}}
 @media(prefers-reduced-motion:reduce){.cardmon.rescued{animation:none}}
 @media(prefers-reduced-motion:reduce){.mon,.mon.hit,.mon.dead,.mon.lunge,.arena.shake,.flame svg{animation:none}.mon.dead{opacity:0}.pop{animation-duration:.01s}.hearts .crack{animation:none;opacity:0}}
+
+/* Screens other than the battle (show() in app.js). A "page" (the menu, Settings, the book, a
+   run's end) fills a phone's screen, with its buttons docked full-width at the bottom; a "float"
+   (a floor cleared, a miss) floats over the game as a centered card. */
+.card.float{text-align:center;justify-items:center;width:min(440px,100%)}
+.card.float .btns{width:100%}
+.card.float p{margin-inline:auto}
+.card.float h2{font-size:clamp(24px,5vw,32px)}
+.card .grp>span{font:400 13px Bungee,sans-serif;letter-spacing:.5px;color:var(--muted)}
+.logo{font:400 clamp(32px,9vw,44px)/1 Bungee,sans-serif;color:var(--gold);margin:0}
+.logo b{color:var(--coral);font-weight:400}
+.logo-head{align-items:center}
+.tag{font-size:17px}
+.playing{margin:-4px 0 0!important;font-size:15px}
+.playing .link{min-height:32px;padding:0 4px}
+/* Your hero as one line: the hero, big, its name, and Change */
+.cap-row{display:flex;align-items:center;gap:12px;padding:8px 10px;border-radius:16px;background:var(--dark);border:2px solid var(--line)}
+.cap-art{width:64px;height:68px;flex:none}
+.cap-art svg{width:100%;height:100%;overflow:visible}
+.cap-text{flex:1;display:grid}
+.cap-text b{font:400 clamp(15px,4.6vw,18px)/1.15 Bungee,sans-serif;color:var(--gold)}
+.cap-text small{color:var(--muted);font-weight:800;font-size:13px}
+.logo-head .logo{flex:1}
+.logo-head{gap:8px}
+/* ⏸ by the hearts, and the pause card */
+.pause{flex:none;width:40px;height:40px;margin-left:10px}
+.flame[hidden]+.pause{margin-left:auto}
+.pause svg{width:18px;height:18px}
+.pause-btns{display:grid;gap:8px;width:100%}
+.pause-btns .small{min-height:48px}
+.pause-btns .danger[data-sure="1"]{background:#ff8a7f;color:var(--dark)}
+/* Settings: lists of rows, like a phone's own settings */
+.players{background:var(--dark);border:2px solid var(--line);border-radius:16px;padding:6px;gap:6px}
+.players .prow{flex-wrap:nowrap;gap:6px}
+.players .prow input{flex:1 1 auto;width:0;min-height:44px;background:var(--panel);border-color:var(--line)}
+.players .prow.me input{border-color:var(--gold)}
+.players .now{padding:0 10px;font-size:13px;white-space:nowrap}
+.players .small{flex:none;white-space:nowrap;padding:0 12px}
+.players .danger[data-sure="1"]{background:#ff8a7f;color:var(--dark)}
+.list{display:grid;background:var(--dark);border:2px solid var(--line);border-radius:16px;overflow:hidden}
+.switch-row,.list-link{display:flex;align-items:center;gap:12px;min-height:56px;padding:8px 14px;cursor:pointer;text-align:left;background:none;border:0;width:100%}
+.list>*+*{border-top:1.5px solid var(--line)}
+.switch-row>span,.list-link>span{flex:1;display:grid}
+.switch-row b,.list-link b{font-weight:900;font-size:16px}
+.switch-row small,.list-link small{color:var(--muted);font-weight:700;font-size:13px}
+.list-link i{font-style:normal;font-size:26px;color:var(--muted);line-height:1}
+.switch-row input{position:absolute;opacity:0;width:1px;height:1px}
+.switch-row i{position:relative;flex:none;width:52px;height:32px;border-radius:999px;background:#3a5560;transition:background .2s}
+.switch-row i::after{content:"";position:absolute;top:3px;left:3px;width:26px;height:26px;border-radius:50%;background:var(--ink);box-shadow:0 2px 4px #0006;transition:transform .2s}
+.switch-row input:checked+i{background:var(--gold)}
+.switch-row input:checked+i::after{transform:translateX(20px)}
+.switch-row:focus-within{outline:3px solid var(--gold);outline-offset:-3px}
+label.switch-row:focus-within{outline-offset:-3px}
+@media(prefers-reduced-motion:reduce){.switch-row i,.switch-row i::after{transition:none}}
+@media (max-width: 759px) {
+  .ov.page{background:var(--bg);padding:0;place-items:stretch;overscroll-behavior:contain}
+  .card.page{display:flex;flex-direction:column;width:100%;min-height:100%;border:0;border-radius:0;gap:16px;
+    padding:max(14px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) 0 max(16px,env(safe-area-inset-left,0px))}
+  .card.page .btns{position:sticky;bottom:0;margin:auto -16px 0;padding:12px 16px max(12px,env(safe-area-inset-bottom,0px));
+    background:linear-gradient(#12242b00,var(--bg) 14px);flex-wrap:nowrap;z-index:2}
+  .card.page .btns .warn{position:absolute;bottom:100%;left:0;right:0;padding:4px}
+  .card.page h2{font-size:clamp(26px,8vw,34px)}
+  .card.float{padding:18px 16px;gap:10px}
+  .card.float h2{font-size:clamp(24px,7.4vw,32px)}
+  .card.float .cardmon{width:110px}
+  .card.float .cardmon.small{width:80px}
+  .heroes{gap:5px}
+  .hpick small{font-size:10px}
+  .card.page .stats b{font-size:22px}
+}
+/* Short phones: a little tighter, so the start screen fits without scrolling. */
+@media (max-width: 759px) and (max-height: 700px) {
+  .card.page{gap:12px}
+  .tag{font-size:15px}
+  .cap-art{width:52px;height:56px}
+  .cap-row{padding:4px 10px}
+  .card.page .tag{display:none}
+  .wing span{padding:6px 12px}
+  .switch-row,.list-link{min-height:50px}
+}
 
 /* Phone: the whole game on one screen, no scrolling. The monster, the problem and an open hint
    share the arena; the answer and number pad dock at the bottom, clear of the home bar. The
@@ -289,6 +372,8 @@ h1 b{color:var(--coral);font-weight:400}
   .captain{width:26px;height:30px}
   .hearts{font-size:16px}
   .flame svg{width:18px;height:22px}
+  .pause{width:34px;height:34px;border-radius:10px}
+  .pause svg{width:15px;height:15px}
   .timer{grid-area:timer}
   .ans{grid-area:ans;align-self:center;z-index:2;width:clamp(76px,24vw,120px);min-height:48px;margin:0 0 0 8px;font-size:clamp(28px,9vw,40px);padding:2px 6px;line-height:1.1}
   /* Messages float as a pill at the bottom of the monster's area instead of taking a row. */
@@ -320,6 +405,7 @@ h1 b{color:var(--coral);font-weight:400}
   .you{padding-top:0}
   .captain{width:22px;height:26px}
   .hearts{font-size:14px}
+  .pause{width:32px;height:32px}
   .ans{min-height:40px;font-size:clamp(24px,8vw,32px)}
   .game{gap:5px}
   .pad{gap:5px}
