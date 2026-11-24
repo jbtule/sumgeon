@@ -86,7 +86,7 @@ h1 b{color:var(--coral);font-weight:400}
 .icon-btn{display:inline-grid;place-items:center;width:44px;height:44px;border-radius:14px;border:2px solid var(--line);background:var(--panel);color:var(--ink);padding:0}
 .icon-btn svg{width:22px;height:22px}
 .icon-btn:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
-.who{display:block;margin:-6px auto 8px;padding:4px 12px;border:0;background:none;color:var(--muted);font-weight:800;font-size:14px;min-height:32px}
+.who{display:block;width:max-content;margin:-6px auto 8px;padding:4px 12px;border:0;background:none;color:var(--muted);font-weight:800;font-size:14px;min-height:32px}
 .who[hidden]{display:none}
 .who b{color:var(--ink)}
 
@@ -261,8 +261,16 @@ h1 b{color:var(--coral);font-weight:400}
 .cap-text{flex:1;display:grid}
 .cap-text b{font:400 clamp(15px,4.6vw,18px)/1.15 Bungee,sans-serif;color:var(--gold)}
 .cap-text small{color:var(--muted);font-weight:800;font-size:13px}
-.menu-links{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.menu-links .small{padding:0 6px;white-space:nowrap;font-size:clamp(13px,3.9vw,16px)}
+.logo-head .logo{flex:1}
+.logo-head{gap:8px}
+.book-btn{width:100%;min-height:52px;font-size:17px}
+/* ⏸ by the hearts, and the pause card */
+.pause{flex:none;width:40px;height:40px;margin-left:10px}
+.flame[hidden]+.pause{margin-left:auto}
+.pause svg{width:18px;height:18px}
+.pause-btns{display:grid;gap:8px;width:100%}
+.pause-btns .small{min-height:48px}
+.pause-btns .danger[data-sure="1"]{background:#ff8a7f;color:var(--dark)}
 /* Settings: lists of rows, like a phone's own settings */
 .players{background:var(--dark);border:2px solid var(--line);border-radius:16px;padding:6px;gap:6px}
 .players .prow{flex-wrap:nowrap;gap:6px}
@@ -307,6 +315,10 @@ label.switch-row:focus-within{outline-offset:-3px}
   .card.page{gap:12px}
   .tag{font-size:15px}
   .cap-art{width:52px;height:56px}
+  .cap-row{padding:4px 10px}
+  .card.page .tag{display:none}
+  .wing span{padding:6px 12px}
+  .book-btn{min-height:46px}
   .switch-row,.list-link{min-height:50px}
 }
 
@@ -362,6 +374,8 @@ label.switch-row:focus-within{outline-offset:-3px}
   .captain{width:26px;height:30px}
   .hearts{font-size:16px}
   .flame svg{width:18px;height:22px}
+  .pause{width:34px;height:34px;border-radius:10px}
+  .pause svg{width:15px;height:15px}
   .timer{grid-area:timer}
   .ans{grid-area:ans;align-self:center;z-index:2;width:clamp(76px,24vw,120px);min-height:48px;margin:0 0 0 8px;font-size:clamp(28px,9vw,40px);padding:2px 6px;line-height:1.1}
   /* Messages float as a pill at the bottom of the monster's area instead of taking a row. */
@@ -393,6 +407,7 @@ label.switch-row:focus-within{outline-offset:-3px}
   .you{padding-top:0}
   .captain{width:22px;height:26px}
   .hearts{font-size:14px}
+  .pause{width:32px;height:32px}
   .ans{min-height:40px;font-size:clamp(24px,8vw,32px)}
   .game{gap:5px}
   .pad{gap:5px}

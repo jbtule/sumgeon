@@ -91,6 +91,8 @@ Runs happen in Wings (`js/wings.js`, DESIGN.md §4). Each Wing asks one band's f
 - Cards over the game (`show(html, kind)`) open at the top and focus their main button (the last in `.btns`) without scrolling to it.
   - `"page"` (the default: the start screen, Settings, Monsters & Heroes, help, a run's end) fills a phone's screen, with its buttons docked full-width at the bottom; on iPad and desktop it's a centered card.
   - `"float"` (a floor cleared, a rescue, the Oops card) floats over the game as a centered card on every size. (Not "pop": that's the damage number's class.)
+- The battle header is just the title and floor (sound is the device's volume; Settings has the on/off switches). ⏸ sits at the right of the hero-and-hearts row (or Escape): the pause card stops the clock mid-problem and offers Keep fighting (the same problem, with the time that was left), ⚙ Settings (without Players, since switching would end the run) and Exit the dungeon (a second tap confirms).
+- The start screen has 🔊 (the intro) and ⚙ Settings by the title, then your hero, the Wings, 📖 Monsters & Heroes, and Enter docked at the bottom. Short phones drop the tagline so it all fits.
 - The start screen shows your hero as one line with "Change", which opens the grid of ten (the first time, the grid shows by itself). The run's end card uses the same line.
 - Settings is a list: player rows, the chalk colors in one row, on/off switches for the timer, sound effects and voice, and "How the hints work ›".
 - **Monster traits** (`js/traits.js`, DESIGN.md §3): one rule each, shown as a badge on the nameplate and explained in the message as the monster arrives. Plusquito has none (the tutorial monster).

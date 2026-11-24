@@ -100,7 +100,7 @@ function loadPlayer() {
   if (!openWings(progress, recs, st.start).includes(wingFor(st.band).id)) { st.band = WINGS[0].band; saveSettings(); }
   sfx.setSfx(st.sfx);
   setVoice(st.voice);
-  soundUI(); whoUI(); captainUI();
+  whoUI(); captainUI();
 }
 function saveTeam() { store.player(PID).set("heroes", team); }
 const hasCaptain = () => team.captain != null;
@@ -117,19 +117,7 @@ function captainUI() {
 function saveSettings() { store.player(PID).set("settings", st); }
 
 const SPEAKER = '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></svg>';
-const MUTED = '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor"/><path d="M17 9l5 6M22 9l-5 6"/></svg>';
-function soundUI() {
-  const on = st.sfx || st.voice, b = $("soundBtn");
-  b.innerHTML = on ? SPEAKER : MUTED;
-  b.setAttribute("aria-pressed", on ? "true" : "false");
-  b.setAttribute("aria-label", on ? "Sound on" : "Sound off");
-}
-// The header speaker mutes everything, or brings both back.
-$("soundBtn").onclick = () => {
-  const on = !(st.sfx || st.voice);
-  st.sfx = st.voice = on;
-  sfx.setSfx(on); setVoice(on); saveSettings(); soundUI();
-};
+const GEAR = '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1"/><circle cx="12" cy="12" r="6.5"/></svg>';
 $("sayProb").innerHTML = SPEAKER;
 $("sayProb").onclick = () => { if (G.cur) say("q", spokenProblem(G.cur), true); };
 
@@ -138,8 +126,6 @@ function whoUI() {
   w.hidden = list.length < 2;
   w.innerHTML = `Playing as ${hasCaptain() ? `<span class="who-cap">${heroArt(team.captain)}</span>` : ""}<b>${esc(displayName(list, PID))}</b>`;
 }
-$("who").onclick = () => { openMenu(); settings(); };
-$("menuBtn").onclick = () => openMenu();
 
 /* ---------- the run ---------- */
 // retry: missed facts waiting to come back ({ key, after: problems to go }); recent: the last few
@@ -497,6 +483,38 @@ function show(h, kind = "page") {
 }
 function hide() { $("ov").hidden = true; }
 
+/* ---------- pausing ----------
+   ⏸ by the hearts (or Escape) stops the clock mid-problem: Keep fighting, Settings, or Exit to
+   the start screen (a second tap confirms, since it ends the run). */
+function pause() {
+  if (!G.paused) {
+    if (!G.running || G.busy || G.next) return;
+    G.paused = { at: performance.now(), left: G.tEnd - performance.now() };
+  }
+  stopSpeech();
+  show(`<h2>Paused</h2>
+  <p>Floor ${G.floor + 1} of ${G.floors.length}: <strong>${esc(G.floors[G.floor].n)}</strong></p>
+  <div class="pause-btns"><button class="small" type="button" id="pSettings">⚙ Settings</button><button class="small danger" type="button" id="pExit">Exit the dungeon</button></div>
+  <div class="btns"><button class="big" id="resume">Keep fighting</button></div>`, "float");
+  $("resume").onclick = resume;
+  $("pSettings").onclick = () => settings(true);
+  $("pExit").onclick = () => {
+    const b = $("pExit");
+    if (b.dataset.sure !== "1") { b.dataset.sure = "1"; b.textContent = "Exit? This run ends"; return; }
+    G.paused = null; G.running = false; record();
+    newRun(); loadMonster(0, true);
+    menu();
+  };
+}
+// Back to the same problem, with the time that was left.
+function resume() {
+  const p = G.paused; if (!p) return;
+  G.paused = null; hide(); G.busy = false;
+  G.t0 += performance.now() - p.at;
+  if (st.timer && !G.hinted) { G.tEnd = performance.now() + p.left; requestAnimationFrame(tick); }
+}
+$("pauseBtn").onclick = pause;
+
 /* ---------- the menu: players and settings ---------- */
 function openMenu() {
   G.busy = true;
@@ -534,18 +552,18 @@ function wingsHTML() {
       <span><b>${w.name}</b><small>${b.label} · ${b.grades}</small><em>${note}</em>${here ? `<em class="level" id="levelLine">${levelLine()}</em>` : ""}</span></label>`;
   }).join("");
 }
-// The start screen, top to bottom: the title, your hero, the Wings, the book and Settings, and
-// "Enter the dungeon" docked at the bottom. Players, chalk color, the timer and sounds are in
+// The start screen, top to bottom: the title (with 🔊 and ⚙ Settings), your hero, the Wings,
+// Monsters & Heroes, and "Enter the dungeon" docked at the bottom. Players, chalk color, the timer and sounds are in
 // Settings, as in Sound Box. Names are optional.
 function menu() {
   const list = store.profiles();
-  show(`<div class="cardhead logo-head"><h2 class="logo">Sum<b>geon</b></h2><button class="icon-btn" id="sayIntro" type="button" aria-label="Read this aloud">${SPEAKER}</button></div>
+  show(`<div class="cardhead logo-head"><h2 class="logo">Sum<b>geon</b></h2><button class="icon-btn" id="sayIntro" type="button" aria-label="Read this aloud">${SPEAKER}</button><button class="icon-btn" id="openSettings" type="button" aria-label="Settings">${GEAR}</button></div>
   <p class="tag"><strong>Your answer is your attack.</strong> Get it right and your digits fly at the monster.</p>
   ${list.length > 1 ? `<p class="playing">Playing as <b>${esc(displayName(list, PID))}</b> <button class="link" type="button" id="switchPlayer">Switch</button></p>` : ""}
   ${captainHTML()}
   <div class="grp"><span>Pick a Wing</span><div class="wings">${wingsHTML()}</div></div>
-  <div class="menu-links"><button class="small" type="button" id="openBook">📖 Monsters &amp; Heroes</button><button class="small" type="button" id="openSettings">⚙ Settings</button></div>
-  <div class="btns"><p class="warn" id="warn" role="status"></p>${G.running ? '<button class="big alt" id="resume">Keep fighting</button>' : ""}<button class="big" id="go">Enter the dungeon</button></div>`);
+  <button class="small book-btn" type="button" id="openBook">📖 Monsters &amp; Heroes</button>
+  <div class="btns"><p class="warn" id="warn" role="status"></p><button class="big" id="go">Enter the dungeon</button></div>`);
   const card = $("card");
   $("sayIntro").onclick = () => say("p", PHRASE.intro, true);
   // A different Wing is a fresh dungeon: its own facts and hearts.
@@ -555,14 +573,13 @@ function menu() {
     menu();
   });
   wireCaptain();
-  $("openSettings").onclick = settings;
+  $("openSettings").onclick = () => settings();
   $("openBook").onclick = bookPage;
-  if ($("switchPlayer")) $("switchPlayer").onclick = settings;
+  if ($("switchPlayer")) $("switchPlayer").onclick = () => settings();
   $("go").onclick = () => {
     if (!hasCaptain()) { $("warn").textContent = "Pick your hero first."; $("captain").scrollIntoView({ block: "center", behavior: "smooth" }); return; }
     start();
   };
-  if ($("resume")) $("resume").onclick = () => { hide(); newProblem(); };
 }
 
 // Settings, as a list: players (names optional), chalk color, the timer and sounds as on/off
@@ -571,9 +588,11 @@ function toggle(id, title, sub, on) {
   return `<label class="switch-row"><span><b>${title}</b>${sub ? `<small>${sub}</small>` : ""}</span>
     <input type="checkbox" role="switch" id="${id}" ${on ? "checked" : ""}><i aria-hidden="true"></i></label>`;
 }
-function settings() {
+// From the pause screen (paused: true) it leaves out Players, since switching would end the run,
+// and Done goes back to the pause screen.
+function settings(paused) {
   show(`<div class="cardhead"><h2>Settings</h2></div>
-  <div class="grp"><span>Players</span><div id="players">${playersHTML()}</div></div>
+  ${paused ? "" : `<div class="grp"><span>Players</span><div id="players">${playersHTML()}</div></div>`}
   <div class="grp"><span>Chalk color</span><div class="swatches" id="swatches">${swatchesHTML()}</div></div>
   <div class="grp"><span>Play</span><div class="list">
     ${toggle("tm", "Timer", `${band().seconds} seconds a problem`, st.timer)}
@@ -583,13 +602,13 @@ function settings() {
   </div></div>
   ${badgesCopy()}
   <div class="btns"><button class="big" id="done">Done</button></div>`);
-  $("openHelp").onclick = helpPage;
+  $("openHelp").onclick = () => { helpFrom = !!paused; helpPage(); };
   $("tm").onchange = () => { st.timer = $("tm").checked; saveSettings(); };
-  $("sfxOn").onchange = () => { st.sfx = $("sfxOn").checked; sfx.setSfx(st.sfx); saveSettings(); soundUI(); };
-  $("voiceOn").onchange = () => { st.voice = $("voiceOn").checked; setVoice(st.voice); saveSettings(); soundUI(); };
+  $("sfxOn").onchange = () => { st.sfx = $("sfxOn").checked; sfx.setSfx(st.sfx); saveSettings(); };
+  $("voiceOn").onchange = () => { st.voice = $("voiceOn").checked; setVoice(st.voice); saveSettings(); };
   wireSwatches();
-  wirePlayers();
-  $("done").onclick = menu;
+  if (!paused) wirePlayers();
+  $("done").onclick = paused ? pause : menu;
 }
 
 // The footer's badges (deployed version, license), repeated in Settings, since phones hide the footer.
@@ -637,6 +656,7 @@ function bookPage() {
 }
 // "How the hints work": how Sumgeon teaches, and each strategy with the game's own drawing and
 // a plain explanation, for grown-ups who learned math another way (DESIGN.md §5.3).
+let helpFrom = false;
 function helpPage() {
   const cards = STRATEGIES.map((s) => {
     const h = hintFor(s.f, true);
@@ -654,7 +674,7 @@ function helpPage() {
   <h3 class="strats-title">The strategies</h3>
   <div class="strats">${cards}</div>
   <div class="btns"><button class="big" id="back">Back to Settings</button></div>`);
-  $("back").onclick = settings;
+  $("back").onclick = () => settings(helpFrom);
 }
 function swatchesHTML() {
   return CHALK.map((c) => `<button type="button" class="swatch${c === team.color ? " on" : ""}" data-c="${c}" style="--sw:${c}" aria-pressed="${c === team.color}" aria-label="Chalk color ${c}"></button>`).join("");
@@ -676,7 +696,7 @@ function captainHTML(label) {
     const h = HEROES[team.captain];
     return `<div class="grp" id="captain"><span>${label || "Your hero"}</span>
       <div class="cap-row"><div class="cap-art">${heroSvg(h, { color: team.color })}</div>
-        <div class="cap-text"><b>${esc(h.n)}</b><small>${esc(h.cls)} · power hits on ${h.d}s</small></div>
+        <div class="cap-text"><b>${esc(h.n)}</b><small>Power hits on ${h.d}s</small></div>
         <button class="small" type="button" id="changeHero">Change</button></div></div>`;
   }
   const heroes = HEROES.map((h) => {
@@ -744,7 +764,7 @@ function nextWingHint() {
 function start() {
   hide();
   newRun();
-  Object.assign(G, { hearts: band().hearts, streak: 0, solved: 0, tries: 0, running: true, retry: [], recent: [], next: false });
+  Object.assign(G, { hearts: band().hearts, streak: 0, solved: 0, tries: 0, running: true, retry: [], recent: [], next: false, paused: null });
   stopSpeech();
   loadMonster(0);
   newProblem();
@@ -763,6 +783,7 @@ function press(k) {
 $("pad").innerHTML = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "del", "0", "go"].map((k) => `<button type="button" data-k="${k}" class="${k === "go" ? "go" : k === "del" ? "del" : ""}" aria-label="${k === "del" ? "Delete" : k === "go" ? "Attack" : k}">${k === "del" ? "⌫" : k === "go" ? "Hit!" : k}</button>`).join("");
 $("pad").addEventListener("click", (e) => { const b = e.target.closest("button"); if (b) press(b.dataset.k); });
 document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") { if (G.paused) { if ($("resume")) resume(); } else if ($("ov").hidden) pause(); return; }
   if (!$("ov").hidden) return;
   if (/^[0-9]$/.test(e.key)) press(e.key);
   else if (e.key === "Backspace") press("del");
