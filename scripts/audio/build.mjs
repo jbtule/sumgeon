@@ -1,7 +1,7 @@
 // Builds the recorded voice (Kokoro "af_heart") for every line in js/lines.js, patterned on
 // sound-box-crosswords' scripts/audio/build.mjs, and lays out the Cloudflare Pages project
 // sumgeon-audio:
-//   ASSET_BASE=https://sumgeon-audio.pages.dev/ node scripts/audio/build.mjs
+//   ASSET_BASE=https://sumgeon.asset-data.stream/ node scripts/audio/build.mjs
 //
 // Writes:
 //   _audio/a/<key>.mp3  one clip each; <key> hashes everything that affects the sound (model,

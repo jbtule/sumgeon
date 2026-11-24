@@ -34,8 +34,8 @@ A math-practice dungeon crawler. The player fights anthropomorphic monsters buil
     - `audio.json` lists only clips that are live, so a line without one uses the device voice.
     - With `GENERATE=false` (CI without the Cloudflare token) nothing is recorded.
     - Bigger problems (Hard mode, sums over 20) aren't recorded and use the device voice.
-  - The audio host is the Cloudflare Pages project `sumgeon-audio` (https://sumgeon-audio.pages.dev/). CI's `audio-deploy` job uploads new clips; it needs the `CLOUDFLARE_API_TOKEN` secret.
-  - To record locally on a Mac: `ASSET_BASE=https://sumgeon-audio.pages.dev/ KOKORO=container KOKORO_DIR=<folder for the model and venv> node scripts/audio/build.mjs`. Kokoro runs in Apple's `container` (the macOS espeak wheel is broken). Then upload with `npx wrangler pages deploy _audio --project-name sumgeon-audio --branch main`.
+  - The audio host is the Cloudflare Pages project `sumgeon-audio`, served at the custom domain https://sumgeon.asset-data.stream/ (like Sound Box's). Use the custom domain, not `sumgeon-audio.pages.dev`: bare pages.dev ignores byte-range requests, and Safari's `<audio>` needs them. CI's `audio-deploy` job uploads new clips; it needs the `CLOUDFLARE_API_TOKEN` secret.
+  - To record locally on a Mac: `ASSET_BASE=https://sumgeon.asset-data.stream/ KOKORO=container KOKORO_DIR=<folder for the model and venv> node scripts/audio/build.mjs`. Kokoro runs in Apple's `container` (the macOS espeak wheel is broken). Then upload with `npx wrangler pages deploy _audio --project-name sumgeon-audio --branch main`.
   - `scripts/audio/listen-test.sh` renders the whole-vs-stitched comparison, for any future method change picked by ear.
 - The game speaks: monster names on arrival, "Crits on!" at 3 in a row, the right answer after a miss ("seven plus eight is fifteen"), floor clears, and the 🔊 buttons (the problem, the menu intro).
 

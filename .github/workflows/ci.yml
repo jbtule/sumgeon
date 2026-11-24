@@ -2,7 +2,9 @@
 # sound-box-crosswords:
 #
 #   Cloudflare Pages  the recorded voice (Kokoro "af_heart") for every line in js/lines.js,
-#                     project sumgeon-audio, at sumgeon-audio.pages.dev
+#                     project sumgeon-audio, at sumgeon.asset-data.stream (a custom domain, as
+#                     Sound Box's: through the zone's cache it answers the byte ranges Safari's
+#                     <audio> asks for; bare pages.dev doesn't)
 #   GitHub Pages      the game, at tools.tuley.name/sumgeon/ (the jbtule user site's custom
 #                     domain covers project pages)
 #
@@ -29,7 +31,7 @@ concurrency:
 
 env:
   # Where the recorded voice is served from. Must end in a slash.
-  ASSET_BASE: https://sumgeon-audio.pages.dev/
+  ASSET_BASE: https://sumgeon.asset-data.stream/
 
 jobs:
   check:

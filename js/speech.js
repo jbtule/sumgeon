@@ -54,7 +54,7 @@ function speak(text, rate) {
 }
 
 /* ---------- recorded clips ----------
-   audio.json maps "kind:text" to a clip on the audio host (sumgeon-audio.pages.dev). The
+   audio.json maps "kind:text" to a clip on the audio host (sumgeon.asset-data.stream). The
    deploy ships it; locally it's missing and the device voice speaks. */
 var clips = {}, clipBase = "", player = null, finishClip = null;
 var queue = Promise.resolve(), epoch = 0;
@@ -87,43 +87,25 @@ function unlock() {
 document.addEventListener("pointerdown", unlock, true);
 document.addEventListener("keydown", unlock, true);
 
-// Clips are fetched whole and played from memory (a blob URL). Safari's <audio> asks for byte
-// ranges and won't play from a host that ignores them, as sumgeon-audio.pages.dev does; a blob
-// always answers ranges. Clips are about 12 KB, and the most recent ones are kept.
-var blobs = new Map(), BLOBS_KEPT = 40;
-function blobFor(url) {
-  if (blobs.has(url)) return Promise.resolve(blobs.get(url));
-  return fetch(url).then(function (r) {
-    if (!r.ok) throw new Error("clip " + r.status);
-    return r.blob();
-  }).then(function (b) {
-    var u = URL.createObjectURL(b);
-    blobs.set(url, u);
-    if (blobs.size > BLOBS_KEPT) { var first = blobs.keys().next().value; URL.revokeObjectURL(blobs.get(first)); blobs.delete(first); }
-    return u;
-  });
-}
-
 // Resolves true when the clip ends, false if it fails (the caller then uses the device voice).
+// Safari's <audio> asks for byte ranges, which the audio host's custom domain answers.
 function playClip(url) {
-  return blobFor(url).then(function (src) {
-    return new Promise(function (resolve) {
-      var a = getPlayer(), done = false;
-      function end(ok) {
-        if (done) return;
-        done = true; finishClip = null; clearTimeout(t);
-        a.onended = a.onerror = null;
-        resolve(ok);
-      }
-      var t = setTimeout(function () { end(true); }, 15000);
-      finishClip = end;
-      a.onended = function () { end(true); };
-      a.onerror = function () { end(false); };
-      a.src = src;
-      var p = a.play();
-      if (p && p.catch) p.catch(function () { end(false); });
-    });
-  }, function () { return false; });
+  return new Promise(function (resolve) {
+    var a = getPlayer(), done = false;
+    function end(ok) {
+      if (done) return;
+      done = true; finishClip = null; clearTimeout(t);
+      a.onended = a.onerror = null;
+      resolve(ok);
+    }
+    var t = setTimeout(function () { end(true); }, 15000);
+    finishClip = end;
+    a.onended = function () { end(true); };
+    a.onerror = function () { end(false); };
+    a.src = url;
+    var p = a.play();
+    if (p && p.catch) p.catch(function () { end(false); });
+  });
 }
 
 // Plays (or speaks) one item after anything already queued; `cancel` clears the queue first.
