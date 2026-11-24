@@ -79,13 +79,17 @@ The dungeon is a map of **Wings**, one per math strand. Each Wing has its own fl
 
 | Wing | Strand | Bands | Monsters (glyph) | Boss |
 |---|---|---|---|---|
-| **The Counting Cellar** | Add/subtract within 20 | Sprout | Plusquito (+), Minustaur (−), Doublet (+ + twins, doubles facts) | **Make-Ten Golem** |
-| **The Tables Tower** | × ÷ facts | Apprentice | Timesaur (×), Divvy (÷), Tablesaurus (#, a grid-backed beast) | **Sigma Rex** (Σ) |
-| **The Fraction Forge** | Fractions and decimals | Adept | Halfling (½), Dotty (.), Quarterjack (¼) | **The Denominator** |
+| **The Counting Cellar** | Add/subtract within 20 | Sprout | Plusquito (+), Minustaur (−), Doublet (+ + twins, doubles facts), Quizard (?), Shoutandcomma (!), Slimelipsis (…), Trollar ($) | **Make-Ten Golem** |
+| **The Tables Tower** | × ÷ facts | Apprentice | Timesaur (×), Divvy (÷), Starbot (*) | **Sigma Rex** (Σ) |
+| **The Fraction Forge** | Fractions and decimals | Adept | Halfling (½), Dotty (.), Quarterjack (¼), Boomainder (R) | **The Denominator** |
 | **The Negative Zone** | Integers and negatives | Master | Negasicle (−, an icy minus-sign popsicle), Absolutely (\|x\|) | **Lord Undefined** (÷0) |
-| **The Root Cellar** | Exponents and roots | Master | Rootling (√), Squaresquatch (²) | **Hydra of Powers** (heads = exponent) |
-| **Pirate Cove** | Percent and π basics | Master | % Gremlin, π Pirate | **Dread Pirate Radius** |
+| **The Root Cellar** | Exponents and roots | Master | Rootling (√), Squaresquatch (²), Exponent-tron (^) | **Hydra of Powers** (heads = exponent) |
+| **Pirate Cove** | Percent and π basics | Master | % Gremlin, π Pirate, Slashbuckler (/), Colon-el Ratio (:) | **Dread Pirate Radius** |
 | **The Balance Hall** | Equations and comparison | Adept/Master | = Twins, Chompers (< >, the "alligator mouth"), Parenthesaurus (( )) | **The Unknown** (x) |
+
+**Endless Descent** (§6.4) has its own boss, the **Endless Specter** (∞).
+
+A Wing's monster list is a **pool**, which can be bigger than one run's floors. Each run draws its floors from the pool, so replays meet different monsters. **Creature types can repeat across Wings** (there are two robots, two ghosts and a few pirates), but within a Wing no two regular monsters share a creature type, and repeats need clearly different silhouettes. Pirate Cove's pirates are the exception, because pirates are its theme.
 
 Every Wing also has one **rescue floor** holding a cursed digit (§6.6). The prototype's operator monsters move into the Counting Cellar and the Tables Tower, and Sevenstein and Octoloop become cursed digits. New monster art follows the existing `solid()` / `line()` helper style: shapes only, no fonts inside the SVG, a dark outline, a fill and a sheen.
 
@@ -96,6 +100,16 @@ Every Wing also has one **rescue floor** holding a cursed digit (§6.6). The pro
 - **% Gremlin**: two little circle-headed gremlins on a seesaw. It asks "10% of 50" and similar.
 - **π Pirate**: one leg on each side of the π bar and an eyepatch. For Master it asks circle facts, and otherwise it does decimal arithmetic.
 - **Halfling (½)**: its body is literally split in two. When hit, it shows the damage as a filling fraction bar.
+- **Quizard (?)**: a wizard whose hat curls into a question mark. *Mystery*: the missing number moves around (3 + □ = 7).
+- **Shoutandcomma (!)**: a mummy whose tall wrapped body is the !, with the dot as its feet. The name is a pun on Tutankhamun. *Count on*: problems that count on from the bigger number (8 + 3).
+- **Slimelipsis (…)**: three little slimes in a row. *What comes next*: skip-counting sequences (2, 4, 6, □).
+- **Trollar ($)**: a bridge troll with a $ on his belly who wants coins to let you pass. *Pocket change*: counting pennies, nickels and dimes.
+- **Starbot (*)**: a robot with a star-burst head, since * is how computers write ×. *Stripes*: favors the ×5 and ×10 tables.
+- **Boomainder (R)**: a ghost who haunts the leftovers. Division with remainders (17 ÷ 5 = 3 R2), which leads into mixed numbers (3⅖).
+- **Slashbuckler (/)**: a swashbuckler whose sword is the slash. Writes division as 24 / 6, so kids learn the other notation.
+- **Exponent-tron (^)**: a robot whose antenna is the caret. Exponents.
+- **Colon-el Ratio (:)**: an officer whose medals are the colon. Ratios (2:3).
+- **Endless Specter (∞)**: a looping ghost that only appears in Endless Descent. Its body traces ∞, so it looks nothing like Boomainder.
 
 ---
 
