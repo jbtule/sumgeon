@@ -86,6 +86,14 @@ Runs happen in Wings (`js/wings.js`, DESIGN.md §4). Each Wing asks one band's f
 - A Wing opens the next when its boss is beaten and 60% of its facts are learned. The band a player starts in (`st.start`) opens that Wing from the start.
 - Per player, progress is saved under `wings`: `{ [wingId]: { boss: wins, best: floors } }`.
 - Sevenstein and Octoloop aren't regular floors any more: they're cursed digits (7, and 8, whose cursed form is Octoloop).
+- **Monster traits** (`js/traits.js`, DESIGN.md §3): one rule each, shown as a badge on the nameplate and explained in the message as the monster arrives. Plusquito has none (the tutorial monster).
+  - Minustaur, ⚡ Charge: every 4th problem on the floor is charged (⚡ by the problem); a miss on it costs 2 hearts.
+  - Timesaur, 🛡️ Armor: hits under 10 do half damage.
+  - Divvy, ✂️ Split: at half HP its art splits into two smaller Divvies.
+  - Starbot, ⭐ Stripes: asks ×5 and ×10 facts 70% of the time (`like` in `choose`).
+  - Make-Ten Golem, 🧱 Crack: answers of 10 or more hit double.
+  - Sigma Rex, 👑 Second wind: at half HP it armors up like Timesaur.
+  - Cursed digits, 🍀 Lucky Number: answers with their digit hit double.
 - **Digit heroes** (`js/heroes.js`, DESIGN.md §6.6): Zeroic (0), Onesie, Twodini, Threasure Hunter, Sir Fourtress, High Five, Sixlock Holmes, Sevenstein, Chef Eight, Nine-ja (9).
   - The start screen asks for a hero first, and the end-of-run card offers the hero picker again. The first pick can be any of the ten and joins the team for good; after that, any hero on the team (picked or rescued) can lead a run. Saved under `heroes`: `{ captain, color, rescued: [digits] }`.
   - The start screen holds only the hero, the Wings, "Enter the dungeon" and a ⚙ Settings link. Settings (as in Sound Box) holds Players (names optional, "Player 2" when blank), chalk color, the timer and sounds.

@@ -156,6 +156,15 @@ h1 b{color:var(--coral);font-weight:400}
 .swatches{display:flex;flex-wrap:wrap;gap:8px}
 .swatch{width:40px;height:40px;border-radius:50%;border:3px solid var(--dark);background:var(--sw);box-shadow:0 0 0 2px #3a5560}
 .swatch.on{box-shadow:0 0 0 3px var(--ink)}
+/* Monster traits (traits.js): a badge on the nameplate, ⚡ on a charged problem, Divvy's split */
+.trait{flex:none;padding:1px 8px;border-radius:999px;background:var(--dark);border:1.5px solid var(--line);font-size:12px;font-weight:900;color:var(--muted);white-space:nowrap}
+.trait[hidden],.charge[hidden]{display:none}
+.charge{font-size:26px;animation:charge .6s ease-in-out infinite alternate}
+@keyframes charge{to{transform:scale(1.2);filter:drop-shadow(0 0 6px #ffc93c)}}
+.split{display:grid;grid-template-columns:1fr 1fr;align-items:end;width:100%;height:100%}
+.split svg{width:100%;height:auto}
+.split svg:last-child{transform:translateY(-12%)}
+@media(prefers-reduced-motion:reduce){.charge{animation:none}}
 /* The worked example after a miss, as a card over the game */
 .worked{display:grid;justify-items:center;gap:10px;text-align:center}
 .worked h2{color:var(--coral)}
