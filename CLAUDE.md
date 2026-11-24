@@ -16,6 +16,14 @@ A math-practice dungeon crawler. The player fights anthropomorphic monsters buil
   The modules other than `app.js`, `sfx.js` and `speech.js` have no DOM and run in Node.
 - Modules need http, so run it with any static server: `python3 -m http.server 8791`, then open http://localhost:8791. Opening `index.html` as a file won't work.
 - After editing, run `npm run check` (no install needed): it syntax-checks every module, runs `scripts/*.test.mjs`, checks the import map and stamped attributes, and checks saving goes through `store.js`. CI runs it too.
+- Phones (under 760px wide) get a one-screen layout with no scrolling, all in CSS at the end of `styles.css`:
+  - `.arena` and `.panel` become `display: contents`, so their parts share one grid. The arena's look moves to `.game::before`.
+  - The arena holds the problem, the monster (sized with container units to the room left) and an open hint, each in its own row, so the monster shrinks rather than hides.
+  - Messages float as a pill under the monster. "For grown-ups" is a corner button on the hint.
+  - The answer and number pad dock at the bottom, clear of the home bar.
+  - Short phones (under 700px tall) get a tighter variant.
+  - The footer badges are hidden on phones and repeated in Settings.
+  - iPad and desktop keep the two-column layout. Check layout changes at iPhone SE, iPhone 14 and iPad sizes.
 - Fonts: Bungee (titles, numbers) and Nunito (body), from Google Fonts.
 - Palette: chalkboard slate `#12242b`, panel `#1a313a`, chalk `#f3efe4`, coral `#ff5a4e`, gold `#ffc93c`, outline `#0c171c`.
 

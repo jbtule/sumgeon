@@ -461,13 +461,22 @@ function settings() {
   <div class="grp"><span>Chalk color</span><div class="swatches" id="swatches">${swatchesHTML()}</div></div>
   <div class="grp"><span>Pressure</span><div class="chips">${chip("checkbox", "tm", "1", st.timer, "Timer on", "tm")}</div></div>
   <div class="grp"><span>Sounds</span><div class="chips">${chip("checkbox", "sfx", "1", st.sfx, "Sound effects", "sfxOn")}${chip("checkbox", "voice", "1", st.voice, "Voice", "voiceOn")}</div></div>
-  <div class="btns"><button class="big" id="done">Done</button></div>`);
+  <div class="btns"><button class="big" id="done">Done</button></div>
+  ${badgesCopy()}`);
   $("tm").onchange = () => { st.timer = $("tm").checked; saveSettings(); };
   $("sfxOn").onchange = () => { st.sfx = $("sfxOn").checked; sfx.setSfx(st.sfx); saveSettings(); soundUI(); };
   $("voiceOn").onchange = () => { st.voice = $("voiceOn").checked; setVoice(st.voice); saveSettings(); soundUI(); };
   wireSwatches();
   wirePlayers();
   $("done").onclick = menu;
+}
+// The footer's badges (deployed version, license), repeated in Settings, since phones hide the footer.
+function badgesCopy() {
+  const f = document.querySelector("footer.badges");
+  if (!f) return "";
+  const c = f.cloneNode(true);
+  c.querySelectorAll("[id]").forEach((e) => e.removeAttribute("id"));
+  return c.outerHTML;
 }
 function swatchesHTML() {
   return CHALK.map((c) => `<button type="button" class="swatch${c === team.color ? " on" : ""}" data-c="${c}" style="--sw:${c}" aria-pressed="${c === team.color}" aria-label="Chalk color ${c}"></button>`).join("");

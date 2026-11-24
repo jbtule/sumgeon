@@ -180,3 +180,85 @@ h1 b{color:var(--coral);font-weight:400}
 @keyframes freed{0%{filter:grayscale(1) brightness(.5);transform:scale(.8)}60%{filter:none;transform:scale(1.1)}100%{transform:none}}
 @media(prefers-reduced-motion:reduce){.cardmon.rescued{animation:none}}
 @media(prefers-reduced-motion:reduce){.mon,.mon.hit,.mon.dead,.mon.lunge,.arena.shake,.flame svg{animation:none}.mon.dead{opacity:0}.pop{animation-duration:.01s}.hearts .crack{animation:none;opacity:0}}
+
+/* Phone: the whole game on one screen, no scrolling. The monster, the problem and an open hint
+   share the arena; the answer and number pad dock at the bottom, clear of the home bar. The
+   .arena and .panel boxes dissolve (display: contents) so their parts can be placed in one grid;
+   the arena's look moves to .game::before behind the top rows. iPad and desktop are unchanged. */
+@media (max-width: 759px) {
+  body{display:flex;flex-direction:column;height:100dvh;overflow:hidden}
+  .top{padding:6px 12px;padding-top:max(6px,env(safe-area-inset-top,0px));gap:8px}
+  h1{font-size:22px}
+  .floor{font-size:12px}
+  .icon-btn{width:40px;height:40px;border-radius:12px}
+  .icon-btn svg{width:20px;height:20px}
+  .who{margin:-4px auto 0;min-height:28px;padding:2px 12px}
+  .game{flex:1;min-height:0;width:100%;gap:6px;padding:0 max(12px,env(safe-area-inset-left,0px)) max(8px,env(safe-area-inset-bottom,0px)) max(12px,env(safe-area-inset-right,0px));
+    grid-template-columns:minmax(0,1fr);grid-template-rows:auto auto minmax(0,1fr) auto auto auto auto auto;
+    grid-template-areas:"mhead" "prob" "stage" "hint" "you" "timer" "ans" "pad"}
+  .arena,.panel{display:contents}
+  .game::before{content:"";grid-column:1;grid-row:1/6;border-radius:18px;border:2px solid var(--line);
+    background:radial-gradient(ellipse 70% 55% at 50% 78%,#2f5560 0,#1a313a 55%,#10202600 100%),repeating-linear-gradient(0deg,#16292f 0 38px,#13252b 38px 40px)}
+  .game:has(.arena.hurt)::before{box-shadow:inset 0 0 0 4px var(--coral),inset 0 0 60px #ff5a4e66}
+  .game:has(.arena.shake)::before{animation:shake .35s}
+  .mhead{grid-area:mhead;padding:8px 12px 0;z-index:1}
+  .mname{font-size:15px}
+  .hp{height:12px}
+  .hptxt{font-size:12px}
+  /* The monster fills what's left of the arena, however tall the phone. */
+  .stage{grid-area:stage;height:auto;min-height:0;container-type:size;z-index:1}
+  .mon{width:min(62cqw,calc(100cqh - 12px))}
+  .shadow{bottom:4px;height:16px}
+  .probrow{grid-area:prob;justify-self:center;z-index:2;gap:6px}
+  .prob{font-size:clamp(30px,10vw,42px);text-shadow:0 2px 0 var(--dark),0 0 12px var(--bg)}
+  .probrow .icon-btn{width:36px;height:36px}
+  /* An open hint gets its own row in the arena; the monster's row shrinks to make room. */
+  .hint{grid-area:hint;z-index:3;margin:0 8px;padding:6px 8px;gap:2px;position:relative}
+  .hint .model svg{max-height:14dvh;width:auto}
+  /* "For grown-ups" is a corner button; its note covers the hint while open. */
+  .hint .grown{position:static}
+  .hint .grown summary{position:absolute;top:2px;right:6px;font-size:11px;min-height:28px;padding:0 4px}
+  .hint .grown[open] p{position:absolute;inset:30px 6px 6px;margin:0;padding:8px;overflow:auto;background:var(--dark);border-radius:10px;color:var(--ink);font-size:13px;z-index:1}
+  .hint .hsay{font-size:15px}
+
+  .hint .big{min-height:44px}
+  .you{grid-area:you;padding:0 12px 6px;z-index:1;gap:8px}
+  .captain{width:26px;height:30px}
+  .hearts{font-size:16px}
+  .flame svg{width:18px;height:22px}
+  .timer{grid-area:timer}
+  .ans{grid-area:ans;min-height:44px;font-size:30px;padding:0 6px}
+  /* Messages float as a pill at the bottom of the monster's area instead of taking a row. */
+  .msg{grid-area:stage;align-self:end;justify-self:center;z-index:2;min-height:0;margin-bottom:2px;padding:2px 12px;border-radius:999px;font-size:14px;line-height:1.4;background:#0c171cb0}
+  .msg:empty{display:none}
+  .pad{grid-area:pad;gap:6px}
+  .pad button{min-height:clamp(40px,6.4dvh,54px);font-size:22px;box-shadow:0 3px 0 var(--dark)}
+  /* The footer's badges are shown in Settings instead. */
+  body > .badges{display:none}
+}
+.card .badges{padding:4px 0 0}
+
+/* Short phones (iPhone SE and similar): tighter, so it still fits on one screen with the
+   monster in view. */
+@media (max-width: 759px) and (max-height: 700px) {
+  .top{padding-block:4px}
+  h1{font-size:19px}
+  .icon-btn{width:36px;height:36px}
+  .mhead{flex-wrap:nowrap;gap:6px;padding-top:6px}
+  .mname{font-size:13px;white-space:nowrap}
+  .hp{flex:1 1 40px;height:10px}
+  .hptxt{font-size:11px}
+  .prob{font-size:clamp(26px,9vw,34px)}
+  .probrow .icon-btn{width:32px;height:32px}
+  .stage{min-height:44px}
+  .hint .model svg{max-height:10dvh}
+  .hint .hsay{font-size:13px}
+  .hint .big{min-height:36px;font-size:15px}
+  .you{padding-bottom:4px}
+  .captain{width:22px;height:26px}
+  .hearts{font-size:14px}
+  .ans{min-height:36px;font-size:26px}
+  .game{gap:5px}
+  .pad{gap:5px}
+  .pad button{min-height:38px;font-size:20px}
+}
