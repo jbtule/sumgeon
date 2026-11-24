@@ -1,13 +1,13 @@
 // The monsters: data and inline SVG art. No DOM, so the check can run it in Node.
 // Art is simple shapes, no fonts: solid() and line() draw a dark outline, then the color,
 // then a white sheen gradient.
-const DK='#0c171c';
-const eye=(x,y,r=9)=>`<circle cx="${x}" cy="${y}" r="${r}" fill="#fff" stroke="${DK}" stroke-width="3"/><circle cx="${x+1.5}" cy="${y+1}" r="${r*.45}" fill="${DK}"/>`;
-const defs=`<defs><linearGradient id="sh" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".38"/><stop offset=".55" stop-color="#fff" stop-opacity="0"/></linearGradient></defs>`;
-const solid=(s,c)=>`<g fill="${DK}" stroke="${DK}" stroke-width="9" stroke-linejoin="round">${s}</g><g fill="${c}">${s}</g><g fill="url(#sh)">${s}</g>`;
-const line=(s,c,w)=>`<g fill="none" stroke="${DK}" stroke-width="${w+9}" stroke-linecap="round" stroke-linejoin="round">${s}</g><g fill="none" stroke="${c}" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round">${s}</g><g fill="none" stroke="url(#sh)" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round">${s}</g>`;
-const foot=(x,y,rx=13)=>`<ellipse cx="${x}" cy="${y}" rx="${rx}" ry="7" fill="${DK}"/>`;
-const ds=`stroke="${DK}" stroke-width="4" stroke-linecap="round" fill="none"`;
+export const DK='#0c171c';
+export const eye=(x,y,r=9)=>`<circle cx="${x}" cy="${y}" r="${r}" fill="#fff" stroke="${DK}" stroke-width="3"/><circle cx="${x+1.5}" cy="${y+1}" r="${r*.45}" fill="${DK}"/>`;
+export const defs=`<defs><linearGradient id="sh" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".38"/><stop offset=".55" stop-color="#fff" stop-opacity="0"/></linearGradient></defs>`;
+export const solid=(s,c)=>`<g fill="${DK}" stroke="${DK}" stroke-width="9" stroke-linejoin="round">${s}</g><g fill="${c}">${s}</g><g fill="url(#sh)">${s}</g>`;
+export const line=(s,c,w)=>`<g fill="none" stroke="${DK}" stroke-width="${w+9}" stroke-linecap="round" stroke-linejoin="round">${s}</g><g fill="none" stroke="${c}" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round">${s}</g><g fill="none" stroke="url(#sh)" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round">${s}</g>`;
+export const foot=(x,y,rx=13)=>`<ellipse cx="${x}" cy="${y}" rx="${rx}" ry="7" fill="${DK}"/>`;
+export const ds=`stroke="${DK}" stroke-width="4" stroke-linecap="round" fill="none"`;
 
 export const MON=[
  {n:'Plusquito',op:'+',c:'#ff6b5e',hits:3,quip:'buzzes off in a puff of chalk dust.',

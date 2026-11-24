@@ -5,7 +5,8 @@ import { spokenProblem, spokenFact } from "./problems.js";
 import { BANDS, choose, factOf, record as recordAnswer, helpFor, openLevel, monsterHP } from "./learn.js";
 import { hintFor } from "./hints.js";
 import { openStore, displayName } from "./store.js";
-import { PHRASE, monsterName, monsterCleared, monsterWon } from "./lines.js";
+import { PHRASE, monsterName, monsterCleared, monsterWon, heroName } from "./lines.js";
+import { HEROES, CHALK, heroSvg } from "./heroes.js";
 import * as sfx from "./sfx.js";
 import { say, stopSpeech, setVoice } from "./speech.js";
 
@@ -25,16 +26,30 @@ const store = openStore(safeStorage());
 store.upgrade();
 
 /* ---------- the player ---------- */
-let PID, st, best, recs;
+// team: { captain: digit or null, color: chalk color, rescued: [digits] } (DESIGN.md §6.6).
+let PID, st, best, recs, team;
 const band = () => BANDS[st.band] || BANDS.sprout;
 function loadPlayer() {
   PID = store.active();
   st = store.settings(PID);
   best = store.player(PID).get("best", 0);
   recs = store.player(PID).get("facts", {}) || {};
+  team = Object.assign({ captain: null, color: CHALK[0], rescued: [] }, store.player(PID).get("heroes", {}));
   sfx.setSfx(st.sfx);
   setVoice(st.voice);
-  soundUI(); whoUI();
+  soundUI(); whoUI(); captainUI();
+}
+function saveTeam() { store.player(PID).set("heroes", team); }
+const hasCaptain = () => team.captain != null;
+// A digit fights as its hero once it has joined: the captain, or a rescued digit.
+const onTeam = (d) => d === team.captain || team.rescued.includes(d);
+const heroArt = (d, cls) => heroSvg(HEROES[d], { color: d === team.captain ? team.color : null, cls });
+// The captain beside the hearts, and in "Playing as".
+function captainUI() {
+  const c = $("captainMini");
+  c.innerHTML = hasCaptain() ? heroArt(team.captain) : "";
+  c.setAttribute("aria-label", hasCaptain() ? `Your captain, ${HEROES[team.captain].n}` : "You");
+  c.classList.toggle("none", !hasCaptain());
 }
 function saveSettings() { store.player(PID).set("settings", st); }
 
@@ -58,7 +73,7 @@ $("sayProb").onclick = () => { if (G.cur) say("q", spokenProblem(G.cur), true); 
 function whoUI() {
   const list = store.profiles(), w = $("who");
   w.hidden = list.length < 2;
-  w.innerHTML = `Playing as <b>${esc(displayName(list, PID))}</b>`;
+  w.innerHTML = `Playing as ${hasCaptain() ? `<span class="who-cap">${heroArt(team.captain)}</span>` : ""}<b>${esc(displayName(list, PID))}</b>`;
 }
 $("who").onclick = () => openMenu();
 $("menuBtn").onclick = () => openMenu();
@@ -149,34 +164,49 @@ function restartAnim(el, cls) { el.classList.remove(cls); void el.offsetWidth; e
 /* ---------- the attack: the answer flies at the monster ---------- */
 function centerOf(el) { const r = el.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; }
 
-// The typed number lifts out of the answer box and arcs into the monster, leaving chalk dust.
-// Resolves on impact. With reduced motion it lands at once.
+// Your answer summons its digits (DESIGN.md §6.6): each digit lifts out of the answer box and
+// arcs into the monster, one after another, leaving chalk dust. A digit on your team flies as
+// its hero; the others fly as plain chalk numbers. Resolves when the last one lands. With
+// reduced motion they land at once.
 function fly(text, crit) {
-  return new Promise((done) => {
-    if (reduced()) { done(); return; }
-    const layer = $("fly"), s = document.createElement("span");
-    s.className = "shot" + (crit ? " crit" : "");
-    s.textContent = text;
+  if (reduced()) return Promise.resolve();
+  const layer = $("fly"), a = centerOf($("ans")), b = centerOf($("mon")), n = text.length;
+  return Promise.all([...text].map((ch, i) => new Promise((done) => {
+    const d = Number(ch), s = document.createElement("span");
+    if (onTeam(d)) { s.className = "shot hero"; s.innerHTML = heroArt(d); }
+    else { s.className = "shot" + (crit ? " crit" : ""); s.textContent = ch; }
     layer.appendChild(s);
-    const w = s.offsetWidth, h = s.offsetHeight, a = centerOf($("ans")), b = centerOf($("mon"));
-    const p0 = { x: a.x - w / 2, y: a.y - h / 2 }, p1 = { x: b.x - w / 2, y: b.y - h / 2 };
+    const w = s.offsetWidth, h = s.offsetHeight, spread = (i - (n - 1) / 2) * 44;
+    const p0 = { x: a.x + spread - w / 2, y: a.y - h / 2 }, p1 = { x: b.x + spread * 0.4 - w / 2, y: b.y - h / 2 };
     const c = { x: (p0.x + p1.x) / 2 + (p1.x - p0.x) * 0.15, y: Math.min(p0.y, p1.y) - 90 };
     const frames = [];
-    for (let i = 0; i <= 10; i++) {
-      const t = i / 10, u = 1 - t;
+    for (let k = 0; k <= 10; k++) {
+      const t = k / 10, u = 1 - t;
       const x = u * u * p0.x + 2 * u * t * c.x + t * t * p1.x, y = u * u * p0.y + 2 * u * t * c.y + t * t * p1.y;
-      frames.push({ transform: `translate(${x}px,${y}px) scale(${1 + 0.35 * Math.sin(Math.PI * t) - 0.25 * t}) rotate(${t * 18}deg)` });
+      frames.push({ transform: `translate(${x}px,${y}px) scale(${1 + 0.35 * Math.sin(Math.PI * t) - 0.25 * t}) rotate(${t * (onTeam(d) ? 360 : 18)}deg)` });
     }
-    const anim = s.animate(frames, { duration: 330, easing: "ease-in" });
-    const dust = setInterval(() => {
-      const r = s.getBoundingClientRect(), d = document.createElement("span");
-      d.className = "dust";
-      layer.appendChild(d);
-      const x = r.left + r.width / 2, y = r.top + r.height / 2;
-      d.animate([{ transform: `translate(${x}px,${y}px) scale(1)`, opacity: 0.7 }, { transform: `translate(${x}px,${y + 10}px) scale(.2)`, opacity: 0 }], { duration: 420 }).onfinish = () => d.remove();
-    }, 30);
+    const anim = s.animate(frames, { duration: 360, delay: i * 110, easing: "ease-in", fill: "backwards" });
+    let dust = null;
+    setTimeout(() => {
+      dust = setInterval(() => {
+        const r = s.getBoundingClientRect(), p = document.createElement("span");
+        p.className = "dust";
+        layer.appendChild(p);
+        const x = r.left + r.width / 2, y = r.top + r.height / 2;
+        p.animate([{ transform: `translate(${x}px,${y}px) scale(1)`, opacity: 0.7 }, { transform: `translate(${x}px,${y + 10}px) scale(.2)`, opacity: 0 }], { duration: 420 }).onfinish = () => p.remove();
+      }, 30);
+    }, i * 110);
     anim.onfinish = () => { clearInterval(dust); s.remove(); done(); };
-  });
+  })));
+}
+
+// Hero bonuses: each rescued hero summoned adds 10% (up to 30%); the captain's digit in the
+// answer is a power hit, +50%. The captain counts for the power hit, not the 10%.
+function heroBonus(typed) {
+  const digits = [...typed].map(Number);
+  const helpers = Math.min(3, digits.filter((d) => d !== team.captain && team.rescued.includes(d)).length);
+  const power = hasCaptain() && digits.includes(team.captain);
+  return { mult: (1 + helpers * 0.1) * (power ? 1.5 : 1), power, helpers };
 }
 // Chalk sparks bursting from the monster on impact.
 function burst(crit) {
@@ -230,7 +260,8 @@ function submit() {
   if (Number(G.input) === G.cur.ans) {
     G.busy = true; G.solved++;
     if (!G.hinted) G.streak++;
-    const crit = G.streak >= 3, dmg = G.cur.ans * (crit ? 2 : 1), typed = G.input;
+    const typed = G.input, crit = G.streak >= 3, bonus = heroBonus(typed);
+    const dmg = Math.round(G.cur.ans * (crit ? 2 : 1) * bonus.mult);
     const level = learnFrom(true);
     G.input = ""; ansUI();
     $("hint").hidden = true; $("hintBtn").hidden = true;
@@ -239,10 +270,10 @@ function submit() {
     fly(typed, crit).then(() => {
       sfx.impact(crit); burst(crit);
       G.hp -= dmg;
-      pop((crit ? "Crit! " : "") + "−" + dmg, crit);
+      pop((bonus.power ? "Power! " : crit ? "Crit! " : "") + "−" + dmg, crit || bonus.power);
       restartAnim($("mon"), "hit");
       if (crit) restartAnim($("arena"), "shake");
-      setMsg(level ? `New level: ${level}!` : crit ? `Critical hit for ${dmg}!` : `Hit for ${dmg}!`, "good");
+      setMsg(level ? `New level: ${level}!` : bonus.power ? `${HEROES[team.captain].n} power hit for ${dmg}!` : crit ? `Critical hit for ${dmg}!` : `Hit for ${dmg}!`, "good");
       hpUI(); streakUI();
       if (G.hp <= 0) { setTimeout(() => { $("mon").className = "mon dead"; }, 300); setTimeout(cleared, 1100); }
       else setTimeout(newProblem, level ? 1200 : 450);
@@ -347,7 +378,9 @@ function menu() {
   show(`<div class="cardhead"><h2>Crawl the Sumgeon</h2><button class="icon-btn" id="sayIntro" type="button" aria-label="Read this aloud">${SPEAKER}</button></div>
   <p>Seven glyph monsters guard seven floors. <strong>Your answer is your attack</strong>: solve 7 × 8 and you hit for 56. Three right in a row and every hit is doubled. A wrong answer costs a heart, and you see the right one.</p>
   <div class="lineup">${MON.map((m) => svg(m, m.boss ? "boss" : "")).join("")}</div>
+  ${hasCaptain() ? "" : captainHTML()}
   <div class="grp"><span>Players</span><div id="players">${playersHTML()}</div></div>
+  ${hasCaptain() ? captainHTML() : ""}
   <div class="grp"><span>Band</span><div class="chips">${Object.entries(BANDS).map(([k, b]) => chip("radio", "band", k, st.band === k, `${b.label} <small>${b.grades}</small>`)).join("")}</div>
     <p class="level" id="levelLine">${levelLine()}</p></div>
   <div class="grp"><span>Pressure</span><div class="chips">${chip("checkbox", "tm", "1", st.timer, "Timer on", "tm")}</div></div>
@@ -368,8 +401,45 @@ function menu() {
   $("sfxOn").onchange = () => { st.sfx = $("sfxOn").checked; sfx.setSfx(st.sfx); saveSettings(); soundUI(); };
   $("voiceOn").onchange = () => { st.voice = $("voiceOn").checked; setVoice(st.voice); saveSettings(); soundUI(); };
   wirePlayers();
-  $("go").onclick = start;
+  wireCaptain();
+  $("go").onclick = () => {
+    if (!hasCaptain()) { $("warn").textContent = "Pick your captain first."; $("captain").scrollIntoView({ block: "center" }); return; }
+    start();
+  };
   if ($("resume")) $("resume").onclick = () => { hide(); newProblem(); };
+}
+// Picking a captain: the first time, any of the ten; after that, your captain or anyone you've
+// rescued (the rest show cursed). And the captain's chalk color.
+function captainHTML() {
+  const first = !hasCaptain();
+  const heroes = HEROES.map((h) => {
+    const can = first || onTeam(h.d), on = h.d === team.captain;
+    return `<button type="button" class="hpick${on ? " on" : ""}" data-d="${h.d}" ${can ? "" : "disabled"} aria-pressed="${on}" aria-label="${can ? h.n : "Cursed, not rescued yet"}">
+      ${heroSvg(h, { color: on ? team.color : null, cursed: !can })}<small>${can ? h.n : "???"}</small></button>`;
+  }).join("");
+  const colors = CHALK.map((c) => `<button type="button" class="swatch${c === team.color ? " on" : ""}" data-c="${c}" style="--sw:${c}" aria-pressed="${c === team.color}" aria-label="Chalk color ${c}"></button>`).join("");
+  return `<div class="grp" id="captain"><span>${first ? "Pick your captain" : "Your captain"}</span>
+    ${first ? '<p class="level">Your captain is your hero. When your answer has their digit, it\'s a power hit!</p>' : ""}
+    <div class="heroes">${heroes}</div>
+    ${first ? "" : `<div class="swatches">${colors}</div>`}</div>`;
+}
+function wireCaptain() {
+  const box = $("captain");
+  box.querySelectorAll(".hpick:not([disabled])").forEach((b) => b.onclick = () => {
+    const first = !hasCaptain();
+    team.captain = Number(b.dataset.d);
+    saveTeam();
+    say("m", heroName(HEROES[team.captain]), true);
+    captainUI(); whoUI();
+    $("warn").textContent = "";
+    // The first pick moves the section below Players and shows the colors.
+    if (first) { menu(); return; }
+    box.outerHTML = captainHTML(); wireCaptain();
+  });
+  box.querySelectorAll(".swatch").forEach((b) => b.onclick = () => {
+    team.color = b.dataset.c; saveTeam(); captainUI(); whoUI();
+    $("captain").outerHTML = captainHTML(); wireCaptain();
+  });
 }
 function wirePlayers() {
   const box = $("players");

@@ -140,4 +140,23 @@ h1 b{color:var(--coral);font-weight:400}
 .hint-btn[hidden]{display:none}
 .level{margin:2px 0 0;color:var(--muted);font-weight:800;font-size:14px}
 .chip span small{font-weight:700;opacity:.8;margin-left:6px}
+/* Digit heroes (DESIGN.md §6.6) */
+.captain{display:inline-block;width:40px;height:44px;flex:none}
+.captain svg{width:100%;height:100%;overflow:visible}
+.captain.none{width:auto;height:auto}
+.captain.none::before{content:"You";font-weight:900}
+.who-cap{display:inline-block;width:22px;height:24px;vertical-align:-6px;margin:0 4px}
+.who-cap svg{width:100%;height:100%;overflow:visible}
+.shot.hero{width:62px;height:66px;text-shadow:none;-webkit-text-stroke:0}
+.shot.hero svg{width:100%;height:100%;overflow:visible}
+.heroes{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
+.hpick{display:grid;justify-items:center;gap:2px;padding:6px 2px;border-radius:14px;border:2px solid #3a5560;background:none;min-height:44px}
+.hpick svg{width:100%;max-width:64px;height:auto;overflow:visible}
+.hpick small{font-size:11px;font-weight:900;line-height:1.1;color:var(--muted)}
+.hpick.on{border-color:var(--gold);background:#ffc93c1f}
+.hpick.on small{color:var(--gold)}
+.hpick[disabled]{opacity:.55;cursor:default}
+.swatches{display:flex;flex-wrap:wrap;gap:8px}
+.swatch{width:40px;height:40px;border-radius:50%;border:3px solid var(--dark);background:var(--sw);box-shadow:0 0 0 2px #3a5560}
+.swatch.on{box-shadow:0 0 0 3px var(--ink)}
 @media(prefers-reduced-motion:reduce){.mon,.mon.hit,.mon.dead,.mon.lunge,.arena.shake,.flame svg{animation:none}.mon.dead{opacity:0}.pop{animation-duration:.01s}.hearts .crack{animation:none;opacity:0}}

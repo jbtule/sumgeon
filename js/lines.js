@@ -2,6 +2,7 @@
 // build (scripts/audio/build.mjs) records exactly these. No DOM, runs in Node.
 // Kinds: "p" phrase, "m" monster line, "q" problem (see speech.js).
 import { MON } from "./monsters.js";
+import { HEROES } from "./heroes.js";
 import { facts, spokenProblem, spokenFact } from "./problems.js";
 
 export var PHRASE = {
@@ -14,6 +15,7 @@ export var PHRASE = {
 export function monsterName(m) { return m.n + "!"; }
 export function monsterCleared(m) { return m.n + " " + m.quip; }
 export function monsterWon(m) { return m.n + " won this round."; }
+export function heroName(h) { return h.n + "!"; }
 
 // [{ kind, text }], each once.
 export function spokenLines() {
@@ -24,6 +26,7 @@ export function spokenLines() {
     if (!m.boss) out.push({ kind: "p", text: monsterCleared(m) }); // beating the boss is the win, said as PHRASE.win
     out.push({ kind: "p", text: monsterWon(m) });
   });
+  HEROES.forEach(function (h) { out.push({ kind: "m", text: heroName(h) }); });
   facts().forEach(function (f) {
     out.push({ kind: "q", text: spokenProblem(f) });
     out.push({ kind: "q", text: spokenFact(f) });
