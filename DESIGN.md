@@ -239,7 +239,7 @@ Inventory holds 3 items. This adds a small strategic layer without making math o
 | 8 | **Chef Eight** | Chef in a tall hat; the 8's loops are a stacked belly and head. The pun: eight sounds like "ate." | Serves the damage on a sizzling platter |
 | 9 | **Nine-ja** | Ninja | Vanishes, then strikes from behind |
 
-**Your captain is your avatar.** When a player is set up, they pick a **starter** digit and a **chalk color**. The starter is free from the start, and the other nine are waiting to be rescued. The captain appears in "Playing as…", in the player list and in the arena, replacing the generic Apprentice character from the earlier draft. You can switch captains to any rescued hero at any time. Two siblings can both pick High Five, and their chalk colors tell them apart.
+**Your captain is your avatar.** When a player is set up, they pick a **starter** digit and a **chalk color**. The starter is free from the start, and the other nine are waiting to be rescued. Until the first rescue (while all nine others are still cursed), the starter can be swapped for any of the ten. The captain appears in "Playing as…", in the player list and in the arena, replacing the generic Apprentice character from the earlier draft. You can switch captains to any rescued hero at any time. Two siblings can both pick High Five, and their chalk colors tell them apart.
 
 **The mechanic: your answer summons its digits.** On a correct answer, the digits of the answer burst out of the answer box and attack together. 56 sends the 5 and the 6, and 55 sends two High Fives, who high-five each other first.
 - **Rescued digits** appear as their hero and add **+10% damage each** (up to +30%), with their own move.

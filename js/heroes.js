@@ -95,3 +95,16 @@ export function heroSvg(h, opts) {
   return `<svg viewBox="-10 -24 220 234" class="${cls}" role="img" aria-label="${o.cursed ? "Cursed " : ""}${h.n}">${defs}<defs>${curse}</defs>${body}</svg>`;
 }
 export const heroOf = (d) => HEROES[d];
+
+// Picking a captain. Until any hero is rescued (everyone else is still cursed), the starting hero
+// can be swapped for any of the ten; after that, only heroes on the team can lead.
+export function freePick(team) {
+  return team.captain == null || team.rescued.every((d) => d === team.captain);
+}
+// The team after picking digit d: a free pick replaces the starting hero; otherwise d must be on
+// the team. Returns null when d can't be picked.
+export function pickHero(team, d) {
+  if (freePick(team)) return Object.assign({}, team, { captain: d, rescued: [d] });
+  if (d !== team.captain && !team.rescued.includes(d)) return null;
+  return Object.assign({}, team, { captain: d });
+}

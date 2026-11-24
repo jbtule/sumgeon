@@ -9,7 +9,7 @@ import { PHRASE, monsterName, monsterCleared, monsterWon, heroName, heroJoins, w
 import { WINGS, wingOf, runFloors, openWings, toOpen, floorStars, wingStars, STREAK_STAR } from "./wings.js";
 import { traitOf, charged, prefers, hitBy, atHalf } from "./traits.js";
 import { roster, mastery, meet, beat } from "./bestiary.js";
-import { HEROES, CHALK, heroSvg } from "./heroes.js";
+import { HEROES, CHALK, heroSvg, freePick, pickHero } from "./heroes.js";
 import * as sfx from "./sfx.js";
 import { say, stopSpeech, setVoice } from "./speech.js";
 
@@ -687,8 +687,8 @@ function wireSwatches() {
 }
 
 // Choosing a hero, on the start screen and after a run ends. With a hero picked, it's one line
-// (the hero, big, and "Change"); "Change" opens the grid. The first time, any of the ten; after
-// that, anyone on your team (your heroes and everyone you've rescued; the rest show cursed).
+// (the hero, big, and "Change"); "Change" opens the grid. Until a hero is rescued, any of the ten
+// (heroes.js freePick); after that, anyone on your team (the rest show cursed).
 let pickOpen = false;
 function captainHTML(label) {
   const first = !hasCaptain();
@@ -699,13 +699,15 @@ function captainHTML(label) {
         <div class="cap-text"><b>${esc(h.n)}</b><small>Power hits on ${h.d}s</small></div>
         <button class="small" type="button" id="changeHero">Change</button></div></div>`;
   }
+  const any = freePick(team);
   const heroes = HEROES.map((h) => {
-    const can = first || onTeam(h.d), on = h.d === team.captain;
+    const can = any || onTeam(h.d), on = h.d === team.captain;
     return `<button type="button" class="hpick${on ? " on" : ""}" data-d="${h.d}" ${can ? "" : "disabled"} aria-pressed="${on}" aria-label="${can ? h.n : "Cursed, not rescued yet"}">
       ${heroSvg(h, { color: on ? team.color : null, cursed: !can })}<small>${can ? h.n : "???"}</small></button>`;
   }).join("");
   return `<div class="grp" id="captain"><span>${first ? "Pick your hero" : label || "Your hero"}</span>
-    ${first ? '<p class="level">When your answer has your hero\'s digit, it\'s a power hit! Rescue more heroes on the way down.</p>' : ""}
+    ${first ? '<p class="level">When your answer has your hero\'s digit, it\'s a power hit! Rescue more heroes on the way down.</p>'
+      : any ? '<p class="level">Until you rescue a hero, you can pick any of the ten.</p>' : ""}
     <div class="heroes">${heroes}</div></div>`;
 }
 function wireCaptain() {
@@ -713,9 +715,9 @@ function wireCaptain() {
   const redraw = () => { const n = $("captain"); n.outerHTML = captainHTML(label === "Pick your hero" ? "" : label); wireCaptain(); };
   if ($("changeHero")) $("changeHero").onclick = () => { pickOpen = true; redraw(); };
   box.querySelectorAll(".hpick:not([disabled])").forEach((b) => b.onclick = () => {
-    team.captain = Number(b.dataset.d);
-    // The first pick joins the team for good, so it can be picked again later.
-    if (!team.rescued.includes(team.captain)) team.rescued.push(team.captain);
+    const next = pickHero(team, Number(b.dataset.d));
+    if (!next) return;
+    Object.assign(team, next);
     saveTeam();
     say("m", heroName(HEROES[team.captain]), true);
     captainUI(); whoUI();
