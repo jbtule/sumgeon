@@ -87,6 +87,8 @@ Runs happen in Wings (`js/wings.js`, DESIGN.md §4). Each Wing asks one band's f
 - Per player, progress is saved under `wings`: `{ [wingId]: { boss: wins, best: floors, stars: [best stars per floor] } }`.
 - **Stars** (`floorStars` in `wings.js`, DESIGN.md §6.1): each floor awards ★ cleared, ★ no hearts lost on it, ★ a streak of 5 on it (hinted answers don't build streaks). The floor-cleared and win cards show them, and the Wing map shows each Wing's total.
 - Sevenstein and Octoloop aren't regular floors any more: they're cursed digits (7, and 8, whose cursed form is Octoloop).
+- **Monsters & Heroes** (📖 on the start screen; `bookPage` in `app.js`, `js/bestiary.js`): every Wing's monsters, met or still a silhouette, with their trait, times beaten, and a mastery ring for the share of their kind of math learned (their operation's facts in their Wing's band; gold outline when full); then the ten heroes, rescued or still cursed. Monsters met and beaten are saved per player under `bestiary`: `{ [name]: { met, beaten } }` (cursed digits belong to the Heroes half).
+- Cards over the game (`show`) open at the top and focus their main button without scrolling to it.
 - **Monster traits** (`js/traits.js`, DESIGN.md §3): one rule each, shown as a badge on the nameplate and explained in the message as the monster arrives. Plusquito has none (the tutorial monster).
   - Minustaur, ⚡ Charge: every 4th problem on the floor is charged (⚡ by the problem); a miss on it costs 2 hearts.
   - Timesaur, 🛡️ Armor: hits under 10 do half damage.

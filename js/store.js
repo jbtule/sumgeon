@@ -13,7 +13,7 @@ export var DEVICE = "sumgeon:";
 export var STORAGE_VERSION = 2;
 // Every key saved per player. Add new ones here (the check fails on a key that isn't listed),
 // so Start over, removing a player and (later) sync can't miss one.
-export var OWN_KEYS = ["settings", "best", "facts", "heroes", "wings"];
+export var OWN_KEYS = ["settings", "best", "facts", "heroes", "wings", "bestiary"];
 // band: "sprout" or "apprentice" (learn.js BANDS). ops and diff are the prototype's, kept only to
 // pick a band for a player who had them.
 export var DEFAULT_SETTINGS = { band: "sprout", ops: ["+", "-"], diff: "easy", timer: false, sfx: true, voice: true };
