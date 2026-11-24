@@ -30,8 +30,8 @@ jobs:
           persist-credentials: false
       # Workflow security lint. Offline audits only (no token), pinned version.
       - run: pipx run zizmor==1.30.1 --offline .
-      # The site files must exist; a real check script comes with the module split (M1).
-      - run: test -s index.html && test -s LICENSE.md
+      # Make sure the deploy step would work, on PRs too.
+      - run: node scripts/stamp.mjs "$GITHUB_SHA"
 
   site:
     if: github.event_name == 'push'
@@ -43,10 +43,9 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      # Only the game itself is published, not the docs or workflows.
-      - run: |
-          mkdir _site
-          cp index.html LICENSE.md _site/
+      # Copies the site files to _site/ and stamps the commit for cache busting and the
+      # footer's GitHub badge. Only the game is published, not the docs or workflows.
+      - run: node scripts/stamp.mjs "$GITHUB_SHA"
       - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
         with:
           path: _site
