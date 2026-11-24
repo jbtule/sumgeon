@@ -147,6 +147,8 @@ jobs:
 
   deploy:
     needs: site
+    # A skipped audio-deploy (nothing new to upload) would otherwise skip this too.
+    if: always() && needs.site.result == 'success'
     runs-on: ubuntu-latest
     permissions:
       pages: write # publish the Pages deployment
