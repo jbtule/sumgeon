@@ -257,7 +257,8 @@ function miss(why) {
   G.hearts--;
   const lost = G.hearts;
   learnFrom(false);
-  G.retry = G.retry.filter((r) => r.key !== G.cur.key).concat([{ key: G.cur.key, after: 2 + Math.floor(Math.random() * 3) }]);
+  // after counts down at each new problem, so 3–5 means 2–4 other problems in between.
+  G.retry = G.retry.filter((r) => r.key !== G.cur.key).concat([{ key: G.cur.key, after: 3 + Math.floor(Math.random() * 3) }]);
   sfx.miss();
   restartAnim($("mon"), "lunge");
   streakUI();
