@@ -23,6 +23,8 @@ A math-practice dungeon crawler. The player fights anthropomorphic monsters buil
   - The number pad docks at the bottom, clear of the home bar, with your hero and hearts under it, on your side of the screen and apart from the monster's.
   - Short phones (under 700px tall) get a tighter variant.
   - The footer badges are hidden on phones and repeated in Settings.
+  - The page height comes from `--app-h`, measured from `visualViewport` by `fitToScreen` in `app.js`, not `100dvh`: with iOS Safari's floating toolbar, `100dvh` can include the strip behind it, which hid the number pad outside the Home Screen. The viewport meta has `viewport-fit=cover`, so the safe-area insets are real.
+  - Open the game with `?layout` on a device to see what it reports: `innerHeight`, `visualViewport`, `100dvh`, the safe-area insets, `--app-h`, where the pad ends, and whether it's on the Home Screen.
 - iPad and desktop (760px and wider) use two columns with the same split: the left column is the monster's box (nameplate across the top, the monster, messages as a pill under it); the right column is your side (an open hint, then the problem and answer as one line, then the number pad, with your hero and hearts under it). The nameplate is pinned to the top of the monster's box, so an open hint doesn't move the monster. As on phones, `.arena` and `.panel` are `display: contents`; their boxes are `.game::before` and `::after`.
 - Check layout changes at iPhone SE, iPhone 14, iPad (both orientations) and desktop sizes.
 - Fonts: Bungee (titles, numbers) and Nunito (body), from Google Fonts.

@@ -13,6 +13,48 @@ import { say, stopSpeech, setVoice } from "./speech.js";
 
 const $ = (id) => document.getElementById(id);
 const reduced = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+// Fit the phone layout to the height Safari really shows. With iOS Safari's floating toolbar,
+// 100dvh can include the strip behind it, which hid the number pad when the game wasn't on the
+// Home Screen; visualViewport.height is what's visible. Re-measured when the toolbar or the
+// orientation changes. styles.css uses it as --app-h.
+function fitToScreen() {
+  const h = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+  document.documentElement.style.setProperty("--app-h", Math.round(h) + "px");
+  if (layoutProbe) layoutProbe();
+}
+let layoutProbe = null;
+fitToScreen();
+addEventListener("resize", fitToScreen);
+if (window.visualViewport) window.visualViewport.addEventListener("resize", fitToScreen);
+addEventListener("orientationchange", () => setTimeout(fitToScreen, 300));
+
+// ?layout shows what the phone reports, for fixing layout on a real device: the window and
+// visible heights, 100dvh, the safe-area insets, where the number pad ends, and whether it's
+// running from the Home Screen.
+if (new URLSearchParams(location.search).has("layout")) {
+  const box = document.createElement("pre");
+  box.style.cssText = "position:fixed;left:4px;top:4px;z-index:99;margin:0;padding:6px 8px;font:12px/1.35 ui-monospace,monospace;background:#000d;color:#7fdc8a;border-radius:8px;pointer-events:none;white-space:pre";
+  const probe = document.createElement("div");
+  probe.style.cssText = "position:fixed;left:0;top:0;width:1px;height:100dvh;visibility:hidden;padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px)";
+  document.body.append(box, probe);
+  layoutProbe = () => {
+    const cs = getComputedStyle(probe), pad = document.getElementById("pad").getBoundingClientRect();
+    const vv = window.visualViewport;
+    box.textContent = [
+      `innerHeight      ${innerHeight}`,
+      `visualViewport   ${vv ? Math.round(vv.height) + " (top " + Math.round(vv.offsetTop) + ")" : "none"}`,
+      `100dvh           ${Math.round(probe.getBoundingClientRect().height - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom))}`,
+      `safe-area top    ${cs.paddingTop}`,
+      `safe-area bottom ${cs.paddingBottom}`,
+      `--app-h          ${document.documentElement.style.getPropertyValue("--app-h")}`,
+      `pad bottom       ${Math.round(pad.bottom)}`,
+      `home screen      ${navigator.standalone || matchMedia("(display-mode: standalone)").matches}`
+    ].join("\n");
+  };
+  setTimeout(layoutProbe, 500);
+  addEventListener("click", () => setTimeout(layoutProbe, 400));
+}
 const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
 
 // localStorage can be missing or throw (private browsing); then progress lasts this visit only.
