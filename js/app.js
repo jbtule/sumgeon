@@ -6,7 +6,7 @@ import { BANDS, choose, factOf, record as recordAnswer, helpFor, openLevel, mons
 import { hintFor, STRATEGIES } from "./hints.js";
 import { openStore, displayName } from "./store.js";
 import { PHRASE, monsterName, monsterCleared, monsterWon, heroName, heroJoins, wingCleared, wingOpened } from "./lines.js";
-import { WINGS, wingOf, runFloors, openWings, toOpen } from "./wings.js";
+import { WINGS, wingOf, runFloors, openWings, toOpen, floorStars, wingStars, STREAK_STAR } from "./wings.js";
 import { traitOf, charged, prefers, hitBy, atHalf } from "./traits.js";
 import { HEROES, CHALK, heroSvg } from "./heroes.js";
 import * as sfx from "./sfx.js";
@@ -186,7 +186,7 @@ function loadMonster(i, quiet) {
   const t = traitOf(m), badge = $("trait");
   badge.hidden = !t;
   if (t) { badge.textContent = `${t.icon} ${t.name}`; badge.title = t.text; }
-  G.onFloor = 0; G.halved = false;
+  G.onFloor = 0; G.halved = false; G.floorLost = 0; G.floorStreak = 0;
   if (!quiet) setMsg(t ? `${t.icon} ${t.name}: ${t.text}` : "Your answer is your attack.");
   $("floorLbl").textContent = m.boss ? "Boss floor" : m.cursed != null ? "Rescue floor" : `Floor ${i + 1} / ${G.floors.length}`;
   hpUI(); heartsUI(); streakUI();
@@ -339,6 +339,7 @@ function submit() {
   if (Number(G.input) === G.cur.ans) {
     G.busy = true; G.solved++;
     if (!G.hinted) G.streak++;
+    G.floorStreak = Math.max(G.floorStreak, G.streak);
     const typed = G.input, crit = G.streak >= 3, bonus = heroBonus(typed), m = G.floors[G.floor];
     // The monster's trait: Lucky Number, Crack, Armor (traits.js).
     const trait = hitBy(m, G.cur.ans, typed, G.halved);
@@ -376,6 +377,7 @@ function miss(why) {
   // A charged problem (Minustaur) costs 2 hearts.
   const cost = G.charged ? 2 : 1;
   G.hearts = Math.max(0, G.hearts - cost);
+  G.floorLost += cost;
   const lost = G.hearts;
   learnFrom(false);
   // after counts down at each new problem, so 3–5 means 2–4 other problems in between.
@@ -412,9 +414,20 @@ function record() {
   store.player(PID).set("wings", progress);
   return f;
 }
+// This floor's stars (wings.js floorStars), saved as the floor's best, shown as a row.
+function earnStars() {
+  const got = floorStars(G.floorLost, G.floorStreak), n = got.filter(Boolean).length;
+  const p = progress[wing().id] || (progress[wing().id] = { boss: 0, best: 0 });
+  p.stars = p.stars || [];
+  if (n > (p.stars[G.floor] || 0)) p.stars[G.floor] = n;
+  store.player(PID).set("wings", progress);
+  const labels = ["Cleared", "No hearts lost", `${STREAK_STAR} in a row`];
+  return `<div class="stars" aria-label="${n} of 3 stars">${got.map((on, i) => `<span class="star${on ? " on" : ""}" style="--i:${i}"><b>★</b><small>${labels[i]}</small></span>`).join("")}</div>`;
+}
 function cleared() {
   const m = G.floors[G.floor];
   if (G.floor === G.floors.length - 1) return end(true);
+  const stars = earnStars();
   const healed = G.hearts < band().hearts;
   if (healed) G.hearts++;
   record();
@@ -430,11 +443,13 @@ function cleared() {
     show(`<h2>${h.n} is free!</h2>
     <div class="cardmon rescued">${heroSvg(h)}</div>
     <p><strong>${h.n} joins your team.</strong> When your answer has a ${h.d}, ${h.n} jumps in and hits harder.</p>
+    ${stars}
     ${next.replace('class="cardmon"', 'class="cardmon small"')}
     <div class="btns"><button class="big" id="next">Floor ${G.floor + 2}</button></div>`);
   } else {
     say("p", monsterCleared(m));
     show(`<h2>${m.n} ${m.quip}</h2>
+  ${stars}
   ${next}
   <div class="btns"><button class="big" id="next">Floor ${G.floor + 2}</button></div>`);
   }
@@ -444,6 +459,7 @@ function end(win) {
   G.running = false;
   const w = wing(), before = openWings(progress, recs, st.start);
   if (win) { progress[w.id] = progress[w.id] || { boss: 0, best: 0 }; progress[w.id].boss++; }
+  const stars = win ? earnStars() : "";
   const f = record(), acc = G.tries ? Math.round(G.solved / G.tries * 100) : 0, m = G.floors[G.floor];
   const opened = WINGS.find((x) => !before.includes(x.id) && openWings(progress, recs, st.start).includes(x.id));
   if (win) { sfx.victory(); say("p", wingCleared(w)); if (opened) say("p", wingOpened(opened)); } else say("p", monsterWon(m));
@@ -451,6 +467,7 @@ function end(win) {
   show(`<h2>${win ? wingCleared(w) : `${m.n} won this round`}</h2>
   ${win ? "" : `<div class="cardmon">${monsterArt(m)}</div>`}
   <p>${win ? `${m.n} is beaten. Every floor of ${w.name} is yours.` : "Every miss shows the right answer, so the next run goes deeper."}</p>
+  ${stars}
   ${left}
   <div class="stats"><div><b>${f}</b><small>floors cleared</small></div><div><b>${G.solved}</b><small>solved</small></div><div><b>${acc}%</b><small>accuracy</small></div></div>
   <p>Best run: <strong>${progress[w.id].best} of ${G.floors.length} floors</strong></p>
@@ -493,7 +510,8 @@ function wingsHTML() {
   return WINGS.map((w) => {
     const b = BANDS[w.band], isOpen = open.includes(w.id), here = w.band === st.band, p = progress[w.id] || {};
     let note;
-    if (isOpen) note = p.boss ? `Cleared ${p.boss}×` : p.best ? `Best: ${p.best} of ${w.floors.length + 1} floors` : "Not tried yet";
+    const ws = wingStars(w, progress);
+    if (isOpen) note = (p.boss ? `Cleared ${p.boss}×` : p.best ? `Best: ${p.best} of ${w.floors.length + 1} floors` : "Not tried yet") + (ws.got ? ` · ★ ${ws.got} of ${ws.max}` : "");
     else { const t = toOpen(w, progress, recs); note = `🔒 Beat ${t.prev.boss} ${t.boss ? "✓" : ""} · learn ${Math.round(t.need * 100)}% of ${t.prev.name} (${Math.round(t.share * 100)}%)`; }
     return `<label class="wing${here ? " here" : ""}${isOpen ? "" : " locked"}"><input type="radio" name="wing" value="${w.id}" ${here ? "checked" : ""} ${isOpen ? "" : "disabled"}>
       <span><b>${w.name}</b><small>${b.label} · ${b.grades}</small><em>${note}</em></span></label>`;

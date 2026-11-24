@@ -33,3 +33,11 @@ assert.deepEqual(openWings({ cellar: { boss: 1 } }, {}, "sprout"), ["cellar"], "
 assert.deepEqual(openWings({ cellar: { boss: 1 } }, recs, "sprout"), ["cellar", "tower"]);
 assert.equal(toOpen(tower, {}, {}).boss, false);
 console.log("✓ wings");
+
+// Stars.
+import { floorStars, wingStars } from "../js/wings.js";
+assert.deepEqual(floorStars(0, 5), [true, true, true]);
+assert.deepEqual(floorStars(2, 4), [true, false, false]);
+assert.deepEqual(wingStars(WINGS[0], { cellar: { stars: [3, 1, 2] } }), { got: 6, max: 15 });
+assert.deepEqual(wingStars(WINGS[1], {}), { got: 0, max: 21 });
+console.log("✓ stars");
