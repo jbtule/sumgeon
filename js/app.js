@@ -7,6 +7,7 @@ import { hintFor, STRATEGIES } from "./hints.js";
 import { openStore, displayName } from "./store.js";
 import { PHRASE, monsterName, monsterCleared, monsterWon, heroName, heroJoins, wingCleared, wingOpened } from "./lines.js";
 import { WINGS, wingOf, runFloors, openWings, toOpen } from "./wings.js";
+import { traitOf, charged, prefers, hitBy, atHalf } from "./traits.js";
 import { HEROES, CHALK, heroSvg } from "./heroes.js";
 import * as sfx from "./sfx.js";
 import { say, stopSpeech, setVoice } from "./speech.js";
@@ -181,6 +182,12 @@ function loadMonster(i, quiet) {
   el.className = "mon";
   el.innerHTML = monsterArt(m);
   $("mName").textContent = m.n;
+  // The trait badge, and what it does under the monster as it arrives.
+  const t = traitOf(m), badge = $("trait");
+  badge.hidden = !t;
+  if (t) { badge.textContent = `${t.icon} ${t.name}`; badge.title = t.text; }
+  G.onFloor = 0; G.halved = false;
+  if (!quiet) setMsg(t ? `${t.icon} ${t.name}: ${t.text}` : "Your answer is your attack.");
   $("floorLbl").textContent = m.boss ? "Boss floor" : m.cursed != null ? "Rescue floor" : `Floor ${i + 1} / ${G.floors.length}`;
   hpUI(); heartsUI(); streakUI();
   if (quiet) return;
@@ -196,7 +203,10 @@ function newProblem() {
   const due = G.retry.find((r) => r.after <= 0);
   if (due) G.retry.splice(G.retry.indexOf(due), 1);
   const m = G.floors[G.floor];
-  const key = choose(st.band, recs, { now: Date.now(), recent: G.recent, retry: due ? due.key : null, op: m.op === "mix" ? null : m.op });
+  const key = choose(st.band, recs, { now: Date.now(), recent: G.recent, retry: due ? due.key : null, op: m.op === "mix" ? null : m.op, like: prefers(m) });
+  // Charge (Minustaur): every 4th problem on the floor, a miss costs 2 hearts.
+  G.charged = charged(m, G.onFloor++);
+  $("charge").hidden = !G.charged;
   G.cur = factOf(key);
   G.recent = [key].concat(G.recent).slice(0, 3);
   G.input = ""; G.busy = false; G.hinted = false; G.t0 = performance.now();
@@ -330,9 +340,9 @@ function submit() {
     G.busy = true; G.solved++;
     if (!G.hinted) G.streak++;
     const typed = G.input, crit = G.streak >= 3, bonus = heroBonus(typed), m = G.floors[G.floor];
-    // Lucky Number: a cursed digit takes double from answers with its digit (DESIGN.md §6.6).
-    const lucky = m.cursed != null && typed.includes(String(m.cursed));
-    const dmg = Math.round(G.cur.ans * (crit ? 2 : 1) * (lucky ? 2 : 1) * bonus.mult);
+    // The monster's trait: Lucky Number, Crack, Armor (traits.js).
+    const trait = hitBy(m, G.cur.ans, typed, G.halved);
+    const dmg = Math.max(1, Math.round(G.cur.ans * (crit ? 2 : 1) * trait.mult * bonus.mult));
     const level = learnFrom(true);
     G.input = ""; ansUI();
     $("hint").hidden = true; $("hintBtn").hidden = true;
@@ -344,8 +354,15 @@ function submit() {
       pop((bonus.power ? "Power! " : crit ? "Crit! " : "") + "−" + dmg, crit || bonus.power);
       restartAnim($("mon"), "hit");
       if (crit) restartAnim($("arena"), "shake");
-      setMsg(level ? `New level: ${level}!` : lucky ? `Lucky ${m.cursed}! Double damage: ${dmg}!` : bonus.power ? `${HEROES[team.captain].n} power hit for ${dmg}!` : crit ? `Critical hit for ${dmg}!` : `Hit for ${dmg}!`, "good");
+      setMsg(level ? `New level: ${level}!` : trait.note ? `${trait.note}: ${dmg}!` : bonus.power ? `${HEROES[team.captain].n} power hit for ${dmg}!` : crit ? `Critical hit for ${dmg}!` : `Hit for ${dmg}!`, "good");
       hpUI(); streakUI();
+      // Half HP: Divvy splits in two, Sigma Rex armors up (traits.js).
+      const half = !G.halved && G.hp > 0 && G.hp <= G.max / 2 ? atHalf(m) : null;
+      if (!G.halved && G.hp <= G.max / 2) G.halved = true;
+      if (half) {
+        setMsg(half.note, "good");
+        if (half.split) { $("mon").innerHTML = `<div class="split">${monsterArt(m)}${monsterArt(m)}</div>`; }
+      }
       if (G.hp <= 0) { setTimeout(() => { $("mon").className = "mon dead"; }, 300); setTimeout(cleared, 1100); }
       else setTimeout(newProblem, level ? 1200 : 450);
     });
@@ -356,7 +373,9 @@ function submit() {
 // and said with the worked example, and the fact comes back 2–4 problems later.
 function miss(why) {
   G.busy = true; G.streak = 0;
-  G.hearts--;
+  // A charged problem (Minustaur) costs 2 hearts.
+  const cost = G.charged ? 2 : 1;
+  G.hearts = Math.max(0, G.hearts - cost);
   const lost = G.hearts;
   learnFrom(false);
   // after counts down at each new problem, so 3–5 means 2–4 other problems in between.
@@ -364,7 +383,7 @@ function miss(why) {
   sfx.miss();
   restartAnim($("mon"), "lunge");
   streakUI();
-  setMsg(`${why} ${G.cur.q} = ${G.cur.ans}`, "bad");
+  setMsg(`${why} ${G.cur.q} = ${G.cur.ans}${cost > 1 ? " ⚡ −2 hearts" : ""}`, "bad");
   say("p", PHRASE.oops, true);
   say("q", spokenFact(G.cur));
   setTimeout(() => {
@@ -419,7 +438,7 @@ function cleared() {
   ${next}
   <div class="btns"><button class="big" id="next">Floor ${G.floor + 2}</button></div>`);
   }
-  $("next").onclick = () => { hide(); loadMonster(G.floor + 1); setMsg("Your answer is your attack."); newProblem(); };
+  $("next").onclick = () => { hide(); loadMonster(G.floor + 1); newProblem(); };
 }
 function end(win) {
   G.running = false;
@@ -637,7 +656,6 @@ function start() {
   Object.assign(G, { hearts: band().hearts, streak: 0, solved: 0, tries: 0, running: true, retry: [], recent: [], next: false });
   stopSpeech();
   loadMonster(0);
-  setMsg("Your answer is your attack.");
   newProblem();
 }
 

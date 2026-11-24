@@ -59,13 +59,15 @@ What changes:
 | 7 fixed floors | A run becomes a trip through one **Wing** (§4) with 5–7 floors and a boss. Wings unlock as you clear them. |
 
 ### Monster abilities (light, readable, math-based)
-Each monster gets one simple trait that changes *how* you do math, never anything unfair:
+Each monster gets one simple trait that changes *how* you do math, never anything unfair (built in `js/traits.js`):
 - **Plusquito**: none (the tutorial monster).
-- **Minustaur**: *Charge*. Every 4th problem is marked ⚡ and does double damage to you on a miss.
-- **Timesaur**: *Armor*. Damage under 10 is halved, so bigger products matter.
-- **Divvy**: *Split*. At half HP it splits into two half-size Divvies.
-- **Cursed digits** (Sevenstein, Octoloop and the other eight; §6.6): *Lucky Number*. Answers containing its digit deal double damage.
-- **Sigma Rex**: *Summation*. Its problems are short chains like 3 + 4 + 5 and its HP bar has phases.
+- **Minustaur**: ⚡ *Charge*. Every 4th problem is charged, and a miss on it costs 2 hearts.
+- **Timesaur**: 🛡️ *Armor*. Hits under 10 do half damage, so bigger products matter.
+- **Divvy**: ✂️ *Split*. At half HP it splits into two half-size Divvies.
+- **Starbot**: ⭐ *Stripes*. It asks the ×5 and ×10 tables more often.
+- **Make-Ten Golem**: 🧱 *Crack*. Answers of 10 or more hit double.
+- **Sigma Rex**: 👑 *Second wind*. At half HP it armors up like Timesaur.
+- **Cursed digits** (Sevenstein, Octoloop and the other eight; §6.6): 🍀 *Lucky Number*. Answers containing its digit deal double damage.
 
 Explain each trait with a single icon and five words or fewer.
 

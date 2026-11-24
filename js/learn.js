@@ -109,7 +109,8 @@ export function record(rec, { ok, ms, hinted, now, fluentMs }) {
 }
 
 // The next fact's key. opts: { now, rnd, recent: [keys] (not again so soon), retry: key due now
-// or null, op: the monster's operation, preferred 70% of the time when it has facts here }.
+// or null, op: the monster's operation, preferred 70% of the time when it has facts here,
+// like: a test on a key for facts the monster asks more often (a trait), also 70% }.
 // About 60% learning facts (seen, box 0–2, weighted to box 0 and the longest unseen), 25%
 // review facts that are due, 15% new ones (from the newest open level first).
 export function choose(bandKey, recs, opts) {
@@ -121,6 +122,10 @@ export function choose(bandKey, recs, opts) {
   if (opts.op) {
     const mine = open.filter((f) => f.op === opts.op);
     if (mine.length && rnd() < 0.7) open = mine;
+  }
+  if (opts.like) {
+    const liked = open.filter((f) => opts.like(f.key));
+    if (liked.length && rnd() < 0.7) open = liked;
   }
   const fresh = open.filter((f) => !recs[f.key] || !recs[f.key].n);
   const learning = open.filter((f) => recs[f.key] && recs[f.key].n && recs[f.key].b <= 2);
