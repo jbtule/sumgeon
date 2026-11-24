@@ -24,8 +24,8 @@ The age range is 5–14 (kindergarten to 8th grade), which is too wide for one d
 
 | Band | Ages (≈ grade) | Core skills | Defaults |
 |---|---|---|---|
-| **Sprout** | 5–7 (K–1) | Add/subtract within 10, then 20; counting on; doubles; make-ten | No timer, word-free UI with spoken instructions, visual hints (dots, ten-frames), 7 hearts |
-| **Apprentice** | 8–9 (2–3) | Add/subtract within 100; times tables to 10; division as an inverse fact | Timer off, hints on, 5 hearts |
+| **Sprout** | 5–7 (K–1) | How many? (dot flash); compare; add/subtract fluently within 5, then within 10, then 20; make 10; teen numbers as 10 + ones; counting on; doubles; count by 1s and 10s, then 5s; coin names, then values | No timer, word-free UI with spoken instructions, visual hints (dots, ten-frames), 7 hearts |
+| **Apprentice** | 8–9 (2–3) | Add/subtract within 100; count by 2s; arrays up to 5×5; money with $ and ¢; times tables to 10; division as an inverse fact | Timer off, hints on, 5 hearts |
 | **Adept** | 10–11 (4–5) | Multi-digit ×÷, tables to 12, fractions (equivalent, add like denominators), decimals to tenths and hundredths | Timer optional, 5 hearts |
 | **Master** | 12–14 (6–8) | Negatives, order of operations, percents, exponents and roots, one-step equations | Timer on, 5 hearts, harder bosses |
 
@@ -102,8 +102,8 @@ Every Wing also has one **rescue floor** holding a cursed digit (§6.6). The pro
 - **Halfling (½)**: its body is literally split in two. When hit, it shows the damage as a filling fraction bar.
 - **Quizard (?)**: a wizard whose hat curls into a question mark. *Mystery*: the missing number moves around (3 + □ = 7).
 - **Shoutandcomma (!)**: a mummy whose tall wrapped body is the !, with the dot as its feet. The name is a pun on Tutankhamun. *Count on*: problems that count on from the bigger number (8 + 3).
-- **Slimelipsis (…)**: three little slimes in a row. *What comes next*: skip-counting sequences (2, 4, 6, □).
-- **Trollar ($)**: a bridge troll with a $ on his belly who wants coins to let you pass. *Pocket change*: counting pennies, nickels and dimes.
+- **Slimelipsis (…)**: three little slimes in a row. *What comes next*: counting sequences that follow the band: by 1s and 10s and backward from 10 in K, by 5s in grade 1, by 2s in grade 2 (2, 4, 6, □).
+- **Trollar ($)**: a bridge troll with a $ on his belly who wants coins to let you pass. *Pocket change*: follows the band: name the coin (K), then know each coin's value (grade 1). Adding mixed bills and coins with $ and ¢ waits for Apprentice (grade 2).
 - **Starbot (*)**: a robot with a star-burst head, since * is how computers write ×. *Stripes*: favors the ×5 and ×10 tables.
 - **Boomainder (R)**: a ghost who haunts the leftovers. Division with remainders (17 ÷ 5 = 3 R2), which leads into mixed numbers (3⅖).
 - **Slashbuckler (/)**: a swashbuckler whose sword is the slash. Writes division as 24 / 6, so kids learn the other notation.
@@ -130,9 +130,45 @@ For each problem slot, choose:
 
 The monster's preferred operation still applies (the 70% rule from the prototype), but selection happens *within* that operation's fact pool.
 
-### 5.3 Miss recovery
-- A missed problem goes into a **retry queue** and comes back after 2–4 other problems, so it lands in short-term memory without becoming a trivial repeat.
-- After **two misses on the same fact** in one run, the next attempt shows a **hint**: a dot array for ×, a number line for ±, a pie for fractions. Solving with a hint still does damage but doesn't build a streak.
+### 5.3 Teaching with hints (help that fades)
+The game should **teach first, then fade the help out** as a fact gets learned, instead of waiting for misses. Hints follow **how math is taught now**: the **Missouri Learning Standards** (2016 K–5 grade-level expectations) and the models and words local K–5 curricula use. Missouri names *what* to learn, not *which method*. Its grades 4–5 say "justify the solution" and never require a standard algorithm, so hints show the strategy models, which classroom curricula use.
+
+**Help follows the fact's Leitner box (§5.1):**
+| Fact state | What the player sees |
+|---|---|
+| **New** (never seen) | A **"show me" model appears automatically** beside the problem, such as 3 + 4 as dots on a ten-frame. She counts, then types. |
+| **Learning** (box 1–2) | A **💡 hint button**. The model appears only when tapped. |
+| **Review** (box 3–4) | No button. A hint comes back only after a miss. |
+| **After any miss** | A **worked example** instead of just the answer, animated and read aloud. 8 + 5 → 8 + 2 = 10, then 10 + 3 = 13. The fact then goes into the **retry queue** and returns 2–4 problems later. |
+
+**First time a new *kind* of problem appears** (Quizard's □, Trollar's coins), the player's captain shows one example. It takes about 10 seconds, is read aloud, can be skipped, and is shown once per player.
+
+**Hints never punish:** no heart lost, full damage, and the timer pauses while a hint is open. A hinted solve doesn't build the crit streak and doesn't move the fact up a box, so mastery needs solves without help. Grown-ups can set hints to automatic, on tap, or off.
+
+**Hints teach a strategy and never just show the answer** (the same rule as Sound Box: scaffolds help the player work it out). Strategies by problem type:
+
+| Problem type | Hint model and words | Missouri GLE |
+|---|---|---|
+| How many? (dot flash) | Dot patterns as on dice, dominoes and five-frames | K.NS.B.8 |
+| Compare | Two dot sets side by side, then two numerals on a number line: "more," "less," "same as" | K.NS.C |
+| Add within 10 | Ten-frame or **number bond**. Words: "put together," "in all" | K.RA.A.1–2 |
+| Subtract within 10 | **Draw and cross out**, or count back on a number line. Words: "take away," "how many are left?" | K.RA.A.1–2 |
+| Make 10 | Ten-frame with the empty spaces glowing | K.RA.A.4 |
+| Teen numbers | "10 and some more": a full ten-frame plus extras, 10 + 4 = 14 | K.NBT.A |
+| Add within 20 | **Make 10**: 8 + 5 → 8 + 2 + 3. **Doubles plus one**: 6 + 7 = 6 + 6 + 1 | 1.RA.B.1 (properties as strategies) |
+| Subtract within 20 | **Think addition**: 12 − 8 → "8 + ? = 12", counting up on a number line | 1.RA.B.2 (unknown addend) |
+| Missing number | A number bond or balance with the □ glowing | 1.RA.A.4 |
+| Count by 1s and 10s, then 5s, then 2s | Hops on a number line or hundred chart | K.NS.A.1, 1.NS.A.4, 2.RA.B.1 |
+| Coins | Coin pictures with their values ("A nickel is worth five cents"), then counted biggest first | K.GM.B.5 (names), 1.GM.C.9 (values), 2.GM.D.12 (combinations with $ and ¢) |
+| Add/subtract within 100 | Open number line with jumps of 10s and 1s, and "10 more, 10 less" | 1.NBT.B, 2.NBT.B |
+| Multiply | **Arrays** (rows of dots), **turn-around facts** (6 × 4 = 4 × 6), **break apart**: 8 × 7 = 8 × 5 + 8 × 2. For ×9, use 9 × 7 = 70 − 7 (not the finger trick) | 2.RA.B.2 (arrays), 3.RA.B.1, 3.RA.C.1 |
+| Divide | **Think multiplication**: 32 ÷ 8 → "8 × ? = 32" | 3.RA.A.5, 3.RA.C.1 |
+| Multi-digit × and ÷ | **Area model** (23 × 4 as 20 × 4 + 3 × 4) and partial quotients | 4.NBT.A.6–7 |
+| Fractions | Fraction bars, pies and number lines | 3.NF, 4.NF |
+
+**"For grown-ups" note on every hint:** one plain line explaining the strategy, so a parent who learned the old way can follow along and use the same words. For example: "Make 10: kids split the 5 into 2 + 3 so 8 becomes an easy 10." For multi-digit problems, the note also shows the familiar standard algorithm.
+
+**Match the classroom's words.** Hint copy uses the words in the standards and local curriculum guides ("number bond," "ten-frame," "10 and some more"), not invented ones. Check the guides for each grade when building that band.
 
 ### 5.4 Adaptive difficulty (within a band)
 - Keep a rolling accuracy over the last 10 problems. Above 90% with fast answers, raise the number range one step. Below 60%, lower it a step and turn hints on sooner.
@@ -476,6 +512,7 @@ Start over sits in Settings and asks the grown-up to type "start over", as in So
 - **Hearts for Sprout:** yes. Kindergarten-age players can handle losing a run. Sprout gets 7 hearts.
 - **Multiple choice:** no, in any band. Answers are always typed.
 - **Names checked against existing characters (2026-11-23):** Numberjacks (BBC) has digits 0–9 as heroes vs. villains, but our names, looks and summon mechanic are our own. The 0 hero is **Zeroic**, not "Hero Zero" (too close to the classroom tradition and picture book *Zero the Hero*). The 8 hero is **Chef Eight**, not a tentacle superhero (too close to Numberblocks' Octoblock). The Pirate Cove boss is **Dread Pirate Radius**, not Captain Circumference (the *Sir Cumference* books use the same pun). The Negative Zone monster is **Negasicle**.
+- **Hints follow the Missouri Learning Standards** and the models and words local curricula use (§5.3). Missouri doesn't name a method, so hints show strategy models, and a "For grown-ups" note explains each one. Sprout starts at fluency within 5, as the K standard says.
 - **Digit heroes:** the digits 0–9 are the player's heroes and the operators are the monsters. Your captain is your avatar, your answer summons its digits, and one cursed digit is rescued per Wing clear (§6.6).
 - **Pre-reader support:** the target pre-reader reads numbers fluently, so only words (instructions, menus, story text) need icons and voice. Problems stay numeric.
 - **Voice, achievements, players and linking copy sound-box-crosswords** (§13–15).
