@@ -68,3 +68,13 @@ export function toOpen(wing, progress, recs) {
   if (!prev) return null;
   return { prev, boss: ((progress[prev.id] || {}).boss || 0) > 0, share: learnedShare(prev, recs), need: OPEN_AT };
 }
+
+// A floor's stars (DESIGN.md §6.1): ★ cleared, ★ no hearts lost on it, ★ a streak of 5 on it.
+// Returns [cleared, noHeartsLost, streakOf5].
+export const STREAK_STAR = 5;
+export function floorStars(lost, bestStreak) { return [true, lost === 0, bestStreak >= STREAK_STAR]; }
+// A Wing's stars so far, and the most it can have: { got, max }.
+export function wingStars(wing, progress) {
+  const p = (progress[wing.id] || {}).stars || [];
+  return { got: p.reduce((a, b) => a + (b || 0), 0), max: (wing.floors.length + 1) * 3 };
+}
