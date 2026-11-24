@@ -333,7 +333,7 @@ Hitting a monster should feel good. Today there is a shake and a damage pop. The
 - **Grade/band** only sets the starting Wings and help defaults. Faking a higher grade on a new player just means harder math.
 - **Hints, read-aloud and the timer** are comfort settings. Hinted solves never count toward mastery (§5.3), so turning hints on is no shortcut.
 - **Custom practice**, e.g. "only the 6, 7 and 8 times tables", runs as a separate Practice run outside the Wings. It builds fact mastery like any other play but never unlocks a Wing.
-- **Destructive actions** (Start over, removing a player) ask for a typed phrase to prevent accidents (§15.5), and a removed player can be **restored for 7 days**, so a sibling's mistake or mischief can be undone.
+- **Destructive actions** (Start over, removing a player) ask for a typed phrase to prevent accidents (§15.5). They only ever touch **this device**: a linked player lives on every linked device, so if a sibling removes the other on the phone, the iPad still has them and can send them back (§15.2). **Linking a second device is the backup.** A player on only one device has no undo, so suggest linking in the Players tab.
 
 The corner holds:
 - **Custom practice** (above).
@@ -496,7 +496,7 @@ _Copies sound-box-crosswords profiles (`profilePrefix`, `OWN_KEYS`, `GRADE_KEYS`
 - **Every device starts with one profile, `default`.** "Add a player" makes a new, empty profile, which asks the band question. The first time, the default player also gets a name.
 - **Names belong to the device and never sync.** An empty name shows as "Default".
 - A quiet line under the title, "Playing as Sam", appears once there are two or more players and opens the player picker. Each player's avatar is their **captain** in their **chalk color** (§6.6), which helps a pre-reader find herself in the list. Unlike the name, the captain and color **do sync**: they aren't identifying, and Receive's "Who is this?" shows the incoming player's captain so the grown-up can tell who it is.
-- Any player except the one playing can be removed, after typing their name to confirm. The player is hidden, not wiped, and can be **restored for 7 days**. After that, everything under their prefix is deleted.
+- Any player except the one playing can be removed. As in Sound Box (`removeProfile`), that wipes everything under their prefix **on this device only**. Other devices holding the player keep them and keep syncing, so a removed player comes back with Receive from any linked device.
 - **Storage upgrade:** version 2 moves the prototype's `sumgeon` key (`{ops,diff,timer,best}`) into `sumgeon:@default:`, one key at a time, so an interrupted move finishes at the next launch.
 - Every key saved per player or per band has to be listed (`OWN_KEYS` / `BAND_KEYS`), and a check fails on one that isn't, so sync and Start over can't miss it.
 
@@ -534,7 +534,7 @@ Start over sits in Settings and asks the grown-up to type "start over", as in So
 - **Names checked against existing characters (2026-11-23):** Numberjacks (BBC) has digits 0–9 as heroes vs. villains, but our names, looks and summon mechanic are our own. The 0 hero is **Zeroic**, not "Hero Zero" (too close to the classroom tradition and picture book *Zero the Hero*). The 8 hero is **Chef Eight**, not a tentacle superhero (too close to Numberblocks' Octoblock). The Pirate Cove boss is **Dread Pirate Radius**, not Captain Circumference (the *Sir Cumference* books use the same pun). The Negative Zone monster is **Negasicle**.
 - **Hints follow the Missouri Learning Standards** and the models and words local curricula use (§5.3). Missouri doesn't name a method, so hints show strategy models, and a "For grown-ups" note explains each one. Sprout starts at fluency within 5, as the K standard says.
 - **Mastery unlocks Wings** (boss beaten plus over 60% of facts mastered). Grade only sets the starting Wings and help defaults. Lower Wings stay open, and speed counts for every player, never compared across siblings (§4, §6.7).
-- **No grown-up lock** (§9): nothing in settings makes progress easier, so there's nothing to guard. Destructive actions take a typed phrase, and removed players can be restored for 7 days.
+- **No grown-up lock** (§9): nothing in settings makes progress easier, so there's nothing to guard. Destructive actions take a typed phrase and only affect the device they're done on. A linked device keeps the player, so it can restore them.
 - **Digit heroes:** the digits 0–9 are the player's heroes and the operators are the monsters. Your captain is your avatar, your answer summons its digits, and one cursed digit is rescued per Wing clear (§6.6).
 - **Pre-reader support:** the target pre-reader reads numbers fluently, so only words (instructions, menus, story text) need icons and voice. Problems stay numeric.
 - **Voice, achievements, players and linking copy sound-box-crosswords** (§13–15).
