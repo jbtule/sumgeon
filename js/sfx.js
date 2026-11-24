@@ -1,0 +1,119 @@
+// Sound effects, synthesized with Web Audio (no files to load), patterned on
+// sound-box-crosswords' chime.js. iOS only allows audio that starts from a tap, so the
+// context is created on the first tap and woken on later taps if iOS paused it.
+
+var ctx = null, out = null, on = true, noiseBuf = null;
+
+function unlock() {
+  if (ctx) { if (ctx.state === "suspended") { try { ctx.resume(); } catch (e) {} } return; }
+  try {
+    var AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return;
+    ctx = new AC();
+    if (ctx.state === "suspended") ctx.resume();
+    out = ctx.createGain();
+    out.gain.value = 0.8;
+    out.connect(ctx.destination);
+    noiseBuf = ctx.createBuffer(1, ctx.sampleRate * 0.5, ctx.sampleRate);
+    var d = noiseBuf.getChannelData(0);
+    for (var i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+  } catch (e) { ctx = null; }
+}
+// Every tap, not just the first: it also wakes audio iOS paused in the background.
+document.addEventListener("pointerdown", unlock, true);
+document.addEventListener("keydown", unlock, true);
+
+export function setSfx(enabled) { on = !!enabled; }
+
+function play(fn) {
+  if (!on || !ctx) return;
+  try {
+    if (ctx.state === "suspended") ctx.resume();
+    fn(ctx.currentTime + 0.02);
+  } catch (e) {}
+}
+function hz(midi) { return 440 * Math.pow(2, (midi - 69) / 12); }
+
+// A tone that glides from f1 to f2 over dur seconds.
+function tone(type, f1, f2, t, dur, level) {
+  var o = ctx.createOscillator(), g = ctx.createGain();
+  o.type = type;
+  o.frequency.setValueAtTime(f1, t);
+  o.frequency.exponentialRampToValueAtTime(Math.max(20, f2), t + dur);
+  g.gain.setValueAtTime(0, t);
+  g.gain.linearRampToValueAtTime(level, t + 0.008);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  o.connect(g).connect(out);
+  o.start(t); o.stop(t + dur + 0.05);
+}
+// A burst of filtered noise: chalk scratches, thuds and cracks.
+function noise(t, dur, level, filter, freq) {
+  var s = ctx.createBufferSource(), f = ctx.createBiquadFilter(), g = ctx.createGain();
+  s.buffer = noiseBuf;
+  f.type = filter; f.frequency.value = freq;
+  g.gain.setValueAtTime(level, t);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  s.connect(f).connect(g).connect(out);
+  s.start(t); s.stop(t + dur + 0.05);
+}
+// A mallet note (MIDI number), for the jingles.
+function mallet(midi, t, level, dur) {
+  tone("triangle", hz(midi), hz(midi), t, dur, level);
+  tone("sine", hz(midi) * 4, hz(midi) * 4, t, dur * 0.3, level * 0.06);
+}
+
+// A number-pad key: a soft chalk tick.
+export function tick() { play(function (t) { noise(t, 0.03, 0.18, "highpass", 3000); }); }
+
+// The answer leaves the pad: a whoosh that climbs higher as the streak grows.
+export function launch(streak) {
+  var lift = Math.min(streak, 8) * 1.5;
+  play(function (t) {
+    tone("sine", hz(67 + lift), hz(79 + lift), t, 0.22, 0.12);
+    noise(t, 0.2, 0.08, "bandpass", 1800);
+  });
+}
+
+// The number lands. A crit adds a crunch and a bright ring.
+export function impact(crit) {
+  play(function (t) {
+    tone("sine", 160, 45, t, 0.18, 0.5);
+    noise(t, 0.08, 0.3, "lowpass", 900);
+    if (crit) {
+      noise(t, 0.22, 0.35, "bandpass", 2500);
+      mallet(91, t + 0.02, 0.18, 0.4);
+    }
+  });
+}
+
+// A wrong answer: a low wobble.
+export function miss() {
+  play(function (t) {
+    tone("triangle", 330, 240, t, 0.16, 0.25);
+    tone("triangle", 260, 170, t + 0.15, 0.25, 0.25);
+  });
+}
+
+// A heart breaking off.
+export function crack() { play(function (t) { noise(t, 0.12, 0.3, "highpass", 1400); tone("square", 900, 300, t, 0.1, 0.05); }); }
+
+// A monster arrives: a quick pop. Bosses get a low, ominous pair of notes.
+export function appear(boss) {
+  play(function (t) {
+    if (boss) { mallet(43, t, 0.35, 0.6); mallet(42, t + 0.35, 0.35, 0.9); }
+    else tone("sine", 300, 900, t, 0.1, 0.18);
+  });
+}
+
+// A floor cleared: a rising mallet jingle.
+export function cleared() {
+  play(function (t) { [72, 76, 79, 84].forEach(function (m, i) { mallet(m, t + i * 0.09, 0.3, 0.35); }); });
+}
+
+// The Sumgeon cleared: a short fanfare.
+export function victory() {
+  play(function (t) {
+    [[72, 0], [76, 0.12], [79, 0.24], [84, 0.36], [79, 0.6], [84, 0.72]].forEach(function (n) { mallet(n[0], t + n[1], 0.3, 0.45); });
+    [72, 76, 79, 84].forEach(function (m) { mallet(m, t + 0.9, 0.16, 1.2); });
+  });
+}

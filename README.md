@@ -1,7 +1,10 @@
 # Sumgeon
 
-A math-practice dungeon crawler: the answer to each problem is your attack. Open
-`index.html` in a browser to play the prototype. See `DESIGN.md` for where it's going.
+A math-practice dungeon crawler: the answer to each problem is your attack. See `DESIGN.md`
+for where it's going.
+
+To run it locally, serve the folder with any static server, e.g. `python3 -m http.server 8791`,
+then open http://localhost:8791. `npm run check` runs the tests (no install needed).
 
 Will be live at https://tools.tuley.name/sumgeon/.
 

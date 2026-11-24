@@ -1,0 +1,9 @@
+{
+  "name": "sumgeon",
+  "private": true,
+  "type": "module",
+  "description": "A math-practice dungeon crawler: your answer is your attack.",
+  "scripts": {
+    "check": "node scripts/check.mjs"
+  }
+}

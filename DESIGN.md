@@ -378,7 +378,7 @@ The corner holds:
 
 Each milestone should be playable and shippable on its own.
 
-1. **M1 — Feel and foundations**
+1. **M1 — Feel and foundations** ✅ (2026-11-23), except recorded clips: `say()` is in place and uses the device voice until the Kokoro audio build and its Cloudflare host are set up.
    Split into modules, the storage upgrade plus players (§15.1), Web Audio sound effects, the Start button, `say()` with recorded clips for UI phrases and monster names (§13), the projectile attack animation, monster counterattack on a miss, and a streak flame.
 2. **M2 — Learning engine**
    Fact records, Leitner selection, the retry queue, hints after repeated misses, adaptive range within a band, and content bands replacing raw Easy/Medium/Hard.

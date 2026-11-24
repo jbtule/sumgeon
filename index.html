@@ -7,101 +7,33 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bungee&family=Nunito:wght@600;800;900&display=swap" rel="stylesheet">
-<style>
-/* VOICE: playful dungeon crawl for math practice, loud but kind
-   IDEA: a chalkboard dungeon where the monsters are living glyphs
-   PICTURE: the current glyph monster, large, bobbing over a lit stone floor
-   COLOUR and TYPE: slate chalkboard, chalk white, coral + gold accents; Bungee + Nunito
-   LAYOUT: arena on top, problem + number pad below; side by side when wide */
-:root{color-scheme:dark;--bg:#12242b;--panel:#1a313a;--line:#2a4852;--ink:#f3efe4;--muted:#a9bec1;--coral:#ff5a4e;--gold:#ffc93c;--dark:#0c171c}
-*{box-sizing:border-box;min-width:0}
-body{margin:0;background:var(--bg);color:var(--ink);font:600 16px/1.5 Nunito,system-ui,sans-serif;overflow-x:clip;min-height:100vh}
-button{font:inherit;color:inherit;cursor:pointer}
-button:focus-visible,label:focus-within{outline:3px solid var(--gold);outline-offset:2px}
-.top{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px max(4vw,14px)}
-h1{font:400 clamp(24px,5vw,34px)/1.05 Bungee,sans-serif;margin:0;color:var(--gold);letter-spacing:.5px}
-h1 b{color:var(--coral);font-weight:400}
-.floor{font:400 14px Bungee,sans-serif;color:var(--muted);white-space:nowrap}
-.game{display:grid;gap:14px;padding:0 max(4vw,14px) 20px;max-width:1100px;margin:0 auto}
-@media(min-width:760px){.game{grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);align-items:stretch}}
-.arena{position:relative;border-radius:22px;padding:14px;background:radial-gradient(ellipse 70% 55% at 50% 78%,#2f5560 0,#1a313a 55%,#10202600 100%),repeating-linear-gradient(0deg,#16292f 0 38px,#13252b 38px 40px);border:2px solid var(--line);overflow:hidden;transition:box-shadow .2s}
-.arena.hurt{box-shadow:inset 0 0 0 4px var(--coral),inset 0 0 60px #ff5a4e66}
-.mhead{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-.mname{font:400 18px Bungee,sans-serif}
-.hp{flex:1 1 120px;height:14px;background:var(--dark);border-radius:9px;overflow:hidden;border:2px solid var(--dark)}
-.hp i{display:block;height:100%;width:100%;background:linear-gradient(#ff8a7f,var(--coral));border-radius:7px;transition:width .35s ease}
-.hptxt{font:800 14px Nunito;color:var(--muted);white-space:nowrap}
-.stage{position:relative;height:clamp(210px,38vh,300px);display:grid;place-items:center}
-.shadow{position:absolute;bottom:12px;left:50%;width:46%;height:22px;transform:translateX(-50%);background:radial-gradient(#0008,#0000 70%)}
-.mon{width:min(64vw,250px);aspect-ratio:1;position:relative;z-index:1;animation:bob 2.4s ease-in-out infinite}
-.mon svg{width:100%;height:100%;display:block;overflow:visible}
-.mon.hit{animation:hit .4s}
-.mon.dead{animation:dead .8s forwards}
-@keyframes bob{50%{transform:translateY(-8px)}}
-@keyframes hit{20%{transform:translateX(-12px) rotate(-4deg);filter:brightness(2)}60%{transform:translateX(9px) rotate(3deg)}}
-@keyframes dead{to{transform:translateY(40px) rotate(25deg) scale(.6);opacity:0}}
-#fx{position:absolute;inset:0;pointer-events:none;z-index:2}
-.pop{position:absolute;left:50%;top:38%;transform:translateX(-50%);font:400 clamp(30px,7vw,46px) Bungee,sans-serif;color:var(--gold);-webkit-text-stroke:2px var(--dark);animation:pop .9s ease-out forwards;white-space:nowrap}
-.pop.crit{color:var(--coral)}
-@keyframes pop{0%{opacity:0;transform:translate(-50%,10px) scale(.6)}20%{opacity:1;transform:translate(-50%,-6px) scale(1.15)}100%{opacity:0;transform:translate(-50%,-60px)}}
-.you{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-weight:900}
-.hearts{color:var(--coral);font-size:22px;letter-spacing:2px}.hearts span{color:#3a5560}
-.streak{margin-left:auto;font:400 13px Bungee,sans-serif;color:var(--gold)}
-.panel{background:var(--panel);border:2px solid var(--line);border-radius:22px;padding:14px;display:flex;flex-direction:column;gap:10px}
-.timer{height:8px;border-radius:6px;background:var(--dark);overflow:hidden}.timer i{display:block;height:100%;width:100%;background:var(--gold)}
-.timer[hidden]{display:none}
-.prob{font:400 clamp(36px,9vw,56px)/1.05 Bungee,sans-serif;text-align:center;white-space:nowrap}
-.ans{font:400 clamp(30px,7vw,42px)/1.1 Bungee,sans-serif;text-align:center;min-height:56px;padding:6px;border-radius:14px;background:var(--dark);color:var(--gold);border:2px dashed #3a5560}
-.msg{min-height:24px;text-align:center;font-weight:800;color:var(--muted)}.msg.bad{color:#ff8a7f}.msg.good{color:var(--gold)}
-.pad{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
-.pad button{min-height:56px;border:0;border-radius:14px;background:#24414b;font:400 24px Bungee,sans-serif;box-shadow:0 4px 0 var(--dark);transition:transform .05s}
-.pad button:active{transform:translateY(3px);box-shadow:0 1px 0 var(--dark)}
-.pad .go{background:var(--coral);color:#fff;font-size:20px}
-.pad .del{background:#2f4f5a;font-size:20px}
-.ov{position:fixed;inset:0;background:#081014d9;display:grid;place-items:center;padding:16px;z-index:9;overflow:auto}
-.ov[hidden]{display:none}
-.card{background:var(--panel);border:2px solid var(--line);border-radius:24px;padding:clamp(18px,4vw,28px);width:min(560px,100%);display:grid;gap:14px}
-.card h2{font:400 clamp(28px,6vw,40px)/1.05 Bungee,sans-serif;margin:0;color:var(--gold);text-wrap:balance}
-.card p{margin:0;color:var(--muted);max-width:60ch}
-.card p strong{color:var(--ink)}
-.lineup{display:flex;gap:4px;justify-content:space-between;padding:6px 0;overflow-x:auto}
-.lineup svg{width:clamp(38px,11vw,62px);height:auto;flex:none;overflow:visible}
-.lineup .boss{width:clamp(48px,14vw,78px)}
-.grp{display:grid;gap:6px}.grp>span{font-weight:900;font-size:14px;color:var(--muted)}
-.chips{display:flex;flex-wrap:wrap;gap:8px}
-.chip{position:relative}
-.chip input{position:absolute;opacity:0;inset:0;margin:0}
-.chip span{display:inline-flex;align-items:center;min-height:44px;padding:0 16px;border-radius:999px;border:2px solid #3a5560;font-weight:900;cursor:pointer}
-.chip input:checked+span{background:var(--gold);border-color:var(--gold);color:var(--dark)}
-.chip input:focus-visible+span{outline:3px solid var(--ink);outline-offset:2px}
-.btns{display:flex;gap:10px;flex-wrap:wrap}
-.big{min-height:52px;padding:0 22px;border-radius:16px;border:0;background:var(--coral);color:#fff;font:400 18px Bungee,sans-serif;box-shadow:0 4px 0 var(--dark)}
-.big.alt{background:#2f4f5a}
-.stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;text-align:center}
-.stats div{background:var(--dark);border-radius:14px;padding:10px 4px}
-.stats b{display:block;font:400 26px Bungee,sans-serif;color:var(--gold)}
-.stats small{color:var(--muted);font-size:13px}
-.warn{color:#ff8a7f;font-weight:800;min-height:22px}
-.cardmon{width:150px;margin:0 auto}.cardmon svg{width:100%;height:auto;overflow:visible}
-.badges{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;padding:4px 14px 20px}
-.badge{display:inline-flex;align-items:center;gap:6px;min-height:28px;padding:3px 10px;border:1.5px solid var(--line);border-radius:999px;background:var(--panel);color:var(--muted);font-size:.75rem;font-weight:800;text-decoration:none}
-.badge svg{width:14px;height:14px}
-#buildSha{font-family:ui-monospace,"SF Mono",Menlo,monospace}
-.badge:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
-@media(prefers-reduced-motion:reduce){.mon,.mon.hit,.mon.dead{animation:none}.mon.dead{opacity:0}.pop{animation-duration:.01s}}
-</style>
+<link rel="stylesheet" href="styles.css">
+<!-- Every module goes through this map; scripts/stamp.mjs adds ?v=<sha> to each at deploy. -->
+<script type="importmap">
+{
+  "imports": {}
+}
+</script>
 </head>
 <body>
-<header class="top"><h1>Sum<b>geon</b></h1><div class="floor" id="floorLbl">Floor 1 / 7</div></header>
+<header class="top">
+  <h1>Sum<b>geon</b></h1>
+  <div class="tools">
+    <span class="floor" id="floorLbl">Floor 1 / 7</span>
+    <button class="icon-btn" id="soundBtn" type="button" aria-pressed="true" aria-label="Sound on"></button>
+    <button class="icon-btn" id="menuBtn" type="button" aria-label="Menu"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+  </div>
+</header>
+<button class="who" id="who" type="button" hidden></button>
 <main class="game">
   <section class="arena" id="arena">
     <div class="mhead"><span class="mname" id="mName">Plusquito</span><div class="hp"><i id="hpBar"></i></div><span class="hptxt" id="hpTxt"></span></div>
     <div class="stage"><div class="mon" id="mon"></div><div id="fx"></div><div class="shadow"></div></div>
-    <div class="you"><span>You</span><span class="hearts" id="hearts"></span><span class="streak" id="streak"></span></div>
+    <div class="you"><span>You</span><span class="hearts" id="hearts" role="img"></span><span class="flame" id="flame" hidden></span></div>
   </section>
   <section class="panel">
     <div class="timer" id="timer" hidden><i id="tBar"></i></div>
-    <div class="prob" id="prob" aria-live="polite">7 + 8</div>
+    <div class="probrow"><div class="prob" id="prob" aria-live="polite">7 + 8 =</div><button class="icon-btn" id="sayProb" type="button" aria-label="Read the problem aloud"></button></div>
     <div class="ans" id="ans" aria-live="polite"></div>
     <div class="msg" id="msg">Your answer is your attack.</div>
     <div class="pad" id="pad"></div>
@@ -119,161 +51,8 @@ h1 b{color:var(--coral);font-weight:400}
     Noncommercial license
   </a>
 </footer>
+<div id="fly" aria-hidden="true"></div>
 <div class="ov" id="ov"><div class="card" id="card" role="dialog" aria-modal="true"></div></div>
-<script>
-{
-const $=id=>document.getElementById(id);
-const DK='#0c171c';
-const eye=(x,y,r=9)=>`<circle cx="${x}" cy="${y}" r="${r}" fill="#fff" stroke="${DK}" stroke-width="3"/><circle cx="${x+1.5}" cy="${y+1}" r="${r*.45}" fill="${DK}"/>`;
-const defs=`<defs><linearGradient id="sh" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".38"/><stop offset=".55" stop-color="#fff" stop-opacity="0"/></linearGradient></defs>`;
-const solid=(s,c)=>`<g fill="${DK}" stroke="${DK}" stroke-width="9" stroke-linejoin="round">${s}</g><g fill="${c}">${s}</g><g fill="url(#sh)">${s}</g>`;
-const line=(s,c,w)=>`<g fill="none" stroke="${DK}" stroke-width="${w+9}" stroke-linecap="round" stroke-linejoin="round">${s}</g><g fill="none" stroke="${c}" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round">${s}</g><g fill="none" stroke="url(#sh)" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round">${s}</g>`;
-const foot=(x,y,rx=13)=>`<ellipse cx="${x}" cy="${y}" rx="${rx}" ry="7" fill="${DK}"/>`;
-const ds=`stroke="${DK}" stroke-width="4" stroke-linecap="round" fill="none"`;
-
-const MON=[
- {n:'Plusquito',op:'+',c:'#ff6b5e',hits:3,quip:'buzzes off in a puff of chalk dust.',
-  d:c=>`<path d="M92 32 Q84 10 70 12 M108 32 Q116 10 130 12" ${ds}/><circle cx="70" cy="12" r="5" fill="${c}" stroke="${DK}" stroke-width="3"/><circle cx="130" cy="12" r="5" fill="${c}" stroke="${DK}" stroke-width="3"/>${foot(88,174)}${foot(112,174)}`+solid(`<rect x="80" y="28" width="40" height="142" rx="14"/><rect x="28" y="78" width="144" height="40" rx="14"/>`,c)+`<circle cx="24" cy="98" r="11" fill="${c}" stroke="${DK}" stroke-width="4"/><circle cx="176" cy="98" r="11" fill="${c}" stroke="${DK}" stroke-width="4"/>${eye(91,92,8)}${eye(110,92,8)}<path d="M92 106 Q100 113 108 106" ${ds} stroke-width="3"/>`},
- {n:'Minustaur',op:'-',c:'#4f8dff',hits:3,quip:'loses its footing and its horns.',
-  d:c=>`<path d="M48 88 Q28 60 42 36 Q52 62 68 86Z M152 88 Q172 60 158 36 Q148 62 132 86Z" fill="#f3efe4" stroke="${DK}" stroke-width="4" stroke-linejoin="round"/><path d="M70 126 V162 M130 126 V162" stroke="${DK}" stroke-width="12" stroke-linecap="round"/>${foot(64,166,15)}${foot(136,166,15)}`+solid(`<rect x="26" y="82" width="148" height="46" rx="18"/>`,c)+`${eye(82,101,9)}${eye(118,101,9)}<path d="M68 88 L93 94 M132 88 L107 94" ${ds}/><circle cx="100" cy="117" r="6" fill="none" stroke="#ffc93c" stroke-width="3"/>`},
- {n:'Sevenstein',op:'mix',c:'#8fe06a',hits:4,quip:'comes unbolted. Six, seven, gone.',
-  d:c=>`<rect x="12" y="38" width="20" height="16" rx="3" fill="#b9c4c7" stroke="${DK}" stroke-width="3"/><rect x="168" y="38" width="20" height="16" rx="3" fill="#b9c4c7" stroke="${DK}" stroke-width="3"/>${foot(92,182,17)}`+line(`<path d="M42 46 H158 L96 170"/>`,c,36)+`${eye(76,42,8)}${eye(104,42,8)}<path d="M128 46 l6 4 l6 -4 l6 4" ${ds} stroke-width="3"/><path d="M124 88 L148 98 M130 84 L127 95 M140 88 L137 99" ${ds} stroke-width="3"/>`},
- {n:'Timesaur',op:'×',c:'#ffb22e',hits:4,quip:'multiplies into nothing at all.',
-  d:c=>`${foot(36,168,15)}${foot(164,168,15)}<path d="M30 30 l-14 -6 l6 14 M170 30 l14 -6 l-6 14" ${ds}/>`+solid(`<rect x="16" y="82" width="168" height="36" rx="16" transform="rotate(45 100 100)"/><rect x="16" y="82" width="168" height="36" rx="16" transform="rotate(-45 100 100)"/>`,c)+`${eye(89,93,9)}${eye(112,93,9)}<path d="M88 109 L93 116 L98 109 L103 116 L108 109 L113 116" ${ds} stroke-width="3"/>`},
- {n:'Octoloop',op:'mix',c:'#ff7ac8',hits:5,quip:'unloops into a sad little zero.',
-  d:c=>line(`<path d="M72 160 q-8 22 -26 20 M90 168 q-2 20 -16 26 M110 168 q2 20 16 26 M128 160 q8 22 26 20"/>`,c,10)+line(`<circle cx="100" cy="62" r="32"/><circle cx="100" cy="128" r="40"/>`,c,24)+`${eye(89,62,9)}${eye(111,62,9)}<path d="M80 122 Q100 148 120 122 Z" fill="${DK}"/><path d="M93 135 Q100 128 107 135 Q100 141 93 135" fill="#ff5a4e"/>`},
- {n:'Divvy',op:'÷',c:'#45d6e6',hits:5,quip:'splits into remainders and flees.',
-  d:c=>`${foot(88,186)}${foot(112,186)}`+solid(`<circle cx="100" cy="52" r="30"/><rect x="22" y="96" width="156" height="30" rx="15"/><circle cx="100" cy="158" r="22"/>`,c)+`${eye(89,50,8)}${eye(111,50,8)}<path d="M90 66 Q100 73 110 66" ${ds} stroke-width="3"/><path d="M60 90 l-6 -10 M140 90 l6 -10" ${ds} stroke-width="3"/>`},
- {n:'Sigma Rex',op:'mix',c:'#ffd23c',hits:7,boss:1,quip:'the sum of all fears, summed to zero.',
-  d:c=>`<path d="M62 26 L70 2 L85 17 L100 -2 L115 17 L130 2 L138 26 Z" fill="#ff5a4e" stroke="${DK}" stroke-width="4" stroke-linejoin="round"/>${foot(60,180,18)}${foot(140,180,18)}`+line(`<path d="M152 42 H48 L106 104 L48 166 H152"/>`,c,30)+`${eye(74,42,8)}${eye(102,42,8)}<path d="M126 36 L144 42 L126 48" ${ds} stroke-width="3"/><path d="M96 112 l5 11 l5 -11 M108 112 l4 9 l4 -9" fill="#fff" stroke="${DK}" stroke-width="2.5" stroke-linejoin="round"/>`}
-];
-const svg=(m,cls='')=>`<svg viewBox="-10 -10 220 220" class="${cls}" role="img" aria-label="${m.n}">${defs}${m.d(m.c)}</svg>`;
-
-const DIFF={easy:{add:10,mul:5,time:15,label:'Easy'},med:{add:20,mul:10,time:12,label:'Medium'},hard:{add:50,mul:12,time:10,label:'Hard'}};
-const OPS=[['+','Add'],['-','Subtract'],['×','Multiply'],['÷','Divide']];
-let st={ops:['+','-'],diff:'easy',timer:false,best:0};
-try{Object.assign(st,JSON.parse(localStorage.getItem('sumgeon')||'{}'))}catch(e){}
-const save=()=>{try{localStorage.setItem('sumgeon',JSON.stringify({ops:st.ops,diff:st.diff,timer:st.timer,best:st.best}))}catch(e){}};
-let G={floor:0,hearts:5,hp:0,max:0,streak:0,solved:0,tries:0,cur:null,input:'',busy:true,tEnd:0};
-
-const r=(a,b)=>a+Math.floor(Math.random()*(b-a+1));
-function gen(op){
-  const d=DIFF[st.diff];
-  if(op==='+'){const a=r(1,d.add),b=r(1,d.add);return{q:`${a} + ${b}`,a:a+b}}
-  if(op==='-'){const a=r(2,d.add),b=r(1,a-1);return{q:`${a} − ${b}`,a:a-b}}
-  if(op==='×'){const a=r(2,d.mul),b=r(2,d.mul);return{q:`${a} × ${b}`,a:a*b}}
-  const b=r(2,d.mul),q=r(1,d.mul);return{q:`${b*q} ÷ ${b}`,a:q};
-}
-function pickOp(m){
-  if(m.op!=='mix'&&st.ops.includes(m.op)&&Math.random()<.7)return m.op;
-  return st.ops[r(0,st.ops.length-1)];
-}
-function hearts(){$('hearts').innerHTML='♥'.repeat(G.hearts)+`<span>${'♥'.repeat(5-G.hearts)}</span>`;$('hearts').setAttribute('aria-label',G.hearts+' hearts')}
-function hpUI(){$('hpBar').style.width=Math.max(0,G.hp/G.max*100)+'%';$('hpTxt').textContent=`${Math.max(0,G.hp)} / ${G.max} HP`}
-function streakUI(){$('streak').textContent=G.streak>=2?`Streak ${G.streak}${G.streak>=3?' · crits on':''}`:''}
-function setMsg(t,c=''){const m=$('msg');m.textContent=t;m.className='msg '+c}
-function ansUI(){$('ans').textContent=G.input}
-
-function loadMonster(i){
-  const m=MON[i];G.floor=i;
-  let s=0;for(let k=0;k<300;k++)s+=gen(pickOp(m)).a;
-  G.max=G.hp=Math.max(10,Math.round(s/300*m.hits));
-  const el=$('mon');el.className='mon';el.innerHTML=svg(m);
-  $('mName').textContent=m.n;$('floorLbl').textContent=m.boss?'Boss floor':`Floor ${i+1} / ${MON.length}`;
-  hpUI();hearts();streakUI();
-}
-function newProblem(){
-  G.cur=gen(pickOp(MON[G.floor]));G.input='';G.busy=false;
-  $('prob').textContent=G.cur.q+' =';ansUI();
-  $('timer').hidden=!st.timer;
-  if(st.timer){G.tEnd=performance.now()+DIFF[st.diff].time*1000;requestAnimationFrame(tick)}
-}
-function tick(){
-  if(!st.timer||G.busy)return;
-  const total=DIFF[st.diff].time*1000,left=G.tEnd-performance.now();
-  $('tBar').style.width=Math.max(0,left/total*100)+'%';
-  if(left<=0)miss('Too slow!');else requestAnimationFrame(tick);
-}
-function pop(t,crit){const s=document.createElement('span');s.className='pop'+(crit?' crit':'');s.textContent=t;$('fx').appendChild(s);setTimeout(()=>s.remove(),950)}
-function submit(){
-  if(G.busy||G.input==='')return;
-  G.tries++;
-  if(Number(G.input)===G.cur.a){
-    G.busy=true;G.streak++;G.solved++;
-    const crit=G.streak>=3,dmg=G.cur.a*(crit?2:1);
-    G.hp-=dmg;pop((crit?'Crit! ':'')+'−'+dmg,crit);
-    const el=$('mon');el.classList.remove('hit');void el.offsetWidth;el.classList.add('hit');
-    setMsg(crit?`Critical hit for ${dmg}!`:`Hit for ${dmg}!`,'good');hpUI();streakUI();
-    if(G.hp<=0){setTimeout(()=>{el.className='mon dead'},380);setTimeout(cleared,1150)}
-    else setTimeout(newProblem,500);
-  }else miss('Ouch!');
-}
-function miss(why){
-  G.busy=true;G.streak=0;G.hearts--;hearts();streakUI();
-  setMsg(`${why} ${G.cur.q} = ${G.cur.a}`,'bad');
-  const a=$('arena');a.classList.add('hurt');setTimeout(()=>a.classList.remove('hurt'),450);
-  if(G.hearts<=0)setTimeout(()=>end(false),1200);else setTimeout(newProblem,1400);
-}
-function record(){const f=G.floor+(G.hp<=0?1:0);if(f>st.best){st.best=f;save()}return f}
-function cleared(){
-  const m=MON[G.floor];
-  if(G.floor===MON.length-1)return end(true);
-  const healed=G.hearts<5;if(healed)G.hearts++;record();
-  const nx=MON[G.floor+1];
-  show(`<h2>${m.n} ${m.quip}</h2>
-  <div class="cardmon">${svg(nx)}</div>
-  <p>Next down the stairs: <strong>${nx.n}</strong>${nx.boss?', the boss':''}.${healed?' You found a heart (+1).':''}</p>
-  <div class="btns"><button class="big" id="next">Floor ${G.floor+2}</button></div>`);
-  $('next').onclick=()=>{hide();loadMonster(G.floor+1);setMsg('Your answer is your attack.');newProblem()};
-}
-function end(win){
-  const f=record(),acc=G.tries?Math.round(G.solved/G.tries*100):0;
-  show(`<h2>${win?'You cleared the Sumgeon!':`${MON[G.floor].n} won this round`}</h2>
-  ${win?'':`<div class="cardmon">${svg(MON[G.floor])}</div>`}
-  <p>${win?'Sigma Rex is scattered across the chalkboard. Try a harder setting, or switch on the timer.':'Every miss shows the right answer, so the next run goes deeper.'}</p>
-  <div class="stats"><div><b>${f}</b><small>floors cleared</small></div><div><b>${G.solved}</b><small>solved</small></div><div><b>${acc}%</b><small>accuracy</small></div></div>
-  <p>Best run: <strong>${st.best} of ${MON.length} floors</strong></p>
-  <div class="btns"><button class="big" id="again">Play again</button><button class="big alt" id="set">Change settings</button></div>`);
-  $('again').onclick=start;$('set').onclick=menu;
-}
-function show(h){G.busy=true;$('card').innerHTML=h;$('ov').hidden=false;const b=$('card').querySelector('button');if(b)b.focus()}
-function hide(){$('ov').hidden=true}
-function menu(){
-  show(`<h2>Crawl the Sumgeon</h2>
-  <p>Seven glyph monsters guard seven floors. <strong>Your answer is your attack</strong>: solve 7 × 8 and you hit for 56. Three right in a row and every hit is doubled. A wrong answer costs a heart, and you see the right one.</p>
-  <div class="lineup">${MON.map(m=>svg(m,m.boss?'boss':'')).join('')}</div>
-  <div class="grp"><span>Problems</span><div class="chips">${OPS.map(([o,l])=>`<label class="chip"><input type="checkbox" name="op" value="${o}" ${st.ops.includes(o)?'checked':''}><span>${o==='-'?'−':o} ${l}</span></label>`).join('')}</div></div>
-  <div class="grp"><span>Numbers</span><div class="chips">${Object.entries(DIFF).map(([k,v])=>`<label class="chip"><input type="radio" name="df" value="${k}" ${st.diff===k?'checked':''}><span>${v.label}</span></label>`).join('')}</div></div>
-  <div class="grp"><span>Pressure</span><div class="chips"><label class="chip"><input type="checkbox" id="tm" ${st.timer?'checked':''}><span>Timer on</span></label></div></div>
-  <div class="warn" id="warn"></div>
-  <div class="btns"><button class="big" id="go">Enter the dungeon</button></div>`);
-  $('go').onclick=()=>{
-    const ops=[...document.querySelectorAll('input[name=op]:checked')].map(i=>i.value);
-    if(!ops.length){$('warn').textContent='Pick at least one kind of problem.';return}
-    st.ops=ops;st.diff=document.querySelector('input[name=df]:checked').value;st.timer=$('tm').checked;save();start();
-  };
-}
-function start(){
-  hide();Object.assign(G,{hearts:5,streak:0,solved:0,tries:0});
-  loadMonster(0);setMsg('Your answer is your attack.');newProblem();
-}
-function press(k){
-  if(G.busy)return;
-  if(k==='del')G.input=G.input.slice(0,-1);
-  else if(k==='go')return submit();
-  else if(G.input.length<4)G.input=(G.input==='0'?'':G.input)+k;
-  ansUI();
-}
-$('pad').innerHTML=['1','2','3','4','5','6','7','8','9','del','0','go'].map(k=>`<button data-k="${k}" class="${k==='go'?'go':k==='del'?'del':''}" aria-label="${k==='del'?'Delete':k==='go'?'Attack':k}">${k==='del'?'⌫':k==='go'?'Hit!':k}</button>`).join('');
-$('pad').addEventListener('click',e=>{const b=e.target.closest('button');if(b)press(b.dataset.k)});
-document.addEventListener('keydown',e=>{
-  if(!$('ov').hidden)return;
-  if(/^[0-9]$/.test(e.key))press(e.key);
-  else if(e.key==='Backspace')press('del');
-  else if(e.key==='Enter'){e.preventDefault();press('go')}
-});
-loadMonster(0);$('prob').textContent='7 + 8 =';menu();
-}
-</script>
+<script type="module" src="js/app.js"></script>
 </body>
 </html>

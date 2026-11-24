@@ -1,0 +1,366 @@
+// Everything on screen: the game loop, the menu and players, and the attack animations.
+// Problems, monsters, saving, sound and speech live in their own modules.
+import { MON, svg } from "./monsters.js";
+import { DIFF, OPS, gen, pickOp, monsterHP, spokenProblem, spokenFact } from "./problems.js";
+import { openStore, displayName } from "./store.js";
+import * as sfx from "./sfx.js";
+import { say, stopSpeech, setVoice } from "./speech.js";
+
+const $ = (id) => document.getElementById(id);
+const reduced = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
+const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+const MAX_HEARTS = 5;
+
+// localStorage can be missing or throw (private browsing); then progress lasts this visit only.
+function safeStorage() {
+  try { const ls = window.localStorage; ls.getItem("sumgeon:"); return ls; } catch (e) {
+    const m = new Map();
+    return { getItem: (k) => (m.has(k) ? m.get(k) : null), setItem: (k, v) => m.set(k, String(v)), removeItem: (k) => m.delete(k),
+      key: (i) => [...m.keys()][i] ?? null, get length() { return m.size; } };
+  }
+}
+const store = openStore(safeStorage());
+store.upgrade();
+
+/* ---------- the player ---------- */
+let PID, st, best;
+function loadPlayer() {
+  PID = store.active();
+  st = store.settings(PID);
+  best = store.player(PID).get("best", 0);
+  sfx.setSfx(st.sfx);
+  setVoice(st.voice);
+  soundUI(); whoUI();
+}
+function saveSettings() { store.player(PID).set("settings", st); }
+
+const SPEAKER = '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></svg>';
+const MUTED = '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor"/><path d="M17 9l5 6M22 9l-5 6"/></svg>';
+function soundUI() {
+  const on = st.sfx || st.voice, b = $("soundBtn");
+  b.innerHTML = on ? SPEAKER : MUTED;
+  b.setAttribute("aria-pressed", on ? "true" : "false");
+  b.setAttribute("aria-label", on ? "Sound on" : "Sound off");
+}
+// The header speaker mutes everything, or brings both back.
+$("soundBtn").onclick = () => {
+  const on = !(st.sfx || st.voice);
+  st.sfx = st.voice = on;
+  sfx.setSfx(on); setVoice(on); saveSettings(); soundUI();
+};
+$("sayProb").innerHTML = SPEAKER;
+$("sayProb").onclick = () => { if (G.cur) say("q", spokenProblem(G.cur), true); };
+
+function whoUI() {
+  const list = store.profiles(), w = $("who");
+  w.hidden = list.length < 2;
+  w.innerHTML = `Playing as <b>${esc(displayName(list, PID))}</b>`;
+}
+$("who").onclick = () => openMenu();
+$("menuBtn").onclick = () => openMenu();
+
+/* ---------- the run ---------- */
+let G = { floor: 0, hearts: MAX_HEARTS, hp: 0, max: 0, streak: 0, solved: 0, tries: 0, cur: null, input: "", busy: true, tEnd: 0, running: false };
+
+function heartsUI(cracking) {
+  const h = $("hearts");
+  h.innerHTML = "";
+  for (let i = 0; i < MAX_HEARTS; i++) {
+    const s = document.createElement("span");
+    s.textContent = "♥";
+    if (i === cracking) s.className = "crack";
+    else if (i >= G.hearts) s.className = "gone";
+    h.appendChild(s);
+  }
+  h.setAttribute("aria-label", `${G.hearts} of ${MAX_HEARTS} hearts`);
+}
+function hpUI() { $("hpBar").style.width = Math.max(0, G.hp / G.max * 100) + "%"; $("hpTxt").textContent = `${Math.max(0, G.hp)} / ${G.max} HP`; }
+
+// The streak flame: shows once crits are on (3 in a row) and grows at 5 and 10.
+const FLAME = '<svg viewBox="0 0 24 30" aria-hidden="true"><path d="M12 1c1 7 8 10 8 18a8 8 0 0 1-16 0c0-4 2-6 4-8 0 3 1 5 3 5-1-5 1-10 1-15z" fill="#ff5a4e" stroke="#0c171c" stroke-width="2" stroke-linejoin="round"/><path d="M12 13c1 3 4 4 4 8a4 4 0 0 1-8 0c0-2 1-3 2-4 0 1 1 2 2 2-.5-2 0-4 0-6z" fill="#ffc93c"/></svg>';
+function streakUI() {
+  const f = $("flame");
+  if (G.streak < 3) { f.hidden = true; return; }
+  f.hidden = false;
+  f.className = "flame" + (G.streak >= 10 ? " s3" : G.streak >= 5 ? " s2" : "");
+  f.innerHTML = FLAME + `<span>${G.streak} in a row</span>`;
+  f.setAttribute("aria-label", `${G.streak} in a row, crits on`);
+}
+function setMsg(t, c = "") { const m = $("msg"); m.textContent = t; m.className = "msg " + c; }
+function ansUI() { $("ans").textContent = G.input; }
+
+function loadMonster(i, quiet) {
+  const m = MON[i];
+  G.floor = i;
+  G.max = G.hp = monsterHP(m, st.ops, st.diff);
+  const el = $("mon");
+  el.className = "mon";
+  el.innerHTML = svg(m);
+  $("mName").textContent = m.n;
+  $("floorLbl").textContent = m.boss ? "Boss floor" : `Floor ${i + 1} / ${MON.length}`;
+  hpUI(); heartsUI(); streakUI();
+  if (quiet) return;
+  sfx.appear(m.boss);
+  if (m.boss) say("p", "Boss floor!");
+  say("m", m.n + "!");
+}
+function newProblem() {
+  G.cur = gen(pickOp(MON[G.floor], st.ops), st.diff);
+  G.input = ""; G.busy = false;
+  $("prob").textContent = G.cur.q + " =";
+  ansUI();
+  $("timer").hidden = !st.timer;
+  if (st.timer) { G.tEnd = performance.now() + DIFF[st.diff].time * 1000; requestAnimationFrame(tick); }
+}
+function tick() {
+  if (!st.timer || G.busy) return;
+  const total = DIFF[st.diff].time * 1000, left = G.tEnd - performance.now();
+  $("tBar").style.width = Math.max(0, left / total * 100) + "%";
+  if (left <= 0) miss("Too slow!"); else requestAnimationFrame(tick);
+}
+function pop(t, crit) {
+  const s = document.createElement("span");
+  s.className = "pop" + (crit ? " crit" : "");
+  s.textContent = t;
+  $("fx").appendChild(s);
+  setTimeout(() => s.remove(), 950);
+}
+function restartAnim(el, cls) { el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); }
+
+/* ---------- the attack: the answer flies at the monster ---------- */
+function centerOf(el) { const r = el.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; }
+
+// The typed number lifts out of the answer box and arcs into the monster, leaving chalk dust.
+// Resolves on impact. With reduced motion it lands at once.
+function fly(text, crit) {
+  return new Promise((done) => {
+    if (reduced()) { done(); return; }
+    const layer = $("fly"), s = document.createElement("span");
+    s.className = "shot" + (crit ? " crit" : "");
+    s.textContent = text;
+    layer.appendChild(s);
+    const w = s.offsetWidth, h = s.offsetHeight, a = centerOf($("ans")), b = centerOf($("mon"));
+    const p0 = { x: a.x - w / 2, y: a.y - h / 2 }, p1 = { x: b.x - w / 2, y: b.y - h / 2 };
+    const c = { x: (p0.x + p1.x) / 2 + (p1.x - p0.x) * 0.15, y: Math.min(p0.y, p1.y) - 90 };
+    const frames = [];
+    for (let i = 0; i <= 10; i++) {
+      const t = i / 10, u = 1 - t;
+      const x = u * u * p0.x + 2 * u * t * c.x + t * t * p1.x, y = u * u * p0.y + 2 * u * t * c.y + t * t * p1.y;
+      frames.push({ transform: `translate(${x}px,${y}px) scale(${1 + 0.35 * Math.sin(Math.PI * t) - 0.25 * t}) rotate(${t * 18}deg)` });
+    }
+    const anim = s.animate(frames, { duration: 330, easing: "ease-in" });
+    const dust = setInterval(() => {
+      const r = s.getBoundingClientRect(), d = document.createElement("span");
+      d.className = "dust";
+      layer.appendChild(d);
+      const x = r.left + r.width / 2, y = r.top + r.height / 2;
+      d.animate([{ transform: `translate(${x}px,${y}px) scale(1)`, opacity: 0.7 }, { transform: `translate(${x}px,${y + 10}px) scale(.2)`, opacity: 0 }], { duration: 420 }).onfinish = () => d.remove();
+    }, 30);
+    anim.onfinish = () => { clearInterval(dust); s.remove(); done(); };
+  });
+}
+// Chalk sparks bursting from the monster on impact.
+function burst(crit) {
+  if (reduced()) return;
+  const c = centerOf($("mon")), layer = $("fly"), n = crit ? 16 : 10;
+  for (let i = 0; i < n; i++) {
+    const p = document.createElement("span");
+    p.className = "spark" + (crit ? (i % 2 ? " c" : "") : (i % 3 ? "" : " w"));
+    layer.appendChild(p);
+    const ang = Math.random() * Math.PI * 2, d = 40 + Math.random() * (crit ? 90 : 60);
+    p.animate([
+      { transform: `translate(${c.x}px,${c.y}px) scale(1)`, opacity: 1 },
+      { transform: `translate(${c.x + Math.cos(ang) * d}px,${c.y + Math.sin(ang) * d}px) scale(.3)`, opacity: 0 }
+    ], { duration: 450 + Math.random() * 250, easing: "cubic-bezier(.2,.8,.4,1)" }).onfinish = () => p.remove();
+  }
+}
+
+function submit() {
+  if (G.busy || G.input === "") return;
+  G.tries++;
+  if (Number(G.input) === G.cur.ans) {
+    G.busy = true; G.streak++; G.solved++;
+    const crit = G.streak >= 3, dmg = G.cur.ans * (crit ? 2 : 1), typed = G.input;
+    G.input = ""; ansUI();
+    sfx.launch(G.streak);
+    if (G.streak === 3) say("p", "Crits on!");
+    fly(typed, crit).then(() => {
+      sfx.impact(crit); burst(crit);
+      G.hp -= dmg;
+      pop((crit ? "Crit! " : "") + "−" + dmg, crit);
+      restartAnim($("mon"), "hit");
+      if (crit) restartAnim($("arena"), "shake");
+      setMsg(crit ? `Critical hit for ${dmg}!` : `Hit for ${dmg}!`, "good");
+      hpUI(); streakUI();
+      if (G.hp <= 0) { setTimeout(() => { $("mon").className = "mon dead"; }, 300); setTimeout(cleared, 1100); }
+      else setTimeout(newProblem, 450);
+    });
+  } else miss("Ouch!");
+}
+
+// A wrong answer or timeout: the monster lunges, a heart cracks off, and the right answer is
+// shown and said.
+function miss(why) {
+  G.busy = true; G.streak = 0;
+  G.hearts--;
+  const lost = G.hearts;
+  sfx.miss();
+  restartAnim($("mon"), "lunge");
+  streakUI();
+  setMsg(`${why} ${G.cur.q} = ${G.cur.ans}`, "bad");
+  say("q", spokenFact(G.cur), true);
+  setTimeout(() => {
+    sfx.crack();
+    heartsUI(lost);
+    restartAnim($("arena"), "hurt");
+    setTimeout(() => $("arena").classList.remove("hurt"), 450);
+    setTimeout(() => heartsUI(), 720);
+  }, reduced() ? 0 : 220);
+  if (G.hearts <= 0) setTimeout(() => end(false), 1700); else setTimeout(newProblem, 1800);
+}
+
+function record() {
+  const f = G.floor + (G.hp <= 0 ? 1 : 0);
+  if (f > best) { best = f; store.player(PID).set("best", best); }
+  return f;
+}
+function cleared() {
+  const m = MON[G.floor];
+  if (G.floor === MON.length - 1) return end(true);
+  const healed = G.hearts < MAX_HEARTS;
+  if (healed) G.hearts++;
+  record();
+  sfx.cleared();
+  say("p", `${m.n} ${m.quip}`);
+  const nx = MON[G.floor + 1];
+  show(`<h2>${m.n} ${m.quip}</h2>
+  <div class="cardmon">${svg(nx)}</div>
+  <p>Next down the stairs: <strong>${nx.n}</strong>${nx.boss ? ", the boss" : ""}.${healed ? " You found a heart (+1)." : ""}</p>
+  <div class="btns"><button class="big" id="next">Floor ${G.floor + 2}</button></div>`);
+  $("next").onclick = () => { hide(); loadMonster(G.floor + 1); setMsg("Your answer is your attack."); newProblem(); };
+}
+function end(win) {
+  G.running = false;
+  const f = record(), acc = G.tries ? Math.round(G.solved / G.tries * 100) : 0, m = MON[G.floor];
+  if (win) { sfx.victory(); say("p", "You cleared the Sumgeon!"); } else say("p", `${m.n} won this round.`);
+  show(`<h2>${win ? "You cleared the Sumgeon!" : `${m.n} won this round`}</h2>
+  ${win ? "" : `<div class="cardmon">${svg(m)}</div>`}
+  <p>${win ? "Sigma Rex is scattered across the chalkboard. Try a harder setting, or switch on the timer." : "Every miss shows the right answer, so the next run goes deeper."}</p>
+  <div class="stats"><div><b>${f}</b><small>floors cleared</small></div><div><b>${G.solved}</b><small>solved</small></div><div><b>${acc}%</b><small>accuracy</small></div></div>
+  <p>Best run: <strong>${best} of ${MON.length} floors</strong></p>
+  <div class="btns"><button class="big" id="again">Play again</button><button class="big alt" id="set">Menu</button></div>`);
+  $("again").onclick = start;
+  $("set").onclick = () => openMenu();
+}
+function show(h) { G.busy = true; $("card").innerHTML = h; $("ov").hidden = false; const b = $("card").querySelector("button.big"); if (b) b.focus(); }
+function hide() { $("ov").hidden = true; }
+
+/* ---------- the menu: players and settings ---------- */
+const INTRO = "Seven glyph monsters guard seven floors. Your answer is your attack: solve 7 × 8 and you hit for 56. Three right in a row and every hit is doubled. A wrong answer costs a heart, and you see the right one.";
+
+function openMenu() {
+  G.busy = true;
+  stopSpeech();
+  menu();
+}
+function chip(type, name, value, checked, label, id) {
+  return `<label class="chip"><input type="${type}" name="${name}" value="${value}"${id ? ` id="${id}"` : ""} ${checked ? "checked" : ""}><span>${label}</span></label>`;
+}
+function playersHTML() {
+  const list = store.profiles();
+  const rows = list.map((p, i) => `<li class="prow" data-id="${esc(p.id)}">
+    <input type="text" maxlength="24" value="${esc(p.name)}" placeholder="Player ${i + 1}" aria-label="Player ${i + 1}'s name">
+    ${p.id === PID ? '<span class="now">playing now</span>' : '<button class="small" type="button" data-act="play">Play</button>'}
+    ${store.canRemove(p.id) ? '<button class="small danger" type="button" data-act="remove">Remove</button>' : ""}
+  </li>`).join("");
+  return `<ul class="players">${rows}</ul>
+  <div class="prow"><input type="text" id="newName" maxlength="24" placeholder="New player's name" aria-label="New player's name"><button class="small" type="button" id="addPlayer">Add a player</button></div>`;
+}
+function menu() {
+  show(`<div class="cardhead"><h2>Crawl the Sumgeon</h2><button class="icon-btn" id="sayIntro" type="button" aria-label="Read this aloud">${SPEAKER}</button></div>
+  <p>Seven glyph monsters guard seven floors. <strong>Your answer is your attack</strong>: solve 7 × 8 and you hit for 56. Three right in a row and every hit is doubled. A wrong answer costs a heart, and you see the right one.</p>
+  <div class="lineup">${MON.map((m) => svg(m, m.boss ? "boss" : "")).join("")}</div>
+  <div class="grp"><span>Players</span><div id="players">${playersHTML()}</div></div>
+  <div class="grp"><span>Problems</span><div class="chips">${OPS.map(([o, l]) => chip("checkbox", "op", o, st.ops.includes(o), `${o === "-" ? "−" : o} ${l}`)).join("")}</div></div>
+  <div class="grp"><span>Numbers</span><div class="chips">${Object.entries(DIFF).map(([k, v]) => chip("radio", "df", k, st.diff === k, v.label)).join("")}</div></div>
+  <div class="grp"><span>Pressure</span><div class="chips">${chip("checkbox", "tm", "1", st.timer, "Timer on", "tm")}</div></div>
+  <div class="grp"><span>Sounds</span><div class="chips">${chip("checkbox", "sfx", "1", st.sfx, "Sound effects", "sfxOn")}${chip("checkbox", "voice", "1", st.voice, "Voice", "voiceOn")}</div></div>
+  <div class="warn" id="warn"></div>
+  <div class="btns">${G.running ? '<button class="big alt" id="resume">Keep fighting</button>' : ""}<button class="big" id="go">Enter the dungeon</button></div>`);
+  const card = $("card");
+  $("sayIntro").onclick = () => say("p", INTRO, true);
+  // Settings save as they change, for the player who's playing.
+  card.querySelectorAll("input[name=op]").forEach((i) => i.onchange = () => {
+    const ops = [...card.querySelectorAll("input[name=op]:checked")].map((x) => x.value);
+    if (!ops.length) { i.checked = true; $("warn").textContent = "Pick at least one kind of problem."; return; }
+    $("warn").textContent = "";
+    st.ops = ops; saveSettings();
+  });
+  card.querySelectorAll("input[name=df]").forEach((i) => i.onchange = () => { st.diff = i.value; saveSettings(); });
+  $("tm").onchange = () => { st.timer = $("tm").checked; saveSettings(); };
+  $("sfxOn").onchange = () => { st.sfx = $("sfxOn").checked; sfx.setSfx(st.sfx); saveSettings(); soundUI(); };
+  $("voiceOn").onchange = () => { st.voice = $("voiceOn").checked; setVoice(st.voice); saveSettings(); soundUI(); };
+  wirePlayers();
+  $("go").onclick = start;
+  if ($("resume")) $("resume").onclick = () => { hide(); newProblem(); };
+}
+function wirePlayers() {
+  const box = $("players");
+  box.querySelectorAll(".players .prow").forEach((row) => {
+    const id = row.dataset.id;
+    row.querySelector("input").onchange = (e) => { store.rename(id, e.target.value); whoUI(); };
+    const play = row.querySelector("[data-act=play]");
+    if (play) play.onclick = () => switchTo(id);
+    const rm = row.querySelector("[data-act=remove]");
+    // A second tap confirms, as in Sound Box. From this device only.
+    if (rm) rm.onclick = () => {
+      if (rm.dataset.sure !== "1") { rm.dataset.sure = "1"; rm.textContent = "Remove from this device?"; return; }
+      store.removeProfile(id);
+      refreshPlayers();
+    };
+  });
+  const add = () => { const id = store.addProfile($("newName").value); switchTo(id); };
+  $("addPlayer").onclick = add;
+  $("newName").onkeydown = (e) => { if (e.key === "Enter") add(); };
+}
+function refreshPlayers() { $("players").innerHTML = playersHTML(); wirePlayers(); whoUI(); }
+// Another player's turn: their own settings, best run and a fresh dungeon.
+function switchTo(id) {
+  store.setActive(id);
+  loadPlayer();
+  G.running = false;
+  loadMonster(0, true);
+  menu();
+}
+
+function start() {
+  hide();
+  Object.assign(G, { hearts: MAX_HEARTS, streak: 0, solved: 0, tries: 0, running: true });
+  stopSpeech();
+  loadMonster(0);
+  setMsg("Your answer is your attack.");
+  newProblem();
+}
+
+/* ---------- input ---------- */
+function press(k) {
+  if (G.busy) return;
+  if (k === "go") return submit();
+  sfx.tick();
+  if (k === "del") G.input = G.input.slice(0, -1);
+  else if (G.input.length < 4) G.input = (G.input === "0" ? "" : G.input) + k;
+  ansUI();
+}
+$("pad").innerHTML = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "del", "0", "go"].map((k) => `<button type="button" data-k="${k}" class="${k === "go" ? "go" : k === "del" ? "del" : ""}" aria-label="${k === "del" ? "Delete" : k === "go" ? "Attack" : k}">${k === "del" ? "⌫" : k === "go" ? "Hit!" : k}</button>`).join("");
+$("pad").addEventListener("click", (e) => { const b = e.target.closest("button"); if (b) press(b.dataset.k); });
+document.addEventListener("keydown", (e) => {
+  if (!$("ov").hidden) return;
+  if (/^[0-9]$/.test(e.key)) press(e.key);
+  else if (e.key === "Backspace") press("del");
+  else if (e.key === "Enter") { e.preventDefault(); press("go"); }
+});
+
+loadPlayer();
+loadMonster(0, true);
+$("prob").textContent = "7 + 8 =";
+menu();

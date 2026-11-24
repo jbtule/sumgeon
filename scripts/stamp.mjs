@@ -1,13 +1,14 @@
 // Builds the GitHub Pages site in _site/ from the repo files, stamped with a commit:
 //   node scripts/stamp.mjs <full-commit-sha>
 // Patterned on sound-box-crosswords' scripts/stamp.mjs.
-// - Cache busting: every local file the page loads gets ?v=<short sha> (STAMPED below), so a
-//   deploy is picked up at once instead of waiting out browser caches. Today the game is one
-//   file; add each stylesheet, script and icon to STAMPED as the code splits into modules.
+// - Cache busting: every local file the page loads gets ?v=<short sha>, so a deploy is picked
+//   up at once instead of waiting out browser caches: the attributes in STAMPED, and every
+//   js/*.js module through the import map (modules import each other by plain relative paths,
+//   and the map points each one at its stamped address).
 // - The footer's GitHub badge shows the short sha (which version is deployed); it links to
 //   the repo's front page (README), not the commit.
 // The source files stay runnable as-is; locally the badge just reads "dev".
-import { readFileSync, writeFileSync, rmSync, mkdirSync, cpSync } from "node:fs";
+import { readFileSync, writeFileSync, rmSync, mkdirSync, cpSync, readdirSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { join } from "node:path";
 
@@ -22,9 +23,9 @@ const v = "?v=" + short;
 const root = fileURLToPath(new URL("..", import.meta.url));
 const out = join(root, "_site");
 // Every file the site serves. New top-level site files go here.
-const SITE = ["index.html", "LICENSE.md"];
+const SITE = ["index.html", "LICENSE.md", "styles.css", "js"];
 // Attributes in index.html that load a local file, e.g. 'src="js/app.js"'.
-const STAMPED = [];
+const STAMPED = ['href="styles.css"', 'src="js/app.js"'];
 
 rmSync(out, { recursive: true, force: true });
 mkdirSync(out);
@@ -39,6 +40,14 @@ function swap(from, to) {
 }
 
 for (const attr of STAMPED) swap(attr, attr.replace(/"$/, v + '"'));
+
+const mapMatch = html.match(/<script type="importmap">([\s\S]*?)<\/script>/);
+if (!mapMatch) throw new Error("stamp: no import map in index.html");
+const map = JSON.parse(mapMatch[1]);
+for (const f of readdirSync(join(root, "js")).filter((f) => f.endsWith(".js"))) {
+  map.imports[`./js/${f}`] = `./js/${f}${v}`;
+}
+swap(mapMatch[1], "\n" + JSON.stringify(map, null, 2) + "\n");
 swap('<span id="buildSha">dev</span>', `<span id="buildSha">${short}</span>`);
 
 writeFileSync(join(out, "index.html"), html);
