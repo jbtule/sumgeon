@@ -82,9 +82,9 @@ The dungeon is a map of **Wings**, one per math strand. Each Wing has its own fl
 | **The Counting Cellar** | Add/subtract within 20 | Sprout | Plusquito (+), Minustaur (−), Doublet (+ + twins, doubles facts) | **Make-Ten Golem** |
 | **The Tables Tower** | × ÷ facts | Apprentice | Timesaur (×), Divvy (÷), Tablesaurus (#, a grid-backed beast) | **Sigma Rex** (Σ) |
 | **The Fraction Forge** | Fractions and decimals | Adept | Halfling (½), Dotty (.), Quarterjack (¼) | **The Denominator** |
-| **The Negative Zone** | Integers and negatives | Master | Subzero (−, icy), Absolutely (\|x\|) | **Lord Undefined** (÷0) |
+| **The Negative Zone** | Integers and negatives | Master | Negasicle (−, an icy minus-sign popsicle), Absolutely (\|x\|) | **Lord Undefined** (÷0) |
 | **The Root Cellar** | Exponents and roots | Master | Rootling (√), Squaresquatch (²) | **Hydra of Powers** (heads = exponent) |
-| **Pirate Cove** | Percent and π basics | Master | % Gremlin, π Pirate | **Captain Circumference** |
+| **Pirate Cove** | Percent and π basics | Master | % Gremlin, π Pirate | **Dread Pirate Radius** |
 | **The Balance Hall** | Equations and comparison | Adept/Master | = Twins, Chompers (< >, the "alligator mouth"), Parenthesaurus (( )) | **The Unknown** (x) |
 
 Every Wing also has one **rescue floor** holding a cursed digit (§6.6). The prototype's operator monsters move into the Counting Cellar and the Tables Tower, and Sevenstein and Octoloop become cursed digits. New monster art follows the existing `solid()` / `line()` helper style: shapes only, no fonts inside the SVG, a dark outline, a fill and a sheen.
@@ -166,13 +166,13 @@ Inventory holds 3 items. This adds a small strategic layer without making math o
 - One attempt per day for score and unlimited practice tries. It works offline because the seed is just the date.
 
 ### 6.6 Digit heroes (the player's side)
-**The fiction:** the operators, led by Sigma Rex, have **cursed the digits 0–9**. Sevenstein and Octoloop were never true monsters. They are cursed digits, which is why they are the only numbers on a roster that is otherwise symbols. Beating a cursed digit **breaks the curse**, and it **joins your party**.
+**The fiction:** the operators, led by Sigma Rex, have **cursed the digits 0–9**. Sevenstein and Octoloop were never true monsters. They are cursed digits, which is why they are the only numbers on a roster that is otherwise symbols. A curse can twist a digit into a different creature: **Octoloop is Chef Eight under a curse**, and breaking it turns the tentacled loop back into the chef. Sevenstein stays Sevenstein, just friendly. Beating a cursed digit **breaks the curse**, and it **joins your party**.
 
 **The cast:** each hero is a digit plus a hero class plus a pun, mirroring how the monsters are named. They're drawn with the same `line()` / `solid()` chalk style.
 
 | Digit | Hero | Class / look | Their move when summoned |
 |---|---|---|---|
-| 0 | **Hero Zero** | Round superhero with a cape | Flies in fist-first |
+| 0 | **Zeroic** | Round superhero with a cape (zero + heroic) | Flies in fist-first |
 | 1 | **Onesie** | Superhero in footie pajamas | Pillow bonk |
 | 2 | **Twodini** | Magician; the 2's curl is the cape swirl | The damage number pops out of a top hat |
 | 3 | **Threasure Hunter** | Explorer with a map and a lantern | Lantern flash |
@@ -180,7 +180,7 @@ Inventory holds 3 items. This adds a small strategic layer without making math o
 | 5 | **High Five** | Sporty hero | A giant high five |
 | 6 | **Sixlock Holmes** | Detective with a magnifying glass | Spots the weak point, so the hit shows a 🔍 |
 | 7 | **Sevenstein** | Gentle giant, bolts and all, now friendly | Big stomp |
-| 8 | **Octoloop** | Cheerful tentacle acrobat | Loop-de-loop spin |
+| 8 | **Chef Eight** | Chef in a tall hat; the 8's loops are a stacked belly and head. Built on the joke "Why is 6 afraid of 7? Because 7 ate 9!" | Serves the damage on a sizzling platter |
 | 9 | **Nine-ja** | Ninja | Vanishes, then strikes from behind |
 
 **Your captain is your avatar.** When a player is set up, they pick a **starter** digit and a **chalk color**. The starter is free from the start, and the other nine are waiting to be rescued. The captain appears in "Playing as…", in the player list and in the arena, replacing the generic Apprentice character from the earlier draft. You can switch captains to any rescued hero at any time. Two siblings can both pick High Five, and their chalk colors tell them apart.
@@ -402,6 +402,7 @@ Spoken parts are shared, as in Sound Box ("Champion!", the Wing's name, "Beat th
 ### 14.5 Secrets (??? until earned, card says "Secret achievement!")
 - 🎯 **Exactly Zero**: the finishing hit leaves the monster at exactly 0 HP.
 - 7️⃣ **Lucky Seven**: break Sevenstein's curse with an answer containing a 7.
+- 🍽️ **Seven Ate Nine**: one answer that summons 7, 8 and 9 together, like 789 or 978. Chef Eight serves the 9 to Sevenstein.
 - 🦸 **Captain's Call**: three power hits (your captain's digit) in one floor.
 - 🎆 **All Hands**: an answer of three or more digits where every digit is a rescued hero.
 - 🪞🖐️ **Double High Five**: summon two of the same hero at once, like 55.
@@ -461,6 +462,7 @@ Start over sits in Settings and asks the grown-up to type "start over", as in So
 **Decided (2026-11-23)**
 - **Hearts for Sprout:** yes. Kindergarten-age players can handle losing a run. Sprout gets 7 hearts.
 - **Multiple choice:** no, in any band. Answers are always typed.
+- **Names checked against existing characters (2026-11-23):** Numberjacks (BBC) has digits 0–9 as heroes vs. villains, but our names, looks and summon mechanic are our own. The 0 hero is **Zeroic**, not "Hero Zero" (too close to the classroom tradition and picture book *Zero the Hero*). The 8 hero is **Chef Eight**, not a tentacle superhero (too close to Numberblocks' Octoblock). The Pirate Cove boss is **Dread Pirate Radius**, not Captain Circumference (the *Sir Cumference* books use the same pun). The Negative Zone monster is **Negasicle**.
 - **Digit heroes:** the digits 0–9 are the player's heroes and the operators are the monsters. Your captain is your avatar, your answer summons its digits, and one cursed digit is rescued per Wing clear (§6.6).
 - **Pre-reader support:** the target pre-reader reads numbers fluently, so only words (instructions, menus, story text) need icons and voice. Problems stay numeric.
 - **Voice, achievements, players and linking copy sound-box-crosswords** (§13–15).
