@@ -263,7 +263,6 @@ h1 b{color:var(--coral);font-weight:400}
 .cap-text small{color:var(--muted);font-weight:800;font-size:13px}
 .logo-head .logo{flex:1}
 .logo-head{gap:8px}
-.book-btn{width:100%;min-height:52px;font-size:17px}
 /* ⏸ by the hearts, and the pause card */
 .pause{flex:none;width:40px;height:40px;margin-left:10px}
 .flame[hidden]+.pause{margin-left:auto}
@@ -318,7 +317,6 @@ label.switch-row:focus-within{outline-offset:-3px}
   .cap-row{padding:4px 10px}
   .card.page .tag{display:none}
   .wing span{padding:6px 12px}
-  .book-btn{min-height:46px}
   .switch-row,.list-link{min-height:50px}
 }
 

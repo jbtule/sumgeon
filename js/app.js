@@ -554,8 +554,8 @@ function wingsHTML() {
       <span><b>${w.name}</b><small>${b.label} · ${b.grades}</small><em>${note}</em>${here ? `<em class="level" id="levelLine">${levelLine()}</em>` : ""}</span></label>`;
   }).join("");
 }
-// The start screen, top to bottom: the title (with 🔊 and ⚙ Settings), your hero, the Wings,
-// Monsters & Heroes, and "Enter the dungeon" docked at the bottom. Players, chalk color, the timer and sounds are in
+// The start screen, top to bottom: the title (with 🔊 and ⚙ Settings), your hero, the Wings, and
+// "Enter the dungeon" docked at the bottom. Monsters & Heroes is on the pause screen. Players, chalk color, the timer and sounds are in
 // Settings, as in Sound Box. Names are optional.
 function menu() {
   const list = store.profiles();
@@ -564,7 +564,6 @@ function menu() {
   ${list.length > 1 ? `<p class="playing">Playing as <b>${esc(displayName(list, PID))}</b> <button class="link" type="button" id="switchPlayer">Switch</button></p>` : ""}
   ${captainHTML()}
   <div class="grp"><span>Pick a Wing</span><div class="wings">${wingsHTML()}</div></div>
-  <button class="small book-btn" type="button" id="openBook">📖 Monsters &amp; Heroes</button>
   <div class="btns"><p class="warn" id="warn" role="status"></p><button class="big" id="go">Enter the dungeon</button></div>`);
   const card = $("card");
   $("sayIntro").onclick = () => say("p", PHRASE.intro, true);
@@ -576,7 +575,6 @@ function menu() {
   });
   wireCaptain();
   $("openSettings").onclick = () => settings();
-  $("openBook").onclick = bookPage;
   if ($("switchPlayer")) $("switchPlayer").onclick = () => settings();
   $("go").onclick = () => {
     if (!hasCaptain()) { $("warn").textContent = "Pick your hero first."; $("captain").scrollIntoView({ block: "center", behavior: "smooth" }); return; }
