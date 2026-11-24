@@ -235,6 +235,9 @@ h1 b{color:var(--coral);font-weight:400}
 .wing input:focus-visible+span{outline:3px solid var(--ink);outline-offset:2px}
 .wing.locked span{opacity:.6;cursor:default}
 .cardmon.small{width:96px}
+.fallen{display:flex;align-items:center;gap:12px;padding:8px 12px;border-radius:16px;background:var(--dark);border:2px solid #ff8a7f66}
+.fallen .cardmon{margin:0;flex:none;width:64px}
+.fallen p{margin:0}
 .cardmon.rescued{animation:freed .8s ease-out}
 @keyframes freed{0%{filter:grayscale(1) brightness(.5);transform:scale(.8)}60%{filter:none;transform:scale(1.1)}100%{transform:none}}
 @media(prefers-reduced-motion:reduce){.cardmon.rescued{animation:none}}

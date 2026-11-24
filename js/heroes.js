@@ -96,15 +96,20 @@ export function heroSvg(h, opts) {
 }
 export const heroOf = (d) => HEROES[d];
 
-// Picking a captain. Until any hero is rescued (everyone else is still cursed), the starting hero
-// can be swapped for any of the ten; after that, only heroes on the team can lead.
+// Picking a captain. With no hero on the team (a new player, or one whose only hero was cursed),
+// any of the ten can start; otherwise only heroes on the team can lead.
 export function freePick(team) {
-  return team.captain == null || team.rescued.every((d) => d === team.captain);
+  return team.rescued.length === 0;
 }
-// The team after picking digit d: a free pick replaces the starting hero; otherwise d must be on
-// the team. Returns null when d can't be picked.
+// The team after picking digit d, or null when d can't be picked.
 export function pickHero(team, d) {
   if (freePick(team)) return Object.assign({}, team, { captain: d, rescued: [d] });
-  if (d !== team.captain && !team.rescued.includes(d)) return null;
+  if (!team.rescued.includes(d)) return null;
   return Object.assign({}, team, { captain: d });
+}
+// Losing all your hearts curses the hero who led the run: it leaves the team (to be rescued again
+// on a rescue floor) and someone else has to be picked to lead.
+export function curseCaptain(team) {
+  if (team.captain == null) return team;
+  return Object.assign({}, team, { captain: null, rescued: team.rescued.filter((d) => d !== team.captain) });
 }

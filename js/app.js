@@ -9,7 +9,7 @@ import { PHRASE, monsterName, monsterCleared, monsterWon, heroName, heroJoins, w
 import { WINGS, wingOf, runFloors, openWings, toOpen, floorStars, wingStars, STREAK_STAR } from "./wings.js";
 import { traitOf, charged, prefers, hitBy, atHalf } from "./traits.js";
 import { roster, mastery, meet, beat } from "./bestiary.js";
-import { HEROES, CHALK, heroSvg, freePick, pickHero } from "./heroes.js";
+import { HEROES, CHALK, heroSvg, freePick, pickHero, curseCaptain } from "./heroes.js";
 import * as sfx from "./sfx.js";
 import { say, stopSpeech, setVoice } from "./speech.js";
 
@@ -455,19 +455,29 @@ function end(win) {
   const f = record(), acc = G.tries ? Math.round(G.solved / G.tries * 100) : 0, m = G.floors[G.floor];
   const opened = WINGS.find((x) => !before.includes(x.id) && openWings(progress, recs, st.start).includes(x.id));
   if (win) { sfx.victory(); say("p", wingCleared(w)); if (opened) say("p", wingOpened(opened)); } else say("p", monsterWon(m));
+  // Losing all your hearts curses the hero who led the run (heroes.js curseCaptain): rescue them
+  // again on a rescue floor, and pick someone else to lead.
+  const fallen = !win && hasCaptain() ? HEROES[team.captain] : null;
+  if (fallen) { Object.assign(team, curseCaptain(team)); saveTeam(); captainUI(); whoUI(); }
+  const cursedLine = !fallen ? "" : `<div class="fallen"><div class="cardmon small">${heroSvg(fallen, { cursed: true })}</div>
+    <p><strong>${esc(fallen.n)} was cursed!</strong> ${team.rescued.length ? "Pick who leads next, and" : "Pick a new hero to start again, and"} rescue ${esc(fallen.n)} on a rescue floor.</p></div>`;
   const left = !win ? "" : opened ? `<p><strong>${opened.name} is open!</strong> Pick it in the menu.</p>` : nextWingHint();
   pickOpen = false;
   show(`<h2>${win ? wingCleared(w) : `${m.n} won this round`}</h2>
-  ${win ? "" : `<div class="cardmon">${monsterArt(m)}</div>`}
+  ${win || fallen ? "" : `<div class="cardmon">${monsterArt(m)}</div>`}
   <p>${win ? `${m.n} is beaten. Every floor of ${w.name} is yours.` : "Every miss shows the right answer, so the next run goes deeper."}</p>
+  ${cursedLine}
   ${stars}
   ${left}
   <div class="stats"><div><b>${f}</b><small>floors cleared</small></div><div><b>${G.solved}</b><small>solved</small></div><div><b>${acc}%</b><small>accuracy</small></div></div>
   <p>Best run: <strong>${progress[w.id].best} of ${G.floors.length} floors</strong></p>
   ${captainHTML("Next run")}
-  <div class="btns"><button class="big alt" id="set">Menu</button><button class="big" id="again">Play again</button></div>`);
+  <div class="btns"><p class="warn" id="warn" role="status"></p><button class="big alt" id="set">Menu</button><button class="big" id="again">Play again</button></div>`);
   wireCaptain();
-  $("again").onclick = start;
+  $("again").onclick = () => {
+    if (!hasCaptain()) { $("warn").textContent = freePick(team) ? "Pick your hero first." : "Pick who leads first."; $("captain").scrollIntoView({ block: "center", behavior: "smooth" }); return; }
+    start();
+  };
   $("set").onclick = () => openMenu();
 }
 // A card over the game. It opens at the top, and its main button gets focus (Enter presses it)
@@ -576,7 +586,7 @@ function menu() {
   $("openSettings").onclick = () => settings();
   if ($("switchPlayer")) $("switchPlayer").onclick = () => settings();
   $("go").onclick = () => {
-    if (!hasCaptain()) { $("warn").textContent = "Pick your hero first."; $("captain").scrollIntoView({ block: "center", behavior: "smooth" }); return; }
+    if (!hasCaptain()) { $("warn").textContent = freePick(team) ? "Pick your hero first." : "Pick who leads first."; $("captain").scrollIntoView({ block: "center", behavior: "smooth" }); return; }
     start();
   };
 }
@@ -687,8 +697,9 @@ function wireSwatches() {
 }
 
 // Choosing a hero, on the start screen and after a run ends. With a hero picked, it's one line
-// (the hero, big, and "Change"); "Change" opens the grid. Until a hero is rescued, any of the ten
-// (heroes.js freePick); after that, anyone on your team (the rest show cursed).
+// (the hero, big, and "Change"); "Change" opens the grid. With nobody on the team (a new player, or
+// one whose only hero was cursed), any of the ten (heroes.js freePick); otherwise anyone on the
+// team (the rest show cursed).
 let pickOpen = false;
 function captainHTML(label) {
   const first = !hasCaptain();
@@ -705,14 +716,15 @@ function captainHTML(label) {
     return `<button type="button" class="hpick${on ? " on" : ""}" data-d="${h.d}" ${can ? "" : "disabled"} aria-pressed="${on}" aria-label="${can ? h.n : "Cursed, not rescued yet"}">
       ${heroSvg(h, { color: on ? team.color : null, cursed: !can })}<small>${can ? h.n : "???"}</small></button>`;
   }).join("");
-  return `<div class="grp" id="captain"><span>${first ? "Pick your hero" : label || "Your hero"}</span>
-    ${first ? '<p class="level">When your answer has your hero\'s digit, it\'s a power hit! Rescue more heroes on the way down.</p>'
-      : any ? '<p class="level">Until you rescue a hero, you can pick any of the ten.</p>' : ""}
+  const title = !first ? label || "Your hero" : any ? "Pick your hero" : "Pick who leads next";
+  return `<div class="grp" id="captain"><span>${title}</span>
+    ${first && any ? '<p class="level">When your answer has your hero\'s digit, it\'s a power hit! Rescue more heroes on the way down.</p>' : ""}
     <div class="heroes">${heroes}</div></div>`;
 }
 function wireCaptain() {
   const box = $("captain"), label = box.firstElementChild.textContent;
-  const redraw = () => { const n = $("captain"); n.outerHTML = captainHTML(label === "Pick your hero" ? "" : label); wireCaptain(); };
+  const custom = ["Pick your hero", "Pick who leads next", "Your hero"].includes(label) ? "" : label;
+  const redraw = () => { const n = $("captain"); n.outerHTML = captainHTML(custom); wireCaptain(); };
   if ($("changeHero")) $("changeHero").onclick = () => { pickOpen = true; redraw(); };
   box.querySelectorAll(".hpick:not([disabled])").forEach((b) => b.onclick = () => {
     const next = pickHero(team, Number(b.dataset.d));
