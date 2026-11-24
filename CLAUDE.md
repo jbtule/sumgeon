@@ -66,7 +66,7 @@ A math-practice dungeon crawler. The player fights anthropomorphic monsters buil
   - **Sprout** (K–1st, 7 hearts): within 5 → within 10 → 10 and some more → within 20.
   - **Apprentice** (2nd–3rd, 5 hearts): within 20 → ×2, 5, 10 → ÷ → ×3, 4 → ÷ → ×6–9 → ÷ → ×÷ 11, 12.
   - A level opens when 70% of the level before is learned (box 3+). Every banded fact is one of the 633 recorded facts, so every problem has the recorded voice.
-- Hints (`hints.js`, DESIGN.md §5.3) follow how classrooms teach now: ten-frames, 10 and some more, make 10, doubles plus one, draw and cross out, think addition on a number line, arrays, break apart, ×9 as ×10 minus a group, think multiplication.
+- Hints (`hints.js`, DESIGN.md §5.3) follow how classrooms teach now: ten-frames, 10 and some more, make 10, doubles plus one, draw and cross out, think addition on a number line, arrays, doubling (×4 as double ×2, ×8 as double ×4), break apart, ×9 as ×10 minus a group, think multiplication.
   - A new fact shows its hint by itself. A fact being learned gets a 💡 button. A fact in review gets none.
   - After a miss, the voice says "Oops!" then the right answer ("Oops! Seven plus eight is fifteen."), and the worked example opens as a card over the game: "Oops!", the fact with its answer, the drawing and the worked line, until "Got it" or Enter. The message under the monster says "Oops!" too ("Too slow!" for a timeout).
   - The timer stops while a hint is open.

@@ -12,7 +12,14 @@ assert.match(h("+", 8, 5).say, /^Make 10: 8 \+ 2 \+ 3/);
 assert.match(h("-", 7, 3).say, /^Take away 3/);
 assert.match(h("-", 12, 8).say, /^Think addition: 8 \+ \? = 12/);
 assert.match(h("×", 3, 4).say, /^3 rows of 4/);
-assert.match(h("×", 8, 7).say, /^Break apart: 7 × 5 \+ 7 × 3/);
+assert.match(h("×", 6, 7).say, /^Break apart: 6 × 5 \+ 6 × 2/);
+assert.match(h("×", 4, 7).say, /^Double it: 4 × 7 is double 2 × 7\. 14 \+ 14 = \?/);
+assert.match(h("×", 7, 8).say, /^Double it: 8 × 7 is double 4 × 7\. 28 \+ 28 = \?/);
+assert.match(h("×", 4, 8).say, /^Double it: 8 × 4 is double 4 × 4/);
+assert.match(h("×", 2, 4).say, /^2 rows of 4/, "small facts stay as arrays");
+assert.match(h("×", 4, 4).say, /^4 rows of 4/);
+assert.match(h("×", 9, 4).say, /minus one group/, "nines keep their own strategy");
+assert.match(h("×", 8, 12).say, /^Break apart/, "past × 10, break apart");
 assert.match(h("×", 9, 7).say, /minus one group/);
 assert.ok(!/finger/.test(h("×", 9, 7).say), "the finger trick isn't taught");
 assert.match(h("÷", 32, 8).say, /^Think multiplication: 8 × \? = 32/);
@@ -33,7 +40,7 @@ console.log("✓ hints");
 // The help page's strategies: each sample problem gets the hint it's named for.
 import { STRATEGIES } from "../js/hints.js";
 const opening = { "Ten-frame": /^Put together/, "Draw and cross out": /^Take away/, "10 and some more": /^10 and some more/, "Make 10": /^Make 10/,
-  "Doubles plus one": /^Doubles plus one/, "Think addition": /^Think addition/, "Arrays": /rows of/, "Break apart": /^Break apart/,
+  "Doubles plus one": /^Doubles plus one/, "Think addition": /^Think addition/, "Arrays": /rows of/, "Doubling": /^Double it/, "Break apart": /^Break apart/,
   "Nines as tens": /minus one group/, "Think multiplication": /^Think multiplication/ };
 assert.equal(STRATEGIES.length, Object.keys(opening).length);
 for (const s of STRATEGIES) {
