@@ -75,7 +75,11 @@ The monsters are all **operators and symbols**. Digits are on the player's side 
 
 ## 4. World structure: the Wings of the Sumgeon
 
-The dungeon is a map of **Wings**, one per math strand. Each Wing has its own floor palette, monsters and boss, and maps onto the content bands. A player only sees Wings for their band and the bands below it.
+The dungeon is a map of **Wings**, one per math strand. Each Wing has its own floor palette, monsters and boss, and maps onto the content bands. **Mastery unlocks Wings, not grade.** The Wings form a chain, from the Counting Cellar through the Tables Tower and on to the later Wings. A Wing unlocks the next one when its boss is beaten **and** over 60% of its facts are mastered, the same bar as the *Legend Loading…* achievement (§14.2). A kindergartner who masters her facts climbs into multiplication. A 3rd grader can't skip ahead without mastering the facts below.
+- **The band is a starting point, not a ceiling.** When a player is created, their grade opens every Wing up to and including their band's, so a 3rd grader doesn't have to grind through kindergarten. It also sets their help defaults (read-aloud, hints, timer).
+- **Lower Wings are always open,** so an older player can drop back for fast, easy practice (§6.7).
+- **New content gets taught as it arrives.** The first time a kind of problem appears, the captain demonstrates it, and a new fact starts with its model shown (§5.3). That's what makes working ahead possible for a young player.
+- **There is no manual unlock.** See §9 for why nothing needs a grown-up lock.
 
 | Wing | Strand | Bands | Monsters (glyph) | Boss |
 |---|---|---|---|---|
@@ -172,7 +176,7 @@ The game should **teach first, then fade the help out** as a fact gets learned, 
 
 ### 5.4 Adaptive difficulty (within a band)
 - Keep a rolling accuracy over the last 10 problems. Above 90% with fast answers, raise the number range one step. Below 60%, lower it a step and turn hints on sooner.
-- Never adapt across bands automatically. Suggest it: "You've mastered your 2–5 tables. Try the Tables Tower on Medium?"
+- Moving up is earned through the Wing chain (§4), so there's no separate band jump. When a new Wing unlocks, the game celebrates it: "You unlocked the Tables Tower!"
 
 ### 5.5 Monster HP stays fair
 The prototype rule, HP = mean answer × `hits`, still holds. Compute it from the **actual selected problem pool** rather than uniform random, so adaptive selection doesn't produce bullet-sponge or one-shot monsters.
@@ -187,7 +191,7 @@ Each floor awards up to 3 stars:
 - ★ no hearts lost on this floor
 - ★ max streak ≥ 5 (or average answer under the fluency threshold)
 
-Stars unlock Wings and cosmetics, so they give replay goals without grinding.
+Stars unlock cosmetics, so they give replay goals without grinding. Wings unlock through mastery (§4).
 
 ### 6.2 The Bestiary
 - Every monster you defeat goes into the **Bestiary**, a chalkboard page per monster with its art, name, a joke and its trait.
@@ -252,7 +256,15 @@ Inventory holds 3 items. This adds a small strategic layer without making math o
 
 **Cosmetics** (unlocked with stars and achievements, looks only and never stats): hats, capes, chalk trails and arena chalk colors for your captain.
 
-### 6.7 Achievements, players and linking
+### 6.7 Speed (fluency) for every player
+Fast recall is the goal of fact practice, so speed counts **whether or not the timer is on**:
+- Each fact's average answer time is already tracked, and "mastered" requires it to be fast (§5.1). An older player in a lower Wing turns easy facts into a fluency workout.
+- **Speed medals per floor** (🥉🥈🥇) by clear time, and a **personal-best time per Wing**, shown on the floor-clear card. Medals scale to the problem mix, so a Sprout floor and a Tables floor are judged fairly.
+- **A speed bonus with the timer on** (§3). Each player can turn their own timer on.
+- **A ⚡ Lightning track** in achievements (§14.4).
+- **Never sibling against sibling.** Every score, medal and best time is per player. Nothing ever shows one player's numbers beside another's, not even in the player list. A shared device must never turn into a race between a 3rd grader and a kindergartner.
+
+### 6.8 Achievements, players and linking
 Achievements are in §14. Profiles ("remember players") and linking devices are in §15. Both copy sound-box-crosswords.
 
 ---
@@ -316,8 +328,15 @@ Hitting a monster should feel good. Today there is a shake and a damage pop. The
 
 ## 9. Grown-ups' corner (parents and teachers)
 
-Behind a simple "hold for 2 seconds" button (not a real lock, just a deterrent for kids):
-- **Choose band and custom practice**, e.g. "only the 6, 7 and 8 times tables" or "only subtraction with regrouping".
+**No lock, because nothing needs one.** Any gate a kid can't pass, a strong 3rd grader can: a "hard math problem" gate is a puzzle in a math game, and a hold-to-open button is a dare. So, as in Sound Box, **nothing in settings can make progress easier or skip mastery**, and then there's nothing worth guarding:
+- **Wings** unlock only through mastery (§4). There's no manual unlock to abuse.
+- **Grade/band** only sets the starting Wings and help defaults. Faking a higher grade on a new player just means harder math.
+- **Hints, read-aloud and the timer** are comfort settings. Hinted solves never count toward mastery (§5.3), so turning hints on is no shortcut.
+- **Custom practice**, e.g. "only the 6, 7 and 8 times tables", runs as a separate Practice run outside the Wings. It builds fact mastery like any other play but never unlocks a Wing.
+- **Destructive actions** (Start over, removing a player) ask for a typed phrase to prevent accidents (§15.5), and a removed player can be **restored for 7 days**, so a sibling's mistake or mischief can be undone.
+
+The corner holds:
+- **Custom practice** (above).
 - **Progress view** for each profile: a heat-map grid of facts (e.g. a 12×12 times table colored by mastery box), the most-missed facts, and time played this week.
 - **Session length nudge**: optional "take a break" after N minutes, phrased kindly.
 - **Export progress** as a downloaded JSON or a printable page, so data stays local unless they choose to share it.
@@ -445,6 +464,7 @@ Spoken parts are shared, as in Sound Box ("Champion!", the Wing's name, "Beat th
 | Practice days (1, 3, 7, 14, 30, 60, 100) | 🕯️ First Torch → 🗝️ Key Finder → 🚪 Door Opener → 🪜 Deeper Down → 🏰 Castle Keeper → 🐉 Dragon's Den → 👑 Dungeon Royalty | Going deeper into the dungeon |
 | Flawless floors, no hearts lost (1, 5, 10, 25, 50, 100) | 🪵 Wooden Shield → 🛡️ Iron Shield → ✨ Shining Shield → 💎 Crystal Shield → 🌟 Starlight Shield → 🌈 Unbreakable | A shield that gets stronger |
 | Comebacks, a missed fact later right first try (1, 5, 10, 25, 50) | 🌧️ Through the Rain → 🌦️ Clearing Up → 🌈 Rainbow After → ☀️ Sunny Side → 🦅 Soaring | Weather clearing |
+| Lightning solves, a correct answer in under 3 s (25, 100, 250, 500, 1000) | 🔋 Charged Up → ⚡ Quick Spark → 🌩️ Thunderclap → 🌪️ Whirlwind → ☄️ Lightning Legend | Speed for any player, any Wing (§6.7) |
 | Total damage (1k, 5k, 25k, 100k, 500k) | 💨 Chalk Dust → 🌪️ Chalk Storm → ⚡ Chalk Lightning → ☄️ Chalk Comet → 🌋 Chalkcano | Bigger chalk power |
 | Monsters met, the Bestiary (5, 10, 20, all) | 📓 Field Notes → 🔍 Monster Spotter → 🗺️ Explorer → 📚 Monsterologist | A growing notebook |
 | Heroes rescued (1, 3, 6, 9) | 🔓 Curse Breaker → 🤝 Team-Up → 🎪 Big Band → 🎉 Full House | A party that fills up; Full House means all ten digits are free |
@@ -476,7 +496,7 @@ _Copies sound-box-crosswords profiles (`profilePrefix`, `OWN_KEYS`, `GRADE_KEYS`
 - **Every device starts with one profile, `default`.** "Add a player" makes a new, empty profile, which asks the band question. The first time, the default player also gets a name.
 - **Names belong to the device and never sync.** An empty name shows as "Default".
 - A quiet line under the title, "Playing as Sam", appears once there are two or more players and opens the player picker. Each player's avatar is their **captain** in their **chalk color** (§6.6), which helps a pre-reader find herself in the list. Unlike the name, the captain and color **do sync**: they aren't identifying, and Receive's "Who is this?" shows the incoming player's captain so the grown-up can tell who it is.
-- Any player except the one playing can be removed. That wipes everything under their prefix.
+- Any player except the one playing can be removed, after typing their name to confirm. The player is hidden, not wiped, and can be **restored for 7 days**. After that, everything under their prefix is deleted.
 - **Storage upgrade:** version 2 moves the prototype's `sumgeon` key (`{ops,diff,timer,best}`) into `sumgeon:@default:`, one key at a time, so an interrupted move finishes at the next launch.
 - Every key saved per player or per band has to be listed (`OWN_KEYS` / `BAND_KEYS`), and a check fails on one that isn't, so sync and Start over can't miss it.
 
@@ -513,6 +533,8 @@ Start over sits in Settings and asks the grown-up to type "start over", as in So
 - **Multiple choice:** no, in any band. Answers are always typed.
 - **Names checked against existing characters (2026-11-23):** Numberjacks (BBC) has digits 0–9 as heroes vs. villains, but our names, looks and summon mechanic are our own. The 0 hero is **Zeroic**, not "Hero Zero" (too close to the classroom tradition and picture book *Zero the Hero*). The 8 hero is **Chef Eight**, not a tentacle superhero (too close to Numberblocks' Octoblock). The Pirate Cove boss is **Dread Pirate Radius**, not Captain Circumference (the *Sir Cumference* books use the same pun). The Negative Zone monster is **Negasicle**.
 - **Hints follow the Missouri Learning Standards** and the models and words local curricula use (§5.3). Missouri doesn't name a method, so hints show strategy models, and a "For grown-ups" note explains each one. Sprout starts at fluency within 5, as the K standard says.
+- **Mastery unlocks Wings** (boss beaten plus over 60% of facts mastered). Grade only sets the starting Wings and help defaults. Lower Wings stay open, and speed counts for every player, never compared across siblings (§4, §6.7).
+- **No grown-up lock** (§9): nothing in settings makes progress easier, so there's nothing to guard. Destructive actions take a typed phrase, and removed players can be restored for 7 days.
 - **Digit heroes:** the digits 0–9 are the player's heroes and the operators are the monsters. Your captain is your avatar, your answer summons its digits, and one cursed digit is rescued per Wing clear (§6.6).
 - **Pre-reader support:** the target pre-reader reads numbers fluently, so only words (instructions, menus, story text) need icons and voice. Problems stay numeric.
 - **Voice, achievements, players and linking copy sound-box-crosswords** (§13–15).
