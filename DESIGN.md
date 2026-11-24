@@ -180,7 +180,7 @@ Inventory holds 3 items. This adds a small strategic layer without making math o
 | 5 | **High Five** | Sporty hero | A giant high five |
 | 6 | **Sixlock Holmes** | Detective with a magnifying glass | Spots the weak point, so the hit shows a 🔍 |
 | 7 | **Sevenstein** | Gentle giant, bolts and all, now friendly | Big stomp |
-| 8 | **Chef Eight** | Chef in a tall hat; the 8's loops are a stacked belly and head. Built on the joke "Why is 6 afraid of 7? Because 7 ate 9!" | Serves the damage on a sizzling platter |
+| 8 | **Chef Eight** | Chef in a tall hat; the 8's loops are a stacked belly and head. The pun: eight sounds like "ate." | Serves the damage on a sizzling platter |
 | 9 | **Nine-ja** | Ninja | Vanishes, then strikes from behind |
 
 **Your captain is your avatar.** When a player is set up, they pick a **starter** digit and a **chalk color**. The starter is free from the start, and the other nine are waiting to be rescued. The captain appears in "Playing as…", in the player list and in the arena, replacing the generic Apprentice character from the earlier draft. You can switch captains to any rescued hero at any time. Two siblings can both pick High Five, and their chalk colors tell them apart.
@@ -402,7 +402,6 @@ Spoken parts are shared, as in Sound Box ("Champion!", the Wing's name, "Beat th
 ### 14.5 Secrets (??? until earned, card says "Secret achievement!")
 - 🎯 **Exactly Zero**: the finishing hit leaves the monster at exactly 0 HP.
 - 7️⃣ **Lucky Seven**: break Sevenstein's curse with an answer containing a 7.
-- 🍽️ **Seven Ate Nine**: one answer that summons 7, 8 and 9 together, like 789 or 978. Chef Eight serves the 9 to Sevenstein.
 - 🦸 **Captain's Call**: three power hits (your captain's digit) in one floor.
 - 🎆 **All Hands**: an answer of three or more digits where every digit is a rescued hero.
 - 🪞🖐️ **Double High Five**: summon two of the same hero at once, like 55.
