@@ -73,7 +73,8 @@ Runs happen in Wings (`js/wings.js`, DESIGN.md §4). Each Wing asks one band's f
 - Per player, progress is saved under `wings`: `{ [wingId]: { boss: wins, best: floors } }`.
 - Sevenstein and Octoloop aren't regular floors any more: they're cursed digits (7, and 8, whose cursed form is Octoloop).
 - **Digit heroes** (`js/heroes.js`, DESIGN.md §6.6): Zeroic (0), Onesie, Twodini, Threasure Hunter, Sir Fourtress, High Five, Sixlock Holmes, Sevenstein, Chef Eight, Nine-ja (9).
-  - A player picks a captain and a chalk color before their first run. Saved under `heroes`: `{ captain, color, rescued: [digits] }`.
+  - The start screen asks for a hero first, and the end-of-run card offers the hero picker again. The first pick can be any of the ten and joins the team for good; after that, any hero on the team (picked or rescued) can lead a run. Saved under `heroes`: `{ captain, color, rescued: [digits] }`.
+  - The start screen holds only the hero, the Wings, "Enter the dungeon" and a ⚙ Settings link. Settings (as in Sound Box) holds Players (names optional, "Player 2" when blank), chalk color, the timer and sounds.
   - A right answer's digits fly at the monster: team digits as their hero, the rest as chalk numbers.
   - The captain's digit in the answer is a power hit (+50%). Each rescued hero in the answer adds 10%, up to 30%.
   - The rescue floor holds the lowest digit not yet free (never the captain), cursed. *Lucky Number*: answers with its digit hit double. Beating it frees the hero. Once all nine are free, it's a regular floor.

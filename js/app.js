@@ -41,6 +41,8 @@ function loadPlayer() {
   recs = store.player(PID).get("facts", {}) || {};
   team = Object.assign({ captain: null, color: CHALK[0], rescued: [] }, store.player(PID).get("heroes", {}));
   progress = store.player(PID).get("wings", {}) || {};
+  // A captain picked before heroes could change stays on the team.
+  if (team.captain != null && !team.rescued.includes(team.captain)) { team.rescued.push(team.captain); saveTeam(); }
   // The band a player started in opens its Wing from the start (DESIGN.md §4).
   if (!st.start) { st.start = st.band; saveSettings(); }
   if (!openWings(progress, recs, st.start).includes(wingFor(st.band).id)) { st.band = WINGS[0].band; saveSettings(); }
@@ -84,7 +86,7 @@ function whoUI() {
   w.hidden = list.length < 2;
   w.innerHTML = `Playing as ${hasCaptain() ? `<span class="who-cap">${heroArt(team.captain)}</span>` : ""}<b>${esc(displayName(list, PID))}</b>`;
 }
-$("who").onclick = () => openMenu();
+$("who").onclick = () => { openMenu(); settings(); };
 $("menuBtn").onclick = () => openMenu();
 
 /* ---------- the run ---------- */
@@ -376,7 +378,9 @@ function end(win) {
   ${left}
   <div class="stats"><div><b>${f}</b><small>floors cleared</small></div><div><b>${G.solved}</b><small>solved</small></div><div><b>${acc}%</b><small>accuracy</small></div></div>
   <p>Best run: <strong>${progress[w.id].best} of ${G.floors.length} floors</strong></p>
+  ${captainHTML().replace(">Your hero<", ">Your hero for the next run<")}
   <div class="btns"><button class="big" id="again">Play again</button><button class="big alt" id="set">Menu</button></div>`);
+  wireCaptain();
   $("again").onclick = start;
   $("set").onclick = () => openMenu();
 }
@@ -395,12 +399,12 @@ function chip(type, name, value, checked, label, id) {
 function playersHTML() {
   const list = store.profiles();
   const rows = list.map((p, i) => `<li class="prow" data-id="${esc(p.id)}">
-    <input type="text" maxlength="24" value="${esc(p.name)}" placeholder="Player ${i + 1}" aria-label="Player ${i + 1}'s name">
+    <input type="text" maxlength="24" value="${esc(p.name)}" placeholder="Player ${i + 1}" aria-label="Player ${i + 1}'s name (optional)">
     ${p.id === PID ? '<span class="now">playing now</span>' : '<button class="small" type="button" data-act="play">Play</button>'}
     ${store.canRemove(p.id) ? '<button class="small danger" type="button" data-act="remove">Remove</button>' : ""}
   </li>`).join("");
   return `<ul class="players">${rows}</ul>
-  <div class="prow"><input type="text" id="newName" maxlength="24" placeholder="New player's name" aria-label="New player's name"><button class="small" type="button" id="addPlayer">Add a player</button></div>`;
+  <div class="prow"><input type="text" id="newName" maxlength="24" placeholder="Name (optional)" aria-label="New player's name (optional)"><button class="small" type="button" id="addPlayer">Add a player</button></div>`;
 }
 // "Level 2 of 4: Within 10", from the player's own fact records.
 function levelLine() {
@@ -419,43 +423,64 @@ function wingsHTML() {
       <span><b>${w.name}</b><small>${b.label} · ${b.grades}</small><em>${note}</em></span></label>`;
   }).join("");
 }
+// The start screen: pick your hero and a Wing, then go. Players, chalk color, the timer and sounds
+// are in Settings, as in Sound Box. Names are optional.
 function menu() {
+  const list = store.profiles();
   show(`<div class="cardhead"><h2>Crawl the Sumgeon</h2><button class="icon-btn" id="sayIntro" type="button" aria-label="Read this aloud">${SPEAKER}</button></div>
-  <p>Seven glyph monsters guard seven floors. <strong>Your answer is your attack</strong>: solve 7 × 8 and you hit for 56. Three right in a row and every hit is doubled. A wrong answer costs a heart, and you see the right one.</p>
-  <div class="lineup">${wing().pool.concat([wing().boss]).map((n) => { const m = MON.find((x) => x.n === n); return svg(m, m.boss ? "boss" : ""); }).join("")}</div>
-  ${hasCaptain() ? "" : captainHTML()}
-  <div class="grp"><span>Players</span><div id="players">${playersHTML()}</div></div>
-  ${hasCaptain() ? captainHTML() : ""}
+  <p>Monsters made of math guard every floor. <strong>Your answer is your attack</strong>: get it right and your digits fly at the monster.</p>
+  ${list.length > 1 ? `<p class="playing">Playing as <b>${esc(displayName(list, PID))}</b> <button class="link" type="button" id="switchPlayer">Switch</button></p>` : ""}
+  ${captainHTML()}
   <div class="grp"><span>Wings</span><div class="wings">${wingsHTML()}</div>
     <p class="level" id="levelLine">${levelLine()}</p></div>
-  <div class="grp"><span>Pressure</span><div class="chips">${chip("checkbox", "tm", "1", st.timer, "Timer on", "tm")}</div></div>
-  <div class="grp"><span>Sounds</span><div class="chips">${chip("checkbox", "sfx", "1", st.sfx, "Sound effects", "sfxOn")}${chip("checkbox", "voice", "1", st.voice, "Voice", "voiceOn")}</div></div>
   <div class="warn" id="warn"></div>
-  <div class="btns">${G.running ? '<button class="big alt" id="resume">Keep fighting</button>' : ""}<button class="big" id="go">Enter the dungeon</button></div>`);
+  <div class="btns">${G.running ? '<button class="big alt" id="resume">Keep fighting</button>' : ""}<button class="big" id="go">Enter the dungeon</button></div>
+  <button class="link settings-link" type="button" id="openSettings">⚙ Settings</button>`);
   const card = $("card");
   $("sayIntro").onclick = () => say("p", PHRASE.intro, true);
-  // Settings save as they change, for the player who's playing.
-  // A different band is a fresh dungeon: its own facts and hearts.
+  // A different Wing is a fresh dungeon: its own facts and hearts.
   card.querySelectorAll("input[name=wing]").forEach((i) => i.onchange = () => {
     st.band = wingOf(i.value).band; saveSettings();
-    $("levelLine").textContent = levelLine();
-    menu();
     G.running = false; newRun(); loadMonster(0, true);
-    if ($("resume")) $("resume").remove();
+    menu();
   });
-  $("tm").onchange = () => { st.timer = $("tm").checked; saveSettings(); };
-  $("sfxOn").onchange = () => { st.sfx = $("sfxOn").checked; sfx.setSfx(st.sfx); saveSettings(); soundUI(); };
-  $("voiceOn").onchange = () => { st.voice = $("voiceOn").checked; setVoice(st.voice); saveSettings(); soundUI(); };
-  wirePlayers();
   wireCaptain();
+  $("openSettings").onclick = settings;
+  if ($("switchPlayer")) $("switchPlayer").onclick = settings;
   $("go").onclick = () => {
-    if (!hasCaptain()) { $("warn").textContent = "Pick your captain first."; $("captain").scrollIntoView({ block: "center" }); return; }
+    if (!hasCaptain()) { $("warn").textContent = "Pick your hero first."; $("captain").scrollIntoView({ block: "center" }); return; }
     start();
   };
   if ($("resume")) $("resume").onclick = () => { hide(); newProblem(); };
 }
-// Picking a captain: the first time, any of the ten; after that, your captain or anyone you've
-// rescued (the rest show cursed). And the captain's chalk color.
+
+// Settings: players (names optional), chalk color, the timer and sounds. All save as they change.
+function settings() {
+  show(`<div class="cardhead"><h2>Settings</h2></div>
+  <div class="grp"><span>Players</span><div id="players">${playersHTML()}</div></div>
+  <div class="grp"><span>Chalk color</span><div class="swatches" id="swatches">${swatchesHTML()}</div></div>
+  <div class="grp"><span>Pressure</span><div class="chips">${chip("checkbox", "tm", "1", st.timer, "Timer on", "tm")}</div></div>
+  <div class="grp"><span>Sounds</span><div class="chips">${chip("checkbox", "sfx", "1", st.sfx, "Sound effects", "sfxOn")}${chip("checkbox", "voice", "1", st.voice, "Voice", "voiceOn")}</div></div>
+  <div class="btns"><button class="big" id="done">Done</button></div>`);
+  $("tm").onchange = () => { st.timer = $("tm").checked; saveSettings(); };
+  $("sfxOn").onchange = () => { st.sfx = $("sfxOn").checked; sfx.setSfx(st.sfx); saveSettings(); soundUI(); };
+  $("voiceOn").onchange = () => { st.voice = $("voiceOn").checked; setVoice(st.voice); saveSettings(); soundUI(); };
+  wireSwatches();
+  wirePlayers();
+  $("done").onclick = menu;
+}
+function swatchesHTML() {
+  return CHALK.map((c) => `<button type="button" class="swatch${c === team.color ? " on" : ""}" data-c="${c}" style="--sw:${c}" aria-pressed="${c === team.color}" aria-label="Chalk color ${c}"></button>`).join("");
+}
+function wireSwatches() {
+  $("swatches").querySelectorAll(".swatch").forEach((b) => b.onclick = () => {
+    team.color = b.dataset.c; saveTeam(); captainUI(); whoUI();
+    $("swatches").innerHTML = swatchesHTML(); wireSwatches();
+  });
+}
+
+// Choosing a hero, on the start screen and after a run ends: the first time, any of the ten;
+// after that, anyone on your team (your heroes and everyone you've rescued; the rest show cursed).
 function captainHTML() {
   const first = !hasCaptain();
   const heroes = HEROES.map((h) => {
@@ -463,28 +488,21 @@ function captainHTML() {
     return `<button type="button" class="hpick${on ? " on" : ""}" data-d="${h.d}" ${can ? "" : "disabled"} aria-pressed="${on}" aria-label="${can ? h.n : "Cursed, not rescued yet"}">
       ${heroSvg(h, { color: on ? team.color : null, cursed: !can })}<small>${can ? h.n : "???"}</small></button>`;
   }).join("");
-  const colors = CHALK.map((c) => `<button type="button" class="swatch${c === team.color ? " on" : ""}" data-c="${c}" style="--sw:${c}" aria-pressed="${c === team.color}" aria-label="Chalk color ${c}"></button>`).join("");
-  return `<div class="grp" id="captain"><span>${first ? "Pick your captain" : "Your captain"}</span>
-    ${first ? '<p class="level">Your captain is your hero. When your answer has their digit, it\'s a power hit!</p>' : ""}
-    <div class="heroes">${heroes}</div>
-    ${first ? "" : `<div class="swatches">${colors}</div>`}</div>`;
+  return `<div class="grp" id="captain"><span>${first ? "Pick your hero" : "Your hero"}</span>
+    ${first ? '<p class="level">When your answer has your hero\'s digit, it\'s a power hit! Rescue more heroes on the way down.</p>' : ""}
+    <div class="heroes">${heroes}</div></div>`;
 }
 function wireCaptain() {
   const box = $("captain");
   box.querySelectorAll(".hpick:not([disabled])").forEach((b) => b.onclick = () => {
-    const first = !hasCaptain();
     team.captain = Number(b.dataset.d);
+    // The first pick joins the team for good, so it can be picked again later.
+    if (!team.rescued.includes(team.captain)) team.rescued.push(team.captain);
     saveTeam();
     say("m", heroName(HEROES[team.captain]), true);
     captainUI(); whoUI();
-    $("warn").textContent = "";
-    // The first pick moves the section below Players and shows the colors.
-    if (first) { menu(); return; }
+    if ($("warn")) $("warn").textContent = "";
     box.outerHTML = captainHTML(); wireCaptain();
-  });
-  box.querySelectorAll(".swatch").forEach((b) => b.onclick = () => {
-    team.color = b.dataset.c; saveTeam(); captainUI(); whoUI();
-    $("captain").outerHTML = captainHTML(); wireCaptain();
   });
 }
 function wirePlayers() {

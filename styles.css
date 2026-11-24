@@ -159,6 +159,11 @@ h1 b{color:var(--coral);font-weight:400}
 .swatches{display:flex;flex-wrap:wrap;gap:8px}
 .swatch{width:40px;height:40px;border-radius:50%;border:3px solid var(--dark);background:var(--sw);box-shadow:0 0 0 2px #3a5560}
 .swatch.on{box-shadow:0 0 0 3px var(--ink)}
+/* Start screen links */
+.link{background:none;border:0;padding:4px 2px;min-height:44px;color:var(--gold);font-weight:900;text-decoration:underline;text-underline-offset:3px}
+.settings-link{justify-self:start;color:var(--muted)}
+.playing{color:var(--muted);font-weight:800}
+.playing b{color:var(--ink)}
 /* The Wing map and rescues */
 .wings{display:grid;gap:8px}
 .wing{position:relative;display:block}
