@@ -18,7 +18,7 @@ A math-practice dungeon crawler. The player fights anthropomorphic monsters buil
 - After editing, run `npm run check` (no install needed): it syntax-checks every module, runs `scripts/*.test.mjs`, checks the import map and stamped attributes, and checks saving goes through `store.js`. CI runs it too.
 - Phones (under 760px wide) get a one-screen layout with no scrolling, all in CSS at the end of `styles.css`:
   - `.arena` and `.panel` become `display: contents`, so their parts share one grid. The arena's look moves to `.game::before`.
-  - The arena holds, top to bottom: an open hint, then the problem and answer box as one line ("3 + 1 = [ ]", with the 🔊/💡 buttons first), then the monster, then its name and HP as a nameplate. The monster is sized with container units to the room left, so it shrinks rather than hides.
+  - Top to bottom: the monster's box (just the monster and its name and HP as a nameplate), then an open hint, then the problem and answer box as one line ("3 + 1 = [ ]", with the 🔊/💡 buttons first) right above the number pad. The monster is sized with container units to the room left, so it shrinks rather than hides.
   - Messages float as a pill under the monster.
   - The number pad docks at the bottom, clear of the home bar, with your hero and hearts under it, on your side of the screen and apart from the monster's.
   - Short phones (under 700px tall) get a tighter variant.

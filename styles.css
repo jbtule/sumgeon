@@ -204,10 +204,10 @@ h1 b{color:var(--coral);font-weight:400}
   .icon-btn svg{width:20px;height:20px}
   .who{margin:-4px auto 0;min-height:28px;padding:2px 12px}
   .game{flex:1;min-height:0;width:100%;gap:6px;padding:0 max(12px,env(safe-area-inset-left,0px)) max(8px,env(safe-area-inset-bottom,0px)) max(12px,env(safe-area-inset-right,0px));
-    grid-template-columns:minmax(0,1fr) minmax(0,auto);grid-template-rows:auto auto minmax(0,1fr) auto auto auto auto;
-    grid-template-areas:"hint hint" "prob ans" "stage stage" "mhead mhead" "timer timer" "pad pad" "you you"}
+    grid-template-columns:minmax(0,1fr) minmax(0,auto);grid-template-rows:minmax(0,1fr) auto auto auto auto auto auto;
+    grid-template-areas:"stage stage" "mhead mhead" "hint hint" "prob ans" "timer timer" "pad pad" "you you"}
   .arena,.panel{display:contents}
-  .game::before{content:"";grid-column:1/-1;grid-row:1/5;border-radius:18px;border:2px solid var(--line);
+  .game::before{content:"";grid-column:1/-1;grid-row:1/3;border-radius:18px;border:2px solid var(--line);
     background:radial-gradient(ellipse 70% 55% at 50% 78%,#2f5560 0,#1a313a 55%,#10202600 100%),repeating-linear-gradient(0deg,#16292f 0 38px,#13252b 38px 40px)}
   .game:has(.arena.hurt)::before{box-shadow:inset 0 0 0 4px var(--coral),inset 0 0 60px #ff5a4e66}
   .game:has(.arena.shake)::before{animation:shake .35s}
@@ -217,17 +217,19 @@ h1 b{color:var(--coral);font-weight:400}
   .hp{height:12px}
   .hptxt{font-size:12px}
   /* The monster fills what's left of the arena, however tall the phone. */
-  .stage{grid-area:stage;height:auto;min-height:0;container-type:size;z-index:1}
+  /* The monster's box: just the monster and its nameplate. */
+  .stage{grid-area:stage;height:auto;min-height:0;container-type:size;z-index:1;margin-top:8px}
   .mon{width:min(62cqw,calc(100cqh - 12px))}
   .shadow{bottom:4px;height:16px}
   /* The problem and the answer read as one line: 3 + 1 = [ ]. The 🔊 and 💡 buttons go first so
      they don't split "=" from the box. */
-  .probrow{grid-area:prob;justify-self:end;z-index:2;gap:6px;padding:8px 0 0 10px}
+  .probrow{grid-area:prob;justify-self:end;z-index:2;gap:6px;padding:0}
   .probrow .icon-btn{order:-1}
-  .prob{font-size:clamp(30px,10vw,42px);text-shadow:0 2px 0 var(--dark),0 0 12px var(--bg)}
+  .prob{font-size:clamp(30px,10vw,42px)}
   .probrow .icon-btn{width:36px;height:36px}
   /* An open hint gets its own row in the arena; the monster's row shrinks to make room. */
-  .hint{grid-area:hint;z-index:3;margin:8px 8px 0;padding:6px 8px;gap:2px;position:relative}
+  /* The hint and the problem sit outside the box, the problem right above the number pad. */
+  .hint{grid-area:hint;z-index:3;margin:0;padding:6px 8px;gap:2px;position:relative}
   .hint .model svg{max-height:14dvh;width:auto}
   .hint .hsay{font-size:15px}
 
@@ -238,7 +240,7 @@ h1 b{color:var(--coral);font-weight:400}
   .hearts{font-size:16px}
   .flame svg{width:18px;height:22px}
   .timer{grid-area:timer}
-  .ans{grid-area:ans;align-self:end;z-index:2;width:clamp(76px,24vw,120px);min-height:48px;margin-right:10px;font-size:clamp(28px,9vw,40px);padding:2px 6px;line-height:1.1}
+  .ans{grid-area:ans;align-self:center;z-index:2;width:clamp(76px,24vw,120px);min-height:48px;margin:0 0 0 8px;font-size:clamp(28px,9vw,40px);padding:2px 6px;line-height:1.1}
   /* Messages float as a pill at the bottom of the monster's area instead of taking a row. */
   .msg{grid-area:stage;align-self:end;justify-self:center;z-index:2;min-height:0;margin-bottom:2px;padding:2px 12px;border-radius:999px;font-size:14px;line-height:1.4;background:#0c171cb0}
   .msg:empty{display:none}
