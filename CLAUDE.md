@@ -49,3 +49,7 @@ Voice, achievements, players and linking copy the sibling project `../sound-box-
 
 ## License
 PolyForm Noncommercial 1.0.0 (`LICENSE.md`). Its first line is the `Required Notice:` copyright, which must travel with copies. When you add a dependency, font or asset, list it with its license in the README's License section.
+
+## Publishing
+- Public repo `jbtule/sumgeon`. Pushing to `main` deploys to GitHub Pages at https://tools.tuley.name/sumgeon/ through `.github/workflows/ci.yml`, which copies `index.html` and `LICENSE.md` into `_site/`. New site files must be added there.
+- Workflows must pass `zizmor .`: actions pinned to a SHA, minimal `permissions`, and `persist-credentials: false`. CI runs zizmor too.
