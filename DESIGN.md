@@ -170,7 +170,7 @@ The game should **teach first, then fade the help out** as a fact gets learned, 
 | Multi-digit × and ÷ | **Area model** (23 × 4 as 20 × 4 + 3 × 4) and partial quotients | 4.NBT.A.6–7 |
 | Fractions | Fraction bars, pies and number lines | 3.NF, 4.NF |
 
-**"For grown-ups" note on every hint:** one plain line explaining the strategy, so a parent who learned the old way can follow along and use the same words. For example: "Make 10: kids split the 5 into 2 + 3 so 8 becomes an easy 10." For multi-digit problems, the note also shows the familiar standard algorithm.
+**"How the hints work" page for grown-ups** (⚙ Settings): how the game teaches, then each strategy with a sample problem, the game's drawing, and one plain line on why it works ("Make 10: kids split the 5 into 2 + 3 so 8 becomes an easy 10"), so a parent who learned the old way can follow along and use the same words. Multi-digit strategies (the area model, plus the familiar standard algorithm) join it with the Adept band. The notes used to sit on every hint; they moved to this page so the kids see only the drawing and its words.
 
 **Match the classroom's words.** Hint copy uses the words in the standards and local curriculum guides ("number bond," "ten-frame," "10 and some more"), not invented ones. Check the guides for each grade when building that band.
 

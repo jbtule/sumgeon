@@ -3,7 +3,7 @@
 import { MON, svg } from "./monsters.js";
 import { spokenProblem, spokenFact } from "./problems.js";
 import { BANDS, choose, factOf, record as recordAnswer, helpFor, openLevel, monsterHP } from "./learn.js";
-import { hintFor } from "./hints.js";
+import { hintFor, STRATEGIES } from "./hints.js";
 import { openStore, displayName } from "./store.js";
 import { PHRASE, monsterName, monsterCleared, monsterWon, heroName, heroJoins, wingCleared, wingOpened } from "./lines.js";
 import { WINGS, wingOf, runFloors, openWings, toOpen } from "./wings.js";
@@ -248,7 +248,6 @@ function showHelp(mode) {
 function openHint(worked) {
   const h = hintFor(G.cur, worked), box = $("hint");
   box.innerHTML = `<div class="model">${h.model}</div><p class="hsay">${esc(h.say)}</p>
-    <details class="grown"><summary>For grown-ups</summary><p>${esc(h.grownups)}</p></details>
     ${worked ? '<button class="big" type="button" id="gotIt">Got it</button>' : ""}`;
   box.hidden = false;
   $("hintBtn").hidden = true;
@@ -461,13 +460,45 @@ function settings() {
   <div class="grp"><span>Chalk color</span><div class="swatches" id="swatches">${swatchesHTML()}</div></div>
   <div class="grp"><span>Pressure</span><div class="chips">${chip("checkbox", "tm", "1", st.timer, "Timer on", "tm")}</div></div>
   <div class="grp"><span>Sounds</span><div class="chips">${chip("checkbox", "sfx", "1", st.sfx, "Sound effects", "sfxOn")}${chip("checkbox", "voice", "1", st.voice, "Voice", "voiceOn")}</div></div>
-  <div class="btns"><button class="big" id="done">Done</button></div>`);
+  <div class="grp"><span>Help</span><button class="small" type="button" id="openHelp">How the hints work</button></div>
+  <div class="btns"><button class="big" id="done">Done</button></div>
+  ${badgesCopy()}`);
+  $("openHelp").onclick = helpPage;
   $("tm").onchange = () => { st.timer = $("tm").checked; saveSettings(); };
   $("sfxOn").onchange = () => { st.sfx = $("sfxOn").checked; sfx.setSfx(st.sfx); saveSettings(); soundUI(); };
   $("voiceOn").onchange = () => { st.voice = $("voiceOn").checked; setVoice(st.voice); saveSettings(); soundUI(); };
   wireSwatches();
   wirePlayers();
   $("done").onclick = menu;
+}
+// The footer's badges (deployed version, license), repeated in Settings, since phones hide the footer.
+function badgesCopy() {
+  const f = document.querySelector("footer.badges");
+  if (!f) return "";
+  const c = f.cloneNode(true);
+  c.querySelectorAll("[id]").forEach((e) => e.removeAttribute("id"));
+  return c.outerHTML;
+}
+// "How the hints work": how Sumgeon teaches, and each strategy with the game's own drawing and
+// a plain explanation, for grown-ups who learned math another way (DESIGN.md §5.3).
+function helpPage() {
+  const cards = STRATEGIES.map((s) => {
+    const h = hintFor(s.f, true);
+    return `<section class="strat"><div class="strat-head"><b>${esc(s.title)}</b><small>${esc(s.grade)}</small></div>
+      <div class="model">${h.model}</div><p class="hsay">${esc(h.say)}</p><p class="why">${esc(h.grownups)}</p></section>`;
+  }).join("");
+  show(`<div class="cardhead"><h2>How the hints work</h2></div>
+  <p>Sumgeon teaches the way classrooms do now. A hint draws the strategy and leaves the last step to the player, so they work it out rather than copy it.</p>
+  <ul class="how">
+    <li><strong>New facts</strong> show their hint by themselves. While a fact is being learned, 💡 shows it on a tap. Once it's learned, the hint goes away.</li>
+    <li><strong>After a miss</strong>, the worked example stays up until "Got it", and that fact comes back 2–4 problems later.</li>
+    <li><strong>A hinted answer</strong> still hits the monster, but doesn't count toward learning the fact or building a streak.</li>
+    <li><strong>Wings open by mastery</strong>, not grade: beat a Wing's boss and learn 60% of its facts to open the next.</li>
+  </ul>
+  <h3 class="strats-title">The strategies</h3>
+  <div class="strats">${cards}</div>
+  <div class="btns"><button class="big" id="back">Back to Settings</button></div>`);
+  $("back").onclick = settings;
 }
 function swatchesHTML() {
   return CHALK.map((c) => `<button type="button" class="swatch${c === team.color ? " on" : ""}" data-c="${c}" style="--sw:${c}" aria-pressed="${c === team.color}" aria-label="Chalk color ${c}"></button>`).join("");
