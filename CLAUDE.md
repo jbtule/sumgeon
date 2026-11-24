@@ -33,7 +33,12 @@ Monsters are inline SVG drawn from simple shapes (no fonts), using the `solid()`
 - Optional countdown timer.
 - Settings and best floor are saved to localStorage under the key `sumgeon`.
 
-## Roadmap ideas
+## Design direction
+See `DESIGN.md` for the full design: audience (ages 5–14) and content bands, the learning engine, Wings, progression, math input, game feel, recorded voice, achievements, players and linking, and milestones M1–M6. Check new work against its pillars.
+
+Voice, achievements, players and linking copy the sibling project `../sound-box-crosswords` (see its `CLAUDE.md` and `js/speech.js`, `js/achievements.js`, `js/seal.js`, `js/merge.js`, `js/sync.js`, `sync/`). Read the matching code there before building any of these.
+
+## Roadmap ideas (original seed list, expanded in DESIGN.md)
 - More floors and monsters (π pirate, √ root creature, % gremlin, = twins)
 - Endless mode with scaling HP and a high score
 - Fractions, decimals and negative numbers
