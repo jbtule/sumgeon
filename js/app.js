@@ -291,18 +291,27 @@ function burst(crit) {
    hits, but doesn't build the streak or count toward mastery, and the timer stops while it's open. */
 function showHelp(mode) {
   $("hintBtn").hidden = mode !== "button";
-  if (mode === "show") openHint(false); else $("hint").hidden = true;
+  if (mode === "show") openHint(); else $("hint").hidden = true;
 }
-function openHint(worked) {
-  const h = hintFor(G.cur, worked), box = $("hint");
-  box.innerHTML = `<div class="model">${h.model}</div><p class="hsay">${esc(h.say)}</p>
-    ${worked ? '<button class="big" type="button" id="gotIt">Got it</button>' : ""}`;
+function openHint() {
+  const h = hintFor(G.cur, false), box = $("hint");
+  box.innerHTML = `<div class="model">${h.model}</div><p class="hsay">${esc(h.say)}</p>`;
   box.hidden = false;
   $("hintBtn").hidden = true;
-  if (!worked) { G.hinted = true; $("timer").hidden = true; }
-  else $("gotIt").onclick = nextAfterMiss;
+  G.hinted = true; $("timer").hidden = true;
 }
-$("hintBtn").onclick = () => { if (!G.busy) openHint(false); };
+// After a miss: the worked example as a card over the game, "Oops!" and the right answer with
+// the drawing, until "Got it" (or Enter, on the focused button).
+function openWorked() {
+  const h = hintFor(G.cur, true);
+  $("hint").hidden = true; $("hintBtn").hidden = true;
+  show(`<div class="worked"><h2>Oops!</h2>
+    <p class="worked-fact">${esc(G.cur.q)} = <b>${G.cur.ans}</b></p>
+    <div class="model">${h.model}</div><p class="hsay">${esc(h.say)}</p>
+    <div class="btns"><button class="big" type="button" id="gotIt">Got it</button></div></div>`);
+  $("gotIt").onclick = nextAfterMiss;
+}
+$("hintBtn").onclick = () => { if (!G.busy) openHint(); };
 
 // Saves the answer to the fact's record; says so when it opens a new level.
 function learnFrom(ok) {
@@ -340,7 +349,7 @@ function submit() {
       if (G.hp <= 0) { setTimeout(() => { $("mon").className = "mon dead"; }, 300); setTimeout(cleared, 1100); }
       else setTimeout(newProblem, level ? 1200 : 450);
     });
-  } else miss("Ouch!");
+  } else miss("Oops!");
 }
 
 // A wrong answer or timeout: the monster lunges, a heart cracks off, the right answer is shown
@@ -356,7 +365,8 @@ function miss(why) {
   restartAnim($("mon"), "lunge");
   streakUI();
   setMsg(`${why} ${G.cur.q} = ${G.cur.ans}`, "bad");
-  say("q", spokenFact(G.cur), true);
+  say("p", PHRASE.oops, true);
+  say("q", spokenFact(G.cur));
   setTimeout(() => {
     sfx.crack();
     heartsUI(lost);
@@ -367,12 +377,12 @@ function miss(why) {
   if (G.hearts <= 0) { setTimeout(() => end(false), 1700); return; }
   // The worked example stays until "Got it" (or Enter), so there's time to look.
   $("timer").hidden = true;
-  setTimeout(() => { openHint(true); G.next = true; const g = $("gotIt"); if (g) g.focus(); }, 500);
+  setTimeout(() => { G.next = true; openWorked(); }, 600);
 }
 function nextAfterMiss() {
   if (!G.next) return;
   G.next = false;
-  $("hint").hidden = true;
+  hide();
   newProblem();
 }
 

@@ -11,6 +11,7 @@ export var PHRASE = {
   intro: "Seven glyph monsters guard seven floors. Your answer is your attack: solve seven times eight, and you hit for fifty-six. Three right in a row, and every hit is doubled. A wrong answer costs a heart, and you see the right one.",
   boss: "Boss floor!",
   crits: "Crits on!",
+  oops: "Oops!",
   win: "You cleared the Sumgeon!"
 };
 export function monsterName(m) { return m.n + "!"; }

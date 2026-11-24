@@ -156,6 +156,14 @@ h1 b{color:var(--coral);font-weight:400}
 .swatches{display:flex;flex-wrap:wrap;gap:8px}
 .swatch{width:40px;height:40px;border-radius:50%;border:3px solid var(--dark);background:var(--sw);box-shadow:0 0 0 2px #3a5560}
 .swatch.on{box-shadow:0 0 0 3px var(--ink)}
+/* The worked example after a miss, as a card over the game */
+.worked{display:grid;justify-items:center;gap:10px;text-align:center}
+.worked h2{color:var(--coral)}
+.worked .worked-fact{margin:0;font:400 clamp(30px,9vw,44px)/1.1 Bungee,sans-serif;color:var(--ink)}
+.worked .worked-fact b{font-weight:400;color:var(--gold)}
+.worked .model{max-width:100%;overflow-x:auto}
+.worked .model svg{display:block;max-width:100%;height:auto}
+.worked .hsay{margin:0;font-weight:900;font-size:18px;color:var(--ink)}
 /* How the hints work (Settings → Help) */
 .how{margin:0;padding-left:20px;display:grid;gap:6px;color:var(--muted)}
 .how strong{color:var(--ink)}
