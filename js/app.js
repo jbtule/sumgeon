@@ -5,7 +5,8 @@ import { spokenProblem, spokenFact } from "./problems.js";
 import { BANDS, choose, factOf, record as recordAnswer, helpFor, openLevel, monsterHP } from "./learn.js";
 import { hintFor } from "./hints.js";
 import { openStore, displayName } from "./store.js";
-import { PHRASE, monsterName, monsterCleared, monsterWon, heroName } from "./lines.js";
+import { PHRASE, monsterName, monsterCleared, monsterWon, heroName, heroJoins, wingCleared, wingOpened } from "./lines.js";
+import { WINGS, wingOf, runFloors, openWings, toOpen } from "./wings.js";
 import { HEROES, CHALK, heroSvg } from "./heroes.js";
 import * as sfx from "./sfx.js";
 import { say, stopSpeech, setVoice } from "./speech.js";
@@ -27,14 +28,22 @@ store.upgrade();
 
 /* ---------- the player ---------- */
 // team: { captain: digit or null, color: chalk color, rescued: [digits] } (DESIGN.md §6.6).
-let PID, st, best, recs, team;
+// progress: { [wingId]: { boss: wins, best: floors } }.
+let PID, st, recs, team, progress;
 const band = () => BANDS[st.band] || BANDS.sprout;
+const wingFor = (b) => WINGS.find((w) => w.band === b) || WINGS[0];
+const wing = () => wingFor(st.band);
+// A floor's art: a cursed digit is its hero, darkened (DESIGN.md §6.6).
+const monsterArt = (m, cls) => (m.cursed != null ? heroSvg(HEROES[m.cursed], { cursed: true, cls }) : svg(m, cls));
 function loadPlayer() {
   PID = store.active();
   st = store.settings(PID);
-  best = store.player(PID).get("best", 0);
   recs = store.player(PID).get("facts", {}) || {};
   team = Object.assign({ captain: null, color: CHALK[0], rescued: [] }, store.player(PID).get("heroes", {}));
+  progress = store.player(PID).get("wings", {}) || {};
+  // The band a player started in opens its Wing from the start (DESIGN.md §4).
+  if (!st.start) { st.start = st.band; saveSettings(); }
+  if (!openWings(progress, recs, st.start).includes(wingFor(st.band).id)) { st.band = WINGS[0].band; saveSettings(); }
   sfx.setSfx(st.sfx);
   setVoice(st.voice);
   soundUI(); whoUI(); captainUI();
@@ -112,15 +121,17 @@ function streakUI() {
 function setMsg(t, c = "") { const m = $("msg"); m.textContent = t; m.className = "msg " + c; }
 function ansUI() { $("ans").textContent = G.input; }
 
+// A fresh run through the current Wing: its floors, with this player's rescue floor.
+function newRun() { G.floors = runFloors(wing(), team); }
 function loadMonster(i, quiet) {
-  const m = MON[i];
+  const m = G.floors[i];
   G.floor = i;
   G.max = G.hp = monsterHP(m, st.band, recs);
   const el = $("mon");
   el.className = "mon";
-  el.innerHTML = svg(m);
+  el.innerHTML = monsterArt(m);
   $("mName").textContent = m.n;
-  $("floorLbl").textContent = m.boss ? "Boss floor" : `Floor ${i + 1} / ${MON.length}`;
+  $("floorLbl").textContent = m.boss ? "Boss floor" : m.cursed != null ? "Rescue floor" : `Floor ${i + 1} / ${G.floors.length}`;
   hpUI(); heartsUI(); streakUI();
   if (quiet) return;
   sfx.appear(m.boss);
@@ -134,7 +145,7 @@ function newProblem() {
   G.retry.forEach((r) => r.after--);
   const due = G.retry.find((r) => r.after <= 0);
   if (due) G.retry.splice(G.retry.indexOf(due), 1);
-  const m = MON[G.floor];
+  const m = G.floors[G.floor];
   const key = choose(st.band, recs, { now: Date.now(), recent: G.recent, retry: due ? due.key : null, op: m.op === "mix" ? null : m.op });
   G.cur = factOf(key);
   G.recent = [key].concat(G.recent).slice(0, 3);
@@ -260,8 +271,10 @@ function submit() {
   if (Number(G.input) === G.cur.ans) {
     G.busy = true; G.solved++;
     if (!G.hinted) G.streak++;
-    const typed = G.input, crit = G.streak >= 3, bonus = heroBonus(typed);
-    const dmg = Math.round(G.cur.ans * (crit ? 2 : 1) * bonus.mult);
+    const typed = G.input, crit = G.streak >= 3, bonus = heroBonus(typed), m = G.floors[G.floor];
+    // Lucky Number: a cursed digit takes double from answers with its digit (DESIGN.md §6.6).
+    const lucky = m.cursed != null && typed.includes(String(m.cursed));
+    const dmg = Math.round(G.cur.ans * (crit ? 2 : 1) * (lucky ? 2 : 1) * bonus.mult);
     const level = learnFrom(true);
     G.input = ""; ansUI();
     $("hint").hidden = true; $("hintBtn").hidden = true;
@@ -273,7 +286,7 @@ function submit() {
       pop((bonus.power ? "Power! " : crit ? "Crit! " : "") + "−" + dmg, crit || bonus.power);
       restartAnim($("mon"), "hit");
       if (crit) restartAnim($("arena"), "shake");
-      setMsg(level ? `New level: ${level}!` : bonus.power ? `${HEROES[team.captain].n} power hit for ${dmg}!` : crit ? `Critical hit for ${dmg}!` : `Hit for ${dmg}!`, "good");
+      setMsg(level ? `New level: ${level}!` : lucky ? `Lucky ${m.cursed}! Double damage: ${dmg}!` : bonus.power ? `${HEROES[team.captain].n} power hit for ${dmg}!` : crit ? `Critical hit for ${dmg}!` : `Hit for ${dmg}!`, "good");
       hpUI(); streakUI();
       if (G.hp <= 0) { setTimeout(() => { $("mon").className = "mon dead"; }, 300); setTimeout(cleared, 1100); }
       else setTimeout(newProblem, level ? 1200 : 450);
@@ -314,35 +327,55 @@ function nextAfterMiss() {
   newProblem();
 }
 
+// Floors cleared this run; the Wing's best is kept per player.
 function record() {
-  const f = G.floor + (G.hp <= 0 ? 1 : 0);
-  if (f > best) { best = f; store.player(PID).set("best", best); }
+  const f = G.floor + (G.hp <= 0 ? 1 : 0), p = progress[wing().id] || (progress[wing().id] = { boss: 0, best: 0 });
+  if (f > p.best) p.best = f;
+  store.player(PID).set("wings", progress);
   return f;
 }
 function cleared() {
-  const m = MON[G.floor];
-  if (G.floor === MON.length - 1) return end(true);
+  const m = G.floors[G.floor];
+  if (G.floor === G.floors.length - 1) return end(true);
   const healed = G.hearts < band().hearts;
   if (healed) G.hearts++;
   record();
   sfx.cleared();
-  say("p", monsterCleared(m));
-  const nx = MON[G.floor + 1];
-  show(`<h2>${m.n} ${m.quip}</h2>
-  <div class="cardmon">${svg(nx)}</div>
-  <p>Next down the stairs: <strong>${nx.n}</strong>${nx.boss ? ", the boss" : ""}.${healed ? " You found a heart (+1)." : ""}</p>
+  const nx = G.floors[G.floor + 1];
+  const next = `<div class="cardmon">${monsterArt(nx)}</div>
+  <p>Next down the stairs: <strong>${nx.n}</strong>${nx.boss ? ", the boss" : ""}.${healed ? " You found a heart (+1)." : ""}</p>`;
+  if (m.cursed != null) {
+    // A rescue: the curse breaks and the hero joins the team.
+    const h = HEROES[m.cursed];
+    if (!team.rescued.includes(h.d)) { team.rescued.push(h.d); saveTeam(); }
+    say("p", heroJoins(h));
+    show(`<h2>${h.n} is free!</h2>
+    <div class="cardmon rescued">${heroSvg(h)}</div>
+    <p><strong>${h.n} joins your team.</strong> When your answer has a ${h.d}, ${h.n} jumps in and hits harder.</p>
+    ${next.replace('class="cardmon"', 'class="cardmon small"')}
+    <div class="btns"><button class="big" id="next">Floor ${G.floor + 2}</button></div>`);
+  } else {
+    say("p", monsterCleared(m));
+    show(`<h2>${m.n} ${m.quip}</h2>
+  ${next}
   <div class="btns"><button class="big" id="next">Floor ${G.floor + 2}</button></div>`);
+  }
   $("next").onclick = () => { hide(); loadMonster(G.floor + 1); setMsg("Your answer is your attack."); newProblem(); };
 }
 function end(win) {
   G.running = false;
-  const f = record(), acc = G.tries ? Math.round(G.solved / G.tries * 100) : 0, m = MON[G.floor];
-  if (win) { sfx.victory(); say("p", PHRASE.win); } else say("p", monsterWon(m));
-  show(`<h2>${win ? "You cleared the Sumgeon!" : `${m.n} won this round`}</h2>
-  ${win ? "" : `<div class="cardmon">${svg(m)}</div>`}
-  <p>${win ? "Sigma Rex is scattered across the chalkboard. Try a harder setting, or switch on the timer." : "Every miss shows the right answer, so the next run goes deeper."}</p>
+  const w = wing(), before = openWings(progress, recs, st.start);
+  if (win) { progress[w.id] = progress[w.id] || { boss: 0, best: 0 }; progress[w.id].boss++; }
+  const f = record(), acc = G.tries ? Math.round(G.solved / G.tries * 100) : 0, m = G.floors[G.floor];
+  const opened = WINGS.find((x) => !before.includes(x.id) && openWings(progress, recs, st.start).includes(x.id));
+  if (win) { sfx.victory(); say("p", wingCleared(w)); if (opened) say("p", wingOpened(opened)); } else say("p", monsterWon(m));
+  const left = !win ? "" : opened ? `<p><strong>${opened.name} is open!</strong> Pick it in the menu.</p>` : nextWingHint();
+  show(`<h2>${win ? wingCleared(w) : `${m.n} won this round`}</h2>
+  ${win ? "" : `<div class="cardmon">${monsterArt(m)}</div>`}
+  <p>${win ? `${m.n} is beaten. Every floor of ${w.name} is yours.` : "Every miss shows the right answer, so the next run goes deeper."}</p>
+  ${left}
   <div class="stats"><div><b>${f}</b><small>floors cleared</small></div><div><b>${G.solved}</b><small>solved</small></div><div><b>${acc}%</b><small>accuracy</small></div></div>
-  <p>Best run: <strong>${best} of ${MON.length} floors</strong></p>
+  <p>Best run: <strong>${progress[w.id].best} of ${G.floors.length} floors</strong></p>
   <div class="btns"><button class="big" id="again">Play again</button><button class="big alt" id="set">Menu</button></div>`);
   $("again").onclick = start;
   $("set").onclick = () => openMenu();
@@ -374,14 +407,26 @@ function levelLine() {
   const L = openLevel(st.band, recs);
   return `Level ${L + 1} of ${band().levels.length}: ${band().levels[L].name}`;
 }
+// The Wing map: each Wing with its band, open or locked (and what opens it).
+function wingsHTML() {
+  const open = openWings(progress, recs, st.start);
+  return WINGS.map((w) => {
+    const b = BANDS[w.band], isOpen = open.includes(w.id), here = w.band === st.band, p = progress[w.id] || {};
+    let note;
+    if (isOpen) note = p.boss ? `Cleared ${p.boss}×` : p.best ? `Best: ${p.best} of ${w.floors.length + 1} floors` : "Not tried yet";
+    else { const t = toOpen(w, progress, recs); note = `🔒 Beat ${t.prev.boss} ${t.boss ? "✓" : ""} · learn ${Math.round(t.need * 100)}% of ${t.prev.name} (${Math.round(t.share * 100)}%)`; }
+    return `<label class="wing${here ? " here" : ""}${isOpen ? "" : " locked"}"><input type="radio" name="wing" value="${w.id}" ${here ? "checked" : ""} ${isOpen ? "" : "disabled"}>
+      <span><b>${w.name}</b><small>${b.label} · ${b.grades}</small><em>${note}</em></span></label>`;
+  }).join("");
+}
 function menu() {
   show(`<div class="cardhead"><h2>Crawl the Sumgeon</h2><button class="icon-btn" id="sayIntro" type="button" aria-label="Read this aloud">${SPEAKER}</button></div>
   <p>Seven glyph monsters guard seven floors. <strong>Your answer is your attack</strong>: solve 7 × 8 and you hit for 56. Three right in a row and every hit is doubled. A wrong answer costs a heart, and you see the right one.</p>
-  <div class="lineup">${MON.map((m) => svg(m, m.boss ? "boss" : "")).join("")}</div>
+  <div class="lineup">${wing().pool.concat([wing().boss]).map((n) => { const m = MON.find((x) => x.n === n); return svg(m, m.boss ? "boss" : ""); }).join("")}</div>
   ${hasCaptain() ? "" : captainHTML()}
   <div class="grp"><span>Players</span><div id="players">${playersHTML()}</div></div>
   ${hasCaptain() ? captainHTML() : ""}
-  <div class="grp"><span>Band</span><div class="chips">${Object.entries(BANDS).map(([k, b]) => chip("radio", "band", k, st.band === k, `${b.label} <small>${b.grades}</small>`)).join("")}</div>
+  <div class="grp"><span>Wings</span><div class="wings">${wingsHTML()}</div>
     <p class="level" id="levelLine">${levelLine()}</p></div>
   <div class="grp"><span>Pressure</span><div class="chips">${chip("checkbox", "tm", "1", st.timer, "Timer on", "tm")}</div></div>
   <div class="grp"><span>Sounds</span><div class="chips">${chip("checkbox", "sfx", "1", st.sfx, "Sound effects", "sfxOn")}${chip("checkbox", "voice", "1", st.voice, "Voice", "voiceOn")}</div></div>
@@ -391,10 +436,11 @@ function menu() {
   $("sayIntro").onclick = () => say("p", PHRASE.intro, true);
   // Settings save as they change, for the player who's playing.
   // A different band is a fresh dungeon: its own facts and hearts.
-  card.querySelectorAll("input[name=band]").forEach((i) => i.onchange = () => {
-    st.band = i.value; saveSettings();
+  card.querySelectorAll("input[name=wing]").forEach((i) => i.onchange = () => {
+    st.band = wingOf(i.value).band; saveSettings();
     $("levelLine").textContent = levelLine();
-    G.running = false; loadMonster(0, true);
+    menu();
+    G.running = false; newRun(); loadMonster(0, true);
     if ($("resume")) $("resume").remove();
   });
   $("tm").onchange = () => { st.timer = $("tm").checked; saveSettings(); };
@@ -466,12 +512,21 @@ function switchTo(id) {
   store.setActive(id);
   loadPlayer();
   G.running = false;
+  newRun();
   loadMonster(0, true);
   menu();
 }
 
+// After a win, what's left to open the next Wing, if it's still locked.
+function nextWingHint() {
+  const i = WINGS.indexOf(wing()), nx = WINGS[i + 1];
+  if (!nx || openWings(progress, recs, st.start).includes(nx.id)) return "";
+  const t = toOpen(nx, progress, recs);
+  return `<p>To open <strong>${nx.name}</strong>, learn ${Math.round(t.need * 100)}% of the facts here. You're at ${Math.round(t.share * 100)}%.</p>`;
+}
 function start() {
   hide();
+  newRun();
   Object.assign(G, { hearts: band().hearts, streak: 0, solved: 0, tries: 0, running: true, retry: [], recent: [], next: false });
   stopSpeech();
   loadMonster(0);
@@ -499,6 +554,7 @@ document.addEventListener("keydown", (e) => {
 });
 
 loadPlayer();
+newRun();
 loadMonster(0, true);
 $("prob").textContent = "7 + 8 =";
 menu();

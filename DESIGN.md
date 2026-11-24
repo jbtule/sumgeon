@@ -382,7 +382,7 @@ Each milestone should be playable and shippable on its own.
    Split into modules, the storage upgrade plus players (§15.1), Web Audio sound effects, the Start button, `say()` with recorded clips for UI phrases and monster names (§13), the projectile attack animation, monster counterattack on a miss, and a streak flame.
 2. **M2 — Learning engine** ✅ (2026-11-23). Sprout and Apprentice bands with mastery-opened levels (in place of a rolling-accuracy range), fact records, Leitner selection, the retry queue, fading hints with the classroom models, and "For grown-ups" notes. Adept and Master wait for the new answer keys (M5).
    Fact records, Leitner selection, the retry queue, hints after repeated misses, adaptive range within a band, and content bands replacing raw Easy/Medium/Hard.
-3. **M3 — Wings and the Bestiary**
+3. **M3 — Wings and the Bestiary** (in progress). Done: the digit heroes (captain, summon attack, power hit, rescue floors with Lucky Number), the Counting Cellar and Tables Tower with mastery opening the Tower, the Make-Ten Golem and Starbot. Still to come: per-floor stars, the Bestiary and Heroes pages, monster traits.
    Split the operator monsters into the Counting Cellar and the Tables Tower, add the digit heroes (captain pick, summon attack, rescue floors, Heroes page; §6.6), the Wing map, per-floor stars, the Bestiary with mastery rings, and monster traits.
 4. **M4 — Replay**
    Achievements with spoken cards, the 🏆 sheet and share cards (§14), between-floor item choices, Endless Descent, Daily Dungeon, and captain cosmetics.

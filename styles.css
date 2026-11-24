@@ -159,4 +159,19 @@ h1 b{color:var(--coral);font-weight:400}
 .swatches{display:flex;flex-wrap:wrap;gap:8px}
 .swatch{width:40px;height:40px;border-radius:50%;border:3px solid var(--dark);background:var(--sw);box-shadow:0 0 0 2px #3a5560}
 .swatch.on{box-shadow:0 0 0 3px var(--ink)}
+/* The Wing map and rescues */
+.wings{display:grid;gap:8px}
+.wing{position:relative;display:block}
+.wing input{position:absolute;opacity:0;inset:0;margin:0}
+.wing span{display:grid;gap:2px;padding:10px 14px;border-radius:14px;border:2px solid #3a5560;cursor:pointer}
+.wing b{font:400 16px Bungee,sans-serif}
+.wing small{color:var(--muted);font-weight:800}
+.wing em{font-style:normal;font-size:13px;color:var(--muted)}
+.wing input:checked+span{border-color:var(--gold);background:#ffc93c1f}
+.wing input:focus-visible+span{outline:3px solid var(--ink);outline-offset:2px}
+.wing.locked span{opacity:.6;cursor:default}
+.cardmon.small{width:96px}
+.cardmon.rescued{animation:freed .8s ease-out}
+@keyframes freed{0%{filter:grayscale(1) brightness(.5);transform:scale(.8)}60%{filter:none;transform:scale(1.1)}100%{transform:none}}
+@media(prefers-reduced-motion:reduce){.cardmon.rescued{animation:none}}
 @media(prefers-reduced-motion:reduce){.mon,.mon.hit,.mon.dead,.mon.lunge,.arena.shake,.flame svg{animation:none}.mon.dead{opacity:0}.pop{animation-duration:.01s}.hearts .crack{animation:none;opacity:0}}

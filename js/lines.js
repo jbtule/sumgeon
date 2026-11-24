@@ -3,6 +3,7 @@
 // Kinds: "p" phrase, "m" monster line, "q" problem (see speech.js).
 import { MON } from "./monsters.js";
 import { HEROES } from "./heroes.js";
+import { WINGS, cursedMonster } from "./wings.js";
 import { facts, spokenProblem, spokenFact } from "./problems.js";
 
 export var PHRASE = {
@@ -16,6 +17,9 @@ export function monsterName(m) { return m.n + "!"; }
 export function monsterCleared(m) { return m.n + " " + m.quip; }
 export function monsterWon(m) { return m.n + " won this round."; }
 export function heroName(h) { return h.n + "!"; }
+export function heroJoins(h) { return h.n + " joins your team!"; }
+export function wingCleared(w) { return "You cleared " + w.name + "!"; }
+export function wingOpened(w) { return w.name + " is open!"; }
 
 // [{ kind, text }], each once.
 export function spokenLines() {
@@ -26,7 +30,15 @@ export function spokenLines() {
     if (!m.boss) out.push({ kind: "p", text: monsterCleared(m) }); // beating the boss is the win, said as PHRASE.win
     out.push({ kind: "p", text: monsterWon(m) });
   });
-  HEROES.forEach(function (h) { out.push({ kind: "m", text: heroName(h) }); });
+  HEROES.forEach(function (h) {
+    out.push({ kind: "m", text: heroName(h) });
+    out.push({ kind: "m", text: monsterName(cursedMonster(h.d)) });
+    out.push({ kind: "p", text: heroJoins(h) });
+  });
+  WINGS.forEach(function (w, i) {
+    out.push({ kind: "p", text: wingCleared(w) });
+    if (i) out.push({ kind: "p", text: wingOpened(w) });
+  });
   facts().forEach(function (f) {
     out.push({ kind: "q", text: spokenProblem(f) });
     out.push({ kind: "q", text: spokenFact(f) });

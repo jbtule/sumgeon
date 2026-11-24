@@ -2,9 +2,8 @@
 import assert from "node:assert/strict";
 import { MON, svg } from "../js/monsters.js";
 
-assert.equal(MON.length, 7);
-assert.equal(MON.filter((m) => m.boss).length, 1, "one boss");
-assert.ok(MON[MON.length - 1].boss, "the boss is last");
+assert.equal(new Set(MON.map((m) => m.n)).size, MON.length, "every monster has its own name");
+assert.deepEqual(MON.filter((m) => m.boss).map((m) => m.n).sort(), ["Make-Ten Golem", "Sigma Rex"], "one boss per Wing");
 for (const m of MON) {
   assert.ok(["+", "-", "×", "÷", "mix"].includes(m.op), m.n);
   assert.ok(m.hits >= 3 && m.quip && m.c, m.n);

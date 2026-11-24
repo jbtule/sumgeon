@@ -58,21 +58,26 @@ A math-practice dungeon crawler. The player fights anthropomorphic monsters buil
   - After a miss, the worked example (with the answer) stays up until "Got it" or Enter.
   - Every hint has a "For grown-ups" note. The timer stops while a hint is open.
 - Wrong answer or timeout: the monster lunges, lose 1 of 5 hearts, and the correct answer is shown and said.
-- Clearing a floor restores 1 heart.
+- Clearing a floor restores 1 heart (up to the band's hearts: 7 in Sprout, 5 in Apprentice).
 - Monster HP = the average answer of the player's open facts (the monster's operation weighted 70%) × its `hits` value, so fights last about the same number of solves at any level.
 
-## Monsters (7 floors)
-| Floor | Name | Glyph | Op | hits |
-|---|---|---|---|---|
-| 1 | Plusquito | + | + | 3 |
-| 2 | Minustaur | − | − | 3 |
-| 3 | Sevenstein | 7 | mix | 4 |
-| 4 | Timesaur | × | × | 4 |
-| 5 | Octoloop | 8 | mix | 5 |
-| 6 | Divvy | ÷ | ÷ | 5 |
-| 7 | Sigma Rex (boss) | Σ | mix | 7 |
+## Wings, monsters and heroes
+Runs happen in Wings (`js/wings.js`, DESIGN.md §4). Each Wing asks one band's facts and has a monster pool, a rescue floor (floor 3) and a boss:
 
-Monsters are inline SVG drawn from simple shapes (no fonts), using the `solid()` and `line()` helpers. Each helper draws a dark outline, then a color fill, then a white sheen gradient.
+| Wing | Band | Floors | Boss |
+|---|---|---|---|
+| The Counting Cellar | Sprout | Plusquito, Minustaur, rescue, pool | Make-Ten Golem |
+| The Tables Tower | Apprentice | Timesaur, Divvy, rescue, Starbot, pool, pool | Sigma Rex |
+
+- A Wing opens the next when its boss is beaten and 60% of its facts are learned. The band a player starts in (`st.start`) opens that Wing from the start.
+- Per player, progress is saved under `wings`: `{ [wingId]: { boss: wins, best: floors } }`.
+- Sevenstein and Octoloop aren't regular floors any more: they're cursed digits (7, and 8, whose cursed form is Octoloop).
+- **Digit heroes** (`js/heroes.js`, DESIGN.md §6.6): Zeroic (0), Onesie, Twodini, Threasure Hunter, Sir Fourtress, High Five, Sixlock Holmes, Sevenstein, Chef Eight, Nine-ja (9).
+  - A player picks a captain and a chalk color before their first run. Saved under `heroes`: `{ captain, color, rescued: [digits] }`.
+  - A right answer's digits fly at the monster: team digits as their hero, the rest as chalk numbers.
+  - The captain's digit in the answer is a power hit (+50%). Each rescued hero in the answer adds 10%, up to 30%.
+  - The rescue floor holds the lowest digit not yet free (never the captain), cursed. *Lucky Number*: answers with its digit hit double. Beating it frees the hero. Once all nine are free, it's a regular floor.
+- Monsters and heroes are inline SVG drawn from simple shapes (no fonts), using the `solid()` and `line()` helpers. Each helper draws a dark outline, then a color fill, then a white sheen gradient.
 
 ## Settings
 - Band: Sprout or Apprentice (per player). Changing band starts a fresh dungeon.
