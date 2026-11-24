@@ -204,21 +204,21 @@ h1 b{color:var(--coral);font-weight:400}
   .icon-btn svg{width:20px;height:20px}
   .who{margin:-4px auto 0;min-height:28px;padding:2px 12px}
   .game{flex:1;min-height:0;width:100%;gap:6px;padding:0 max(12px,env(safe-area-inset-left,0px)) max(8px,env(safe-area-inset-bottom,0px)) max(12px,env(safe-area-inset-right,0px));
-    grid-template-columns:minmax(0,1fr) minmax(0,auto);grid-template-rows:minmax(0,1fr) auto auto auto auto auto auto;
-    grid-template-areas:"stage stage" "mhead mhead" "hint hint" "prob ans" "timer timer" "pad pad" "you you"}
+    grid-template-columns:minmax(0,1fr) minmax(0,auto);grid-template-rows:auto minmax(0,1fr) auto auto auto auto auto;
+    grid-template-areas:"mhead mhead" "stage stage" "hint hint" "prob ans" "timer timer" "pad pad" "you you"}
   .arena,.panel{display:contents}
   .game::before{content:"";grid-column:1/-1;grid-row:1/3;border-radius:18px;border:2px solid var(--line);
     background:radial-gradient(ellipse 70% 55% at 50% 78%,#2f5560 0,#1a313a 55%,#10202600 100%),repeating-linear-gradient(0deg,#16292f 0 38px,#13252b 38px 40px)}
   .game:has(.arena.hurt)::before{box-shadow:inset 0 0 0 4px var(--coral),inset 0 0 60px #ff5a4e66}
   .game:has(.arena.shake)::before{animation:shake .35s}
-  /* The monster's name and HP sit right under it, like a nameplate. */
-  .mhead{grid-area:mhead;padding:0 12px 10px;z-index:1}
+  /* The monster's name and HP across the top of its box. */
+  .mhead{grid-area:mhead;padding:8px 12px 0;z-index:1}
   .mname{font-size:15px}
   .hp{height:12px}
   .hptxt{font-size:12px}
   /* The monster fills what's left of the arena, however tall the phone. */
   /* The monster's box: just the monster and its nameplate. */
-  .stage{grid-area:stage;height:auto;min-height:0;container-type:size;z-index:1;margin-top:8px}
+  .stage{grid-area:stage;height:auto;min-height:0;container-type:size;z-index:1;margin-bottom:6px}
   .mon{width:min(62cqw,calc(100cqh - 12px))}
   .shadow{bottom:4px;height:16px}
   /* The problem and the answer read as one line: 3 + 1 = [ ]. The 🔊 and 💡 buttons go first so
