@@ -8,6 +8,7 @@ import { openStore, displayName } from "./store.js";
 import { PHRASE, monsterName, monsterCleared, monsterWon, heroName, heroJoins, wingCleared, wingOpened } from "./lines.js";
 import { WINGS, wingOf, runFloors, openWings, toOpen, floorStars, wingStars, STREAK_STAR } from "./wings.js";
 import { traitOf, charged, prefers, hitBy, atHalf } from "./traits.js";
+import { roster, mastery, meet, beat } from "./bestiary.js";
 import { HEROES, CHALK, heroSvg } from "./heroes.js";
 import * as sfx from "./sfx.js";
 import { say, stopSpeech, setVoice } from "./speech.js";
@@ -78,7 +79,8 @@ store.upgrade();
 /* ---------- the player ---------- */
 // team: { captain: digit or null, color: chalk color, rescued: [digits] } (DESIGN.md §6.6).
 // progress: { [wingId]: { boss: wins, best: floors } }.
-let PID, st, recs, team, progress;
+// seen: the Bestiary, { [monster]: { met, beaten } }.
+let PID, st, recs, team, progress, seen;
 const band = () => BANDS[st.band] || BANDS.sprout;
 const wingFor = (b) => WINGS.find((w) => w.band === b) || WINGS[0];
 const wing = () => wingFor(st.band);
@@ -90,6 +92,7 @@ function loadPlayer() {
   recs = store.player(PID).get("facts", {}) || {};
   team = Object.assign({ captain: null, color: CHALK[0], rescued: [] }, store.player(PID).get("heroes", {}));
   progress = store.player(PID).get("wings", {}) || {};
+  seen = store.player(PID).get("bestiary", {}) || {};
   // A captain picked before heroes could change stays on the team.
   if (team.captain != null && !team.rescued.includes(team.captain)) { team.rescued.push(team.captain); saveTeam(); }
   // The band a player started in opens its Wing from the start (DESIGN.md §4).
@@ -191,6 +194,7 @@ function loadMonster(i, quiet) {
   $("floorLbl").textContent = m.boss ? "Boss floor" : m.cursed != null ? "Rescue floor" : `Floor ${i + 1} / ${G.floors.length}`;
   hpUI(); heartsUI(); streakUI();
   if (quiet) return;
+  meet(seen, m, Date.now()); store.player(PID).set("bestiary", seen);
   sfx.appear(m.boss);
   if (m.boss) say("p", PHRASE.boss);
   say("m", monsterName(m));
@@ -428,6 +432,7 @@ function cleared() {
   const m = G.floors[G.floor];
   if (G.floor === G.floors.length - 1) return end(true);
   const stars = earnStars();
+  beat(seen, m, Date.now()); store.player(PID).set("bestiary", seen);
   const healed = G.hearts < band().hearts;
   if (healed) G.hearts++;
   record();
@@ -460,6 +465,7 @@ function end(win) {
   const w = wing(), before = openWings(progress, recs, st.start);
   if (win) { progress[w.id] = progress[w.id] || { boss: 0, best: 0 }; progress[w.id].boss++; }
   const stars = win ? earnStars() : "";
+  if (win) { beat(seen, G.floors[G.floor], Date.now()); store.player(PID).set("bestiary", seen); }
   const f = record(), acc = G.tries ? Math.round(G.solved / G.tries * 100) : 0, m = G.floors[G.floor];
   const opened = WINGS.find((x) => !before.includes(x.id) && openWings(progress, recs, st.start).includes(x.id));
   if (win) { sfx.victory(); say("p", wingCleared(w)); if (opened) say("p", wingOpened(opened)); } else say("p", monsterWon(m));
@@ -477,7 +483,12 @@ function end(win) {
   $("again").onclick = start;
   $("set").onclick = () => openMenu();
 }
-function show(h) { G.busy = true; $("card").innerHTML = h; $("ov").hidden = false; const b = $("card").querySelector("button.big"); if (b) b.focus(); }
+// A card over the game. It opens at the top, and its main button gets focus (Enter presses it)
+// without scrolling down to it.
+function show(h) {
+  G.busy = true; $("card").innerHTML = h; $("ov").hidden = false; $("ov").scrollTop = 0;
+  const b = $("card").querySelector("button.big"); if (b) b.focus({ preventScroll: true });
+}
 function hide() { $("ov").hidden = true; }
 
 /* ---------- the menu: players and settings ---------- */
@@ -527,6 +538,7 @@ function menu() {
   ${captainHTML()}
   <div class="grp"><span>Wings</span><div class="wings">${wingsHTML()}</div>
     <p class="level" id="levelLine">${levelLine()}</p></div>
+  <button class="small book-btn" type="button" id="openBook">📖 Monsters &amp; Heroes</button>
   <div class="warn" id="warn"></div>
   <div class="btns">${G.running ? '<button class="big alt" id="resume">Keep fighting</button>' : ""}<button class="big" id="go">Enter the dungeon</button></div>
   <button class="link settings-link" type="button" id="openSettings">⚙ Settings</button>`);
@@ -540,6 +552,7 @@ function menu() {
   });
   wireCaptain();
   $("openSettings").onclick = settings;
+  $("openBook").onclick = bookPage;
   if ($("switchPlayer")) $("switchPlayer").onclick = settings;
   $("go").onclick = () => {
     if (!hasCaptain()) { $("warn").textContent = "Pick your hero first."; $("captain").scrollIntoView({ block: "center" }); return; }
@@ -573,6 +586,41 @@ function badgesCopy() {
   const c = f.cloneNode(true);
   c.querySelectorAll("[id]").forEach((e) => e.removeAttribute("id"));
   return c.outerHTML;
+}
+// Monsters & Heroes (DESIGN.md §6.2, §6.6): every Wing's monsters, met or not, with their trait
+// and a mastery ring for their kind of math (gold once it's full); and the ten heroes, rescued or
+// still cursed.
+function bookPage() {
+  const ring = (share) => {
+    const c = 2 * Math.PI * 46;
+    return `<svg class="ring" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="46" fill="none" stroke="var(--line)" stroke-width="7"/>
+      ${share > 0 ? `<circle cx="50" cy="50" r="46" fill="none" stroke="var(--gold)" stroke-width="7" stroke-linecap="round" stroke-dasharray="${(share * c).toFixed(1)} ${c.toFixed(1)}" transform="rotate(-90 50 50)"/>` : ""}</svg>`;
+  };
+  let lastWing = null, beasts = "";
+  for (const { wing: w, m } of roster()) {
+    if (w !== lastWing) { if (lastWing) beasts += "</div>"; beasts += `<h3 class="book-wing">${esc(w.name)}</h3><div class="beasts">`; lastWing = w; }
+    const s = seen[m.n], t = traitOf(m), share = mastery(m, w, recs), gold = s && share >= 1;
+    beasts += s
+      ? `<section class="beast${gold ? " gold" : ""}"><div class="beast-art">${ring(share)}${svg(m)}</div>
+          <b>${esc(m.n)}</b>${m.boss ? '<small class="boss-tag">Boss</small>' : ""}
+          ${t ? `<span class="trait">${t.icon} ${esc(t.name)}</span><small>${esc(t.text)}</small>` : "<small>No tricks: a good first fight</small>"}
+          <small>Beaten ${s.beaten || 0}× · Learned ${Math.round(share * 100)}%</small></section>`
+      : `<section class="beast unmet"><div class="beast-art silhouette">${svg(m)}</div><b>???</b><small>Not met yet</small></section>`;
+  }
+  beasts += "</div>";
+  const heroes = HEROES.map((h) => onTeam(h.d)
+    ? `<section class="hero-card${h.d === team.captain ? " captain-card" : ""}">${heroSvg(h, { color: h.d === team.captain ? team.color : null })}
+        <b>${esc(h.n)}</b><small>${esc(h.cls)}</small><small>${esc(h.move)}</small>${h.d === team.captain ? '<small class="cap-tag">Your hero</small>' : ""}</section>`
+    : `<section class="hero-card unmet">${heroSvg(h, { cursed: true })}<b>???</b><small>Still cursed</small></section>`).join("");
+  const freed = HEROES.filter((h) => onTeam(h.d)).length, met = roster().filter((x) => seen[x.m.n]).length;
+  show(`<div class="cardhead"><h2>Monsters &amp; Heroes</h2></div>
+  <h3 class="book-title">Monsters <small>${met} of ${roster().length} met</small></h3>
+  <p>The ring shows how much of each monster's math you've learned. Fill it to give the monster a gold outline.</p>
+  ${beasts}
+  <h3 class="book-title">Heroes <small>${freed} of 10 on your team</small></h3>
+  <div class="hero-grid">${heroes}</div>
+  <div class="btns"><button class="big" id="bookBack">Back</button></div>`);
+  $("bookBack").onclick = menu;
 }
 // "How the hints work": how Sumgeon teaches, and each strategy with the game's own drawing and
 // a plain explanation, for grown-ups who learned math another way (DESIGN.md §5.3).
