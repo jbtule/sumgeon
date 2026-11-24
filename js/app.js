@@ -49,7 +49,13 @@ if (new URLSearchParams(location.search).has("layout")) {
       `safe-area bottom ${cs.paddingBottom}`,
       `--app-h          ${document.documentElement.style.getPropertyValue("--app-h")}`,
       `pad bottom       ${Math.round(pad.bottom)}`,
-      `home screen      ${navigator.standalone || matchMedia("(display-mode: standalone)").matches}`
+      `home screen      ${navigator.standalone || matchMedia("(display-mode: standalone)").matches}`,
+      `body / .game     ${Math.round(document.body.getBoundingClientRect().height)} / ${Math.round(document.querySelector(".game").getBoundingClientRect().height)}`,
+      `rows             ${getComputedStyle(document.querySelector(".game")).gridTemplateRows.replace(/px/g, "").split(" ").map((n) => Math.round(n)).join(" ")}`,
+      ...["header", ".mhead", ".stage", "#mon", "#hint", ".probrow", "#ans", "#pad", ".you"].map((sel) => {
+        const el = document.querySelector(sel), r = el.getBoundingClientRect();
+        return `${sel.padEnd(16)} ${el.hidden ? "hidden" : Math.round(r.top) + "–" + Math.round(r.bottom) + " (" + Math.round(r.height) + ")"}`;
+      })
     ].join("\n");
   };
   setTimeout(layoutProbe, 500);
