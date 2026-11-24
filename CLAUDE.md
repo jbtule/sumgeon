@@ -103,6 +103,10 @@ Voice, achievements, players and linking copy the sibling project `../sound-box-
 ## License
 PolyForm Noncommercial 1.0.0 (`LICENSE.md`). Its first line is the `Required Notice:` copyright, which must travel with copies. When you add a dependency, font or asset, list it with its license in the README's License section.
 
+## Working on it
+- **Every change goes through a pull request**, as in sound-box-crosswords: `git fetch`, branch from `origin/main`, push the branch, and open a PR. CI runs the check on the PR; merging to `main` deploys. Leave merging to Jay. Stage files by name rather than `git add -A`.
+- More than one agent may be working at once; use a separate git worktree per agent when that happens.
+
 ## Publishing
 - Public repo `jbtule/sumgeon`. Pushing to `main` deploys to GitHub Pages at https://tools.tuley.name/sumgeon/ through `.github/workflows/ci.yml`. `scripts/stamp.mjs` builds `_site/` (Sound Box's pattern): it copies the files in `SITE`, adds `?v=<short sha>` to each local file the page loads (`STAMPED`), and fills in the footer's GitHub badge with the short sha so you can see what's deployed (locally it reads "dev"). Add new site files to `SITE`, and anything the page loads to `STAMPED`.
 - Workflows must pass `zizmor .`: actions pinned to a SHA, minimal `permissions`, and `persist-credentials: false`. CI runs zizmor too.
