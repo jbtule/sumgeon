@@ -126,15 +126,12 @@ h1 b{color:var(--coral);font-weight:400}
 .small{min-height:44px;padding:0 14px;border-radius:12px;border:2px solid #3a5560;background:#24414b;font-weight:900}
 .small.danger{border-color:#ff8a7f;color:#ff8a7f;background:none}
 
-/* Hints: the classroom model, its words, and a note for grown-ups (DESIGN.md §5.3) */
+/* Hints: the classroom model and its words (DESIGN.md §5.3) */
 .hint{display:grid;justify-items:center;gap:8px;padding:12px;border-radius:14px;background:var(--dark);border:2px solid var(--line);text-align:center}
 .hint[hidden]{display:none}
 .hint .model{max-width:100%;overflow-x:auto}
 .hint .model svg{display:block;max-width:100%;height:auto}
 .hint .hsay{margin:0;font-weight:900;font-size:17px}
-.hint .grown{font-size:14px;color:var(--muted);max-width:52ch}
-.hint .grown summary{cursor:pointer;font-weight:800;min-height:32px;display:flex;align-items:center;justify-content:center}
-.hint .grown p{margin:4px 0 0}
 .hint .big{min-height:48px}
 .hint-btn{font-size:20px}
 .hint-btn[hidden]{display:none}
@@ -159,6 +156,19 @@ h1 b{color:var(--coral);font-weight:400}
 .swatches{display:flex;flex-wrap:wrap;gap:8px}
 .swatch{width:40px;height:40px;border-radius:50%;border:3px solid var(--dark);background:var(--sw);box-shadow:0 0 0 2px #3a5560}
 .swatch.on{box-shadow:0 0 0 3px var(--ink)}
+/* How the hints work (Settings → Help) */
+.how{margin:0;padding-left:20px;display:grid;gap:6px;color:var(--muted)}
+.how strong{color:var(--ink)}
+.strats-title{font:400 18px Bungee,sans-serif;color:var(--gold);margin:4px 0 0}
+.strats{display:grid;gap:10px}
+.strat{display:grid;justify-items:center;gap:6px;padding:12px;border-radius:14px;background:var(--dark);border:2px solid var(--line);text-align:center}
+.strat-head{display:flex;justify-content:space-between;align-items:baseline;gap:8px;width:100%}
+.strat-head b{font:400 15px Bungee,sans-serif;text-align:left}
+.strat-head small{color:var(--muted);font-weight:800;white-space:nowrap}
+.strat .model{max-width:100%;overflow-x:auto}
+.strat .model svg{display:block;max-width:100%;height:auto}
+.strat .hsay{margin:0;font-weight:900}
+.strat .why{margin:0;color:var(--muted);max-width:52ch;text-align:left}
 /* Start screen links */
 .link{background:none;border:0;padding:4px 2px;min-height:44px;color:var(--gold);font-weight:900;text-decoration:underline;text-underline-offset:3px}
 .settings-link{justify-self:start;color:var(--muted)}
@@ -219,10 +229,6 @@ h1 b{color:var(--coral);font-weight:400}
   /* An open hint gets its own row in the arena; the monster's row shrinks to make room. */
   .hint{grid-area:hint;z-index:3;margin:8px 8px 0;padding:6px 8px;gap:2px;position:relative}
   .hint .model svg{max-height:14dvh;width:auto}
-  /* "For grown-ups" is a corner button; its note covers the hint while open. */
-  .hint .grown{position:static}
-  .hint .grown summary{position:absolute;top:2px;right:6px;font-size:11px;min-height:28px;padding:0 4px}
-  .hint .grown[open] p{position:absolute;inset:30px 6px 6px;margin:0;padding:8px;overflow:auto;background:var(--dark);border-radius:10px;color:var(--ink);font-size:13px;z-index:1}
   .hint .hsay{font-size:15px}
 
   .hint .big{min-height:44px}

@@ -29,3 +29,16 @@ for (const band of Object.keys(BANDS)) {
   }
 }
 console.log("✓ hints");
+
+// The help page's strategies: each sample problem gets the hint it's named for.
+import { STRATEGIES } from "../js/hints.js";
+const opening = { "Ten-frame": /^Put together/, "Draw and cross out": /^Take away/, "10 and some more": /^10 and some more/, "Make 10": /^Make 10/,
+  "Doubles plus one": /^Doubles plus one/, "Think addition": /^Think addition/, "Arrays": /rows of/, "Break apart": /^Break apart/,
+  "Nines as tens": /minus one group/, "Think multiplication": /^Think multiplication/ };
+assert.equal(STRATEGIES.length, Object.keys(opening).length);
+for (const s of STRATEGIES) {
+  const h = hintFor(s.f, true);
+  assert.match(h.say, opening[s.title], s.title);
+  assert.ok(h.grownups && h.say.endsWith("= " + s.f.ans), s.title);
+}
+console.log("✓ hint strategies");

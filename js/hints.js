@@ -125,3 +125,18 @@ export function hintFor(f, worked) {
     say: `Think multiplication: ${y} × ? = ${x}. ${x} ÷ ${y} = ${end(ans)}`,
     grownups: `Division as a missing factor: ${x} ÷ ${y} asks how many groups of ${y} make ${x}.` };
 }
+
+// The strategies, one sample problem each, for the "How the hints work" page in Settings, where
+// the grown-ups lines live (the hints in play show only the drawing and its words).
+export const STRATEGIES = [
+  { title: "Ten-frame", grade: "K", f: { op: "+", x: 3, y: 4 } },
+  { title: "Draw and cross out", grade: "K", f: { op: "-", x: 9, y: 4 } },
+  { title: "10 and some more", grade: "K–1st", f: { op: "+", x: 10, y: 4 } },
+  { title: "Make 10", grade: "1st", f: { op: "+", x: 8, y: 5 } },
+  { title: "Doubles plus one", grade: "1st", f: { op: "+", x: 6, y: 7 } },
+  { title: "Think addition", grade: "1st", f: { op: "-", x: 12, y: 8 } },
+  { title: "Arrays", grade: "2nd–3rd", f: { op: "×", x: 3, y: 4 } },
+  { title: "Break apart", grade: "3rd", f: { op: "×", x: 8, y: 7 } },
+  { title: "Nines as tens", grade: "3rd", f: { op: "×", x: 9, y: 7 } },
+  { title: "Think multiplication", grade: "3rd", f: { op: "÷", x: 32, y: 8 } }
+].map((s) => Object.assign(s, { f: Object.assign({ ans: { "+": s.f.x + s.f.y, "-": s.f.x - s.f.y, "×": s.f.x * s.f.y, "÷": s.f.x / s.f.y }[s.f.op] }, s.f) }));

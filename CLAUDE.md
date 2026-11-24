@@ -19,7 +19,7 @@ A math-practice dungeon crawler. The player fights anthropomorphic monsters buil
 - Phones (under 760px wide) get a one-screen layout with no scrolling, all in CSS at the end of `styles.css`:
   - `.arena` and `.panel` become `display: contents`, so their parts share one grid. The arena's look moves to `.game::before`.
   - The arena holds, top to bottom: an open hint, then the problem and answer box as one line ("3 + 1 = [ ]", with the 🔊/💡 buttons first), then the monster, then its name and HP as a nameplate. The monster is sized with container units to the room left, so it shrinks rather than hides.
-  - Messages float as a pill under the monster. "For grown-ups" is a corner button on the hint.
+  - Messages float as a pill under the monster.
   - The number pad docks at the bottom, clear of the home bar, with your hero and hearts under it, on your side of the screen and apart from the monster's.
   - Short phones (under 700px tall) get a tighter variant.
   - The footer badges are hidden on phones and repeated in Settings.
@@ -64,7 +64,8 @@ A math-practice dungeon crawler. The player fights anthropomorphic monsters buil
 - Hints (`hints.js`, DESIGN.md §5.3) follow how classrooms teach now: ten-frames, 10 and some more, make 10, doubles plus one, draw and cross out, think addition on a number line, arrays, break apart, ×9 as ×10 minus a group, think multiplication.
   - A new fact shows its hint by itself. A fact being learned gets a 💡 button. A fact in review gets none.
   - After a miss, the worked example (with the answer) stays up until "Got it" or Enter.
-  - Every hint has a "For grown-ups" note. The timer stops while a hint is open.
+  - The timer stops while a hint is open.
+  - Hints in play show only the drawing and its words. The explanation for grown-ups (`grownups` in `hintFor`) lives on ⚙ Settings → **How the hints work**: how the game teaches, then one card per strategy (`STRATEGIES` in `hints.js`) with the game's drawing.
 - Wrong answer or timeout: the monster lunges, lose 1 of 5 hearts, and the correct answer is shown and said.
 - Clearing a floor restores 1 heart (up to the band's hearts: 7 in Sprout, 5 in Apprentice).
 - Monster HP = the average answer of the player's open facts (the monster's operation weighted 70%) × its `hits` value, so fights last about the same number of solves at any level.
