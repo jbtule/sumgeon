@@ -238,7 +238,7 @@ $("dive").addEventListener("click", (e) => {
 });
 // depth: how deep into this Wing (wings.js); the deepest reached when not given.
 function newRun(depth) {
-  document.querySelector(".game").dataset.stratum = wing().id;
+  document.body.dataset.stratum = wing().id; // its wall and colors (styles.css)
   G.depth = depth || deepest(wing(), progress); G.floors = runFloors(wing(), team, null, G.depth);
   diveUI();
   // The room darkens as you go deeper: 8% per depth, up to 48% at depth 7.
@@ -653,7 +653,7 @@ function depthTrack(w, d) {
   if (last > 8) { first = last - 6; rows.push(`<li class="done fold"><i></i>Depths 1–${first - 1} cleared</li>`); }
   for (let n = first; n <= last; n++) {
     const sc = depthScore(w, n), score = sc.got ? ` <small>★ ${sc.got} of ${sc.max}</small>` : "";
-    rows.push(n < d ? `<li class="done"><i></i>Depth ${n}${score}</li>` : n === d ? `<li class="you"><i></i>Depth ${n}${score} <em>you are here</em></li>` : `<li><i></i>Depth ${n}</li>`);
+    rows.push(n < d ? `<li class="done"><i></i>Depth ${n}${score}</li>` : n === d ? `<li class="you"><i></i>Depth ${n}${score} <em>${d === 1 && !(progress[w.id] || {}).best ? "start here" : "you are here"}</em></li>` : `<li><i></i>Depth ${n}</li>`);
   }
   return `<ol class="shaft" aria-label="Deepest: depth ${d}">${rows.join("")}</ol>`;
 }

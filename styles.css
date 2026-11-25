@@ -3,7 +3,7 @@
    PICTURE: the current glyph monster, large, bobbing over a lit stone floor
    COLOUR and TYPE: slate chalkboard, chalk white, coral + gold accents; Bungee + Nunito
    LAYOUT: arena on top, problem + number pad below; side by side when wide */
-:root{color-scheme:dark;--hint-empty:#3a5560;--hint-line:#3a5560;--bg:#12242b;--panel:#1a313a;--line:#2a4852;--ink:#f3efe4;--muted:#a9bec1;--coral:#ff5a4e;--gold:#ffc93c;--dark:#0c171c}
+:root{color-scheme:dark;--hint-empty:var(--edge);--hint-line:var(--edge);--bg:#12242b;--panel:#1a313a;--line:#2a4852;--btn:#24414b;--btn2:#2f4f5a;--edge:#3a5560;--ink:#f3efe4;--muted:#a9bec1;--coral:#ff5a4e;--gold:#ffc93c;--dark:#0c171c}
 *{box-sizing:border-box;min-width:0}
 body{margin:0;background:var(--bg);color:var(--ink);font:600 16px/1.5 Nunito,system-ui,sans-serif;overflow-x:clip;min-height:100vh}
 button{font:inherit;color:inherit;cursor:pointer}
@@ -39,17 +39,17 @@ h1 b{color:var(--coral);font-weight:400}
 .pop.crit{color:var(--coral)}
 @keyframes pop{0%{opacity:0;transform:translate(-50%,10px) scale(.6)}20%{opacity:1;transform:translate(-50%,-6px) scale(1.15)}100%{opacity:0;transform:translate(-50%,-60px)}}
 .you{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-weight:900}
-.hearts{display:inline-flex;gap:3px;color:var(--coral);font-size:22px;line-height:1}.hearts .gone{color:#3a5560}
+.hearts{display:inline-flex;gap:3px;color:var(--coral);font-size:22px;line-height:1}.hearts .gone{color:var(--edge)}
 .panel{background:var(--panel);border:2px solid var(--line);border-radius:22px;padding:14px;display:flex;flex-direction:column;gap:10px}
 .prob{font:400 clamp(36px,9vw,56px)/1.05 Bungee,sans-serif;text-align:center;white-space:nowrap}
-.ans{font:400 clamp(30px,7vw,42px)/1.1 Bungee,sans-serif;text-align:center;min-height:56px;padding:6px;border-radius:14px;background:var(--dark);color:var(--gold);border:2px dashed #3a5560}
+.ans{font:400 clamp(30px,7vw,42px)/1.1 Bungee,sans-serif;text-align:center;min-height:56px;padding:6px;border-radius:14px;background:var(--dark);color:var(--gold);border:2px dashed var(--edge)}
 .msg{min-height:24px;text-align:center;font-weight:800;color:var(--muted)}.msg.bad{color:#ff8a7f}.msg.good{color:var(--gold)}
 .pad{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
 .pad{--key:56px;--gap:8px}
-.pad button{min-height:var(--key);border:0;border-radius:14px;background:#24414b;font:400 24px Bungee,sans-serif;box-shadow:0 4px 0 var(--dark);transition:transform .05s}
+.pad button{min-height:var(--key);border:0;border-radius:14px;background:var(--btn);font:400 24px Bungee,sans-serif;box-shadow:0 4px 0 var(--dark);transition:transform .05s}
 .pad button:active{transform:translateY(3px);box-shadow:0 1px 0 var(--dark)}
 .pad .go{background:var(--coral);color:#fff;font-size:20px}
-.pad .del{background:#2f4f5a;font-size:20px}
+.pad .del{background:var(--btn2);font-size:20px}
 .ov{position:fixed;inset:0;background:#081014d9;display:grid;place-items:center;padding:16px;z-index:9;overflow:auto}
 .ov[hidden]{display:none}
 .card{background:var(--panel);border:2px solid var(--line);border-radius:24px;padding:clamp(18px,4vw,28px);width:min(560px,100%);display:grid;gap:14px}
@@ -63,7 +63,7 @@ h1 b{color:var(--coral);font-weight:400}
 .chips{display:flex;flex-wrap:wrap;gap:8px}
 .chip{position:relative}
 .chip input{position:absolute;opacity:0;inset:0;margin:0}
-.chip span{display:inline-flex;align-items:center;min-height:44px;padding:0 16px;border-radius:999px;border:2px solid #3a5560;font-weight:900;cursor:pointer}
+.chip span{display:inline-flex;align-items:center;min-height:44px;padding:0 16px;border-radius:999px;border:2px solid var(--edge);font-weight:900;cursor:pointer}
 .chip input:checked+span{background:var(--gold);border-color:var(--gold);color:var(--dark)}
 .chip input:focus-visible+span{outline:3px solid var(--ink);outline-offset:2px}
 .btns{display:flex;gap:10px;flex-wrap:wrap}
@@ -75,7 +75,7 @@ h1 b{color:var(--coral);font-weight:400}
 .card.page .btns.deeper{flex-wrap:wrap}
 .btns .warn:empty{display:none}
 .big{min-height:52px;padding:0 22px;border-radius:16px;border:0;background:var(--coral);color:#fff;font:400 18px Bungee,sans-serif;box-shadow:0 4px 0 var(--dark)}
-.big.alt{background:#2f4f5a}
+.big.alt{background:var(--btn2)}
 .stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;text-align:center}
 .stats div{background:var(--dark);border-radius:14px;padding:10px 4px}
 .stats b{display:block;font:400 26px Bungee,sans-serif;color:var(--gold)}
@@ -130,10 +130,10 @@ h1 b{color:var(--coral);font-weight:400}
 .cardhead{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
 .players{display:grid;gap:8px;margin:0;padding:0;list-style:none}
 .prow{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-.prow input{flex:1 1 140px;min-height:44px;padding:0 12px;border-radius:12px;border:2px solid #3a5560;background:var(--dark);color:var(--ink);font:800 16px Nunito,sans-serif}
+.prow input{flex:1 1 140px;min-height:44px;padding:0 12px;border-radius:12px;border:2px solid var(--edge);background:var(--dark);color:var(--ink);font:800 16px Nunito,sans-serif}
 .prow input:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 .prow .now{color:var(--gold);font-weight:900;font-size:14px}
-.small{min-height:44px;padding:0 14px;border-radius:12px;border:2px solid #3a5560;background:#24414b;font-weight:900}
+.small{min-height:44px;padding:0 14px;border-radius:12px;border:2px solid var(--edge);background:var(--btn);font-weight:900}
 .small.danger{border-color:#ff8a7f;color:#ff8a7f;background:none}
 
 /* Hints: the classroom model and its words (DESIGN.md §5.3) */
@@ -157,14 +157,14 @@ h1 b{color:var(--coral);font-weight:400}
 .shot.hero{width:62px;height:66px;text-shadow:none;-webkit-text-stroke:0}
 .shot.hero svg{width:100%;height:100%;overflow:visible}
 .heroes{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
-.hpick{display:grid;justify-items:center;gap:2px;padding:6px 2px;border-radius:14px;border:2px solid #3a5560;background:none;min-height:44px}
+.hpick{display:grid;justify-items:center;gap:2px;padding:6px 2px;border-radius:14px;border:2px solid var(--edge);background:none;min-height:44px}
 .hpick svg{width:100%;max-width:64px;height:auto;overflow:visible}
 .hpick small{font-size:11px;font-weight:900;line-height:1.1;color:var(--muted)}
 .hpick.on{border-color:var(--gold);background:#ffc93c1f}
 .hpick.on small{color:var(--gold)}
 .hpick[disabled]{opacity:.55;cursor:default}
 .swatches{display:flex;gap:8px;overflow-x:auto;padding:4px 3px;scrollbar-width:none}
-.swatch{flex:none;width:38px;height:38px;border-radius:50%;border:3px solid var(--dark);background:var(--sw);box-shadow:0 0 0 2px #3a5560}
+.swatch{flex:none;width:38px;height:38px;border-radius:50%;border:3px solid var(--dark);background:var(--sw);box-shadow:0 0 0 2px var(--edge)}
 .swatch.on{box-shadow:0 0 0 3px var(--ink)}
 /* Monster traits (traits.js): a badge on the nameplate, ⚡ on a charged problem, Divvy's split */
 .trait{flex:none;padding:1px 8px;border-radius:999px;background:var(--dark);border:1.5px solid var(--line);font-size:12px;font-weight:900;color:var(--muted);white-space:nowrap}
@@ -178,7 +178,7 @@ h1 b{color:var(--coral);font-weight:400}
 /* Floor stars (wings.js floorStars): earned stars pop in one after another */
 .stars{display:flex;justify-content:center;gap:14px}
 .star{display:grid;justify-items:center;gap:2px;width:86px;text-align:center}
-.star b{font-size:40px;line-height:1;color:#3a5560;font-weight:400}
+.star b{font-size:40px;line-height:1;color:var(--edge);font-weight:400}
 .star small{font-size:12px;font-weight:800;color:var(--muted);line-height:1.2}
 .star.on b{color:var(--gold);text-shadow:0 2px 0 var(--dark),0 0 14px #ffc93c88;animation:starpop .5s calc(.25s + var(--i) * .25s) both}
 @keyframes starpop{0%{transform:scale(0) rotate(-40deg);opacity:0}70%{transform:scale(1.3) rotate(8deg);opacity:1}100%{transform:none}}
@@ -232,7 +232,7 @@ h1 b{color:var(--coral);font-weight:400}
 .wings{display:grid;gap:8px}
 .wing{position:relative;display:block}
 .wing input{position:absolute;opacity:0;inset:0;margin:0}
-.wing > span{display:grid;gap:0;padding:8px 14px;border-radius:14px;border:2px solid #3a5560;cursor:pointer}
+.wing > span{display:grid;gap:0;padding:8px 14px;border-radius:14px;border:2px solid var(--edge);cursor:pointer}
 .wing b{font:400 16px Bungee,sans-serif}
 .wing small{color:var(--muted);font-weight:800}
 .wing em{font-style:normal;font-size:13px;color:var(--muted);line-height:1.35}
@@ -298,9 +298,9 @@ h1 b{color:var(--coral);font-weight:400}
    map. --wall is set by data-stratum on .game, and on each map layer. */
 :root{--wall-plain:repeating-linear-gradient(0deg,#16292f 0 38px,#13252b 38px 40px);--wall-cellar:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='36' height='36'%3E%3Crect width='36' height='36' fill='%233a2620'/%3E%3Cg fill='%2321140f'%3E%3Crect width='36' height='2.5'/%3E%3Crect y='18' width='36' height='2.5'/%3E%3Crect width='2.5' height='18'/%3E%3Crect x='18' y='18' width='2.5' height='18'/%3E%3C/g%3E%3Cg fill='%23ffffff0d'%3E%3Crect x='3' y='3' width='14' height='3'/%3E%3Crect x='21' y='21' width='14' height='3'/%3E%3C/g%3E%3C/svg%3E");--wall-hall:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='44' height='44'%3E%3Crect width='44' height='44' fill='%232a3346'/%3E%3Crect width='22' height='22' fill='%23323d54'/%3E%3Crect x='22' y='22' width='22' height='22' fill='%23323d54'/%3E%3Cpath d='M0 0H44M0 22H44M0 0V44M22 0V44' stroke='%231b2231' stroke-width='1.5'/%3E%3Cpath d='M4 30 Q12 26 16 34 T20 40' stroke='%23ffffff14' stroke-width='1.2' fill='none'/%3E%3Cpath d='M26 6 Q32 12 40 8' stroke='%23ffffff14' stroke-width='1.2' fill='none'/%3E%3C/svg%3E");--wall-tower:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='40'%3E%3Crect width='56' height='40' fill='%232c3a40'/%3E%3Cg fill='%2318232a'%3E%3Crect width='56' height='3'/%3E%3Crect y='20' width='56' height='3'/%3E%3Crect width='3' height='20'/%3E%3Crect x='28' y='20' width='3' height='20'/%3E%3C/g%3E%3Cg fill='%23ffffff0a'%3E%3Crect x='6' y='6' width='18' height='2'/%3E%3Crect x='34' y='26' width='16' height='2'/%3E%3C/g%3E%3Ccircle cx='44' cy='11' r='1.5' fill='%23ffffff12'/%3E%3Ccircle cx='14' cy='31' r='1.2' fill='%23ffffff12'/%3E%3C/svg%3E")}
 .game{--wall:var(--wall-plain)}
-.game[data-stratum="cellar"],.wing.cellar{--wall:var(--wall-cellar)}
-.game[data-stratum="hall"],.wing.hall{--wall:var(--wall-hall)}
-.game[data-stratum="tower"],.wing.tower{--wall:var(--wall-tower)}
+body[data-stratum="cellar"] .game,.wing.cellar{--wall:var(--wall-cellar)}
+body[data-stratum="hall"] .game,.wing.hall{--wall:var(--wall-hall)}
+body[data-stratum="tower"] .game,.wing.tower{--wall:var(--wall-tower)}
 
 /* The dive (diveUI): this stratum's depths down the side of the monster's box. It scrolls, with
    the line drawn per row so it runs the whole way, and fades at the ends. */
@@ -326,6 +326,13 @@ h1 b{color:var(--coral);font-weight:400}
 @media(prefers-reduced-motion:reduce){.dive li.now i{animation:none}}
 @media (max-width: 759px){.dive{grid-area:stage;justify-self:start;align-self:stretch;margin:4px 0 10px 2px;width:28px}}
 @media (min-width: 760px){.dive{grid-area:stage;justify-self:start;align-self:stretch;margin:64px 0 20px 12px;width:90px}.dive span,.dive small{display:block}.dive li{height:30px}.dive span{font-size:13px}.dive small{font-size:12px}}
+
+/* Each stratum's colors, to go with its wall: panels, borders, background and keys change;
+   gold and coral stay the accents. Set by data-stratum on <body> (app.js newRun). */
+body[data-stratum="cellar"]{--bg:#1c1411;--panel:#2a1e19;--line:#4a3328;--btn:#3b2a22;--btn2:#4a362c;--edge:#5d4536;--muted:#c9b4a6;--dark:#120c0a}
+body[data-stratum="hall"]{--bg:#141a28;--panel:#1d2537;--line:#33405c;--btn:#2a3550;--btn2:#34415f;--edge:#46557a;--muted:#b0bcd6;--dark:#0d111b}
+body[data-stratum="tower"]{--bg:#151c1e;--panel:#20292c;--line:#36454a;--btn:#2c393d;--btn2:#364549;--edge:#4a5b60;--muted:#b3c0c2;--dark:#0d1213}
+body{transition:background-color .4s;--hint-empty:var(--edge);--hint-line:var(--edge)}
 
 /* Screens other than the battle (show() in app.js). A "page" (the menu, Settings, the book, a
    run's end) fills a phone's screen, with its buttons docked full-width at the bottom; a "float"
@@ -373,7 +380,7 @@ h1 b{color:var(--coral);font-weight:400}
 .switch-row small,.list-link small{color:var(--muted);font-weight:700;font-size:13px}
 .list-link i{font-style:normal;font-size:26px;color:var(--muted);line-height:1}
 .switch-row input{position:absolute;opacity:0;width:1px;height:1px}
-.switch-row i{position:relative;flex:none;width:52px;height:32px;border-radius:999px;background:#3a5560;transition:background .2s}
+.switch-row i{position:relative;flex:none;width:52px;height:32px;border-radius:999px;background:var(--edge);transition:background .2s}
 .switch-row i::after{content:"";position:absolute;top:3px;left:3px;width:26px;height:26px;border-radius:50%;background:var(--ink);box-shadow:0 2px 4px #0006;transition:transform .2s}
 .switch-row input:checked+i{background:var(--gold)}
 .switch-row input:checked+i::after{transform:translateX(20px)}
