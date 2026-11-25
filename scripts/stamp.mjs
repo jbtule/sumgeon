@@ -55,8 +55,14 @@ swap('<span id="buildSha">dev</span>', `<span id="buildSha">${short}</span>`);
 
 writeFileSync(join(out, "index.html"), html);
 
-// The listen check: the same badge, and its script stamped.
+// The listen check: the same badge, its script stamped, and an import map that stamps the
+// game's modules it reads (js/lines.js and what it imports), as the game's page does.
 let listen = readFileSync(join(root, "listen", "index.html"), "utf8");
+const lmap = { imports: {} };
+for (const f of readdirSync(join(root, "js")).filter((f) => f.endsWith(".js"))) lmap.imports[`../js/${f}`] = `../js/${f}${v}`;
+const lmapMatch = listen.match(/<script type="importmap">([\s\S]*?)<\/script>/);
+if (!lmapMatch) throw new Error("stamp: no import map in listen/index.html");
+listen = listen.replace(lmapMatch[1], "\n" + JSON.stringify(lmap, null, 2) + "\n");
 for (const [from, to] of [['<span id="buildSha">dev</span>', `<span id="buildSha">${short}</span>`], ['src="listen.js"', `src="listen.js${v}"`]]) {
   if (listen.split(from).length !== 2) throw new Error(`stamp: expected 1 match for ${JSON.stringify(from)} in listen/index.html`);
   listen = listen.replace(from, to);
