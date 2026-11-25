@@ -5,8 +5,8 @@ import { spokenProblem, spokenFact } from "./problems.js";
 import { BANDS, choose, factOf, record as recordAnswer, helpFor, openLevel, monsterHP } from "./learn.js";
 import { hintFor, STRATEGIES } from "./hints.js";
 import { openStore, displayName } from "./store.js";
-import { PHRASE, monsterName, monsterCleared, monsterWon, heroName, heroJoins, wingCleared, wingOpened } from "./lines.js";
-import { WINGS, wingOf, runFloors, openWings, toOpen, floorStars, wingStars, STREAK_STAR, depthScale } from "./wings.js";
+import { PHRASE, monsterName, monsterCleared, monsterWon, heroName, heroJoins, wingCleared, wingOpened, depthLine, DEPTH_MAX_SPOKEN } from "./lines.js";
+import { WINGS, wingOf, runFloors, openWings, toOpen, floorStars, wingStars, STREAK_STAR, depthScale, depthHP, deepest } from "./wings.js";
 import { missingOf, pickBlank, filled, spokenMissing, MISSING_SHARE } from "./missing.js";
 import { coinsSvg } from "./coins.js";
 import { traitOf, charged, prefers, hitBy, atHalf } from "./traits.js";
@@ -210,12 +210,17 @@ function shownFact(p, ans) {
 const hintFact = () => G.cur.inverse || G.cur;
 
 // A fresh run through the current Wing: its floors, with this player's rescue floor.
-function newRun() { G.floors = runFloors(wing(), team); }
+// depth: how deep into this Wing (wings.js); the deepest reached when not given.
+function newRun(depth) {
+  G.depth = depth || deepest(wing(), progress); G.floors = runFloors(wing(), team, null, G.depth);
+  // The room darkens as you go deeper: 8% per depth, up to 48% at depth 7.
+  document.querySelector(".game").style.setProperty("--murk", Math.min(0.48, 0.08 * (G.depth - 1)).toFixed(2));
+}
 function loadMonster(i, quiet) {
   const m = G.floors[i];
   G.floor = i;
   // Deeper floors are tougher: about 80% of the usual HP on floor 1, up to 130% for the boss.
-  G.max = G.hp = Math.round(monsterHP(m, strandOf(m), recs) * depthScale(i, G.floors.length));
+  G.max = G.hp = Math.round(monsterHP(m, strandOf(m), recs) * depthScale(i, G.floors.length) * depthHP(G.depth));
   const el = $("mon");
   el.className = "mon";
   el.innerHTML = monsterArt(m);
@@ -226,7 +231,7 @@ function loadMonster(i, quiet) {
   if (t) { badge.textContent = `${t.icon} ${t.name}`; badge.title = t.text; }
   G.onFloor = 0; G.halved = false; G.floorLost = 0; G.floorStreak = 0;
   if (!quiet) setMsg(t ? `${t.icon} ${t.name}: ${t.text}` : "Your answer is your attack.");
-  $("floorLbl").textContent = m.boss ? "Boss floor" : m.cursed != null ? "Rescue floor" : `Floor ${i + 1} / ${G.floors.length}`;
+  $("floorLbl").textContent = (G.depth > 1 ? `Depth ${G.depth} · ` : "") + (m.boss ? "Boss floor" : m.cursed != null ? "Rescue floor" : `Floor ${i + 1} / ${G.floors.length}`);
   hpUI(); heartsUI(); streakUI();
   if (quiet) return;
   meet(seen, m, Date.now()); store.player(PID).set("bestiary", seen);
@@ -242,7 +247,7 @@ function newProblem() {
   const due = G.retry.find((r) => r.after <= 0);
   if (due) G.retry.splice(G.retry.indexOf(due), 1);
   const m = G.floors[G.floor];
-  const key = choose(strandOf(m), recs, { now: Date.now(), recent: G.recent, retry: due ? due.key : null, op: m.op === "mix" || m.strand ? null : m.op, like: prefers(m) });
+  const key = choose(strandOf(m), recs, { now: Date.now(), recent: G.recent, retry: due ? due.key : null, op: m.op === "mix" || m.strand ? null : m.op, like: prefers(m), depth: G.depth });
   // Charge (Minustaur): every 4th problem on the floor, a miss costs 2 hearts.
   G.charged = charged(m, G.onFloor++);
   $("charge").hidden = !G.charged;
@@ -511,23 +516,30 @@ function end(win) {
   if (fallen) { Object.assign(team, curseCaptain(team)); saveTeam(); captainUI(); whoUI(); }
   const cursedLine = !fallen ? "" : `<div class="fallen"><div class="cardmon small">${heroSvg(fallen, { cursed: true })}</div>
     <p><strong>${esc(fallen.n)} was cursed!</strong> ${team.rescued.length ? "Pick who leads next, and" : "Pick a new hero to start again, and"} rescue ${esc(fallen.n)} on a rescue floor.</p></div>`;
-  const left = !win ? "" : opened ? `<p><strong>${opened.name} is open!</strong> Pick it in the menu.</p>` : nextWingHint();
+  // A win opens the next depth of this Wing: "Go deeper" goes there, "Play again" replays this one.
+  const depth = G.depth;
+  if (win) { progress[w.id].depth = Math.max(deepest(w, progress), depth + 1); store.player(PID).set("wings", progress); }
+  const deeper = win;
+  const left = !win ? "" : opened ? `<p><strong>${opened.name} is open!</strong></p>` : nextWingHint();
   pickOpen = false;
   show(`<h2>${win ? wingCleared(w) : `${m.n} won this round`}</h2>
   ${win || fallen ? "" : `<div class="cardmon">${monsterArt(m)}</div>`}
-  <p>${win ? `${m.n} is beaten. Every floor of ${w.name} is yours.` : "Every miss shows the right answer, so the next run goes deeper."}</p>
+  <p>${win ? `${m.n} is beaten. <strong>Depth ${depth + 1}</strong> is open below: tougher monsters, new floors.` : "Every miss shows the right answer, so the next run goes deeper."}</p>
   ${cursedLine}
   ${stars}
   ${left}
   <div class="stats"><div><b>${f}</b><small>floors cleared</small></div><div><b>${G.solved}</b><small>solved</small></div><div><b>${acc}%</b><small>accuracy</small></div></div>
   <p>Best run: <strong>${progress[w.id].best} of ${G.floors.length} floors</strong></p>
   ${captainHTML("Next run")}
-  <div class="btns"><p class="warn" id="warn" role="status"></p><button class="big alt" id="set">Menu</button><button class="big" id="again">Play again</button></div>`);
+  <div class="btns${deeper ? " deeper" : ""}"><p class="warn" id="warn" role="status"></p><button class="big alt" id="set">Menu</button><button class="big${deeper ? " alt" : ""}" id="again">${win ? "Play again" : "Try again"}</button>${deeper ? `<button class="big" id="deeper">Go deeper</button>` : ""}</div>`);
   wireCaptain();
-  $("again").onclick = () => {
-    if (!hasCaptain()) { $("warn").textContent = freePick(team) ? "Pick your hero first." : "Pick who leads first."; $("captain").scrollIntoView({ block: "center", behavior: "smooth" }); return; }
-    start();
+  const ready = () => {
+    if (hasCaptain()) return true;
+    $("warn").textContent = freePick(team) ? "Pick your hero first." : "Pick who leads first."; $("captain").scrollIntoView({ block: "center", behavior: "smooth" });
+    return false;
   };
+  $("again").onclick = () => { if (ready()) start(depth); };
+  if (deeper) $("deeper").onclick = () => { if (ready()) start(depth + 1); };
   $("set").onclick = () => openMenu();
 }
 // A card over the game. It opens at the top, and its main button gets focus (Enter presses it)
@@ -607,7 +619,7 @@ function wingsHTML() {
     const b = BANDS[w.band], isOpen = open.includes(w.id), here = w.band === st.band, p = progress[w.id] || {};
     let note;
     const ws = wingStars(w, progress);
-    if (isOpen) note = (p.boss ? `Cleared ${p.boss}×` : p.best ? `Best: ${p.best} of ${w.floors.length + 1} floors` : "Not tried yet") + (ws.got ? ` · ★ ${ws.got} of ${ws.max}` : "");
+    if (isOpen) note = (p.boss ? `Cleared ${p.boss}×` : p.best ? `Best: ${p.best} of ${w.floors.length + 1} floors` : "Not tried yet") + (deepest(w, progress) > 1 ? ` · Depth ${deepest(w, progress)}` : "") + (ws.got ? ` · ★ ${ws.got} of ${ws.max}` : "");
     else { const t = toOpen(w, progress, recs); note = `🔒 Beat ${t.prev.boss}${t.boss ? " ✓" : ""} and learn ${Math.round(t.need * 100)}% of the ${t.prev.name.replace(/^The /, "")} (now ${Math.round(t.share * 100)}%)`; }
     return `<label class="wing${here ? " here" : ""}${isOpen ? "" : " locked"}"><input type="radio" name="wing" value="${w.id}" ${here ? "checked" : ""} ${isOpen ? "" : "disabled"}>
       <span><b>${w.name}</b><small>${b.label} · ${b.grades}</small><em>${note}</em>${here ? `<em class="level" id="levelLine">${levelLine()}</em>` : ""}</span></label>`;
@@ -822,9 +834,10 @@ function nextWingHint() {
   const t = toOpen(next[0], progress, recs);
   return `<p>To open <strong>${next.map((x) => x.name).join("</strong> and <strong>")}</strong>, learn ${Math.round(t.need * 100)}% of the facts here. You're at ${Math.round(t.share * 100)}%.</p>`;
 }
-function start() {
+function start(depth) {
   hide();
-  newRun();
+  newRun(depth);
+  if (G.depth > 1 && G.depth <= DEPTH_MAX_SPOKEN) say("p", depthLine(G.depth));
   Object.assign(G, { hearts: band().hearts, streak: 0, solved: 0, tries: 0, running: true, retry: [], recent: [], next: false, paused: null });
   stopSpeech();
   loadMonster(0);

@@ -39,6 +39,23 @@ import { depthScale } from "../js/wings.js";
 assert.equal(depthScale(0, 6), 0.8);
 assert.equal(depthScale(5, 6), 1.3);
 assert.ok(depthScale(2, 6) > depthScale(1, 6) && depthScale(1, 6) > depthScale(0, 6));
+// Depth: deeper runs keep the rescue floor and the boss, and mix the rest from the pool, never
+// the same monster twice in a row.
+import { depthHP, deepest } from "../js/wings.js";
+let seq = 0; const rnd = () => ((seq = (seq * 9301 + 49297) % 233280) / 233280);
+for (let k = 0; k < 50; k++) {
+  const deep = runFloors(cellar, { captain: 5, rescued: [] }, rnd, 3);
+  assert.equal(deep.length, 6);
+  assert.equal(deep[2].cursed, 0, "the rescue floor stays");
+  assert.ok(deep[5].boss, "the boss stays last");
+  for (let i = 1; i < 5; i++) if (i !== 2 && i !== 3) assert.notEqual(deep[i].n, deep[i - 1].n, "no monster twice in a row");
+  assert.ok(deep.slice(0, 5).every((m) => m.cursed != null || cellar.pool.includes(m.n)));
+}
+assert.deepEqual(runFloors(cellar, { captain: 5, rescued: [] }, () => 0, 1).map((m) => m.n).slice(0, 2), ["Plusquito", "Minustaur"], "depth 1 keeps the Wing's own order");
+assert.equal(depthHP(1), 1);
+assert.ok(Math.abs(depthHP(3) - 1.3) < 1e-9);
+assert.equal(deepest(cellar, {}), 1);
+assert.equal(deepest(cellar, { cellar: { depth: 4 } }), 4);
 console.log("✓ wings");
 
 // Stars.

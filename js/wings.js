@@ -35,15 +35,28 @@ export function cursedMonster(d) {
   return { n: "Cursed " + h.n, op: "mix", c: h.c, hits: 4, cursed: d, quip: "is free!" };
 }
 
-// One run's floors, as monsters.
-export function runFloors(wing, team, rnd) {
-  const r = rnd || Math.random, pick = () => mon(wing.pool[Math.floor(r() * wing.pool.length)]);
+// One run's floors, as monsters. At depth 2 and deeper (DESIGN.md §6.3), every floor but the
+// rescue floor and the boss is drawn from the pool, never the same monster twice in a row, so
+// each run down mixes them differently.
+export function runFloors(wing, team, rnd, depth) {
+  const r = rnd || Math.random;
+  let last = null;
+  const pick = () => {
+    const options = wing.pool.length > 1 ? wing.pool.filter((n) => n !== last) : wing.pool;
+    return mon((last = options[Math.floor(r() * options.length)]));
+  };
   return wing.floors.map((f) => {
-    if (f === "rescue") { const d = nextRescue(team); return d == null ? pick() : cursedMonster(d); }
-    if (f === "pool") return pick();
+    if (f === "rescue") { const d = nextRescue(team); last = null; return d == null ? pick() : cursedMonster(d); }
+    if (f === "pool" || (depth || 1) > 1) return pick();
+    last = f;
     return mon(f);
   }).concat([mon(wing.boss)]);
 }
+
+// Depth: beating a Wing's boss opens its next depth, and "Go deeper" goes there. Each depth is
+// tougher (HP), mixes its floors, and asks more of the newest problems.
+export const depthHP = (d) => 1 + 0.15 * ((d || 1) - 1);
+export const deepest = (wing, progress) => ((progress[wing.id] || {}).depth || 1);
 
 // The share of a Wing's facts learned (box 3 or more).
 export function learnedShare(wing, recs) {
