@@ -19,7 +19,7 @@ const big = (f) => (f.op === "×" && (f.x > 10 || f.y > 10)) || (f.op === "÷" &
 
 export const BANDS = {
   sprout: {
-    label: "Sprout", grades: "Kindergarten–1st", hearts: 7, fluentMs: 3000,
+    label: "Sprout", grades: "Kindergarten–1st", hearts: 7, fluentMs: 4000,
     levels: [
       { name: "Within 5", has: within(5) },
       { name: "Within 10", has: within(10) },
@@ -28,7 +28,7 @@ export const BANDS = {
     ]
   },
   apprentice: {
-    label: "Apprentice", grades: "2nd–3rd", hearts: 5, fluentMs: 3000,
+    label: "Apprentice", grades: "2nd–3rd", hearts: 5, fluentMs: 4000,
     levels: [
       { name: "Add and subtract within 20", has: within(20) },
       { name: "× 2, 5 and 10", has: times([2, 5, 10]) },
@@ -136,9 +136,12 @@ export function record(rec, { ok, ms, hinted, now, fluentMs }) {
    (skipTo). The levels go in teaching order, so fluency on a harder tier means the easier ones
    are known. Skipped facts still come back as reviews, and a miss sends them back to learning. */
 export const TIER = 20;
-// Fluent probes in a row that skip ahead, tuned so a fluent player opens the next strata in about
-// five runs (three probes took three).
-export const SKIP_PROBES = 5;
+// Skipping needs SKIP_PROBES fluent probes out of the last SKIP_WINDOW, so one mis-tap or slow
+// answer doesn't undo it; tuned so a fluent player opens the next strata in about five runs.
+export const SKIP_PROBES = 5, SKIP_WINDOW = 6;
+// How long a fluent answer may take: the band's time for thinking and one tap, plus a second
+// for each extra digit to tap. A two-digit answer gets 4 s in Sprout.
+export function fluentTime(bandMs, answer) { return bandMs + 1000 * Math.max(0, String(answer).length - 1); }
 // How hard a fact is inside its level: its answer, and a bit more for crossing ten.
 function hardness(f) {
   const [a, b] = String(f.key).slice(1).split(",").map((n) => parseInt(n, 10));
@@ -165,12 +168,12 @@ export function frontier(bandKey, recs) {
   for (let i = 0; i < t.length; i++) if (t[i].filter((k) => learned(recs[k])).length / t[i].length < UNLOCK) return i;
   return t.length;
 }
-// A probe: a fact not seen yet from the tier above the frontier, or null when there's none.
+// A probe: a fact not learned yet from the tier above the frontier, or null when there's none.
 export function probeKey(bandKey, recs, rnd, recent, avoidAns) {
   const t = tiers(bandKey), i = frontier(bandKey, recs) + 1;
   if (i >= t.length) return null;
   const ansOf = (k) => { const f = pool(bandKey).find((x) => x.key === k) || {}; return f.op + " " + f.ans; };
-  let fresh = t[i].filter((k) => (!recs[k] || !recs[k].n) && !(recent || []).includes(k));
+  let fresh = t[i].filter((k) => !learned(recs[k]) && !(recent || []).includes(k));
   const varied = fresh.filter((k) => !(avoidAns || []).includes(ansOf(k)));
   if (varied.length) fresh = varied;
   return fresh.length ? fresh[Math.floor((rnd || Math.random)() * fresh.length)] : null;

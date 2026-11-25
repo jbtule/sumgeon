@@ -2,7 +2,7 @@
 // Problems, monsters, saving, sound and speech live in their own modules.
 import { MON, svg, LOOKS, lookOf } from "./monsters.js";
 import { spokenProblem, spokenFact } from "./problems.js";
-import { BANDS, choose, factOf, record as recordAnswer, helpFor, openLevel, monsterHP, probeKey, tierOf, skipTo, SKIP_PROBES } from "./learn.js";
+import { BANDS, choose, factOf, record as recordAnswer, helpFor, openLevel, monsterHP, probeKey, tierOf, skipTo, SKIP_PROBES, SKIP_WINDOW, fluentTime } from "./learn.js";
 import { hintFor, STRATEGIES } from "./hints.js";
 import { openStore, displayName } from "./store.js";
 import { PHRASE, monsterName, monsterCleared, monsterWon, heroName, heroJoins, wingCleared, wingOpened, depthLine, DEPTH_MAX_SPOKEN } from "./lines.js";
@@ -112,7 +112,9 @@ const monsterArt = (m, cls) => (m.cursed != null ? heroSvg(HEROES[m.cursed], { c
 //   2 (2026-11-25): breaking a curse takes three wins.
 //   3 (2026-11-25): placement, skipping ahead and the "all fast" star. Also resets what's
 //      been learned (LEARNING_RESETS), since it changes how learning is counted.
-const DUNGEON_VERSION = 3, DUNGEON_KEYS = ["wings", "bestiary", "best"], LEARNING_RESETS = [3];
+//   4 (2026-11-25): fluent time scales with digits (4 s + 1 s a digit), skipping tolerates a
+//      slip. Resets learning too: facts counted slow under 3 s weren't slow.
+const DUNGEON_VERSION = 4, DUNGEON_KEYS = ["wings", "bestiary", "best"], LEARNING_RESETS = [3, 4];
 function upgradeDungeon(id) {
   const p = store.player(id), had = p.get("dungeon", null);
   if (had === DUNGEON_VERSION) return;
@@ -176,7 +178,7 @@ function whoUI() {
 /* ---------- the run ---------- */
 // retry: missed facts waiting to come back ({ key, after: problems to go }); recent: the last few
 // keys, so a fact doesn't repeat right away; hinted: a hint is open for this problem.
-let G = { flow: { fluent: 0, hits: 0, cool: 0, n: 0 }, floor: 0, hearts: 5, hp: 0, max: 0, streak: 0, solved: 0, tries: 0, cur: null, input: "", busy: true, running: false,
+let G = { flow: { fluent: 0, cool: 0, hist: [], on: false }, floor: 0, hearts: 5, hp: 0, max: 0, streak: 0, solved: 0, tries: 0, cur: null, input: "", busy: true, running: false,
   retry: [], recent: [], hinted: false, t0: 0, next: false };
 
 function heartsUI(cracking) {
@@ -320,7 +322,7 @@ function newProblem() {
   // Skipping ahead: while you answer fluently, each problem is a probe from the next tier.
   // And not the same kind of problem with the same answer as the last two, when there's a choice.
   const f = G.flow, avoidAns = G.recentAns || [];
-  const probe = !due && f.fluent >= 2 && f.cool <= 0 ? probeKey(strandOf(m), recs, null, G.recent, avoidAns) : null;
+  const probe = !due && f.on && f.cool <= 0 ? probeKey(strandOf(m), recs, null, G.recent, avoidAns) : null;
   const key = probe || choose(strandOf(m), recs, { now: Date.now(), recent: G.recent, retry: due ? due.key : null, op: m.op === "mix" || m.strand ? null : m.op, like: prefers(m), depth: G.depth, avoidAns });
   // Charge (Minustaur): every 4th problem on the floor, a miss costs 2 hearts.
   G.charged = charged(m, G.onFloor++);
@@ -451,15 +453,20 @@ $("hintBtn").onclick = () => { if (!G.busy) openHint(); };
 // Returns what to say about it: a skip ahead, a new level, or nothing.
 function learnFrom(ok) {
   const bk = strandOf(G.floors[G.floor]), b = BANDS[bk], key = G.cur.key, ms = performance.now() - G.t0;
-  const before = openLevel(bk, recs), fluent = ok && !G.hinted && ms < b.fluentMs, f = G.flow;
-  recs[key] = recordAnswer(recs[key], { ok, ms, hinted: G.hinted, now: Date.now(), fluentMs: b.fluentMs });
-  // Skipping ahead: SKIP_PROBES fluent probes in a row, and everything below the probe's tier is known.
+  // Fluent: right, unhinted and quick, with a second more for each extra digit to tap.
+  const limit = fluentTime(b.fluentMs, G.cur.sym || G.cur.ans);
+  const before = openLevel(bk, recs), fluent = ok && !G.hinted && ms < limit, f = G.flow;
+  recs[key] = recordAnswer(recs[key], { ok, ms, hinted: G.hinted, now: Date.now(), fluentMs: limit });
+  // Skipping ahead: SKIP_PROBES fluent of the last SKIP_WINDOW probes, and everything below the
+  // probe's tier is known. Two slips in that window pause probing for a few problems.
   let skipped = 0;
   if (G.cur.probe) {
-    if (!fluent) { f.hits = 0; f.cool = 8; }
-    else if (++f.hits >= SKIP_PROBES) { skipped = skipTo(bk, recs, tierOf(bk, key), Date.now(), b.fluentMs); f.hits = 0; }
+    f.hist = [fluent].concat(f.hist).slice(0, SKIP_WINDOW);
+    if (fluent && f.hist.filter(Boolean).length >= SKIP_PROBES) { skipped = skipTo(bk, recs, tierOf(bk, key), Date.now(), b.fluentMs); f.hist = []; }
+    else if (f.hist.filter((x) => !x).length >= 2) { f.cool = 3; f.hist = []; f.on = false; }
   }
   f.fluent = fluent ? f.fluent + 1 : 0;
+  if (f.fluent >= 2) f.on = true; // probing starts after two fluent answers, and keeps going
   if (!fluent) G.floorSlow = true; // the "all fast" star (wings.js floorStars)
   f.cool--;
   store.player(PID).set("facts", recs);
@@ -976,7 +983,7 @@ function start(depth, enter) {
   G.onMenu = false;
   hide();
   newRun(depth);
-  Object.assign(G, { hearts: band().hearts, streak: 0, solved: 0, tries: 0, running: true, retry: [], recent: [], next: false, paused: null, runStars: 0, flow: { fluent: 0, hits: 0, cool: 0, n: 0 } });
+  Object.assign(G, { hearts: band().hearts, streak: 0, solved: 0, tries: 0, running: true, retry: [], recent: [], next: false, paused: null, runStars: 0, flow: { fluent: 0, cool: 0, hist: [], on: false } });
   stopSpeech();
   if (enter) say("p", PHRASE.enter);
   if (G.depth > 1 && G.depth <= DEPTH_MAX_SPOKEN) say("p", depthLine(G.depth));
