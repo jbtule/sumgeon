@@ -31,7 +31,7 @@ The age range is 5–14 (kindergarten to 8th grade), which is too wide for one d
 
 The current Easy, Medium and Hard settings become difficulty levels *inside* a band. The operation checkboxes become a "custom practice" option for parents and teachers (§9).
 
-**Plan (2026-11-25): one band per grade, K through 5th.** The four bands above were drawn by age. A review against the Missouri Learning Standards and the curriculum guides of the players' school found that this mixes grades: Apprentice made a 3rd grader clear sums within 20 before multiplication, the Sprout Wing asked 2nd-grade coin counting, and 2nd grade's two-digit math hid in the Tables Tower. So Sprout, Balance and Apprentice become a band per grade, K, 1st, 2nd and 3rd, and Adept becomes 4th and 5th. Each grade's band is one stratum (§4), with its levels in the order the school teaches them. Master (6th–8th) stays as it is, for the later strata.
+**Plan (2026-11-25): one band per grade, K through 5th.** The four bands above were drawn by age. A review against the Missouri Learning Standards and the curriculum guides of the players' school found that this mixes grades: Apprentice made a 3rd grader clear sums within 20 before multiplication, the Sprout Wing asked 2nd-grade coin counting, and 2nd grade's two-digit math hid in the Tables Tower. So Sprout, Balance and Apprentice become a band per grade, K, 1st, 2nd and 3rd, and Adept becomes 4th and 5th. Each grade's band is one stratum (§4), with its levels in the order the school teaches them. **The game tops out at 6th grade:** one stretch stratum of 6th-grade math (§4.1) replaces Master, and the 7th–8th grade strata are dropped.
 - A new player picks their **grade** (K–5) instead of a band. It opens every stratum up to that grade, as the band does now.
 - What each grade asks follows the guides, limited to what works as a quick typed answer (§4). Shapes, angles, graphs, the coordinate plane, measurement conversions, prime or composite (a yes/no) and word problems are left out of fights.
 - The guides' own models and words decide how the hints teach (§5.3); the standards decide what each grade covers.
@@ -92,17 +92,19 @@ The dungeon is a map of **Wings**, shown in the game as **strata**. Each Wing ha
 - **There is no manual unlock.** See §9 for why nothing needs a grown-up lock.
 
 ### 4.1 The grade strata (plan, 2026-11-25)
-One stratum per grade, in a **straight chain**: each opens only the next. The levels inside each follow the school's teaching order. The audience stops at 5th grade, but one **stretch stratum** of 6th-grade math, Pirate Cavern, sits under the Pyramid so a 5th grader who finishes it can keep going. Its content follows the school's 6th-grade guide; inequalities, plotting points, data and surface area are left out.
+One stratum per grade, in a **straight chain**: each opens only the next. The levels inside each follow the school's teaching order. The audience stops at 5th grade, but one **stretch stratum** of 6th-grade math, Pirate Cavern, sits under the Pyramid so a 5th grader who finishes it can keep going, and the game ends there. Its content follows the school's 6th-grade guide.
+
+**Left out of fights** (they don't fit a quick typed answer): shapes, angles and symmetry, graphs and line plots, the coordinate plane, inequalities, days and seasons, sorting, word problems, and measurement conversions (for now). Writing numerals is practiced by spell casting.
 
 | Stratum | Grade | Levels (in order) | Monsters | Boss |
 |---|---|---|---|---|
-| **The Counting Cellar** (built) | K | Within 5, with zero (4 + 0, 4 − 4) → within 10 → make 10 (7 + □ = 10) and number bonds → teen numbers as 10 and some more (10 + 4, 14 − 4) | Plusquito (+), Minustaur (−), Trollar ($: find the coin, each coin's worth), Chompers in a K form (which is more, 7 or 4? type 7: comparing without symbols), a dot-flash monster (how many at a glance, up to 5) | **Make-Ten Golem** |
-| **The Balance Hall** (built) | 1st | Within 20 without crossing 10 → crossing 10 (make a ten, use a ten, doubles) → missing numbers and the equal sign → ± tens (34 + 20, 10 more, 10 less) | Quizard (?), Chompers (< = >), Equal Twins (=, balancing and true or false), Doublet (doubles), a three-addend monster (4 + 3 + 6), Tick-Tockus (hours and half hours) | **The Unknown** |
-| **The Crystal Mines** (new) | 2nd | Two-digit ± within 100, adding and subtracting mixed → with regrouping → ± 10 and 100 within 1000 | Haberhasher (tens and ones), Trollar (counting coins with ¢ and $), Slimelipsis (skip counting by 2s, 5s and 10s), an array monster (up to 5 × 5 as 5 + 5 + 5), Tick-Tockus (to 5 minutes) | **The Centipede** |
-| **The Tables Tower** (built) | 3rd | × and ÷ only: ×0, 1, 2, 5, 10 and their ÷ → ×3, 4, 6 and ÷ → ×7, 8, 9 and ÷ → × tens (4 × 30) → ×÷ 11 and 12, kept as an extra bottom level | Timesaur (×), Divvy (÷), Starbot (*), Tick-Tockus (to the minute) | **Sigma Rex** |
-| **The Fraction Forge** | 4th | ×10, 100, 1000; 2-digit × 1-digit, then 2-digit × 2-digit (area model); factors (6 × □ = 48); remainders (29 ÷ 4 = 7 R1); equivalent fractions (3/4 = □/8); adding and subtracting like denominators; whole × fraction; decimals in tenths and hundredths; area and perimeter | Halfling (½), Quarterjack (¼), Dotty (.), Boomainder (R) | **The Denominator** |
-| **The Parenthesis Pyramid** (new) | 5th | Unlike denominators (1/2 + 1/4 = □/4); a fraction of a number (1/2 of 12); dividing by a unit fraction (3 ÷ 1/2); powers of ten; decimals × and ÷ 10, 100, 1000; order of operations; volume (l × w × h) | Parenthesaurus (( ), order of operations), fraction and volume monsters (to design) | **Shoutandcomma** (!), the mummy in the deepest chamber |
-| **Pirate Cavern** (stretch) | 6th, for 5th graders who finish the Pyramid | GCF and LCM (GCF of 12 and 18; 12 + 20 = 4 × (3 + □)) and dividing fractions (3/4 ÷ 1/8) → ratios (2:3 = □:12) and unit rates (12 for $3, so □ for $1) → percent (25% of 80; 3/4 = □%) → opposites, absolute value and comparing negatives (\|−7\| = □; −3 ○ −8) → expressions and one-step equations (3x + 2 when x = 4; x + 7 = 15; 4x = 28) → area of triangles | Slashbuckler (/, GCF, LCM and dividing fractions), Colon-el Ratio (:, ratios and rates), % Gremlin (percent), Negasicle (−) and Absolutely (\|x\|) (negatives), an x monster for equations (to design, Quizard's grown-up cousin) | **Dread Pirate Radius** |
+| **The Counting Cellar** (built) | K | Within 5, with zero (4 + 0, 4 − 4) → within 10 → make 10 (7 + □ = 10) and number bonds → teen numbers as 10 and some more (10 + 4, 14 − 4); counting on from a number and back from 10 throughout | Plusquito (+), Minustaur (−), Trollar ($: find the coin, each coin's worth), Chompers in a K form (which is more, 7 or 4? type 7: comparing without symbols), Slimelipsis visiting (count on, count back), a dot-flash monster (how many at a glance, up to 5; to design) | **Make-Ten Golem** |
+| **The Balance Hall** (built) | 1st | Within 20 without crossing 10 → crossing 10 (make a ten, use a ten, doubles) → missing numbers and the equal sign → ± tens (34 + 20, 10 more, 10 less); counting to 120 and by 5s throughout | Quizard (?), Chompers (< = >), Equal Twins (=, balancing and true or false), Doublet (doubles), Slimelipsis visiting (to 120, by 5s), a three-addend monster (4 + 3 + 6; to design), Tick-Tockus (hours and half hours) | **The Unknown** |
+| **The Crystal Mines** (new) | 2nd | Two-digit ± within 100, adding and subtracting mixed → with regrouping → adding up to four two-digit numbers → three-digit place value (34 tens is 340) → ± 10 and 100 within 1000; odd and even | Haberhasher (tens and ones), Trollar (counting coins with ¢ and $), Slimelipsis (skip counting by 2s, 5s and 10s; odd and even), Squaresquatch (²: arrays up to 5 × 5 as 5 + 5 + 5), Tick-Tockus (to 5 minutes) | **The Centipede** |
+| **The Tables Tower** (built) | 3rd | ×0, 1, 2, 5, 10 and their ÷ → ×3, 4, 6 and ÷ → ×7, 8, 9 and ÷ → × tens (4 × 30) → fractions: unit fractions, on a number line, simple equivalents, comparing (1/2 ○ 1/3) → rounding to the nearest 10 and 100 → area and perimeter → ×÷ 11 and 12, kept as an extra bottom level | Timesaur (×), Divvy (÷), Starbot (*), Halfling (½: the fractions), Tick-Tockus (to the minute, and elapsed time) | **Sigma Rex** |
+| **The Fraction Forge** | 4th | ×10, 100, 1000; 2-digit × 1-digit, then 2-digit × 2-digit (area model); multi-digit ± and rounding to any place; factors (6 × □ = 48); remainders (29 ÷ 4 = 7 R1); equivalent fractions (3/4 = □/8); adding and subtracting like denominators and mixed numbers (2 1/8 + 3/8); whole × fraction; decimals in tenths and hundredths, and comparing them; area and perimeter formulas | Quarterjack (¼), Dotty (.), Boomainder (R) | **The Denominator** |
+| **The Parenthesis Pyramid** (new) | 5th | Unlike denominators (1/2 + 1/4 = □/4); fraction × fraction (1/2 × 3/4); a fraction of a number (1/2 of 12); dividing by a unit fraction (3 ÷ 1/2); adding and subtracting decimals; decimals × and ÷ 10, 100, 1000; rounding decimals; long division with 2-digit divisors; powers of ten; order of operations; volume (l × w × h) | Parenthesaurus (( ), order of operations), Exponent-tron (^, a cube-bodied robot: volume, "cubed"), a fraction monster (to design) | **Shoutandcomma** (!), the mummy in the deepest chamber |
+| **Pirate Cavern** (stretch) | 6th, for 5th graders who finish the Pyramid | GCF and LCM (GCF of 12 and 18; 12 + 20 = 4 × (3 + □)) and dividing fractions (3/4 ÷ 1/8) → ratios (2:3 = □:12) and unit rates (12 for $3, so □ for $1) → percent (25% of 80; 3/4 = □%) → opposites, absolute value and comparing negatives (\|−7\| = □; −3 ○ −8) → expressions and one-step equations (3x + 2 when x = 4; x + 7 = 15; 4x = 28) → mean, median and range of a few numbers → area of triangles | Rootling (√: GCF and LCM, with factor trees for roots), Slashbuckler (/, dividing fractions), Colon-el Ratio (:, ratios and rates), % Gremlin (percent), Negasicle (−) and Absolutely (\|x\|) (negatives), an x monster for equations (to design, Quizard's grown-up cousin) | **π Pirate**, the cavern's captain |
 
 - **What changes from today:** the Tower becomes × and ÷ only (its sums within 20 belong to 1st and 2nd grade, so the "alongside" level in Apprentice goes away); Haberhasher moves to the Mines; Quizard moves to the Hall, since hidden numbers are 1st grade; coin counting moves to the Mines, and the Cellar keeps finding coins and their worth, which the K guide teaches.
 - **Answers stay whole numbers where possible.** Most 4th- and 5th-grade problems hide a whole number in a box (3/4 = □/8), so the answer is still the damage, as with missing numbers. New pad keys appear only when a problem needs them: **R** for remainders, **.** for decimals, **−** for negatives (Pirate Cavern), and the stacked fraction input (§7.1) for problems whose answer is a fraction. A fraction, decimal or percent answer hits for its value as a percent (§7.2).
@@ -110,13 +112,8 @@ One stratum per grade, in a **straight chain**: each opens only the next. The le
 - **Saved progress:** a dungeon version bump starts runs over and keeps what's been learned.
 - **Build order** (stacked PRs): (1) this plan; (2) restructure K–3 into grade strata with today's monsters (the levels in the school's order, zero facts, make-10 partners, ×0 and ×1, × tens, monsters moved), with a stand-in wall and boss for the Mines; (3) the Crystal Mines' wall, palette, the Centipede and voice lines; (4) the new K–3 monsters: Doublet, Slimelipsis, dot flash, three addends, arrays, Tick-Tockus; (5) the Fraction Forge; (6) the Parenthesis Pyramid.
 
-### 4.2 Later strata (Master, 6th–8th)
-Below Pirate Cavern, unchanged from the first design (π Pirate, from Pirate Cavern's first design, waits for circles in 7th grade):
-
-| Wing | Strand | Monsters (glyph) | Boss |
-|---|---|---|---|
-| **The Negative Zone** | Integers and negatives | Negasicle (−, an icy minus-sign popsicle), Absolutely (\|x\|) | **Lord Undefined** (÷0) |
-| **The Root Cellar** | Exponents and roots | Rootling (√), Squaresquatch (²), Exponent-tron (^) | **Hydra of Powers** (heads = exponent) |
+### 4.2 Retired: strata past 6th grade
+The first design went on to 8th grade (the Negative Zone, the Root Cellar, and Pirate Cove for percent and π). The game now ends at Pirate Cavern, and their monsters fill gaps above: Negasicle, Absolutely, Rootling, Slashbuckler, Colon-el Ratio, % Gremlin and π Pirate in Pirate Cavern, Squaresquatch in the Crystal Mines, Exponent-tron in the Pyramid. Their bosses Lord Undefined (÷0), the Hydra of Powers and Dread Pirate Radius are retired.
 
 **Endless Descent** (§6.4) has its own boss, the **Endless Specter** (∞).
 
@@ -127,10 +124,10 @@ Every Wing also has one **rescue floor** holding a cursed digit (§6.6). The pro
 ### Monster design notes for new glyphs
 - **= Twins**: two bars that are siblings and finish each other's sentences. They pose missing-number problems (□ + 4 = 9).
 - **Chompers (< >)**: a croc whose mouth opens toward the bigger number. This is the classic comparison mnemonic. Answering is a tap: <, = or >.
-- **Rootling (√)**: a creature whose roots are its legs. It asks perfect-square roots.
+- **Rootling (√)**: a creature whose roots are its legs, in Pirate Cavern. *Factor trees*: GCF and LCM, its roots branching into factors.
 - **% Gremlin**: two little circle-headed gremlins on a seesaw. It asks "10% of 50" and similar.
-- **π Pirate**: one leg on each side of the π bar and an eyepatch. For Master it asks circle facts, and otherwise it does decimal arithmetic.
-- **Halfling (½)**: its body is literally split in two. When hit, it shows the damage as a filling fraction bar.
+- **π Pirate**: one leg on each side of the π bar and an eyepatch. Pirate Cavern's boss, the cavern's captain: it mixes the Cavern's 6th-grade problems.
+- **Halfling (½)**: its body is literally split in two. In the Tables Tower, 3rd grade's fractions: unit fractions, fractions on a number line, simple equivalents and comparing.
 - **Quizard (?)**: a question mark in a wizard hat, holding a wand. *Mystery*: the missing number moves around (3 + □ = 7).
 - **Shoutandcomma (!)**: a mummy whose tall wrapped body is the !, with the dot as its feet. The name is a pun on Tutankhamun. The Parenthesis Pyramid's boss (5th grade): like every boss it mixes its stratum's problems, and its boss roars are the mummy rising from its tomb. *Unwrap*: at half HP its wrappings come off and its problems turn to big numbers, powers of ten and place value (10³ = □; how many zeros in 10⁵).
 - **Slimelipsis (…)**: three little slimes in a row, in the Crystal Mines (2nd grade). *What comes next*: skip counting by 2s, 5s and 10s (2, 4, 6, □; 15, 20, □).
@@ -142,7 +139,8 @@ Every Wing also has one **rescue floor** holding a cursed digit (§6.6). The pro
 - **Starbot (*)**: a robot with a star-burst head, since * is how computers write ×. *Stripes*: favors the ×5 and ×10 tables.
 - **Boomainder (R)**: a ghost who haunts the leftovers. Division with remainders (17 ÷ 5 = 3 R2), which leads into mixed numbers (3⅖).
 - **Slashbuckler (/)**: a swashbuckler whose sword is the slash. Writes division as 24 / 6, so kids learn the other notation.
-- **Exponent-tron (^)**: a robot whose antenna is the caret. Exponents.
+- **Exponent-tron (^)**: a robot whose antenna is the caret and whose body is a stack of cubes, in the Parenthesis Pyramid. *Cubed*: volume of boxes (l × w × h).
+- **Squaresquatch (²)**: a bigfoot made of grid squares, in the Crystal Mines. *Arrays*: rows and columns up to 5 × 5, as repeated addition (5 + 5 + 5), which leads into area.
 - **Colon-el Ratio (:)**: an officer whose medals are the colon. Ratios (2:3).
 - **Endless Specter (∞)**: a looping ghost that only appears in Endless Descent. Its body traces ∞, so it looks nothing like Boomainder.
 
@@ -318,7 +316,7 @@ On a keyboard, `-`, `.` and `/` map to these keys.
 
 ### 7.2 Damage rule for non-whole answers
 "Damage = answer" needs a rule once answers can be −6 or ¾:
-- **Negatives:** damage is the **absolute value**. Fiction: Negative Zone monsters are made of "debt," and a negative answer pays it off. The hit animation shows the number flipping sign as it lands.
+- **Negatives:** damage is the **absolute value**. Fiction: Pirate Cavern's Negasicle and Absolutely are made of "debt," and a negative answer pays it off. The hit animation shows the number flipping sign as it lands.
 - **Fractions, decimals and percents** (plan, 2026-11-25): the answer is a **multiplier**. It hits for its value × 100, its percent: ¾ hits for 75, 0.3 for 30, 25% for 25, 1½ for 150. The hit shows the change ("¾ → 75!"), so every hit practices fraction = decimal = percent. Monster HP is built the same way (from the average answer, × 100), so fights last as many problems as any other. Any equivalent fraction counts (6/8 hits like ¾). This replaces the earlier plan of HP drawn in whole segments.
 - **Comparisons:** each correct comparison deals a fixed "chomp" of 1 segment, and the monster has segment HP.
 - **Big answers** (e.g. 144): unchanged, because the monster HP rule already scales to the problem pool.
@@ -420,7 +418,7 @@ Each milestone should be playable and shippable on its own.
 4. **M4 — Replay**
    Achievements with spoken cards, the 🏆 sheet and share cards (§14), between-floor item choices, Endless Descent, Daily Dungeon, and captain cosmetics.
 5. **M5 — New math**
-   Extended input (±, ., fractions, comparisons), the Fraction Forge and Balance Hall, then the Negative Zone, Root Cellar and Pirate Cavern.
+   Extended input (−, ., R, fractions), the Fraction Forge, the Parenthesis Pyramid and Pirate Cavern (§4.1).
 6. **M6 — Grown-ups' corner and PWA**
    Progress heat-maps, custom practice, export, offline install with saved voice clips, device linking and sync (§15.2–15.4), and the listen check.
 
@@ -565,7 +563,7 @@ Start over sits in Settings and asks the grown-up to type "start over", as in So
 **Decided (2026-11-23)**
 - **Hearts for Sprout:** yes. Kindergarten-age players can handle losing a run. Sprout gets 7 hearts.
 - **Multiple choice:** no, in any band. Answers are always typed.
-- **Names checked against existing characters (2026-11-23):** Numberjacks (BBC) has digits 0–9 as heroes vs. villains, but our names, looks and summon mechanic are our own. The 0 hero is **Zeroic**, not "Hero Zero" (too close to the classroom tradition and picture book *Zero the Hero*). The 8 hero is **Chef Eight**, not a tentacle superhero (too close to Numberblocks' Octoblock). The Pirate Cavern boss is **Dread Pirate Radius**, not Captain Circumference (the *Sir Cumference* books use the same pun). The Negative Zone monster is **Negasicle**.
+- **Names checked against existing characters (2026-11-23):** Numberjacks (BBC) has digits 0–9 as heroes vs. villains, but our names, looks and summon mechanic are our own. The 0 hero is **Zeroic**, not "Hero Zero" (too close to the classroom tradition and picture book *Zero the Hero*). The 8 hero is **Chef Eight**, not a tentacle superhero (too close to Numberblocks' Octoblock). The old Pirate Cove boss was **Dread Pirate Radius**, not Captain Circumference (the *Sir Cumference* books use the same pun); Pirate Cavern's boss is now **π Pirate**. The negatives monster is **Negasicle**.
 - **Hints follow the Missouri Learning Standards** and the models and words local curricula use (§5.3). Missouri doesn't name a method, so hints show strategy models, and a "For grown-ups" note explains each one. Sprout starts at fluency within 5, as the K standard says.
 - **Mastery unlocks Wings** (boss beaten plus over 60% of facts mastered). Grade only sets the starting Wings and help defaults. Lower Wings stay open, and speed counts for every player, never compared across siblings (§4, §6.7).
 - **No grown-up lock** (§9): nothing in settings makes progress easier, so there's nothing to guard. Destructive actions only affect the device they're done on. Remove only appears on devices with two or more players, so a kid's own device can't delete anyone, and linked devices can restore a player removed elsewhere.
