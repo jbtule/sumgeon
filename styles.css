@@ -88,6 +88,7 @@ h1 b{color:var(--coral);font-weight:400}
 .badge svg{width:14px;height:14px}
 #buildSha{font-family:ui-monospace,"SF Mono",Menlo,monospace}
 .badge:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+.copyright{flex-basis:100%;margin:2px 0 0;text-align:center;color:var(--muted);font-size:.75rem;font-weight:700}
 
 /* Header controls and the "Playing as" line */
 .tools{display:flex;align-items:center;gap:8px}

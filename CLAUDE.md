@@ -198,7 +198,7 @@ Voice, achievements, players and linking copy the sibling project `../sound-box-
 - Split into modules (monsters, problems, game loop, UI) once it grows
 
 ## License
-PolyForm Noncommercial 1.0.0 (`LICENSE.md`). Its first line is the `Required Notice:` copyright, which must travel with copies. When you add a dependency, font or asset, list it with its license in the README's License section.
+PolyForm Noncommercial 1.0.0 (`LICENSE.md`). Its first line is the `Required Notice:` copyright, which must travel with copies. The footer shows it ("Copyright © 2026 James Tuley"), and so does Settings, which repeats the footer. When you add a dependency, font or asset, list it with its license in the README's License section.
 
 ## Working on it
 - **Every change goes through a pull request**, as in sound-box-crosswords: `git fetch`, branch from `origin/main`, push the branch, and open a PR. CI runs the check on the PR; merging to `main` deploys. Leave merging to Jay. Stage files by name rather than `git add -A`.
