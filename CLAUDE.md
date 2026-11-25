@@ -211,7 +211,7 @@ Runs happen in Wings (`js/wings.js`, DESIGN.md §4), called **strata** (one **st
 
 ## Settings
 - Band: Sprout or Apprentice (per player). Changing band starts a fresh dungeon.
-- No timer: the prototype's countdown was removed until there's a plan for it (a saved `timer` setting is ignored).
+- No timer, ever (settled 2026-11-25): speed is used only to judge fluency (`fluentTime`: placement, skipping ahead, box jumps) and for the ★ all-fast star, and never changes damage. A saved `timer` setting from the prototype is ignored.
 - Sound effects and voice.
 - Settings and best floor are saved per player (see Players and saving).
 
