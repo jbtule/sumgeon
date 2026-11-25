@@ -1,6 +1,7 @@
 // Sigils (js/sigil.js): every built-in template reads as its digit, its mirror reads as the same
 // digit reversed, messy copies still read right, and a scribble isn't clear.
 import assert from "node:assert/strict";
+import { readFileSync, existsSync } from "node:fs";
 import { read, cloud, TEMPLATES, SHAPES_FOR_TESTS, mirror } from "../js/sigil.js";
 
 const CAN_REVERSE = new Set([1, 2, 3, 4, 5, 6, 7, 9]);
@@ -43,6 +44,59 @@ for (const sh of SHAPES_FOR_TESTS) for (let k = 0; k < 10; k++) for (const back 
 assert.ok(right / total >= 0.98, `messy shapes read right: ${right}/${total}`);
 assert.equal(confidentlyWrong, 0, "a messy shape is never confidently read as another digit");
 
+// Real drawings (scripts/sigil-fixtures.json): recordings from the spell check's Record mode,
+// added by scripts/drawings-to-fixtures.mjs, and "shot-" ones, an adult's ordinary handwriting on
+// an iPhone traced from screenshots of the spell check (pixel points along each stroke).
+// - None is ever read clearly as another digit (a wrong answer costs a heart). Unclear ("try
+//   again") is counted, not failed: kids' recordings will have some.
+// - Each screenshot reads as its digit, clearly and the right way round, and its mirror as that
+//   digit backwards (or just the digit, for an 8).
+const FIXTURES_FILE = new URL("./sigil-fixtures.json", import.meta.url);
+const FIXTURES = existsSync(FIXTURES_FILE) ? JSON.parse(readFileSync(FIXTURES_FILE, "utf8")).fixtures : [];
+const how = (r) => `${r.digit}${r.reversed ? " backwards" : ""}${r.clear ? "" : " (unclear)"}, fit ${r.fit.toFixed(2)}, margin ${r.margin.toFixed(2)}, ${r.name}`;
+const real = { n: 0, right: 0, unclear: 0 };
+for (const f of FIXTURES) {
+  const r = read(f.strokes);
+  real.n++;
+  assert.ok(!r.clear || r.digit === f.digit, `the real ${f.digit} ${f.id} (${f.who}) isn't read clearly as another digit (got ${how(r)})`);
+  if (!r.clear) real.unclear++; else real.right++;
+  if (!f.id.startsWith("shot-")) continue;
+  const m = read(mirror(f.strokes));
+  assert.ok(r.digit === f.digit && !r.reversed && r.clear, `the real ${f.id} reads as a clear ${f.digit} (got ${how(r)})`);
+  assert.ok(m.digit === f.digit && m.reversed === CAN_REVERSE.has(f.digit) && m.clear, `the real ${f.id} mirrored (got ${how(m)})`);
+}
+
+// Ordinary handwriting varies: tilt (±8°), slant (±12°), stretch (±15% each way) and a smooth
+// wobble (3% of its size). Variants of each screenshot and every shape, both ways round: none
+// is ever read clearly as another digit (a wrong answer, a lost heart); a few are unclear
+// ("try again", which costs nothing).
+function vary(strokes) {
+  const xs = strokes.flat().map((p) => p[0]), ys = strokes.flat().map((p) => p[1]);
+  const cx = (Math.min(...xs) + Math.max(...xs)) / 2, cy = (Math.min(...ys) + Math.max(...ys)) / 2;
+  const size = Math.max(Math.max(...xs) - Math.min(...xs), Math.max(...ys) - Math.min(...ys));
+  const a = (rnd() - 0.5) * 16 * Math.PI / 180, k = Math.tan((rnd() - 0.5) * 24 * Math.PI / 180);
+  const sx = 1 + (rnd() - 0.5) * 0.3, sy = 1 + (rnd() - 0.5) * 0.3, w = 0.03 * size;
+  const p1 = rnd() * 6.28, p2 = rnd() * 6.28, f1 = 2 + rnd() * 3, f2 = 2 + rnd() * 3;
+  return strokes.map((s) => s.map(([x, y]) => {
+    const Y = (y - cy) * sy, X = (x - cx) * sx - k * Y;
+    return [X * Math.cos(a) - Y * Math.sin(a) + w * Math.sin(p1 + f1 * 6 * (y - cy) / size),
+      X * Math.sin(a) + Y * Math.cos(a) + w * Math.sin(p2 + f2 * 6 * (x - cx) / size)];
+  }));
+}
+const safety = { n: 0, right: 0, unclear: 0, wrong: [] };
+const drawings = FIXTURES.filter((f) => f.id.startsWith("shot-")).map((f) => ({ digit: f.digit, strokes: f.strokes, symmetric: false, count: 40 }))
+  .concat(SHAPES_FOR_TESTS.map((sh) => ({ ...sh, count: 15 })));
+for (const d of drawings) for (let k = 0; k < d.count; k++) for (const back of [false, true]) {
+  if (back && (!CAN_REVERSE.has(d.digit) || d.symmetric)) continue;
+  const r = read(vary(back ? mirror(d.strokes) : d.strokes));
+  safety.n++;
+  if (!r.clear) safety.unclear++;
+  else if (r.digit !== d.digit) safety.wrong.push(`${d.digit}${back ? " backwards" : ""} read as ${r.digit}`);
+  else if (r.reversed === back) safety.right++;
+}
+assert.deepEqual(safety.wrong, [], "handwriting variants are never read clearly as another digit");
+assert.ok(safety.right / safety.n >= 0.9, `handwriting variants read clearly and right: ${safety.right}/${safety.n}`);
+
 // Real drawings that were misread. A 4 with a high crossbar and a long stem (traced from a phone,
 // in pixels, two strokes) read as a 9; and a 9 with a small head and long tail must stay a 9.
 const dense = (st) => st.map((pts) => pts.flatMap((p, i) => i ? Array.from({ length: 12 }, (_, k) => [pts[i - 1][0] + (p[0] - pts[i - 1][0]) * (k + 1) / 12, pts[i - 1][1] + (p[1] - pts[i - 1][1]) * (k + 1) / 12]) : [p]));
@@ -61,4 +115,9 @@ assert.equal(read([[[10, 10]]]), null, "a single dot is nothing");
 // A personal template (the player's own 7) is used.
 const odd7 = [[[20, 30], [80, 10], [30, 95]]];
 assert.equal(read(odd7, [{ digit: 7, points: cloud(odd7) }]).digit, 7);
-console.log(`✓ sigils (${TEMPLATES.length} templates, messy ${right}/${total})`);
+// Fast enough for a phone: a read in Node stays well under 30 ms.
+const t0 = performance.now();
+for (const f of FIXTURES) for (let k = 0; k < 5; k++) read(f.strokes);
+const ms = (performance.now() - t0) / (FIXTURES.length * 5);
+assert.ok(ms < 30, `a read takes ${ms.toFixed(1)} ms`);
+console.log(`✓ sigils (${TEMPLATES.length} templates, messy ${right}/${total}, real drawings ${real.right}/${real.n} clear, ${real.unclear} unclear; handwriting variants ${safety.right}/${safety.n} right, ${(safety.unclear / safety.n * 100).toFixed(1)}% unclear, 0 wrong, ${ms.toFixed(1)} ms a read)`);

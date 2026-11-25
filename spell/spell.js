@@ -78,7 +78,7 @@ function show() {
     <div class="row">Fit <b>${pct(r.fit)}</b></div><div class="row">Ahead of the next digit by <b>${pct(r.margin)}</b></div>
     <div class="row">Matched <b>${esc(r.name)}</b></div>
     <div class="alts">Next best: ${r.others.map((o) => `${o.digit} (${pct(o.fit)})`).join(", ")}</div>
-    <div class="alts">Clear means fit ≥ ${pct(CLEAR.fit)} and ahead by ≥ ${pct(CLEAR.margin)}.</div>`;
+    <div class="alts">Clear means fit ≥ ${pct(CLEAR.fit)} and ahead by ≥ ${pct(CLEAR.margin)} (${pct(CLEAR.reversed)} when backwards).</div>`;
 }
 
 /* ---------- backwards counts ---------- */
