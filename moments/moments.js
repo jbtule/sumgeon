@@ -170,8 +170,8 @@ const SOUNDS = [
     ["Critical hit", "A hit with crits on", () => sfx.impact(true)],
     ["Miss", "A wrong answer", () => sfx.miss()],
     ["Crack", "A failed spell, a heart lost", () => sfx.crack()],
-    ["Floor cleared", "A monster beaten", () => sfx.cleared()],
-    ["Victory", "The stratum cleared", () => sfx.victory()]]]
+    ["Floor cleared", "A monster beaten (and, for now, the stratum cleared)", () => sfx.victory()],
+    ["Old floor jingle", "No longer used", () => sfx.cleared()]]]
 ];
 $("sounds").innerHTML = SOUNDS.map(([group, list], g) => `<h3>${esc(group)}</h3>` + list.map(([n, what], i) =>
   `<div class="snd"><button type="button" data-snd="${g}:${i}" aria-label="Play ${esc(n)}">▶</button><span><b>${esc(n)}</b><small>${esc(what)}</small></span></div>`).join("")).join("");

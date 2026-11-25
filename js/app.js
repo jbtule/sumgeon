@@ -680,7 +680,7 @@ function cleared() {
   const healed = G.hearts < band().hearts;
   if (healed) G.hearts++;
   record();
-  sfx.cleared();
+  sfx.victory(); // a floor cleared gets the fanfare (the user liked it better than the jingle)
   const nx = G.floors[G.floor + 1];
   const next = `<div class="cardmon">${monsterArt(nx)}</div>
   <p>Next down the stairs: <strong>${nx.n}</strong>${nx.boss ? ", the boss" : ""}.${healed ? " You found a heart (+1)." : ""}</p>`;
@@ -732,6 +732,7 @@ function end(win) {
   // Losing all your hearts curses the hero who led the run (heroes.js curseCaptain): rescue them
   // again on a rescue floor, and pick someone else to lead.
   const fallen = !win && hasCaptain() ? HEROES[team.captain] : null;
+  // A stratum cleared: the fanfare for now; it's meant to get something really big (DESIGN.md §8.3).
   if (win) { sfx.victory(); say("p", wingCleared(w)); } else say("p", monsterWon(m));
   if (fallen) say("p", heroCursed(fallen));
   if (opened) { say("p", PHRASE.unlocked); openedAll.forEach((x) => say("p", wingOpened(x))); }

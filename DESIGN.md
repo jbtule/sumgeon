@@ -349,6 +349,7 @@ Hitting a monster should feel good. Today there is a shake and a damage pop. The
 ### 8.3 Juice checklist
 - Streak meter: a chalk flame next to the hearts that grows at 3, 5 and 10.
 - Boss intro: the floor darkens, the boss name slams in, and there's a one-line taunt.
+- **A stratum cleared** should be something really, really big (to design). For now it plays the same fanfare as a floor cleared.
 - Monster idle personality: each monster gets a slightly different idle motion. Octoloop sways, Timesaur rotates a few degrees and Divvy's dots orbit.
 - Haptics: `navigator.vibrate(15)` on hits and `(40)` on misses where supported, and respect a settings toggle.
 - `prefers-reduced-motion` keeps working: no shake, projectiles replaced by fades, no particles.
