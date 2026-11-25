@@ -37,7 +37,7 @@ A math-practice dungeon crawler. The player fights anthropomorphic monsters buil
 - `sumgeon:@<id>:` holds one player's data. Every key saved there must be in `OWN_KEYS` in `store.js`, which throws on any other key.
 - Storage version 2 moved the prototype's single `sumgeon` key into the `default` player, resumably.
 - Names belong to the device. Remove only appears on a device with two or more players, never for the one playing, confirms with a second tap, and only affects this device.
-- Settings (`band`, `timer`, `sfx`, `voice`) are per player and save as they change in the menu. `ops` and `diff` are the prototype's, kept only so a player who practiced × or ÷ starts in Apprentice.
+- Settings (`band`, `sfx`, `voice`) are per player and save as they change in the menu. `ops` and `diff` are the prototype's, kept only so a player who practiced × or ÷ starts in Apprentice.
 
 ## Sound and voice
 - `sfx.js` synthesizes every effect with Web Audio. The context is created on the first tap and woken on later taps, for iOS.
@@ -68,8 +68,7 @@ A math-practice dungeon crawler. The player fights anthropomorphic monsters buil
   - A level opens when 70% of the level before is learned (box 3+). Every banded fact is one of the 633 recorded facts, so every problem has the recorded voice.
 - Hints (`hints.js`, DESIGN.md §5.3) follow how classrooms teach now: ten-frames, 10 and some more, make 10, doubles plus one, draw and cross out, think addition on a number line, arrays, doubling (×4 as double ×2, ×8 as double ×4), break apart, ×9 as ×10 minus a group, think multiplication.
   - A new fact shows its hint by itself. A fact being learned gets a 💡 button. A fact in review gets none.
-  - After a miss, the voice says "Oops!" then the right answer ("Oops! Seven plus eight is fifteen."), and the worked example opens as a card over the game: "Oops!", the fact with its answer, the drawing and the worked line, until "Got it" or Enter. The message under the monster says "Oops!" too ("Too slow!" for a timeout).
-  - The timer stops while a hint is open.
+  - After a miss, the voice says "Oops!" then the right answer ("Oops! Seven plus eight is fifteen."), and the worked example opens as a card over the game: "Oops!", the fact with its answer, the drawing and the worked line, until "Got it" or Enter. The message under the monster says "Oops!" too.
   - Hints in play show only the drawing and its words. The explanation for grown-ups (`grownups` in `hintFor`) lives on ⚙ Settings → **How the hints work**: how the game teaches, then one card per strategy (`STRATEGIES` in `hints.js`) with the game's drawing.
 - Wrong answer or timeout: the monster lunges, lose 1 of 5 hearts, and the correct answer is shown and said.
 - Clearing a floor restores 1 heart (up to the band's hearts: 7 in Sprout, 5 in Apprentice).
@@ -94,7 +93,7 @@ Runs happen in Wings (`js/wings.js`, DESIGN.md §4). Each Wing asks one band's f
 - The battle header is just the title and floor (sound is the device's volume; Settings has the on/off switches). ⏸ sits at the right of the hero-and-hearts row (or Escape): the pause card stops the clock mid-problem and offers Keep fighting (the same problem, with the time that was left), 📖 Monsters & Heroes, ⚙ Settings (without Players, since switching would end the run) and Exit the dungeon (a second tap confirms).
 - The start screen has ⚙ Settings by the title (no speaker buttons outside the problem: volume is the device's keys), then your hero, the Wings, and Enter docked at the bottom. Short phones drop the tagline so it all fits.
 - The start screen shows your hero as one line with "Change", which opens the grid of ten (the first time, the grid shows by itself). The run's end card uses the same line.
-- Settings is a list: player rows, the chalk colors in one row, on/off switches for the timer, sound effects and voice, and "How the hints work ›".
+- Settings is a list: player rows, the chalk colors in one row, on/off switches for sound effects and voice, and "How the hints work ›".
 - **Monster traits** (`js/traits.js`, DESIGN.md §3): one rule each, shown as a badge on the nameplate and explained in the message as the monster arrives. Plusquito has none (the tutorial monster).
   - Minustaur, ⚡ Charge: every 4th problem on the floor is charged (⚡ by the problem); a miss on it costs 2 hearts.
   - Timesaur, 🛡️ Armor: hits under 10 do half damage.
@@ -105,7 +104,7 @@ Runs happen in Wings (`js/wings.js`, DESIGN.md §4). Each Wing asks one band's f
   - Cursed digits, 🍀 Lucky Number: answers with their digit hit double.
 - **Digit heroes** (`js/heroes.js`, DESIGN.md §6.6): Zeroic (0), Onesie, Twodini, Threasure Hunter, Sir Fourtress, High Five, Sixlock Holmes, Sevenstein, Chef Eight, Nine-ja (9).
   - The start screen asks for a hero first, and the end-of-run card offers the hero picker again. The first pick can be any of the ten; after that, any hero on the team (picked or rescued) can lead a run. **Losing all your hearts curses the hero who led the run** (`curseCaptain` in `heroes.js`): it leaves the team, to be rescued again on a rescue floor, and the end card asks who leads next from the rest of the team, or from all ten when nobody is left (`freePick`, `pickHero`). Saved under `heroes`: `{ captain, color, rescued: [digits] }`.
-  - The start screen holds only the hero, the Wings, "Enter the dungeon" and a ⚙ Settings link. Settings (as in Sound Box) holds Players (names optional, "Player 2" when blank), chalk color, the timer and sounds.
+  - The start screen holds only the hero, the Wings, "Enter the dungeon" and a ⚙ Settings link. Settings (as in Sound Box) holds Players (names optional, "Player 2" when blank), chalk color and sounds.
   - A right answer's digits fly at the monster: team digits as their hero, the rest as chalk numbers.
   - The captain's digit in the answer is a power hit (+50%). Each rescued hero in the answer adds 10%, up to 30%.
   - The rescue floor holds the lowest digit not yet free (never the captain), cursed. *Lucky Number*: answers with its digit hit double. Beating it frees the hero. Once all nine are free, it's a regular floor.
@@ -113,7 +112,7 @@ Runs happen in Wings (`js/wings.js`, DESIGN.md §4). Each Wing asks one band's f
 
 ## Settings
 - Band: Sprout or Apprentice (per player). Changing band starts a fresh dungeon.
-- Optional countdown timer: 15 s in Sprout, 12 s in Apprentice.
+- No timer: the prototype's countdown was removed until there's a plan for it (a saved `timer` setting is ignored).
 - Sound effects and voice.
 - Settings and best floor are saved per player (see Players and saving).
 

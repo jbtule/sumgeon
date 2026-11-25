@@ -35,7 +35,7 @@ The current Easy, Medium and Hard settings become difficulty levels *inside* a b
 - The target player is a **pre-reader who reads numbers and symbols fluently**. Problems are plain numerals and symbols, the same as in every other band. Only the *words* need help: every instruction, button and menu gets an icon, and can be read aloud with `speechSynthesis`. Reading problems aloud is available but not needed.
 - Hearts stay, at 7 instead of 5. Losing a run is fine at this age as long as the copy is kind and the next run starts right away.
 - **No multiple choice in any band.** Every answer is typed, so the player has to work it out rather than recognize or guess it.
-- No timer by default. Pressure stops young kids from learning.
+- No timer by default. Pressure stops young kids from learning. (The prototype's optional countdown was removed on 2026-11-24 until there's a plan for it; the timer ideas below are parked.)
 - Use bigger touch targets (≥ 64 px) and fewer buttons on screen at once.
 - Show a visual model next to the numbers: dot groups for 3 + 4 and a ten-frame for make-ten.
 
