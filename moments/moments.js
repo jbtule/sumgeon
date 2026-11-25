@@ -26,7 +26,9 @@ function save() { try { localStorage.setItem(STORE, JSON.stringify(marks)); } ca
 const keyOf = (m) => m.hero + "|" + m.quip;
 
 // Every moment Play all runs through: each hero's quips. (The two big ones are in each hero's Quip list.)
-const ALL = HEROES.flatMap((h) => QUIPS[h.d].map((q) => ({ hero: h.d, quip: q })));
+// Every line: each hero's quips, then the boss-finishing lines and "Critical math!", said by the heroes in turn.
+const ALL = HEROES.flatMap((h) => QUIPS[h.d].map((q) => ({ hero: h.d, quip: q })))
+  .concat(FINALS.concat([CRIT]).map((q, i) => ({ hero: i % 10, quip: q })));
 
 /* ---------- picking ---------- */
 const opts = { speed: 1, reduced: false, step: false };
@@ -56,7 +58,7 @@ document.querySelectorAll("[data-step]").forEach((b) => (b.onclick = () => { opt
 function pressed(sel, on) { document.querySelectorAll(sel).forEach((b) => b.setAttribute("aria-pressed", String(b === on))); }
 
 /* ---------- playing ---------- */
-let playing = false, allQueue = null, nextGate = null, current = null;
+let playing = false, nextGate = null, current = null;
 // Plays the picked moment. Resolves true when it ran to the end.
 async function play() {
   if (playing) return false;
@@ -94,23 +96,43 @@ $("next").onclick = () => { wake(); if (nextGate) nextGate(); };
 setInterval(() => { const a = sfx.status(); $("sound").textContent = `Sound effects: ${a.state || "not started"} · ${a.played} played${a.error ? " · " + a.error : ""}`; }, 500);
 
 // Play all: every hero's quips, one after another, with a short gap.
-$("playAll").onclick = async () => {
-  wake();
-  if (playing || allQueue) return;
-  allQueue = ALL.slice();
-  $("playAll").hidden = true; $("stopAll").hidden = false;
-  while (allQueue && allQueue.length) {
-    const m = allQueue.shift();
+// Play all: every line, one after another, with a short gap. Pause stops after the moment
+// playing, and Resume carries on from the next one; Restart goes back to the first. Where it got
+// to is kept on this device. Space pauses or resumes.
+const POS_KEY = "sumgeon:moments:pos";
+let pos = 0, runningAll = false;
+try { pos = Math.min(ALL.length, Math.max(0, +localStorage.getItem(POS_KEY) || 0)); } catch (e) { /* no storage */ }
+const keepPos = () => { try { localStorage.setItem(POS_KEY, String(pos)); } catch (e) { /* no storage */ } };
+function allButtons() {
+  const started = pos > 0 && pos < ALL.length;
+  $("playAll").hidden = runningAll; $("stopAll").hidden = !runningAll; $("restartAll").hidden = runningAll || !started;
+  $("playAll").textContent = started ? `▶ Resume (${pos + 1} of ${ALL.length})` : "▶ Play all";
+}
+async function playAll() {
+  if (playing || runningAll) return;
+  if (pos >= ALL.length) pos = 0;
+  runningAll = true; allButtons();
+  while (runningAll && pos < ALL.length) {
+    const m = ALL[pos++]; keepPos();
     $("hero").value = String(m.hero); quipOptions(); $("quip").value = m.quip; scene();
     await play();
-    if (!allQueue) break;
+    if (!runningAll) break;
     await new Promise((r) => setTimeout(r, 600));
     if (flagging) await new Promise((r) => (afterFlag = r));
   }
-  stopAll();
-};
-function stopAll() { allQueue = null; $("playAll").hidden = false; $("stopAll").hidden = true; }
+  if (pos >= ALL.length) { pos = 0; keepPos(); }
+  runningAll = false; allButtons();
+}
+function stopAll() { runningAll = false; allButtons(); }
+$("playAll").onclick = () => { wake(); playAll(); };
 $("stopAll").onclick = () => { stopAll(); stopSpeech(); };
+$("restartAll").onclick = () => { wake(); pos = 0; keepPos(); playAll(); };
+document.addEventListener("keydown", (e) => {
+  if (e.code !== "Space" || e.repeat || flagging || /INPUT|TEXTAREA|SELECT/.test(e.target.tagName)) return;
+  e.preventDefault();
+  if (runningAll) { stopAll(); stopSpeech(); } else { wake(); playAll(); }
+});
+allButtons();
 
 /* ---------- the moments played ---------- */
 let recent = [];
