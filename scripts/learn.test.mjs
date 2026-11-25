@@ -122,4 +122,6 @@ console.log(`✓ learn (Sprout ${pool("sprout").length} facts, Apprentice ${pool
   const plain = share({}), biased = share({ digit: 3, digitShare: 0.35 }), off = share({ digit: 3, digitShare: 0 });
   assert.ok(biased > plain + 0.15, `the captain's digit comes up more (${plain.toFixed(2)} → ${biased.toFixed(2)})`);
   assert.ok(Math.abs(off - plain) < 0.05, "no share, no bias");
+  const held = share({ digit: 3, avoidDigitShare: 0.85 });
+  assert.ok(held < plain / 3, `the first fight holds the captain's digit back (${plain.toFixed(2)} → ${held.toFixed(2)})`);
 }

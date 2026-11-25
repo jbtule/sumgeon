@@ -233,6 +233,13 @@ export function choose(bandKey, recs, opts) {
     const mine = open.filter((f) => String(f.ans).includes(String(opts.digit)));
     if (mine.length) open = mine;
   }
+  // Or the other way (opts.avoidDigitShare): answers without it, when there are any. The first
+  // fight uses this, since it has no Hero Moments: the captain's digit is saved for the fight
+  // after, where its first answer is the captain's first moment.
+  if (opts.digit != null && opts.avoidDigitShare && rnd() < opts.avoidDigitShare) {
+    const other = open.filter((f) => !String(f.ans).includes(String(opts.digit)));
+    if (other.length) open = other;
+  }
   const fresh = open.filter((f) => !recs[f.key] || !recs[f.key].n);
   const learning = open.filter((f) => recs[f.key] && recs[f.key].n && recs[f.key].b <= 2);
   const due = open.filter((f) => { const r = recs[f.key]; return r && r.b >= 3 && now - r.t >= DUE_MS[r.b]; });

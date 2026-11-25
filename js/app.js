@@ -355,7 +355,7 @@ function newProblem() {
   const probe = !due && !spell && f.on && f.cool <= 0 ? probeKey(bk, recs, null, G.recent, avoidAns, f.leap) : null;
   const key = spell || probe || choose(bk, recs, { now: Date.now(), recent: G.recent, retry: due ? due.key : null, op, like: prefers(m), depth: G.depth, avoidAns,
     // At depth 1, about a third of problems lean to answers with the captain's digit (CAPTAIN_BIAS).
-    digit: team.captain, digitShare: G.depth === 1 ? CAPTAIN_BIAS : 0 });
+    digit: team.captain, digitShare: firstFight() ? 0 : G.depth === 1 ? CAPTAIN_BIAS : 0, avoidDigitShare: firstFight() ? CAPTAIN_HOLD : 0 });
   // Charge (Minustaur): every 4th problem on the floor, a miss costs 2 hearts.
   G.charged = charged(m, G.onFloor++);
   $("charge").hidden = !G.charged;
@@ -462,7 +462,7 @@ const TEAMUP_ALWAYS = new URLSearchParams(location.search).has("teamup"), MOMENT
 let MS = freshMoments(), MR = freshRun();
 function momentFor(typed, critStart, bossFinish) {
   const sp = G.cur.spell ? (G.cur.reversed ? "backwards" : G.cur.howTo ? "show" : "good") : null;
-  const first = !Object.values(seen).some((s) => s.beaten > 0); // nothing beaten yet: the first fight
+  const first = firstFight(); // nothing beaten yet: the first fight
   const mo = decideMoment(MS, MR, { typed, team, hinted: G.hinted, spell: sp, first, floor: G.floor, n: G.tries, bossFinish, critStart, always: MOMENTS_ALWAYS, teamup: TEAMUP_ALWAYS });
   if (mo) store.player(PID).set("moments", MS);
   return mo;
@@ -1260,6 +1260,10 @@ const flows = {};
 function flowOf(bk) { return (flows[PID + ":" + bk] ||= { fluent: 0, cool: 0, hist: [], on: false, leap: 1 }); }
 // At depth 1, the share of problems that prefer an answer with the captain's digit (learn.js choose).
 const CAPTAIN_BIAS = 0.35;
+// In the first fight (nothing beaten yet, so no Hero Moments), the share that avoid it instead,
+// so the captain's first answer, and its first moment, come in the fight after.
+const CAPTAIN_HOLD = 0.85;
+const firstFight = () => !Object.values(seen).some((s) => s.beaten > 0);
 const SPELL_SHARE = 1 / 6, SPELLS_ALWAYS = new URLSearchParams(location.search).has("spells");
 const canSpell = () => SPELLS_ALWAYS || matchMedia("(any-pointer: coarse)").matches;
 const spellsOf = () => Object.assign({ templates: {}, reversed: {}, cast: 0 }, store.player(PID).get("spells", {}));
