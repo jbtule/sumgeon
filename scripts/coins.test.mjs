@@ -13,9 +13,13 @@ assert.deepEqual(factOf("¢1,0,0,2"), coinFact({ q: 1, d: 0, n: 0, p: 2 }));
 // Levels open in teaching order: pennies first.
 const p = pool("coins");
 assert.equal(p.length, fs.length);
-assert.deepEqual(COIN_LEVELS.map((_, i) => p.filter((f) => f.level === i).length), [10, 3, 9, 29, 47]);
+assert.deepEqual(COIN_LEVELS.map((_, i) => p.filter((f) => f.level === i).length), [5, 4, 9, 29, 47]);
 assert.equal(openLevel("coins", {}), 0);
-assert.match(choose("coins", {}, { now: 0, rnd: () => 0.5 }), /^¢0,0,0,\d+$/, "a new player counts pennies");
+assert.match(choose("coins", {}, { now: 0, rnd: () => 0.5 }), /^¢0,0,0,[2-6]$/, "a new player counts pennies");
+// Half the pennies learned opens "Each coin" (strands open at 50%, not 70%).
+const recs = {};
+p.filter((f) => f.level === 0).slice(0, 3).forEach((f) => (recs[f.key] = { b: 3, n: 2, c: 2, ms: 2000, t: 0 }));
+assert.equal(openLevel("coins", recs), 1);
 // Drawing and words.
 const s = coinsSvg(dimeNickel3.coins);
 assert.ok(s.startsWith("<svg") && (s.match(/<circle/g) || []).length >= 5 && !/undefined|NaN/.test(s));
