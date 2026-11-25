@@ -1,6 +1,6 @@
 // Coins (Trollar): the facts, their levels, the drawing and the spoken lines.
 import assert from "node:assert/strict";
-import { coinFacts, coinFact, coinsSvg, coinWords, COIN_LEVELS } from "../js/coins.js";
+import { coinFacts, coinFact, findFact, pileOf, coinsSvg, coinWords, COIN_LEVELS } from "../js/coins.js";
 import { pool, factOf, openLevel, choose } from "../js/learn.js";
 import { spokenProblem, spokenFact } from "../js/problems.js";
 import { hintFor } from "../js/hints.js";
@@ -10,25 +10,51 @@ assert.equal(new Set(fs.map((f) => f.key)).size, fs.length, "each coin fact once
 const dimeNickel3 = coinFact({ q: 0, d: 1, n: 1, p: 3 });
 assert.deepEqual([dimeNickel3.ans, dimeNickel3.q, dimeNickel3.key], [18, "10 + 5 + 1 + 1 + 1", "¢0,1,1,3"]);
 assert.deepEqual(factOf("¢1,0,0,2"), coinFact({ q: 1, d: 0, n: 0, p: 2 }));
-// Levels open in teaching order: pennies first.
+// Find the coin: "How many quarters?" in a mixed pile.
+const q2 = findFact("q", { q: 2, d: 1, n: 1, p: 0 });
+assert.deepEqual([q2.ans, q2.key], [2, "¢?q:2,1,1,0"]);
+assert.deepEqual(factOf(q2.key), q2);
+assert.equal(spokenProblem(q2), "How many quarters?");
+assert.equal(spokenFact(q2), "There are two quarters.");
+assert.equal(spokenFact(findFact("p", { q: 1, d: 1, n: 0, p: 1 })), "There is one penny.");
+// One coin, heads or tails: the voice asks its worth without naming it.
+const dimeBack = coinFact({ q: 0, d: 1, n: 0, p: 0 }, true);
+assert.deepEqual([dimeBack.ans, dimeBack.key, dimeBack.tails], [10, "¢t0,1,0,0", true]);
+assert.deepEqual(factOf("¢t0,1,0,0"), dimeBack);
+assert.equal(spokenProblem(dimeBack), "How many cents?");
+assert.equal(spokenFact(dimeBack), "This is a dime. A dime is small and silver. It's worth ten cents.");
+assert.equal(spokenFact(coinFact({ q: 0, d: 0, n: 0, p: 1 })), "This is a penny. A penny is small and brown. It's worth one cent.");
+// The pile: a single coin shows the side asked; a pile to find coins in is shuffled, sides mixed.
+let r = 0; const rnd = () => ((r = (r * 9301 + 49297) % 233280) / 233280);
+assert.deepEqual(pileOf(dimeBack, rnd), [{ k: "d", tails: true }]);
+const pile = pileOf(q2, rnd);
+assert.equal(pile.filter((c) => c.k === "q").length, 2);
+assert.deepEqual(pileOf(dimeNickel3).map((c) => c.k).join(""), "dnppp", "counted biggest first, heads up");
+// Levels open in teaching order: find the coin, each coin's worth, then counting.
 const p = pool("coins");
 assert.equal(p.length, fs.length);
-assert.deepEqual(COIN_LEVELS.map((_, i) => p.filter((f) => f.level === i).length), [5, 4, 9, 29, 47]);
+assert.deepEqual(COIN_LEVELS.map((_, i) => p.filter((f) => f.level === i).length), [36, 8, 5, 9, 29, 47]);
 assert.equal(openLevel("coins", {}), 0);
-assert.match(choose("coins", {}, { now: 0, rnd: () => 0.5 }), /^¢0,0,0,[2-6]$/, "a new player counts pennies");
-// Half the pennies learned opens "Each coin" (strands open at 50%, not 70%).
+assert.match(choose("coins", {}, { now: 0, rnd: () => 0.5 }), /^¢\?[qdnp]:/, "a new player finds coins");
+// Half the finding learned opens "Each coin" (strands open at 50%, not 70%).
 const recs = {};
-p.filter((f) => f.level === 0).slice(0, 3).forEach((f) => (recs[f.key] = { b: 3, n: 2, c: 2, ms: 2000, t: 0 }));
+p.filter((f) => f.level === 0).slice(0, 18).forEach((f) => (recs[f.key] = { b: 3, n: 2, c: 2, ms: 2000, t: 0 }));
 assert.equal(openLevel("coins", recs), 1);
 // Drawing and words.
 const s = coinsSvg(dimeNickel3.coins);
 assert.ok(s.startsWith("<svg") && (s.match(/<circle/g) || []).length >= 5 && !/undefined|NaN/.test(s));
+// Every coin's back draws, and a ring marks the coins to find.
+const backs = coinsSvg(["q", "d", "n", "p"].map((k) => ({ k, tails: true })), { labels: true });
+assert.ok(!/undefined|NaN/.test(backs) && (backs.match(/<g /g) || []).length === 4);
+assert.equal((coinsSvg(pile, { ring: "q" }).match(/#ffc93c/g) || []).length, 2);
+assert.match(coinsSvg(pile), /aria-label="two quarters, one dime and one nickel"/);
 assert.equal(coinWords({ q: 0, d: 2, n: 0, p: 3 }), "two dimes and three pennies");
 assert.equal(spokenProblem(dimeNickel3), "one dime, one nickel and three pennies. How many cents?");
 assert.equal(spokenFact(dimeNickel3), "one dime, one nickel and three pennies make eighteen cents");
-assert.equal(spokenFact(coinFact({ q: 0, d: 0, n: 0, p: 1 })), "one penny is one cent");
 // Hints: values before, the count-on after.
 assert.equal(hintFor(dimeNickel3, false).say, "Count on from the biggest coin: 10 + 5 + 1 + 1 + 1 = ?");
 assert.equal(hintFor(dimeNickel3, true).say, "Count on from the biggest coin: 10, 15, 16, 17, 18. 10 + 5 + 1 + 1 + 1 = 18");
 assert.match(hintFor(coinFact({ q: 0, d: 1, n: 0, p: 0 }), false).say, /^Penny 1¢, nickel 5¢, dime 10¢, quarter 25¢\. This coin = \?$/);
+assert.equal(hintFor(q2, false).say, "A quarter is big and silver. Look for both sides! Quarters = ?");
+assert.equal(hintFor(dimeBack, true).say, "A dime is small and silver. It's worth 10¢. This coin = 10");
 console.log("✓ coins");

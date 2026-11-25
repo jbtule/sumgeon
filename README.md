@@ -24,4 +24,5 @@ licenses:
 - The coin portraits in `js/coins.js` (Washington, Roosevelt, Jefferson, Lincoln) are traced
   from photos of US Mint coins on Wikimedia Commons, which are in the public domain as works of
   the US government: "2006 Quarter Proof.png", "Dime Obverse 13.png",
-  "Jefferson-Nickel-Unc-Obv.jpg" and "US One Cent Obv.png".
+  "Jefferson-Nickel-Unc-Obv.jpg" and "US One Cent Obv.png". The coin backs are drawn for the
+  game.

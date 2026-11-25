@@ -8,7 +8,7 @@ import { openStore, displayName } from "./store.js";
 import { PHRASE, monsterName, monsterCleared, monsterWon, heroName, heroJoins, wingCleared, wingOpened, depthLine, DEPTH_MAX_SPOKEN, reversedLine } from "./lines.js";
 import { WINGS, wingOf, runFloors, openWings, toOpen, floorStars, wingStars, depthScale, depthHP, deepest, MAP_DEPTHS } from "./wings.js";
 import { missingOf, pickBlank, filled, spokenMissing, MISSING_SHARE } from "./missing.js";
-import { coinsSvg } from "./coins.js";
+import { coinsSvg, pileOf, coinOf } from "./coins.js";
 import { read as readSigil } from "./sigil.js";
 import { traitOf, charged, prefers, hitBy, atHalf } from "./traits.js";
 import { roster, mastery, meet, beat } from "./bestiary.js";
@@ -217,19 +217,25 @@ function ansUI() {
 function probUI() {
   const p = G.cur, box = $("prob");
   if (p.blank || p.sym || p.op === "=") box.innerHTML = esc(p.q).replace("□", '<span class="blank" id="blank">?</span>');
-  else if (p.op === "¢") box.innerHTML = coinsSvg(p.coins) + " =";
+  // "How many quarters?": the pile, then "quarters = ?" with a □ that fills as you type, as a
+  // missing number does, under the pile (styles.css .game.find), so it fits a phone.
+  else if (p.op === "¢" && p.find) box.innerHTML = coinsSvg(p.pile) + `<span class="find">${coinOf(p.find).names} = <span class="blank" id="blank">?</span></span>`;
+  else if (p.op === "¢") box.innerHTML = coinsSvg(p.pile) + " =";
   else box.textContent = p.q + " =";
-  document.querySelector(".game").classList.toggle("missing", !!p.blank || !!p.sym || p.op === "=");
+  document.querySelector(".game").classList.toggle("missing", !!p.blank || !!p.sym || p.op === "=" || !!p.find);
   padUI(p.spell ? "spell" : p.sym ? "cmp" : "num");
-  document.querySelector(".game").classList.toggle("cents", p.op === "¢");
+  document.querySelector(".game").classList.toggle("cents", p.op === "¢" && !p.find);
+  document.querySelector(".game").classList.toggle("find", !!p.find);
 }
 // The facts a monster asks: its own strand (Trollar's coins) or the player's band.
 const strandOf = (m) => m.strand || st.band;
 // A problem with its answer, for the miss message and the Oops card: "3 + 4 = 7", "3 + 4 = 7"
-// for 3 + □ = 7, and "10 + 5 + 1 = 16¢" for coins (just "16¢" for one coin).
+// for 3 + □ = 7, and "10 + 5 + 1 = 16¢" for coins (just "16¢" for one coin, "2 dimes" for
+// finding them).
 function shownFact(p, ans) {
   if (p.sym) return p.q.replace("□", typeof ans === "string" && ans.startsWith("<b>") ? `<b>${esc(p.sym)}</b>` : p.sym);
   if (p.blank || p.op === "=") return filled(p, ans);
+  if (p.op === "¢" && p.find) return `${ans} ${p.ans === 1 ? coinOf(p.find).name : p.q}`;
   if (p.op === "¢") return (p.q.includes("+") ? p.q + " = " : "") + ans + "¢";
   return `${esc(p.q)} = ${ans}`;
 }
@@ -340,6 +346,8 @@ function newProblem() {
   const digit = !G.cur.sym && Number.isInteger(G.cur.ans) && G.cur.ans >= 0 && G.cur.ans <= 9;
   G.cur.spell = canSpell() && !probe && digit && (SPELLS_ALWAYS || (learned(rec) && Math.random() < SPELL_SHARE));
   G.spellFails = 0;
+  // Coins lie as they fall: sides at random (a single coin shows the side asked), a pile shuffled.
+  if (G.cur.op === "¢") G.cur.pile = pileOf(G.cur, Math.random);
   G.recent = [key].concat(G.recent).slice(0, 3);
   G.input = ""; G.busy = false; G.hinted = false; G.t0 = performance.now();
   probUI();
@@ -347,6 +355,8 @@ function newProblem() {
   ansUI();
   if ($("msg").classList.contains("bad")) setMsg("Your answer is your attack.");
   showHelp(helpFor(recs[key]));
+  // "How many dimes?" can't be read off the screen by a pre-reader, so the voice asks it.
+  if (G.cur.find) say("q", spokenProblem(G.cur), true);
 }
 function pop(t, crit) {
   const s = document.createElement("span");
