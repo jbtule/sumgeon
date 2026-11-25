@@ -145,8 +145,8 @@ function playSprite(hit) {
 // ends, false if it can't (the caller then uses the plain clip). ?herogain=<n> tries another
 // gain, ?heroecho=<0..1> another echo level.
 var heroQ = (typeof location !== "undefined") ? new URLSearchParams(location.search) : null;
-var HERO_GAIN = heroQ && heroQ.get("herogain") ? +heroQ.get("herogain") : 2.2;
-var HERO_ECHO = heroQ && heroQ.get("heroecho") ? +heroQ.get("heroecho") : 0.28;
+var HERO_GAIN = heroQ && heroQ.get("herogain") ? +heroQ.get("herogain") : 1.5;
+var HERO_ECHO = heroQ && heroQ.get("heroecho") ? +heroQ.get("heroecho") : 0.1;
 var heroBufs = {};
 function playHero(url) {
   var c = ac();
