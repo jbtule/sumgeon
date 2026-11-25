@@ -151,11 +151,14 @@ export function choose(bandKey, recs, opts) {
 }
 
 // Monster HP (DESIGN.md §5.5): the average answer of what this player is actually being asked
-// (the open levels, with the monster's operation preferred) × its hits.
+// (the open levels, with the monster's operation preferred) × its hits. app.js scales it by depth.
 export function monsterHP(m, bandKey, recs) {
   const L = openLevel(bandKey, recs), open = pool(bandKey).filter((f) => f.level <= L);
   const mine = open.filter((f) => f.op === m.op);
-  const avg = (fs) => fs.reduce((s, f) => s + f.ans, 0) / fs.length;
+  // A monster that hides a number (m.blank, Quizard) is hit by the hidden number: on average,
+  // the mean of the fact's two numbers.
+  const val = (f) => { if (!m.blank) return f.ans; const [a, b] = f.key.slice(1).split(",").map(Number); return (a + b) / 2; };
+  const avg = (fs) => fs.reduce((s, f) => s + val(f), 0) / fs.length;
   const mean = mine.length ? avg(mine) * 0.7 + avg(open) * 0.3 : avg(open);
   return Math.max(10, Math.round(mean * m.hits));
 }

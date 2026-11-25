@@ -6,7 +6,8 @@ import { BANDS, choose, factOf, record as recordAnswer, helpFor, openLevel, mons
 import { hintFor, STRATEGIES } from "./hints.js";
 import { openStore, displayName } from "./store.js";
 import { PHRASE, monsterName, monsterCleared, monsterWon, heroName, heroJoins, wingCleared, wingOpened } from "./lines.js";
-import { WINGS, wingOf, runFloors, openWings, toOpen, floorStars, wingStars, STREAK_STAR } from "./wings.js";
+import { WINGS, wingOf, runFloors, openWings, toOpen, floorStars, wingStars, STREAK_STAR, depthScale } from "./wings.js";
+import { missingOf, pickBlank, filled, spokenMissing, MISSING_SHARE } from "./missing.js";
 import { traitOf, charged, prefers, hitBy, atHalf } from "./traits.js";
 import { roster, mastery, meet, beat } from "./bestiary.js";
 import { HEROES, CHALK, heroSvg, freePick, pickHero, curseCaptain } from "./heroes.js";
@@ -119,7 +120,11 @@ function saveSettings() { store.player(PID).set("settings", st); }
 const SPEAKER = '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></svg>';
 const GEAR = '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1"/><circle cx="12" cy="12" r="6.5"/></svg>';
 $("sayProb").innerHTML = SPEAKER;
-$("sayProb").onclick = () => { if (G.cur) say("q", spokenProblem(G.cur), true); };
+$("sayProb").onclick = () => {
+  if (!G.cur) return;
+  if (G.cur.blank) say("q", spokenMissing(G.cur), true);
+  else say("q", spokenProblem(G.cur), true);
+};
 
 function whoUI() {
   const list = store.profiles(), w = $("who");
@@ -159,14 +164,28 @@ function streakUI() {
   f.setAttribute("aria-label", `${G.streak} in a row, crits on`);
 }
 function setMsg(t, c = "") { const m = $("msg"); m.textContent = t; m.className = "msg " + c; }
-function ansUI() { $("ans").textContent = G.input; }
+function ansUI() {
+  $("ans").textContent = G.input;
+  // A missing-number problem fills its □ as you type.
+  if ($("blank")) { $("blank").textContent = G.input || "?"; $("blank").classList.toggle("typed", !!G.input); }
+}
+// The problem as shown: "3 + 4 =", or with a glowing □ for a missing number ("3 + □ = 7").
+function probUI() {
+  const p = G.cur, box = $("prob");
+  if (p.blank) box.innerHTML = esc(p.q).replace("□", '<span class="blank" id="blank">?</span>');
+  else box.textContent = p.q + " =";
+  document.querySelector(".game").classList.toggle("missing", !!p.blank);
+}
+// The fact whose hint helps: for 3 + □ = 7 that's 7 − 3.
+const hintFact = () => G.cur.inverse || G.cur;
 
 // A fresh run through the current Wing: its floors, with this player's rescue floor.
 function newRun() { G.floors = runFloors(wing(), team); }
 function loadMonster(i, quiet) {
   const m = G.floors[i];
   G.floor = i;
-  G.max = G.hp = monsterHP(m, st.band, recs);
+  // Deeper floors are tougher: about 80% of the usual HP on floor 1, up to 130% for the boss.
+  G.max = G.hp = Math.round(monsterHP(m, st.band, recs) * depthScale(i, G.floors.length));
   const el = $("mon");
   el.className = "mon";
   el.innerHTML = monsterArt(m);
@@ -198,9 +217,12 @@ function newProblem() {
   G.charged = charged(m, G.onFloor++);
   $("charge").hidden = !G.charged;
   G.cur = factOf(key);
+  // Quizard hides a number in every problem; other monsters sometimes do, for facts in review.
+  const rec = recs[key];
+  if (m.blank || (rec && rec.b >= 3 && Math.random() < MISSING_SHARE)) G.cur = missingOf(G.cur, pickBlank());
   G.recent = [key].concat(G.recent).slice(0, 3);
   G.input = ""; G.busy = false; G.hinted = false; G.t0 = performance.now();
-  $("prob").textContent = G.cur.q + " =";
+  probUI();
   ansUI();
   if ($("msg").classList.contains("bad")) setMsg("Your answer is your attack.");
   showHelp(helpFor(recs[key]));
@@ -286,7 +308,7 @@ function showHelp(mode) {
   if (mode === "show") openHint(); else $("hint").hidden = true;
 }
 function openHint() {
-  const h = hintFor(G.cur, false), box = $("hint");
+  const h = hintFor(hintFact(), false), box = $("hint");
   box.innerHTML = `<div class="model">${h.model}</div><p class="hsay">${esc(h.say)}</p>`;
   box.hidden = false;
   $("hintBtn").hidden = true;
@@ -295,10 +317,10 @@ function openHint() {
 // After a miss: the worked example as a card over the game, "Oops!" and the right answer with
 // the drawing, until "Got it" (or Enter, on the focused button).
 function openWorked() {
-  const h = hintFor(G.cur, true);
+  const h = hintFor(hintFact(), true);
   $("hint").hidden = true; $("hintBtn").hidden = true;
   show(`<div class="worked"><h2>Oops!</h2>
-    <p class="worked-fact">${esc(G.cur.q)} = <b>${G.cur.ans}</b></p>
+    <p class="worked-fact">${G.cur.blank ? filled(G.cur, `<b>${G.cur.ans}</b>`) : `${esc(G.cur.q)} = <b>${G.cur.ans}</b>`}</p>
     <div class="model">${h.model}</div><p class="hsay">${esc(h.say)}</p>
     <div class="btns"><button class="big" type="button" id="gotIt">Got it</button></div></div>`, "float");
   $("gotIt").onclick = nextAfterMiss;
@@ -367,9 +389,11 @@ function miss(why) {
   sfx.miss();
   restartAnim($("mon"), "lunge");
   streakUI();
-  setMsg(`${why} ${G.cur.q} = ${G.cur.ans}${cost > 1 ? " ⚡ −2 hearts" : ""}`, "bad");
+  setMsg(`${why} ${G.cur.blank ? filled(G.cur, G.cur.ans) : `${G.cur.q} = ${G.cur.ans}`}${cost > 1 ? " ⚡ −2 hearts" : ""}`, "bad");
   say("p", PHRASE.oops, true);
-  say("q", spokenFact(G.cur));
+  // The whole fact, said out loud: "three plus four is seven".
+  const said = G.cur.fact || G.cur;
+  say("q", spokenFact(said));
   setTimeout(() => {
     sfx.crack();
     heartsUI(lost);

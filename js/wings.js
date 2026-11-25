@@ -11,7 +11,7 @@ const mon = (n) => MON.find((m) => m.n === n);
 // "pool" (any pool monster). The boss is always last.
 export const WINGS = [
   { id: "cellar", name: "The Counting Cellar", band: "sprout",
-    pool: ["Plusquito", "Minustaur"], floors: ["Plusquito", "Minustaur", "rescue", "pool"], boss: "Make-Ten Golem" },
+    pool: ["Plusquito", "Minustaur", "Quizard"], floors: ["Plusquito", "Minustaur", "rescue", "Quizard", "pool"], boss: "Make-Ten Golem" },
   { id: "tower", name: "The Tables Tower", band: "apprentice",
     pool: ["Timesaur", "Divvy", "Starbot"], floors: ["Timesaur", "Divvy", "rescue", "Starbot", "pool", "pool"], boss: "Sigma Rex" }
 ];
@@ -68,6 +68,10 @@ export function toOpen(wing, progress, recs) {
   if (!prev) return null;
   return { prev, boss: ((progress[prev.id] || {}).boss || 0) > 0, share: learnedShare(prev, recs), need: OPEN_AT };
 }
+
+// How much tougher a floor's monster is by depth: 0.8 on floor 1, rising evenly to 1.3 for the
+// boss (the last of n floors).
+export function depthScale(i, n) { return n > 1 ? 0.8 + 0.5 * i / (n - 1) : 1; }
 
 // A floor's stars (DESIGN.md §6.1): ★ cleared, ★ no hearts lost on it, ★ a streak of 5 on it.
 // Returns [cleared, noHeartsLost, streakOf5].

@@ -241,6 +241,15 @@ h1 b{color:var(--coral);font-weight:400}
 @media(prefers-reduced-motion:reduce){.cardmon.rescued{animation:none}}
 @media(prefers-reduced-motion:reduce){.mon,.mon.hit,.mon.dead,.mon.lunge,.arena.shake,.flame svg{animation:none}.mon.dead{opacity:0}.pop{animation-duration:.01s}.hearts .crack{animation:none;opacity:0}}
 
+/* Missing-number problems (Quizard): the □ glows and fills as you type, so the answer box hides */
+.blank{display:inline-block;min-width:1.1em;padding:0 .12em;border-radius:12px;border:3px dashed var(--gold);color:var(--gold);text-align:center;line-height:1.05;animation:blankglow 1.2s ease-in-out infinite alternate}
+.blank.typed{border-style:solid;animation:none}
+@keyframes blankglow{to{box-shadow:0 0 14px #ffc93c88}}
+@media(prefers-reduced-motion:reduce){.blank{animation:none}}
+.game.missing .ans{display:none}
+.game.missing .probrow{grid-column:1/-1;justify-self:center}
+@media (min-width: 760px){.game.missing .probrow{grid-column:2/-1;margin-right:16px}}
+
 /* Screens other than the battle (show() in app.js). A "page" (the menu, Settings, the book, a
    run's end) fills a phone's screen, with its buttons docked full-width at the bottom; a "float"
    (a floor cleared, a miss) floats over the game as a centered card. */
@@ -369,7 +378,8 @@ label.switch-row:focus-within{outline-offset:-3px}
 
   .hint .big{min-height:44px}
   /* Your hero and hearts sit under the number pad, on your side of the screen. */
-  .you{grid-area:you;padding:2px 4px 0;z-index:1;gap:8px}
+  .you{grid-area:you;padding:2px 4px 0;z-index:1;gap:8px;flex-wrap:nowrap}
+  .flame{white-space:nowrap;font-size:11px}
   .captain{width:26px;height:30px}
   .hearts{font-size:16px}
   .flame svg{width:18px;height:22px}

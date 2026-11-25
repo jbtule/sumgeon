@@ -5,6 +5,7 @@ import { MON } from "./monsters.js";
 import { HEROES } from "./heroes.js";
 import { WINGS, cursedMonster } from "./wings.js";
 import { facts, spokenProblem, spokenFact } from "./problems.js";
+import { missingOf, spokenMissing } from "./missing.js";
 
 export var PHRASE = {
   // The menu's intro, worded for speaking ("seven times eight", not "7 × 8").
@@ -43,6 +44,9 @@ export function spokenLines() {
   facts().forEach(function (f) {
     out.push({ kind: "q", text: spokenProblem(f) });
     out.push({ kind: "q", text: spokenFact(f) });
+    // Missing-number problems (Quizard): "three plus what is seven", hiding either number.
+    out.push({ kind: "q", text: spokenMissing(missingOf(f, "x")) });
+    out.push({ kind: "q", text: spokenMissing(missingOf(f, "y")) });
   });
   var seen = {};
   return out.filter(function (l) { var k = l.kind + ":" + l.text; if (seen[k]) return false; seen[k] = true; return true; });

@@ -5,7 +5,8 @@ import { pool } from "../js/learn.js";
 
 const cellar = WINGS[0], tower = WINGS[1];
 const run = runFloors(cellar, { captain: 5, rescued: [] }, () => 0);
-assert.equal(run.length, 5);
+assert.equal(run.length, 6);
+assert.equal(run[3].n, "Quizard", "floor 4 is Quizard");
 assert.equal(run[2].cursed, 0, "floor 3 holds the lowest digit not rescued");
 assert.ok(run[run.length - 1].boss, "the boss is last");
 assert.ok(run.every((m) => m && m.n), "every floor has a monster");
@@ -32,12 +33,17 @@ assert.deepEqual(openWings({}, recs, "sprout"), ["cellar"], "learning alone isn'
 assert.deepEqual(openWings({ cellar: { boss: 1 } }, {}, "sprout"), ["cellar"], "the boss alone isn't enough: learn the facts too");
 assert.deepEqual(openWings({ cellar: { boss: 1 } }, recs, "sprout"), ["cellar", "tower"]);
 assert.equal(toOpen(tower, {}, {}).boss, false);
+// Depth: floor 1 is easier, the boss tougher, rising evenly.
+import { depthScale } from "../js/wings.js";
+assert.equal(depthScale(0, 6), 0.8);
+assert.equal(depthScale(5, 6), 1.3);
+assert.ok(depthScale(2, 6) > depthScale(1, 6) && depthScale(1, 6) > depthScale(0, 6));
 console.log("✓ wings");
 
 // Stars.
 import { floorStars, wingStars } from "../js/wings.js";
 assert.deepEqual(floorStars(0, 5), [true, true, true]);
 assert.deepEqual(floorStars(2, 4), [true, false, false]);
-assert.deepEqual(wingStars(WINGS[0], { cellar: { stars: [3, 1, 2] } }), { got: 6, max: 15 });
+assert.deepEqual(wingStars(WINGS[0], { cellar: { stars: [3, 1, 2] } }), { got: 6, max: 18 });
 assert.deepEqual(wingStars(WINGS[1], {}), { got: 0, max: 21 });
 console.log("✓ stars");
