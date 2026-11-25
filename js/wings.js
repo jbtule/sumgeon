@@ -17,8 +17,11 @@ export const WINGS = [
   { id: "tower", name: "The Tables Tower", band: "apprentice", after: "cellar",
     pool: ["Timesaur", "Divvy", "Starbot", "Haberhasher"], floors: ["Timesaur", "Divvy", "rescue", "Starbot", "Haberhasher", "pool"], boss: "Sigma Rex" }
 ];
-// A Wing opens the next when its boss has been beaten and this share of its facts is learned.
+// A Wing opens the ones after it when its boss has been beaten and this share of its facts is
+// learned. Its depths go on below it either way.
 export const OPEN_AT = 0.6;
+// The depth map shows at least this many depths of a Wing, then grows as you go deeper.
+export const MAP_DEPTHS = 5;
 
 export const wingOf = (id) => WINGS.find((w) => w.id === id) || WINGS[0];
 

@@ -33,6 +33,8 @@ assert.deepEqual(openWings({}, recs, "sprout"), ["cellar"], "learning alone isn'
 assert.deepEqual(openWings({ cellar: { boss: 1 } }, {}, "sprout"), ["cellar"], "the boss alone isn't enough: learn the facts too");
 assert.deepEqual(openWings({ cellar: { boss: 1 } }, recs, "sprout"), ["cellar", "hall", "tower"], "the Cellar opens both the Hall and the Tower");
 assert.equal(toOpen(hall, {}, {}).prev.id, "cellar", "the Hall comes after the Cellar, and doesn't block the Tower");
+// Going deep doesn't open what's below: only mastery does.
+assert.deepEqual(openWings({ cellar: { boss: 9, depth: 10 } }, {}, "sprout"), ["cellar"]);
 assert.equal(toOpen(tower, {}, {}).boss, false);
 // Depth: floor 1 is easier, the boss tougher, rising evenly.
 import { depthScale } from "../js/wings.js";

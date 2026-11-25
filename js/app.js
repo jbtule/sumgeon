@@ -6,7 +6,7 @@ import { BANDS, choose, factOf, record as recordAnswer, helpFor, openLevel, mons
 import { hintFor, STRATEGIES } from "./hints.js";
 import { openStore, displayName } from "./store.js";
 import { PHRASE, monsterName, monsterCleared, monsterWon, heroName, heroJoins, wingCleared, wingOpened, depthLine, DEPTH_MAX_SPOKEN } from "./lines.js";
-import { WINGS, wingOf, runFloors, openWings, toOpen, floorStars, wingStars, STREAK_STAR, depthScale, depthHP, deepest } from "./wings.js";
+import { WINGS, wingOf, runFloors, openWings, toOpen, floorStars, wingStars, STREAK_STAR, depthScale, depthHP, deepest, MAP_DEPTHS } from "./wings.js";
 import { missingOf, pickBlank, filled, spokenMissing, MISSING_SHARE } from "./missing.js";
 import { coinsSvg } from "./coins.js";
 import { traitOf, charged, prefers, hitBy, atHalf } from "./traits.js";
@@ -210,9 +210,37 @@ function shownFact(p, ans) {
 const hintFact = () => G.cur.inverse || G.cur;
 
 // A fresh run through the current Wing: its floors, with this player's rescue floor.
+// The dive, down the side of the monster's box: every depth of this stratum from the top, the
+// ones cleared filled in, this run's depth marked, and two still below. It scrolls, and opens
+// with this run's depth in the middle. Dots on phones; with numbers on wider screens.
+// A depth's score: the most stars earned in one run at it, of the most a run can earn.
+const depthScore = (w, n) => ({ got: ((progress[w.id] || {}).depthStars || {})[n] || 0, max: wingStars(w, progress).max });
+function diveUI() {
+  const d = G.depth, w = wing(), last = Math.max(MAP_DEPTHS, d + 2), rows = [];
+  for (let n = 1; n <= last; n++) {
+    const sc = depthScore(w, n), score = sc.got ? `<small>★${sc.got}</small>` : "";
+    rows.push(`<li class="${n < d ? "done" : n === d ? "now" : ""}" data-n="${n}" data-score="${sc.got}" data-max="${sc.max}"><i></i><span>${n}</span>${score}</li>`);
+  }
+  const box = $("dive");
+  box.innerHTML = rows.join("");
+  box.setAttribute("aria-label", `Depth ${d} of your dive into ${wing().name}`);
+  requestAnimationFrame(() => { const now = box.querySelector(".now"); if (now) box.scrollTop = now.offsetTop - box.clientHeight / 2 + now.offsetHeight / 2; });
+}
+// Tapping a depth on the dive (on phones, where the scores don't fit) shows its score in a bubble.
+$("dive").addEventListener("click", (e) => {
+  const li = e.target.closest("li"), tip = $("diveTip");
+  if (!li) return;
+  const n = +li.dataset.n, got = +li.dataset.score;
+  tip.textContent = got ? `Depth ${n}: ★ ${got} of ${li.dataset.max}` : n < G.depth ? `Depth ${n}: cleared` : n === G.depth ? `Depth ${n}: you're here` : `Depth ${n}: not yet`;
+  const r = li.getBoundingClientRect();
+  tip.style.left = Math.round(r.right + 6) + "px"; tip.style.top = Math.round(r.top + r.height / 2) + "px";
+  tip.hidden = false; clearTimeout(tip.t); tip.t = setTimeout(() => (tip.hidden = true), 1800);
+});
 // depth: how deep into this Wing (wings.js); the deepest reached when not given.
 function newRun(depth) {
+  document.body.dataset.stratum = wing().id; // its wall and colors (styles.css)
   G.depth = depth || deepest(wing(), progress); G.floors = runFloors(wing(), team, null, G.depth);
+  diveUI();
   // The room darkens as you go deeper: 8% per depth, up to 48% at depth 7.
   document.querySelector(".game").style.setProperty("--murk", Math.min(0.48, 0.08 * (G.depth - 1)).toFixed(2));
 }
@@ -465,6 +493,10 @@ function earnStars() {
   const p = progress[wing().id] || (progress[wing().id] = { boss: 0, best: 0 });
   p.stars = p.stars || [];
   if (n > (p.stars[G.floor] || 0)) p.stars[G.floor] = n;
+  // This run's stars, and the best run at this depth (the dive's score for it).
+  G.runStars = (G.runStars || 0) + n;
+  p.depthStars = p.depthStars || {};
+  if (G.runStars > (p.depthStars[G.depth] || 0)) p.depthStars[G.depth] = G.runStars;
   store.player(PID).set("wings", progress);
   const labels = ["Cleared", "No hearts lost", `${STREAK_STAR} in a row`];
   return `<div class="stars" aria-label="${n} of 3 stars">${got.map((on, i) => `<span class="star${on ? " on" : ""}" style="--i:${i}"><b>★</b><small>${labels[i]}</small></span>`).join("")}</div>`;
@@ -612,17 +644,33 @@ function levelLine() {
   const L = openLevel(st.band, recs);
   return `Level ${L + 1} of ${band().levels.length}: ${band().levels[L].name}`;
 }
-// The Wing map: each Wing with its band, open or locked (and what opens it).
+// A stratum's depths on the map, as a shaft going down: depths cleared (filled), the deepest
+// reached ("you are here"), and the ones still below. It starts at MAP_DEPTHS rows and grows as
+// you go deeper; a long run of cleared depths folds into one row.
+function depthTrack(w, d) {
+  const last = Math.max(MAP_DEPTHS, d + 1), rows = [];
+  let first = 1;
+  if (last > 8) { first = last - 6; rows.push(`<li class="done fold"><i></i>Depths 1–${first - 1} cleared</li>`); }
+  for (let n = first; n <= last; n++) {
+    const sc = depthScore(w, n), score = sc.got ? ` <small>★ ${sc.got} of ${sc.max}</small>` : "";
+    rows.push(n < d ? `<li class="done"><i></i>Depth ${n}${score}</li>` : n === d ? `<li class="you"><i></i>Depth ${n}${score} <em>${d === 1 && !(progress[w.id] || {}).best ? "start here" : "you are here"}</em></li>` : `<li><i></i>Depth ${n}</li>`);
+  }
+  return `<ol class="shaft" aria-label="Deepest: depth ${d}">${rows.join("")}</ol>`;
+}
+// The depth map: the strata (wings.js WINGS) as rock layers under the surface, each in its own
+// texture, open or locked (and what opens it), with the deepest depth reached on the side.
 function wingsHTML() {
   const open = openWings(progress, recs, st.start);
   return WINGS.map((w) => {
     const b = BANDS[w.band], isOpen = open.includes(w.id), here = w.band === st.band, p = progress[w.id] || {};
     let note;
     const ws = wingStars(w, progress);
-    if (isOpen) note = (p.boss ? `Cleared ${p.boss}×` : p.best ? `Best: ${p.best} of ${w.floors.length + 1} floors` : "Not tried yet") + (deepest(w, progress) > 1 ? ` · Depth ${deepest(w, progress)}` : "") + (ws.got ? ` · ★ ${ws.got} of ${ws.max}` : "");
-    else { const t = toOpen(w, progress, recs); note = `🔒 Beat ${t.prev.boss}${t.boss ? " ✓" : ""} and learn ${Math.round(t.need * 100)}% of the ${t.prev.name.replace(/^The /, "")} (now ${Math.round(t.share * 100)}%)`; }
-    return `<label class="wing${here ? " here" : ""}${isOpen ? "" : " locked"}"><input type="radio" name="wing" value="${w.id}" ${here ? "checked" : ""} ${isOpen ? "" : "disabled"}>
-      <span><b>${w.name}</b><small>${b.label} · ${b.grades}</small><em>${note}</em>${here ? `<em class="level" id="levelLine">${levelLine()}</em>` : ""}</span></label>`;
+    if (isOpen) note = (p.boss ? `Cleared ${p.boss}×` : p.best ? `Best: ${p.best} of ${w.floors.length + 1} floors` : "Not tried yet") + (ws.got ? ` · ★ ${ws.got} of ${ws.max}` : "");
+    else { const t = toOpen(w, progress, recs); note = `🔒 Beat ${t.prev.boss}${t.boss ? " ✓" : ""} and learn ${Math.round(t.need * 100)}% of ${t.prev.name.replace(/^The /, "the ")} (now ${Math.round(t.share * 100)}%)`; }
+    const d = deepest(w, progress);
+    return `<label class="wing ${w.id}${here ? " here" : ""}${isOpen ? "" : " locked"}"><input type="radio" name="wing" value="${w.id}" ${here ? "checked" : ""} ${isOpen ? "" : "disabled"}>
+      <span><b>${w.name}</b><small>${b.label} · ${b.grades}</small><em>${note}</em>${here ? `<em class="level" id="levelLine">${levelLine()}</em>` : ""}
+      ${isOpen ? depthTrack(w, d) : ""}</span></label>`;
   }).join("");
 }
 // The start screen, top to bottom: the title (with ⚙ Settings), your hero, the Wings, and
@@ -634,7 +682,7 @@ function menu() {
   <p class="tag"><strong>Your answer is your attack.</strong> Get it right and your digits fly at the monster.</p>
   ${list.length > 1 ? `<p class="playing">Playing as <b>${esc(displayName(list, PID))}</b> <button class="link" type="button" id="switchPlayer">Switch</button></p>` : ""}
   ${captainHTML()}
-  <div class="grp"><span>Pick a Wing</span><div class="wings">${wingsHTML()}</div></div>
+  <div class="grp"><span>Pick a stratum</span><div class="wings strata"><div class="surface" aria-hidden="true"></div>${wingsHTML()}</div></div>
   <div class="btns"><p class="warn" id="warn" role="status"></p><button class="big" id="go">Enter the dungeon</button></div>`);
   const card = $("card");
   // A different Wing is a fresh dungeon: its own facts and hearts.
@@ -738,7 +786,7 @@ function helpPage() {
     <li><strong>New facts</strong> show their hint by themselves. While a fact is being learned, 💡 shows it on a tap. Once it's learned, the hint goes away.</li>
     <li><strong>After a miss</strong>, the worked example stays up until "Got it", and that fact comes back 2–4 problems later.</li>
     <li><strong>A hinted answer</strong> still hits the monster, but doesn't count toward learning the fact or building a streak.</li>
-    <li><strong>Wings open by mastery</strong>, not grade: beat a Wing's boss and learn 60% of its facts to open the next.</li>
+    <li><strong>Strata open by mastery</strong>, not grade: beat a stratum's boss and learn 60% of its facts to open the ones below. Each win also opens a deeper, tougher depth of the same stratum.</li>
   </ul>
   <h3 class="strats-title">The strategies</h3>
   <div class="strats">${cards}</div>
@@ -838,7 +886,7 @@ function start(depth) {
   hide();
   newRun(depth);
   if (G.depth > 1 && G.depth <= DEPTH_MAX_SPOKEN) say("p", depthLine(G.depth));
-  Object.assign(G, { hearts: band().hearts, streak: 0, solved: 0, tries: 0, running: true, retry: [], recent: [], next: false, paused: null });
+  Object.assign(G, { hearts: band().hearts, streak: 0, solved: 0, tries: 0, running: true, retry: [], recent: [], next: false, paused: null, runStars: 0 });
   stopSpeech();
   loadMonster(0);
   newProblem();

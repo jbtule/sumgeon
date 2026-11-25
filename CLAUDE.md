@@ -84,7 +84,7 @@ A math-practice dungeon crawler. The player fights anthropomorphic monsters buil
 - **Missing-number problems** (`js/missing.js`): a fact with one number hidden, like `3 + □ = 7`. The answer and the damage are the hidden number. The □ shows as a glowing "?" that fills as you type (the answer box hides), and the hint is the inverse fact's (3 + □ = 7 is 7 − 3). They use the fact's own record. Quizard asks only these; other monsters ask 15% of review facts (box 3+) this way. Spoken as "three plus what is seven", recorded for every fact.
 
 ## Wings, monsters and heroes
-Runs happen in Wings (`js/wings.js`, DESIGN.md §4). Each Wing asks one band's facts and has a monster pool, a rescue floor (floor 3) and a boss:
+Runs happen in Wings (`js/wings.js`, DESIGN.md §4), called **strata** (one **stratum**) wherever the game shows the word; the code keeps "wing". Each Wing asks one band's facts and has a monster pool, a rescue floor (floor 3) and a boss:
 
 | Wing | Band | Floors | Boss |
 |---|---|---|---|
@@ -99,6 +99,11 @@ Runs happen in Wings (`js/wings.js`, DESIGN.md §4). Each Wing asks one band's f
   - The room darkens (`--murk`, 8% per depth up to 48%).
   - Shown as "Depth 2 · Floor 1 / 6" and on the Wing map, and said as "Depth two!" (recorded to 20).
   - It keeps runs from feeling the same while the next Wing waits on mastery.
+- **The depth map** (`wingsHTML`, `depthTrack`, `.strata`): the start screen shows the strata as rock layers under a grassy surface, each in its own texture. Each open layer has a shaft of its depths going down: cleared (gold), "you are here" (coral), and the ones below. It starts at `MAP_DEPTHS` (5) rows and grows as you go deeper; after 8 rows the early cleared ones fold into one. Tap a layer to pick it. Depth never opens the next strata; only mastery does.
+- **The dive** (`diveUI`, `#dive`): during a fight, the same shaft runs down the left edge of the monster's box, every depth from 1 to two below the deepest. It scrolls (swipe it), opening with this run's depth in the middle, and fades at the ends. On phones it's dots only, and tapping one shows its score in a bubble ("Depth 3: ★ 12 of 18"); on iPad and desktop it shows the depth numbers and scores.
+- **Depth scores**: the most stars earned in one run at a depth, saved as `wings[id].depthStars[depth]` (out of 3 per floor: 18 in the Cellar and Hall, 21 in the Tower), shown on the dive and the depth map.
+- **Colors**: each stratum has its own palette to go with its wall (`body[data-stratum]` in `styles.css`: `--bg`, `--panel`, `--line`, `--btn`, `--btn2`, `--edge`, `--muted`, `--dark`): warm browns for the Cellar, blue-slate for the Hall, stone grey for the Tower. Gold and coral stay the accents. Use these variables, not fixed colors, for new UI.
+- **Walls**: each stratum has a tiling wall (inline SVG in `styles.css`: `--wall-cellar` bricks, `--wall-hall` marble tiles, `--wall-tower` big stone blocks), behind the monster in a fight (`data-stratum` on `.game`, set by `newRun`) and on its map layer. The Tables Tower is a tower that goes down.
 - A Wing opens when the Wing it comes `after` has its boss beaten and 60% of its facts learned: the Cellar opens both the Hall and the Tower. The band a player starts in (`st.start`) opens every Wing at that grade or below (`GRADE` in `wings.js`), so starting in Apprentice opens all three.
 - Per player, progress is saved under `wings`: `{ [wingId]: { boss: wins, best: floors, stars: [best stars per floor] } }`.
 - **Stars** (`floorStars` in `wings.js`, DESIGN.md §6.1): each floor awards ★ cleared, ★ no hearts lost on it, ★ a streak of 5 on it (hinted answers don't build streaks). The floor-cleared and win cards show them, and the Wing map shows each Wing's total.
