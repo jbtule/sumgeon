@@ -1,3 +1,5 @@
+import { audioContext } from "./sfx.js";
+
 // Speech, patterned on sound-box-crosswords' speech.js. say(kind, text) plays a recorded clip
 // when audio.json has one (Kokoro, recorded by scripts/audio/build.mjs), or falls back to the
 // device voice: lines without a clip, local dev, or a clip that fails to load. On iOS speech
@@ -59,7 +61,9 @@ function speak(text, rate) {
 var clips = {}, clipBase = "", player = null, finishClip = null;
 // Audio sprites (audio.json "sprites"): one file holding a group of lines (the monster and hero
 // names), decoded with Web Audio after the first tap. spriteOf["kind:text"] = { s, start, len }.
-var sprites = [], spriteOf = {}, ac = null, source = null;
+var sprites = [], spriteOf = {}, source = null;
+// The sound effects' Web Audio context (sfx.js), shared: one context is what Safari handles well.
+function ac() { return audioContext(); }
 var queue = Promise.resolve(), epoch = 0;
 // The device-voice rate each kind is spoken at.
 var RATE = { p: 0.95, m: 0.95, n: 0.95, q: 0.85 };
@@ -87,11 +91,8 @@ var SILENCE = "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAA
 function unlock() {
   document.removeEventListener("pointerdown", unlock, true);
   document.removeEventListener("keydown", unlock, true);
-  try {
-    var AC = window.AudioContext || window.webkitAudioContext;
-    if (AC && !ac) { ac = new AC(); if (ac.state !== "running") ac.resume(); }
-  } catch (e) { ac = null; }
-  loadSprites();
+  // sfx.js made the shared context on this same tap (its listener runs first).
+  setTimeout(loadSprites, 0);
   var a = getPlayer();
   if (a.src) return;
   a.src = SILENCE;
@@ -104,12 +105,13 @@ document.addEventListener("keydown", unlock, true);
 // Downloads and decodes the sprites in the background, once there's an audio context (after the
 // first tap) and audio.json has arrived. Until a sprite is ready, its lines play as single clips.
 function loadSprites() {
-  if (!ac) return;
+  var c = ac();
+  if (!c) return;
   sprites.forEach(function (s) {
     if (s.buf || s.loading) return;
     s.loading = true;
     fetch(s.url).then(function (r) { return r.ok ? r.arrayBuffer() : Promise.reject(); })
-      .then(function (data) { return new Promise(function (ok, no) { ac.decodeAudioData(data, ok, no); }); })
+      .then(function (data) { return new Promise(function (ok, no) { c.decodeAudioData(data, ok, no); }); })
       .then(function (buf) { s.buf = buf; })
       .catch(function () { s.loading = false; });
   });
@@ -118,10 +120,11 @@ function loadSprites() {
 function playSprite(hit) {
   return new Promise(function (resolve) {
     try {
-      if (ac.state !== "running") ac.resume();
-      var src = ac.createBufferSource(), done = false;
+      var c = ac();
+      if (c.state !== "running") c.resume();
+      var src = c.createBufferSource(), done = false;
       src.buffer = hit.s.buf;
-      src.connect(ac.destination);
+      src.connect(c.destination);
       function end() { if (done) return; done = true; if (source === src) { source = null; finishClip = null; } resolve(true); }
       src.onended = end;
       source = src; finishClip = function () { try { src.stop(); } catch (e) {} end(); };
@@ -161,7 +164,7 @@ export function say(kind, text, cancel) {
     if (my !== epoch) return;
     var key = clips[kind + ":" + text], hit = spriteOf[kind + ":" + text];
     if (!key) return speak(text, RATE[kind]);
-    if (hit && hit.s.buf && ac) return playSprite(hit).then(function (ok) {
+    if (hit && hit.s.buf && ac()) return playSprite(hit).then(function (ok) {
       if (!ok && my === epoch) return playClip(clipBase + key + ".mp3");
     });
     return playClip(clipBase + key + ".mp3").then(function (ok) {

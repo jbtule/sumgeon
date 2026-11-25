@@ -32,6 +32,10 @@ function unlock() {
 // some of these as a gesture that may start audio and not others, so listen to all of them.
 ["pointerdown", "pointerup", "click", "touchend", "keydown"].forEach(function (ev) { document.addEventListener(ev, unlock, true); });
 
+// The one Web Audio context, shared with the voice (speech.js plays its sprites on it): Safari
+// handles one context far more reliably than two. null until the first tap.
+export function audioContext() { return ctx; }
+
 // For the ?audio readout.
 export function status() {
   return { state: ctx ? ctx.state : "not created", rate: ctx ? ctx.sampleRate : 0, on: on, played: played, gestures: gestures, error: lastError };
@@ -41,11 +45,11 @@ export function setSfx(enabled) { on = !!enabled; }
 
 function play(fn) {
   if (!on || !ctx) return;
-  try {
-    if (ctx.state !== "running") ctx.resume().catch(function () {});
-    fn(ctx.currentTime + 0.02);
-    played++;
-  } catch (e) { lastError = "play: " + e.message; }
+  function go() { try { fn(ctx.currentTime + 0.02); played++; } catch (e) { lastError = "play: " + e.message; } }
+  // A paused context (Safari: "suspended" or "interrupted"): wake it, then play, so the sound
+  // isn't scheduled on a stopped clock.
+  if (ctx.state !== "running") { ctx.resume().then(go, function (e) { lastError = "resume: " + e.message; }); return; }
+  go();
 }
 function hz(midi) { return 440 * Math.pow(2, (midi - 69) / 12); }
 
