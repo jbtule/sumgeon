@@ -39,6 +39,7 @@ if (/localStorage\.(setItem|getItem)\(/.test(app.replace(/window\.localStorage;[
 // links to it.
 const listenHtml = readFileSync(join(root, "listen", "index.html"), "utf8");
 if (!listenHtml.includes('<meta name="robots" content="noindex, nofollow">')) fail("listen/index.html should be noindex");
+if (!/<script type="importmap">[\s\S]*?<\/script>/.test(listenHtml)) fail("listen/index.html has no import map");
 for (const s of ['<span id="buildSha">dev</span>', 'src="listen.js"']) if (listenHtml.split(s).length !== 2) fail(`listen/index.html should have ${s} exactly once (stamp.mjs fills it in)`);
 if (/listen\//.test(html) || /listen\//.test(app)) fail("the game shouldn't link to the listen check");
 

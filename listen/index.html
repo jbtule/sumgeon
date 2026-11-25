@@ -118,6 +118,12 @@
     <ul class="recent" id="recent" aria-label="Recently played"></ul>
   </section>
 </main>
+<!-- The game's modules, stamped with the deployed commit by scripts/stamp.mjs, so a deploy's
+     line list always matches its audio.json (an old cached js/lines.js showed new lines as
+     "not recorded yet"). Locally it's empty and the plain files load. -->
+<script type="importmap">
+{ "imports": {} }
+</script>
 <script type="module" src="listen.js"></script>
 </body>
 </html>
