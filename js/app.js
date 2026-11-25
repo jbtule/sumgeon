@@ -210,16 +210,16 @@ function shownFact(p, ans) {
 const hintFact = () => G.cur.inverse || G.cur;
 
 // A fresh run through the current Wing: its floors, with this player's rescue floor.
-// The dive, down the side of the monster's box: this stratum's depths from the top, the ones
-// cleared filled in, this run's depth marked, and a few still below. Dots on phones; with
-// numbers on wider screens.
+// The dive, down the side of the monster's box: every depth of this stratum from the top, the
+// ones cleared filled in, this run's depth marked, and two still below. It scrolls, and opens
+// with this run's depth in the middle. Dots on phones; with numbers on wider screens.
 function diveUI() {
-  const d = G.depth, last = Math.max(MAP_DEPTHS, d + 2), first = Math.max(1, last - 7), rows = [];
-  if (first > 1) rows.push('<li class="more" aria-hidden="true"><span>…</span></li>');
-  for (let n = first; n <= last; n++) rows.push(`<li class="${n < d ? "done" : n === d ? "now" : ""}"><i></i><span>${n}</span></li>`);
+  const d = G.depth, last = Math.max(MAP_DEPTHS, d + 2), rows = [];
+  for (let n = 1; n <= last; n++) rows.push(`<li class="${n < d ? "done" : n === d ? "now" : ""}"><i></i><span>${n}</span></li>`);
   const box = $("dive");
   box.innerHTML = rows.join("");
   box.setAttribute("aria-label", `Depth ${d} of your dive into ${wing().name}`);
+  requestAnimationFrame(() => { const now = box.querySelector(".now"); if (now) box.scrollTop = now.offsetTop - box.clientHeight / 2 + now.offsetHeight / 2; });
 }
 // depth: how deep into this Wing (wings.js); the deepest reached when not given.
 function newRun(depth) {

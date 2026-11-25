@@ -302,22 +302,25 @@ h1 b{color:var(--coral);font-weight:400}
 .game[data-stratum="hall"],.wing.hall{--wall:var(--wall-hall)}
 .game[data-stratum="tower"],.wing.tower{--wall:var(--wall-tower)}
 
-/* The dive (diveUI): this stratum's depths down the side of the monster's box. */
-.dive{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;justify-content:space-between;position:relative;z-index:1;pointer-events:none}
-.dive::before{content:"";position:absolute;left:6px;top:6px;bottom:6px;width:2px;background:linear-gradient(#f3efe455 70%,#f3efe400)}
-.dive li{position:relative;display:flex;align-items:center;gap:6px;min-height:12px}
-.dive i{flex:none;width:14px;height:14px;border-radius:50%;border:2px solid #f3efe466;background:#0c171c;transform:scale(.8)}
+/* The dive (diveUI): this stratum's depths down the side of the monster's box. It scrolls, with
+   the line drawn per row so it runs the whole way, and fades at the ends. */
+.dive{list-style:none;margin:0;padding:6px 0;display:flex;flex-direction:column;position:relative;z-index:1;overflow-y:auto;overscroll-behavior:contain;touch-action:pan-y;scrollbar-width:none;
+  -webkit-mask-image:linear-gradient(#0000,#000 14%,#000 86%,#0000);mask-image:linear-gradient(#0000,#000 14%,#000 86%,#0000)}
+.dive::-webkit-scrollbar{display:none}
+.dive li{position:relative;flex:none;display:flex;align-items:center;gap:6px;height:26px;padding-left:4px}
+.dive li::before{content:"";position:absolute;left:10px;top:0;bottom:0;width:2px;background:#f3efe444}
+.dive li:first-child::before{top:50%}
+.dive li.done::before{background:var(--gold)}
+.dive i{position:relative;flex:none;width:14px;height:14px;border-radius:50%;border:2px solid #f3efe466;background:#0c171c;transform:scale(.8)}
 .dive li.done i{background:var(--gold);border-color:var(--gold)}
 .dive li.now i{background:var(--coral);border-color:#fff;transform:scale(1.15);box-shadow:0 0 10px #ff5a4ecc;animation:divepulse 1.6s ease-in-out infinite}
-.dive span{font:400 11px Bungee,sans-serif;color:#f3efe488;display:none}
+.dive span{position:relative;font:400 11px Bungee,sans-serif;color:#f3efe488;display:none}
 .dive li.done span{color:var(--gold)}
 .dive li.now span{color:#fff}
-.dive li.more{min-height:8px}
-.dive li.more span{display:block;padding-left:2px}
 @keyframes divepulse{50%{box-shadow:0 0 16px #ff5a4e}}
 @media(prefers-reduced-motion:reduce){.dive li.now i{animation:none}}
-@media (max-width: 759px){.dive{grid-area:stage;justify-self:start;align-self:stretch;margin:8px 0 14px 6px;width:16px}}
-@media (min-width: 760px){.dive{grid-area:stage;justify-self:start;align-self:stretch;margin:64px 0 20px 14px;width:46px}.dive span{display:block}}
+@media (max-width: 759px){.dive{grid-area:stage;justify-self:start;align-self:stretch;margin:4px 0 10px 2px;width:28px}}
+@media (min-width: 760px){.dive{grid-area:stage;justify-self:start;align-self:stretch;margin:64px 0 20px 12px;width:52px}.dive span{display:block}}
 
 /* Screens other than the battle (show() in app.js). A "page" (the menu, Settings, the book, a
    run's end) fills a phone's screen, with its buttons docked full-width at the bottom; a "float"
