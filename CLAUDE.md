@@ -77,6 +77,7 @@ A math-practice dungeon crawler. The player fights anthropomorphic monsters buil
 - **Placement:** a fact seen for the first time and answered right, fast (under the band's `fluentMs`) and unhinted is already known and goes straight to box 3 (learned), so a fluent player isn't held back.
   - Each problem is about 60% learning facts (box 0–2, box 0 favored), 25% review facts that are due (box 3 after 10 minutes, box 4 after a day), and 15% new facts from the newest open level. The monster's operation is preferred 70% of the time. The last 3 facts don't repeat.
   - A missed fact comes back 2–4 problems later.
+  - **Variety:** a problem never has the same answer as either of the last two when there's another choice (`avoidAns` in `choose` and `probeKey`). The teen subtraction facts all equal 10, and with Minustaur preferring − they came up in a row.
 - Bands (`BANDS`) replace the prototype's operations and Easy/Medium/Hard:
   - **Sprout** (K–1st, 7 hearts): within 5 → within 10 → 10 and some more → within 20.
   - **Apprentice** (2nd–3rd, 5 hearts): within 20 → ×2, 5, 10 → ÷ → ×3, 4 → ÷ → ×6–9 → ÷ → ×÷ 11, 12.

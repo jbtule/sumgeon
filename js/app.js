@@ -318,13 +318,16 @@ function newProblem() {
   if (due) G.retry.splice(G.retry.indexOf(due), 1);
   const m = G.floors[G.floor];
   // Skipping ahead: while you answer fluently, each problem is a probe from the next tier.
-  const f = G.flow, probe = !due && f.fluent >= 2 && f.cool <= 0 ? probeKey(strandOf(m), recs, null, G.recent) : null;
-  const key = probe || choose(strandOf(m), recs, { now: Date.now(), recent: G.recent, retry: due ? due.key : null, op: m.op === "mix" || m.strand ? null : m.op, like: prefers(m), depth: G.depth });
+  // And not the same answer as the last two, when there's a choice.
+  const f = G.flow, avoidAns = G.recentAns || [];
+  const probe = !due && f.fluent >= 2 && f.cool <= 0 ? probeKey(strandOf(m), recs, null, G.recent, avoidAns) : null;
+  const key = probe || choose(strandOf(m), recs, { now: Date.now(), recent: G.recent, retry: due ? due.key : null, op: m.op === "mix" || m.strand ? null : m.op, like: prefers(m), depth: G.depth, avoidAns });
   // Charge (Minustaur): every 4th problem on the floor, a miss costs 2 hearts.
   G.charged = charged(m, G.onFloor++);
   $("charge").hidden = !G.charged;
   G.cur = factOf(key);
   G.cur.probe = !!probe;
+  G.recentAns = [G.cur.ans].concat(G.recentAns || []).slice(0, 2);
   // Quizard hides a number in every problem; other monsters sometimes do, for facts in review.
   const rec = recs[key];
   // (Not for a strand's facts: coins can't hide a number, and two-digit ones aren't recorded that way.)
