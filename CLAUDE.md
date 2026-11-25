@@ -116,6 +116,7 @@ Runs happen in Wings (`js/wings.js`, DESIGN.md §4), called **strata** (one **st
 | The Tables Tower | Apprentice | Timesaur, Divvy, rescue, Starbot, Haberhasher, pool | Sigma Rex |
 
 - **Depth** (`depthHP`, `deepest` in `wings.js`): beating a Wing's boss opens its next depth, saved as `wings[id].depth` (the deepest reached). The win card's main button is **Go deeper** (depth + 1), with Play again (same depth) and Menu; a loss offers Try again. "Enter the dungeon" starts at the deepest depth.
+- **A new stratum unlocked** (`end` in `app.js`): when a run opens a stratum, the end card shows "🔓 New stratum unlocked!" with its name (both, when the Cellar opens the Hall and the Tower), the voice says "New stratum unlocked!" and "The … is open!", and the main button is **Enter the …** (the easiest one opened, at depth 1), with Go deeper below it.
   - Each depth is tougher: HP × (1 + 0.15 per depth).
   - Every floor but the rescue floor and the boss is drawn from the pool, never the same monster twice in a row.
   - More of the newest problems: `choose`'s fresh share goes from 15% to 35%.

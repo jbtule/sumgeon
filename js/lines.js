@@ -19,6 +19,7 @@ export var PHRASE = {
   oops: "Oops!",
   crack: "The curse is cracking!",
   skip: "You already know these. Skipping ahead!",
+  unlocked: "New stratum unlocked!",
   spell: "Cast a spell!",
   spellFail: "Incantation failed!",
   win: "You cleared the Sumgeon!"
