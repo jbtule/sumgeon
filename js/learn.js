@@ -42,7 +42,7 @@ export const BANDS = {
   // A strand, not a band: the coin problems Trollar asks, from whichever Wing he's in. It has
   // its own levels and records, and nobody plays it as their band.
   coins: { label: "Coins", strand: true, hearts: 7, fluentMs: 5000, facts: coinFacts, levels: COIN_LEVELS },
-  // Two-digit + and − within 100 (2nd grade), asked by Hashbrown in the Tables Tower.
+  // Two-digit + and − within 100 (2nd grade), asked by Haberhasher in the Tables Tower.
   place: { label: "Two-digit", strand: true, hearts: 5, fluentMs: 6000, facts: twoDigitFacts, levels: TWO_LEVELS }
 };
 export const UNLOCK = 0.7;

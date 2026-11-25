@@ -8,7 +8,7 @@ export const TRAITS = {
   "Divvy": { icon: "✂️", name: "Split", text: "Splits in two at half HP" },
   "Quizard": { icon: "❓", name: "Mystery", text: "Hides a number: find the one that's missing" },
   "Trollar": { icon: "🪙", name: "Toll", text: "Pays only in coins: count them up" },
-  "Hashbrown": { icon: "🔢", name: "Tens and ones", text: "Asks two-digit sums and differences" },
+  "Haberhasher": { icon: "🔢", name: "Tens and ones", text: "Asks two-digit sums and differences" },
   "Starbot": { icon: "⭐", name: "Stripes", text: "Loves the ×5 and ×10 tables" },
   "Make-Ten Golem": { icon: "🔟", name: "Ten Smash", text: "Answers of 10 or more smash it for double" },
   "Sigma Rex": { icon: "👑", name: "Second wind", text: "Armors up at half HP" }

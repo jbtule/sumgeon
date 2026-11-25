@@ -13,7 +13,7 @@ export const WINGS = [
   { id: "cellar", name: "The Counting Cellar", band: "sprout",
     pool: ["Plusquito", "Minustaur", "Quizard", "Trollar"], floors: ["Plusquito", "Minustaur", "rescue", "Quizard", "Trollar"], boss: "Make-Ten Golem" },
   { id: "tower", name: "The Tables Tower", band: "apprentice",
-    pool: ["Timesaur", "Divvy", "Starbot", "Hashbrown"], floors: ["Timesaur", "Divvy", "rescue", "Starbot", "Hashbrown", "pool"], boss: "Sigma Rex" }
+    pool: ["Timesaur", "Divvy", "Starbot", "Haberhasher"], floors: ["Timesaur", "Divvy", "rescue", "Starbot", "Haberhasher", "pool"], boss: "Sigma Rex" }
 ];
 // A Wing opens the next when its boss has been beaten and this share of its facts is learned.
 export const OPEN_AT = 0.6;

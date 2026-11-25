@@ -1,4 +1,4 @@
-// Two-digit + and − (Hashbrown): the fixed sample, its levels, and the hints.
+// Two-digit + and − (Haberhasher): the fixed sample, its levels, and the hints.
 import assert from "node:assert/strict";
 import { twoDigitFacts, TWO_LEVELS } from "../js/twodigit.js";
 import { pool, openLevel, choose, keyOf } from "../js/learn.js";

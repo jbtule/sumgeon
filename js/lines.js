@@ -51,7 +51,7 @@ export function spokenLines() {
     out.push({ kind: "q", text: spokenMissing(missingOf(f, "y")) });
   });
   // Coins (Trollar): "two dimes and three pennies. How many cents?", and the answer; and the
-  // two-digit problems (Hashbrown): "thirty-eight plus twenty-five", and "… is sixty-three".
+  // two-digit problems (Haberhasher): "thirty-eight plus twenty-five", and "… is sixty-three".
   var both = [];
   twoDigitFacts().forEach(function (f) {
     both.push(f);
