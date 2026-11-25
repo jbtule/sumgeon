@@ -33,15 +33,17 @@ export function depthLine(d) { return "Depth " + spoken(d) + "!"; }
 export function spokenLines() {
   var out = [];
   Object.keys(PHRASE).forEach(function (k) { out.push({ kind: "p", text: PHRASE[k] }); });
+  // The monster and hero lines also go in one audio sprite, "names" (scripts/audio/build.mjs).
+  var S = "names";
   MON.concat(allLooks()).forEach(function (m) {
-    out.push({ kind: "m", text: monsterName(m) });
-    if (!m.boss) out.push({ kind: "p", text: monsterCleared(m) }); // beating the boss is the win, said as PHRASE.win
-    out.push({ kind: "p", text: monsterWon(m) });
+    out.push({ kind: "m", text: monsterName(m), sprite: S });
+    if (!m.boss) out.push({ kind: "p", text: monsterCleared(m), sprite: S }); // beating the boss is the win, said as PHRASE.win
+    out.push({ kind: "p", text: monsterWon(m), sprite: S });
   });
   HEROES.forEach(function (h) {
-    out.push({ kind: "m", text: heroName(h) });
-    out.push({ kind: "m", text: monsterName(cursedMonster(h.d)) });
-    out.push({ kind: "p", text: heroJoins(h) });
+    out.push({ kind: "m", text: heroName(h), sprite: S });
+    out.push({ kind: "m", text: monsterName(cursedMonster(h.d)), sprite: S });
+    out.push({ kind: "p", text: heroJoins(h), sprite: S });
   });
   for (var d = 2; d <= DEPTH_MAX_SPOKEN; d++) out.push({ kind: "p", text: depthLine(d) });
   WINGS.forEach(function (w, i) {

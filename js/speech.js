@@ -57,6 +57,9 @@ function speak(text, rate) {
    audio.json maps "kind:text" to a clip on the audio host (sumgeon.asset-data.stream). The
    deploy ships it; locally it's missing and the device voice speaks. */
 var clips = {}, clipBase = "", player = null, finishClip = null;
+// Audio sprites (audio.json "sprites"): one file holding a group of lines (the monster and hero
+// names), decoded with Web Audio after the first tap. spriteOf["kind:text"] = { s, start, len }.
+var sprites = [], spriteOf = {}, ac = null, source = null;
 var queue = Promise.resolve(), epoch = 0;
 // The device-voice rate each kind is spoken at.
 var RATE = { p: 0.95, m: 0.95, n: 0.95, q: 0.85 };
@@ -66,7 +69,13 @@ var RATE = { p: 0.95, m: 0.95, n: 0.95, q: 0.85 };
     var url = new URL("../audio.json", import.meta.url);
     url.search = new URL(import.meta.url).search; // the same ?v= stamp
     fetch(url).then(function (r) { return r.ok ? r.json() : null; })
-      .then(function (m) { if (m && m.clips) { clips = m.clips; clipBase = m.base; } })
+      .then(function (m) {
+        if (!m || !m.clips) return;
+        clips = m.clips; clipBase = m.base;
+        sprites = (m.sprites || []).map(function (s) { return { url: s.url, lines: s.lines, buf: null, loading: false }; });
+        sprites.forEach(function (s) { Object.keys(s.lines).forEach(function (id) { spriteOf[id] = { s: s, start: s.lines[id][0], len: s.lines[id][1] }; }); });
+        loadSprites();
+      })
       .catch(function () {});
   } catch (e) {}
 })();
@@ -78,6 +87,11 @@ var SILENCE = "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAA
 function unlock() {
   document.removeEventListener("pointerdown", unlock, true);
   document.removeEventListener("keydown", unlock, true);
+  try {
+    var AC = window.AudioContext || window.webkitAudioContext;
+    if (AC && !ac) { ac = new AC(); if (ac.state !== "running") ac.resume(); }
+  } catch (e) { ac = null; }
+  loadSprites();
   var a = getPlayer();
   if (a.src) return;
   a.src = SILENCE;
@@ -86,6 +100,35 @@ function unlock() {
 }
 document.addEventListener("pointerdown", unlock, true);
 document.addEventListener("keydown", unlock, true);
+
+// Downloads and decodes the sprites in the background, once there's an audio context (after the
+// first tap) and audio.json has arrived. Until a sprite is ready, its lines play as single clips.
+function loadSprites() {
+  if (!ac) return;
+  sprites.forEach(function (s) {
+    if (s.buf || s.loading) return;
+    s.loading = true;
+    fetch(s.url).then(function (r) { return r.ok ? r.arrayBuffer() : Promise.reject(); })
+      .then(function (data) { return new Promise(function (ok, no) { ac.decodeAudioData(data, ok, no); }); })
+      .then(function (buf) { s.buf = buf; })
+      .catch(function () { s.loading = false; });
+  });
+}
+// Plays one line out of a decoded sprite. Resolves true when it ends.
+function playSprite(hit) {
+  return new Promise(function (resolve) {
+    try {
+      if (ac.state !== "running") ac.resume();
+      var src = ac.createBufferSource(), done = false;
+      src.buffer = hit.s.buf;
+      src.connect(ac.destination);
+      function end() { if (done) return; done = true; if (source === src) { source = null; finishClip = null; } resolve(true); }
+      src.onended = end;
+      source = src; finishClip = function () { try { src.stop(); } catch (e) {} end(); };
+      src.start(0, hit.start, hit.len);
+    } catch (e) { resolve(false); }
+  });
+}
 
 // Resolves true when the clip ends, false if it fails (the caller then uses the device voice).
 // Safari's <audio> asks for byte ranges, which the audio host's custom domain answers.
@@ -116,8 +159,11 @@ export function say(kind, text, cancel) {
   var my = epoch;
   queue = queue.then(function () {
     if (my !== epoch) return;
-    var key = clips[kind + ":" + text];
+    var key = clips[kind + ":" + text], hit = spriteOf[kind + ":" + text];
     if (!key) return speak(text, RATE[kind]);
+    if (hit && hit.s.buf && ac) return playSprite(hit).then(function (ok) {
+      if (!ok && my === epoch) return playClip(clipBase + key + ".mp3");
+    });
     return playClip(clipBase + key + ".mp3").then(function (ok) {
       if (!ok && my === epoch) return speak(text, RATE[kind]);
     });
