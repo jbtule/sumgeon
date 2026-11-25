@@ -123,7 +123,7 @@ export async function playMoment(o) {
     if (o.onSnap) o.onSnap();
     await phase("hit");
     hero.style.opacity = "0"; bub.style.opacity = "0";
-    sfx.slam();
+    sfx.slam(); sfx.move(o.hero);
     setTimeout(() => layer.remove(), T(TIMING.after));
     return;
   }
@@ -199,7 +199,7 @@ export async function playMoment(o) {
 
   // 5. Hit: the bigger impact, the move's flourish, a screen shake.
   await phase("hit");
-  sfx.slam();
+  sfx.slam(); sfx.move(o.hero); // and the hero's own move (sfx.js MOVE)
   fx.style.transform = `translate(${b.x - 28}px,${b.y - 60}px)`;
   fx.animate([{ opacity: 0, transform: fx.style.transform + " scale(.4)" }, { opacity: 1, transform: fx.style.transform + " scale(1.3)", offset: 0.35 }, { opacity: 0, transform: fx.style.transform + " translateY(-30px) scale(1)" }], { duration: T(700), easing: "ease-out", fill: "forwards" });
   if (move.flash) flash.animate([{ opacity: 0.85 }, { opacity: 0 }], { duration: T(320), easing: "ease-out", fill: "forwards" });
@@ -259,7 +259,7 @@ async function playTeamUp(o) {
     if (o.onSnap) o.onSnap();
     await phase("hit");
     heroes.forEach((el) => (el.style.opacity = "0")); bub.style.opacity = "0";
-    sfx.slam(true);
+    sfx.slam(true); ds.forEach((d) => sfx.move(d));
     setTimeout(() => layer.remove(), T(TIMING.after));
     return;
   }
@@ -333,7 +333,7 @@ async function playTeamUp(o) {
 
   // 5. Hit: one bigger slam, both flourishes, a bigger shake.
   await phase("hit");
-  sfx.slam(true);
+  sfx.slam(true); ds.forEach((d) => sfx.move(d)); // both heroes' moves
   fxs.forEach((el, i) => {
     el.style.transform = `translate(${b.x - 28 + side[i] * 34}px,${b.y - 60 - i * 14}px)`;
     el.animate([{ opacity: 0, transform: el.style.transform + " scale(.4)" }, { opacity: 1, transform: el.style.transform + " scale(1.35)", offset: 0.35 }, { opacity: 0, transform: el.style.transform + " translateY(-30px) scale(1)" }], { duration: T(760), delay: T(i * 60), easing: "ease-out", fill: "both" });

@@ -375,7 +375,8 @@ With reduced motion: no zoom or speed ramp, just the hero, the quip and the hit.
 - a tape slowdown: a sweep that drops in pitch through a closing filter;
 - a slow double heartbeat under the freeze;
 - a reverse-cymbal swell into the snap;
-- a whip-whoosh, then a bigger impact.
+- a whip-whoosh, then a bigger impact;
+- and each hero's own sound for their move (§6.6), at the hit: a punch's pow for Zeroic, a pillow fwump for Onesie, a sparkle and a pop from Twodini's hat, a lantern shimmer, a shield clang, a hand-clap smack, a glint's ding, a stomp's boom, a sizzle and a plate clink, a smoke poof and a slash. A team-up plays both heroes' sounds.
 
 **The voice.** Quips are a new kind of line, said in a second Kokoro voice, **`af_bella`**, as Sound Box does for its quips. A different voice means a quip is never taken for an instruction. They're recorded by CI, with their own group on the listen check.
 

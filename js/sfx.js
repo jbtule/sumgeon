@@ -217,6 +217,31 @@ export function slam(big) {
   });
 }
 
+// Each hero's own move, at a Hero Moment's hit (heroes.js move; slowmo.js). d: the hero's digit.
+var MOVE = {
+  // Zeroic, fist-first: a rising whoosh into a punchy pow.
+  0: function (t) { noise(t, 0.12, 0.3, "bandpass", 1800); tone("square", 160, 60, t + 0.08, 0.16, 0.35); noise(t + 0.08, 0.08, 0.4, "lowpass", 1200); },
+  // Onesie, pillow bonk: a soft fwump and a puff.
+  1: function (t) { tone("sine", 140, 70, t, 0.22, 0.45); noise(t, 0.3, 0.12, "lowpass", 600); noise(t + 0.05, 0.25, 0.06, "highpass", 2500); },
+  // Twodini, out of a top hat: a sparkle run up, then a pop.
+  2: function (t) { [79, 83, 86, 91].forEach(function (m, i) { mallet(m, t + i * 0.05, 0.12, 0.25); }); tone("sine", 900, 300, t + 0.22, 0.06, 0.4); },
+  // Threasure Hunter, lantern flash: a bright shimmer.
+  3: function (t) { noise(t, 0.35, 0.16, "highpass", 6000); [88, 95].forEach(function (m) { tone("sine", hz(m), hz(m) * 1.01, t, 0.4, 0.07); }); },
+  // Sir Fourtress, shield bash: a metal clang.
+  4: function (t) { [523, 1187, 1720, 2340].forEach(function (f, i) { tone("square", f, f * 0.99, t, 0.5 - i * 0.08, 0.06); }); noise(t, 0.05, 0.4, "bandpass", 3000); },
+  // High Five, a giant high five: a hand-clap smack.
+  5: function (t) { noise(t, 0.06, 0.6, "bandpass", 1500); noise(t + 0.012, 0.09, 0.35, "highpass", 2500); },
+  // Sixlock Holmes, spots the weak point: a glint, ding!
+  6: function (t) { mallet(96, t, 0.25, 0.6); tone("sine", hz(103), hz(103), t + 0.04, 0.3, 0.05); },
+  // Sevenstein, big stomp: a deep boom and a rumble.
+  7: function (t) { tone("sine", 80, 30, t, 0.6, 0.8); noise(t, 0.5, 0.3, "lowpass", 220); },
+  // Chef Eight, a sizzling platter: a sizzle and a plate clink.
+  8: function (t) { noise(t, 0.55, 0.14, "highpass", 4500); noise(t + 0.1, 0.4, 0.08, "bandpass", 7000); mallet(91, t, 0.14, 0.3); },
+  // Nine-ja, vanish then strike from behind: a smoke poof, then a quick slash.
+  9: function (t) { noise(t, 0.2, 0.2, "lowpass", 900); tone("sawtooth", 3000, 600, t + 0.14, 0.08, 0.12); noise(t + 0.14, 0.07, 0.3, "highpass", 4000); }
+};
+export function move(d) { var f = MOVE[d]; if (f) play(f); }
+
 // The Sumgeon cleared: a short fanfare.
 export function victory() {
   play(function (t) {
