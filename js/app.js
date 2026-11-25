@@ -863,26 +863,35 @@ document.addEventListener("pointerdown", (e) => {
   if (G.onMenu && !hasCaptain() && !$("ov").hidden && !e.target.closest(".hpick")) say("p", PHRASE.pickHero);
 }, true);
 
-// Settings, as a list: players (names optional), chalk color, sounds as on/off
-// switches, and the help page. All save as they change.
+// Settings, in tabs: Players (names optional), Game (chalk color, sounds as on/off switches) and
+// About (how the hints work, and credits). All save as they change.
 function toggle(id, title, sub, on) {
   return `<label class="switch-row"><span><b>${title}</b>${sub ? `<small>${sub}</small>` : ""}</span>
     <input type="checkbox" role="switch" id="${id}" ${on ? "checked" : ""}><i aria-hidden="true"></i></label>`;
 }
 // From the pause screen (paused: true) it leaves out Players, since switching would end the run,
-// and Done goes back to the pause screen.
-function settings(paused) {
+// opens on Game, and Done goes back to the pause screen. From the start screen it opens on
+// Players. `tab` opens another tab (About, coming back from "How the hints work").
+function settings(paused, tab) {
   G.onMenu = false; // an update waits until the start screen
+  const tabs = [
+    ...(paused ? [] : [{ id: "players", icon: "👥", label: "Players" }]),
+    { id: "game", icon: "🎨", label: "Game" },
+    { id: "about", icon: "ℹ️", label: "About" },
+  ];
+  const on = tabs.some((t) => t.id === tab) ? tab : tabs[0].id;
+  const panel = (id, html) => `<div class="tabpanel" role="tabpanel" id="tp-${id}" aria-labelledby="tab-${id}" tabindex="0"${id === on ? "" : " hidden"}>${html}</div>`;
   show(`<div class="cardhead"><h2>Settings</h2></div>
-  ${paused ? "" : `<div class="grp"><span>Players</span><div id="players">${playersHTML()}</div></div>`}
-  <div class="grp"><span>Chalk color</span><div class="swatches" id="swatches">${swatchesHTML()}</div></div>
-  <div class="grp"><span>Play</span><div class="list">
+  <div class="tabs" role="tablist" aria-label="Settings">${tabs.map((t) => `<button type="button" role="tab" id="tab-${t.id}" aria-controls="tp-${t.id}" aria-selected="${t.id === on}" tabindex="${t.id === on ? 0 : -1}"><span aria-hidden="true">${t.icon}</span>${t.label}</button>`).join("")}</div>
+  ${paused ? "" : panel("players", `<div class="grp"><span>Players</span><div id="players">${playersHTML()}</div></div>`)}
+  ${panel("game", `<div class="grp"><span>Chalk color</span><div class="swatches" id="swatches">${swatchesHTML()}</div></div>
+  <div class="grp"><span>Sounds</span><div class="list">
     ${toggle("sfxOn", "Sound effects", "", st.sfx)}
     ${toggle("voiceOn", "Voice", "Reads monsters and answers aloud", st.voice)}
-    <button class="list-link" type="button" id="openHelp"><span><b>How the hints work</b><small>For grown-ups</small></span><i aria-hidden="true">›</i></button>
-  </div></div>
-  ${badgesCopy()}
+  </div></div>`)}
+  ${panel("about", aboutHTML())}
   <div class="btns"><button class="big" id="done">Done</button></div>`);
+  wireTabs();
   $("openHelp").onclick = () => { helpFrom = !!paused; helpPage(); };
   $("sfxOn").onchange = () => { st.sfx = $("sfxOn").checked; sfx.setSfx(st.sfx); saveSettings(); };
   $("voiceOn").onchange = () => { st.voice = $("voiceOn").checked; setVoice(st.voice); saveSettings(); };
@@ -890,8 +899,43 @@ function settings(paused) {
   if (!paused) wirePlayers();
   $("done").onclick = paused ? pause : menu;
 }
+// Tabs (the WAI-ARIA tabs pattern): a tap, or ←/→/Home/End on the tab row, picks a tab and shows
+// its panel.
+function wireTabs() {
+  const tabs = [...$("card").querySelectorAll("[role=tab]")];
+  const pick = (t) => tabs.forEach((x) => {
+    const sel = x === t;
+    x.setAttribute("aria-selected", sel); x.tabIndex = sel ? 0 : -1;
+    $(x.getAttribute("aria-controls")).hidden = !sel;
+  });
+  tabs.forEach((t, i) => {
+    t.onclick = () => pick(t);
+    t.onkeydown = (e) => {
+      const n = tabs.length, j = { ArrowRight: i + 1, ArrowLeft: i + n - 1, Home: 0, End: n - 1 }[e.key];
+      if (j === undefined) return;
+      e.preventDefault(); e.stopPropagation(); pick(tabs[j % n]); tabs[j % n].focus();
+    };
+  });
+}
+// Settings → About: the grown-ups' page on the hints, then the credits (README's License
+// section) and the footer's badges.
+function aboutHTML() {
+  const a = (href, text) => `<a href="${href}" target="_blank" rel="noopener">${text}</a>`;
+  return `<div class="grp"><span>For grown-ups</span><div class="list">
+    <button class="list-link" type="button" id="openHelp"><span><b>How the hints work</b><small>How Sumgeon teaches, strategy by strategy</small></span><i aria-hidden="true">›</i></button>
+  </div></div>
+  <div class="grp"><span>Credits</span><div class="credits">
+    <p><b>Sumgeon</b> by James Tuley.<br>Copyright © 2026 James Tuley. Licensed under the ${a("https://github.com/jbtule/sumgeon/blob/main/LICENSE.md", "PolyForm Noncommercial License 1.0.0")}.</p>
+    <ul>
+      <li><b>Fonts:</b> ${a("https://fonts.google.com/specimen/Bungee", "Bungee")} and ${a("https://fonts.google.com/specimen/Nunito", "Nunito")} from Google Fonts (SIL Open Font License 1.1).</li>
+      <li><b>Voice:</b> recorded with ${a("https://huggingface.co/hexgrad/Kokoro-82M", "Kokoro-82M")} (Apache License 2.0).</li>
+      <li><b>Coins:</b> the portraits are traced from public-domain photos of US Mint coins on Wikimedia Commons. The coin backs are drawn for the game.</li>
+    </ul>
+  </div></div>
+  ${badgesCopy()}`;
+}
 
-// The footer's badges (deployed version, license), repeated in Settings, since phones hide the footer.
+// The footer's badges (deployed version, license), repeated in Settings → About, since phones hide the footer.
 function badgesCopy() {
   const f = document.querySelector("footer.badges");
   if (!f) return "";
@@ -964,7 +1008,7 @@ function helpPage() {
   <h3 class="strats-title">The strategies</h3>
   <div class="strats">${cards}</div>
   <div class="btns"><button class="big" id="back">Back to Settings</button></div>`);
-  $("back").onclick = () => settings(helpFrom);
+  $("back").onclick = () => settings(helpFrom, "about");
 }
 function swatchesHTML() {
   return CHALK.map((c) => `<button type="button" class="swatch${c === team.color ? " on" : ""}" data-c="${c}" style="--sw:${c}" aria-pressed="${c === team.color}" aria-label="Chalk color ${c}"></button>`).join("");
