@@ -5,11 +5,14 @@
 // A moment's saved state, per player (store.js "moments"):
 //   { decks: { digit: [quips left, in order] }, heard: { digit: [quips heard] },
 //     debut: [digits freed and not yet seen in a moment], dry: qualifying hits since the last
-//     moment that rolled and missed, last: the hero of the last moment }
+//     moment that rolled and missed, last: the hero of the last moment,
+//     captains: [captains who've had their first captain's moment],
+//     named: [heroes ever picked as captain] }
 // A run's state (not saved): { last: the problem number of the last moment, floor, onFloor,
 //   }.
 import { pool, monsterHP } from "./learn.js";
 import { WINGS, runFloors, depthScale } from "./wings.js";
+import { HEROES } from "./heroes.js";
 
 // The chance on a qualifying hit: CHANCE, plus BUILD for each one that rolled without a moment,
 // back to CHANCE after one. None in the REST problems after a moment, at most PER_FLOOR a floor.
@@ -44,11 +47,26 @@ export const TEAM_LINES = ["Team-up!", "Tens and ones, together!", "Two digits, 
 export const TEAM_NUMBERS = { 10: "Perfect ten!", 12: "A dozen, done!", 13: "A baker's dozen! Chef Eight would approve!", 25: "Five squared! High five… times five!",
   36: "Six squared! Elementary!", 49: "Seven squared! Sevenstein's not even here!", 64: "Eight squared! Somebody tell Chef Eight!",
   67: "Six, seven!", 81: "Nine squared! Nine-ja must be hiding!" };
-const listOf = (d) => (d === "final" ? FINALS : d === "team" ? TEAM_LINES : QUIPS[d]);
+// Captain lines, two kinds:
+//   In a fight: a solo moment by chance for the hero leading the run is, half the time (CAPTAIN),
+//   one of the shared CAPTAIN_LINES (their own deck, key "captain") instead of the hero's quip.
+//   A captain's first qualifying hit with their digit is always a moment, with one of them: once
+//   per captain (saved as captains), so picking a new captain brings a new one.
+//   On picking a captain (app.js wireCaptain), the hero says a name line (captainNames, a deck per
+//   hero, key "name<d>") in place of their plain name: "reporting for duty" the first time a hero
+//   is ever picked (saved as named).
+export const CAPTAIN = 0.5;
+export const CAPTAIN_LINES = ["Captain's orders!", "Leading digit, leading the charge!", "The captain always counts!", "First in line, first to strike!", "Power hit, captain style!"];
+// "Captain Twodini, reporting for duty!" (the voice says the name through lines.js SAY_AS).
+export function captainNames(d) {
+  const n = "Captain " + HEROES[d].n;
+  return [n + ", reporting for duty!", n + ", at your service!", n + " leads the charge!", "Make way for " + n + "!"];
+}
+const listOf = (d) => (d === "final" ? FINALS : d === "team" ? TEAM_LINES : d === "captain" ? CAPTAIN_LINES : /^name\d$/.test(d) ? captainNames(+d.slice(4)) : QUIPS[d]);
 
 export function freshState(saved) {
   const s = saved || {};
-  return { decks: Object.assign({}, s.decks), heard: Object.assign({}, s.heard), debut: (s.debut || []).slice(), dry: s.dry || 0, last: s.last == null ? null : s.last };
+  return { decks: Object.assign({}, s.decks), heard: Object.assign({}, s.heard), debut: (s.debut || []).slice(), dry: s.dry || 0, last: s.last == null ? null : s.last, captains: (s.captains || []).slice(), named: (s.named || []).slice() };
 }
 export function freshRun() { return { last: null, floor: null, onFloor: 0, }; }
 
@@ -83,6 +101,20 @@ export function drawQuip(state, d, rnd) {
   return q;
 }
 
+// What hero d says on being picked as captain: "reporting for duty" the first time they're ever
+// picked, then their name deck (which counts that first line as heard, so a new deck doesn't
+// open with it).
+export function nameLine(state, d, rnd) {
+  state.named = state.named || [];
+  if (!state.named.includes(d)) {
+    state.named.push(d);
+    const q = captainNames(d)[0], k = "name" + d;
+    state.heard[k] = (state.heard[k] || []).filter((x) => x !== q).concat([q]);
+    return q;
+  }
+  return drawQuip(state, "name" + d, rnd);
+}
+
 // Whether this answer gets a moment, and whose. hit:
 //   typed: the digits that fly; team: { captain, rescued }; hinted; spell: null, "good",
 //   "backwards" or "show" (a poor match); first: the player's first fight; floor: which floor of
@@ -90,7 +122,7 @@ export function drawQuip(state, d, rnd) {
 //   hit turns crits on (the third in a row); always: ?moments (every qualifying hit); teamup:
 //   ?teamup (a moment by chance with two heroes in the answer is always a team-up).
 // Only for a right answer (the caller asks only then). Returns null, or
-//   { hero, quip, why: "boss" | "debut" | "chance" }, and updates state and run. A team-up adds
+//   { hero, quip, why: "boss" | "debut" | "captain" | "chance" }, and updates state and run. A team-up adds
 //   partner, the second hero: hero is on the left (the tens) and partner on the right, in the
 //   answer's digit order.
 export function decide(state, run, hit, rnd) {
@@ -103,6 +135,8 @@ export function decide(state, run, hit, rnd) {
   const debut = heroes.filter((d) => state.debut.includes(d));
   if (hit.bossFinish && (heroes.length || hit.team.captain != null)) { hero = pick(heroes.length ? heroes : [hit.team.captain]); why = "boss"; }
   else if (debut.length) { hero = debut[0]; why = "debut"; }
+  // A captain's first moment: their first qualifying hit with their digit, once per captain.
+  else if (hit.team.captain != null && heroes.includes(hit.team.captain) && !state.captains.includes(hit.team.captain)) { hero = hit.team.captain; why = "captain"; }
   else {
     if (!heroes.length) return null;
     if (!hit.always) {
@@ -126,7 +160,9 @@ export function decide(state, run, hit, rnd) {
   state.debut = state.debut.filter((d) => d !== hero);
   let quip;
   if (why === "boss") quip = drawQuip(state, "final", r);
+  else if (why === "captain") { quip = drawQuip(state, "captain", r); state.captains.push(hero); }
   else if (hit.critStart && why === "chance") quip = CRIT;
+  else if (why === "chance" && hero === hit.team.captain && r() < CAPTAIN) quip = drawQuip(state, "captain", r);
   else quip = drawQuip(state, hero, r);
   state.dry = 0; state.last = hero;
   run.last = hit.n; run.onFloor++;
@@ -142,7 +178,7 @@ export function simulate(opts) {
   const o = Object.assign({ runs: 300, wing: "cellar", team: { captain: 5, rescued: [5, 0, 1] }, accuracy: 0.9, hinted: 0.05, seed: 1 }, opts);
   const r = seeded(o.seed), w = WINGS.find((x) => x.id === o.wing) || WINGS[0], state = freshState();
   const all = {}, recsFor = (bk) => all[bk] || (all[bk] = Object.fromEntries(pool(bk).map((f) => [f.key, { b: 3 }])));
-  const out = { runs: o.runs, floors: 0, problems: 0, moments: 0, perRun: [], why: { boss: 0, debut: 0, chance: 0 }, teamups: 0, heroes: {}, quips: {} };
+  const out = { runs: o.runs, floors: 0, problems: 0, moments: 0, perRun: [], why: { boss: 0, debut: 0, captain: 0, chance: 0 }, teamups: 0, captainLines: 0, heroes: {}, quips: {} };
   for (let k = 0; k < o.runs; k++) {
     const run = freshRun(), floors = runFloors(w, o.team, r, 1);
     let n = 0, streak = 0, got = 0;
@@ -168,6 +204,7 @@ export function simulate(opts) {
           out.heroes[mo.hero] = (out.heroes[mo.hero] || 0) + 1;
           if (mo.partner != null) { out.teamups++; out.heroes[mo.partner] = (out.heroes[mo.partner] || 0) + 1; }
           out.quips[mo.quip] = (out.quips[mo.quip] || 0) + 1;
+          if (mo.partner == null && CAPTAIN_LINES.includes(mo.quip)) out.captainLines++;
         }
       }
     });

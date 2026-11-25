@@ -9,7 +9,7 @@
 // tags, note, t }.
 import { HEROES } from "../js/heroes.js";
 import { MON, svg } from "../js/monsters.js";
-import { QUIPS, FINALS, CRIT, TEAM_LINES, TEAM_NUMBERS, simulate } from "../js/moments.js";
+import { QUIPS, FINALS, CRIT, TEAM_LINES, TEAM_NUMBERS, CAPTAIN_LINES, captainNames, simulate } from "../js/moments.js";
 import { playMoment, PHASES } from "../js/slowmo.js";
 import { quipLine } from "../js/lines.js";
 import { say, stopSpeech } from "../js/speech.js";
@@ -31,12 +31,16 @@ const NUMBER_OF = Object.fromEntries(Object.entries(TEAM_NUMBERS).map(([n, q]) =
 
 // Every line Play all runs through: each hero's quips, then the boss-finishing lines and
 // "Critical math!", said by the heroes in turn; then the team-ups: each general line with a
-// sample pair, and each number's line with its own digits (64 is Sixlock and Sir Fourtress).
+// sample pair, and each number's line with its own digits (64 is Sixlock and Sir Fourtress); then
+// the captain lines: the five shared ones (a fight's) with sample heroes, and each hero's four
+// name lines (said on picking a captain).
 const PAIRS = [[1, 5], [2, 4], [3, 7], [4, 2], [6, 8], [9, 3]];
 const ALL = HEROES.flatMap((h) => QUIPS[h.d].map((q) => ({ hero: h.d, quip: q })))
   .concat(FINALS.concat([CRIT]).map((q, i) => ({ hero: i % 10, quip: q })))
   .concat(TEAM_LINES.map((q, i) => ({ hero: PAIRS[i % PAIRS.length][0], partner: PAIRS[i % PAIRS.length][1], quip: q })))
-  .concat(Object.entries(TEAM_NUMBERS).map(([n, q]) => ({ hero: +n[0], partner: +n[1], quip: q })));
+  .concat(Object.entries(TEAM_NUMBERS).map(([n, q]) => ({ hero: +n[0], partner: +n[1], quip: q })))
+  .concat(CAPTAIN_LINES.map((q, i) => ({ hero: [5, 2, 4, 9, 0][i % 5], quip: q })))
+  .concat(HEROES.flatMap((h) => captainNames(h.d).map((q) => ({ hero: h.d, quip: q }))));
 
 /* ---------- picking ---------- */
 const opts = { speed: 1, reduced: false, step: false };
@@ -49,13 +53,15 @@ function partnerOptions() {
   $("partner").value = was !== "" && +was !== d ? was : "";
 }
 const partnerOf = () => ($("partner").value === "" ? null : +$("partner").value);
-// The hero's quips and the big ones; then the team-up lines (a number's line shows its number).
+// The hero's quips and the big ones; then the team-up lines (a number's line shows its number);
+// then the Captain lines: the hero's name lines (on picking a captain) and the shared ones (in a fight).
 // A team-up option's value starts "T|", since a line can be in both ("Six, seven!" is
 // Sevenstein's and 67's).
 function quipOptions() {
   const d = +$("hero").value, was = $("quip").value, opt = (pre) => (q) => `<option value="${pre}${esc(q)}">${esc(q)}${pre && NUMBER_OF[q] ? ` (${NUMBER_OF[q]})` : ""}</option>`;
   $("quip").innerHTML = `<optgroup label="${esc(HEROES[d].n)}">${QUIPS[d].concat(FINALS, [CRIT]).map(opt("")).join("")}</optgroup>` +
-    `<optgroup label="Team-ups">${TEAM_LINES.concat(Object.values(TEAM_NUMBERS)).map(opt("T|")).join("")}</optgroup>`;
+    `<optgroup label="Team-ups">${TEAM_LINES.concat(Object.values(TEAM_NUMBERS)).map(opt("T|")).join("")}</optgroup>` +
+    `<optgroup label="Captain">${captainNames(d).concat(CAPTAIN_LINES).map(opt("")).join("")}</optgroup>`;
   if ([...$("quip").options].some((o) => o.value === was)) $("quip").value = was;
 }
 const quipOf = () => $("quip").value.replace(/^T\|/, "");
@@ -267,7 +273,7 @@ $("simRun").onclick = () => {
       <div><b>${s.meanPerRun.toFixed(2)}</b><small>moments per run</small></div>
       <div><b>${(s.problems / s.floors).toFixed(1)}</b><small>problems per floor</small></div>
     </div>
-    <p class="sub">Why: ${s.why.boss} boss finishes, ${s.why.chance} by chance (one every ${s.chanceFloorsPer.toFixed(1)} floors; ${s.teamups} of them team-ups, ${s.why.chance ? Math.round(s.teamups / s.why.chance * 100) : 0}%), over ${s.runs} runs and ${s.floors} floors.</p>
+    <p class="sub">Why: ${s.why.boss} boss finishes, ${s.why.captain} a captain's first, ${s.why.chance} by chance (one every ${s.chanceFloorsPer.toFixed(1)} floors; ${s.teamups} of them team-ups, ${s.why.chance ? Math.round(s.teamups / s.why.chance * 100) : 0}%; ${s.captainLines} captain lines, ${s.why.chance ? Math.round(s.captainLines / s.why.chance * 100) : 0}%), over ${s.runs} runs and ${s.floors} floors.</p>
     <h2>Moments per run</h2>${bars(Object.keys(dist).map(Number).sort((a, b) => a - b).map((n) => [`${n} moment${n === 1 ? "" : "s"}`, dist[n]]), s.runs)}
     <h2>Heroes</h2>${bars(HEROES.filter((h) => s.heroes[h.d]).map((h) => [h.n, s.heroes[h.d]]), s.moments)}
     <h2>Quips</h2>${bars(quips, s.moments)}`;

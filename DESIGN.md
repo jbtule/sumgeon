@@ -267,6 +267,7 @@ Inventory holds 3 items. This adds a small strategic layer without making math o
 | 9 | **Nine-ja** | Ninja | Vanishes, then strikes from behind |
 
 **Your captain is your avatar.** When a player is set up, they pick a **starter** digit and a **chalk color**. The starter is free from the start, and the other nine are waiting to be rescued. Losing all your hearts curses the hero who led the run: they leave the team until rescued again, and you pick someone else on the team to lead, or any of the ten if nobody is left. The captain appears in "Playing as…", in the player list and in the arena, replacing the generic Apprentice character from the earlier draft. You can switch captains to any rescued hero at any time. Two siblings can both pick High Five, and their chalk colors tell them apart.
+- **Picking a captain** (the start screen, the end card's "who leads next", a free pick) the hero says a name line in the quip voice (§8.4) in place of their plain name: "Captain Twodini, reporting for duty!" the first time a hero is ever picked, then, from a shuffled deck per hero, "…at your service!", "Captain Twodini leads the charge!", "Make way for Captain Twodini!" (and "reporting for duty" again). What they do ("Your twos hit harder.") follows as before.
 
 **The mechanic: your answer summons its digits.** On a correct answer, the digits of the answer burst out of the answer box and attack together. 56 sends the 5 and the 6, and 55 sends two High Fives, who high-five each other first.
 - **Rescued digits** appear as their hero and add **+10% damage each** (up to +30%), with their own move.
@@ -405,14 +406,20 @@ Respellings for the voice go in `SAY_AS` as usual (Twodini is "Toodini"; check "
 **Collecting.** The Heroes half of Monsters & Heroes shows each hero's quips heard ("Quips: 3 of 5"), a small reason to try different captains.
 
 **Reviewing them** (built with the feature). A grown-up page, `moments/` at `/sumgeon/moments/`, built like the listen check and the spell check: `noindex`, not linked from the game, and stamped with the deployed commit.
-- **Pick and play:** pick a hero, a quip and a monster (in any stratum's colors and wall), then play the whole moment exactly as the game runs it: the same code, sounds and voice clip. **Team-up with** picks a second hero (or None), and the quip menu has the team-up lines; a number's line brings its own pair.
+- **Pick and play:** pick a hero, a quip and a monster (in any stratum's colors and wall), then play the whole moment exactly as the game runs it: the same code, sounds and voice clip. **Team-up with** picks a second hero (or None), and the quip menu has the team-up lines; a number's line brings its own pair. A Captain group has the hero's name lines and the shared captain lines.
 - **Controls:**
-  - **Replay** and **Play all.** Play all runs every hero's quips one after another, like the listen check, then the team-ups: each general line with a sample pair, and each number's line with its own digits.
+  - **Replay** and **Play all.** Play all runs every hero's quips one after another, like the listen check, then the team-ups: each general line with a sample pair, and each number's line with its own digits; then the captain lines: the five shared ones with sample heroes, and each hero's four name lines.
   - **Step through the frames** (wind-down, close-up, freeze, snap, hit).
   - **Speed:** ½× or 1×.
   - **Reduced motion:** a toggle to see that version.
 - **Flags:** **⚑ Something's wrong** flags a moment (the quip's wording, the voice, the timing, the art) with tags and a note. Like the listen check, unflagged ones count as fine, and **Report** copies the flags or opens a GitHub issue.
-- **Rarity:** a simulator plays a few hundred runs of answers and shows how often moments come (per floor and per run), and how often each hero and quip comes up, so the 8% + 4% rule can be tuned by feel. It also counts the team-ups.
+- **Rarity:** a simulator plays a few hundred runs of answers and shows how often moments come (per floor and per run), and how often each hero and quip comes up, so the 8% + 4% rule can be tuned by feel. It also counts the team-ups, the captain lines and captains' first moments.
+
+**Captain lines** (built 2026-11-25). The hero leading the run gets lines of their own, in the quip voice, with their own group ("Captain lines") on the listen check.
+- **In a fight, shared lines only, no names:** a solo moment by chance for the captain is, half the time, one of "Captain's orders!" · "Leading digit, leading the charge!" · "The captain always counts!" · "First in line, first to strike!" · "Power hit, captain style!" (a shuffled deck of their own), and the hero's own quip otherwise. Team-ups, boss finishes, debuts and "Critical math!" keep their own lines.
+- **A captain's first moment:** a captain's first qualifying hit with their digit, once past the first fight, is always a moment, with one of the shared lines. Once per captain, so picking a new captain brings a new one. A rescued hero's debut (and a boss finish) comes first on the same hit, and it counts toward the rest and the per-floor cap like a debut.
+- **On picking a captain, the name lines** (§6.6): "Captain <name>, reporting for duty!" (the first time a hero is ever picked), "Captain <name>, at your service!", "Captain <name> leads the charge!", "Make way for Captain <name>!", from a shuffled deck per hero. The name goes through `SAY_AS` ("Captain Toodini", "Captain Nine-jah").
+- Damage is unchanged: the captain's power hit stays as it was.
 
 In the game, `?moments` makes every qualifying hit a moment, for testing, and `?teamup` does too, with every one that can be a team-up a team-up.
 

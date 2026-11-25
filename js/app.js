@@ -5,7 +5,7 @@ import { spokenProblem, spokenFact } from "./problems.js";
 import { BANDS, choose, factOf, record as recordAnswer, helpFor, openLevel, monsterHP, probeKey, tierOf, skipTo, SKIP_PROBES, SKIP_WINDOW, MAX_LEAP, fluentTime, spellKey } from "./learn.js";
 import { hintFor, STRATEGIES } from "./hints.js";
 import { openStore, displayName } from "./store.js";
-import { PHRASE, monsterName, monsterCleared, monsterWon, heroName, heroJoins, heroCursed, heroPower, heroRescue, heroAlmost, heroHelps, traitLine, BARK, wingCleared, wingOpened, depthLine, DEPTH_MAX_SPOKEN, reversedLine, howToWriteLine, quipLine } from "./lines.js";
+import { PHRASE, monsterName, monsterCleared, monsterWon, heroJoins, heroCursed, heroPower, heroRescue, heroAlmost, heroHelps, traitLine, BARK, wingCleared, wingOpened, depthLine, DEPTH_MAX_SPOKEN, reversedLine, howToWriteLine, quipLine } from "./lines.js";
 import { WINGS, wingOf, runFloors, openWings, toOpen, floorStars, wingStars, depthScale, depthHP, deepest, MAP_DEPTHS } from "./wings.js";
 import { missingOf, pickBlank, filled, spokenMissing, MISSING_SHARE } from "./missing.js";
 import { coinsSvg, pileOf, coinOf } from "./coins.js";
@@ -16,7 +16,7 @@ import { roster, mastery, meet, beat } from "./bestiary.js";
 import { HEROES, CHALK, heroSvg, freePick, pickHero, curseCaptain, crackCurse, CURSE_HITS, resetTeam } from "./heroes.js";
 import * as sfx from "./sfx.js";
 import { say, stopSpeech, setVoice } from "./speech.js";
-import { freshState as freshMoments, freshRun, decide as decideMoment, joined, heardOf } from "./moments.js";
+import { freshState as freshMoments, freshRun, decide as decideMoment, joined, heardOf, nameLine } from "./moments.js";
 import { playMoment } from "./slowmo.js";
 
 const $ = (id) => document.getElementById(id);
@@ -1095,8 +1095,12 @@ function wireCaptain() {
     if (!next) return;
     Object.assign(team, next);
     saveTeam();
-    // The name, what they do, and (on the start screen, the first few times) what to tap next.
-    say("m", heroName(HEROES[team.captain]), true);
+    // The hero's name line in the quip voice (moments.js nameLine: "Captain Twodini, reporting
+    // for duty!" the first time they're picked, then their deck), what they do, and (on the start
+    // screen, the first few times) what to tap next.
+    const mo = { quip: nameLine(MS, team.captain) };
+    store.player(PID).set("moments", MS);
+    say("h", quipLine(mo.quip), true);
     say("p", heroPower(HEROES[team.captain]));
     if (G.onMenu && once("enter", 3)) say("p", PHRASE.goIn);
     captainUI(); whoUI();

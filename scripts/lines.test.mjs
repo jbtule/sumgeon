@@ -9,7 +9,7 @@ import { TRAITS, traitOf } from "../js/traits.js";
 import { cursedMonster } from "../js/wings.js";
 import { planClips, keyFor } from "./audio/build.mjs";
 import { GROUPS, quipLine } from "../js/lines.js";
-import { QUIPS, FINAL, FINALS, CRIT, TEAM_LINES, TEAM_NUMBERS } from "../js/moments.js";
+import { QUIPS, FINAL, FINALS, CRIT, TEAM_LINES, TEAM_NUMBERS, CAPTAIN_LINES, captainNames } from "../js/moments.js";
 import { createHash } from "node:crypto";
 const app0 = readFileSync(new URL("../js/app.js", import.meta.url), "utf8");
 
@@ -75,7 +75,16 @@ assert.ok(GROUPS.includes("Team-ups") && spokenLines().filter((l) => l.group ===
 // A team line that's also a hero's quip (67's "Six, seven!") is one line, one clip, in Hero quips.
 const heroQuips = new Set(Object.values(QUIPS).flat().map(quipLine));
 assert.ok(heroQuips.has(quipLine(TEAM_NUMBERS[67])) && spokenLines().filter((l) => l.text === "Six... seven!" && l.kind === "h").length === 1);
-assert.ok(GROUPS.includes("Hero quips") && spokenLines().filter((l) => l.kind === "h").every((l) => l.group === (teamLines.map(quipLine).includes(l.text) && !heroQuips.has(l.text) ? "Team-ups" : "Hero quips")));
+// Captain lines (said on picking a captain): the five shared ones and each hero's four name
+// lines, in Bella, in their own group. "Follow the leader!" was cut.
+const captainLines = CAPTAIN_LINES.concat(HEROES.flatMap((h) => captainNames(h.d)));
+assert.deepEqual([CAPTAIN_LINES.length, captainLines.length], [5, 45]);
+for (const q of captainLines) assert.ok(ids.has("h:" + quipLine(q)), `captain line recorded: ${q}`);
+assert.ok(ids.has("h:Captain Toodini, reporting for duty!") && ids.has("h:Make way for Captain Nine-jah!"), "captain names through SAY_AS");
+assert.ok(![...ids].some((id) => /Follow the leader/i.test(id)), "no \"Follow the leader!\"");
+const capSaid = new Set(captainLines.map(quipLine));
+assert.ok(GROUPS.includes("Captain lines") && spokenLines().filter((l) => l.group === "Captain lines").every((l) => l.kind === "h" && capSaid.has(l.text)));
+assert.ok(GROUPS.includes("Hero quips") && spokenLines().filter((l) => l.kind === "h" && !capSaid.has(l.text)).every((l) => l.group === (teamLines.map(quipLine).includes(l.text) && !heroQuips.has(l.text) ? "Team-ups" : "Hero quips")));
 for (const l of spokenLines().filter((l) => l.kind === "h")) assert.ok(words(l.text) <= 8, `a quip is quick: ${l.text}`);
 
 // Keys are stable and unique.
@@ -84,11 +93,18 @@ assert.equal(new Set(plan.map((c) => c.key)).size, plan.length);
 // Quips are said in the second voice, and the voice is part of the key; every other line keeps
 // af_heart and the key it had before (so nothing already recorded is recorded again).
 assert.deepEqual([...new Set(plan.filter((c) => c.kind === "h").map((c) => c.voice))], ["af_bella"]);
-for (const q of teamLines) assert.equal(plan.find((c) => c.id === "h:" + quipLine(q)).voice, "af_bella", `${q} is in Bella's voice`);
+for (const q of teamLines.concat(captainLines)) assert.equal(plan.find((c) => c.id === "h:" + quipLine(q)).voice, "af_bella", `${q} is in Bella's voice`);
 assert.deepEqual([...new Set(plan.filter((c) => c.kind !== "h").map((c) => c.voice))], ["af_heart"]);
 assert.notEqual(keyFor("h", "Up top!"), keyFor("p", "Up top!"));
 assert.equal(keyFor("p", "Oops!"), createHash("sha256").update(JSON.stringify(["kokoro-v1.0", "af_heart", "mp3-64k", "text-v1", 0.95, "p", "Oops!"])).digest("hex").slice(0, 20), "af_heart keys are unchanged");
 assert.ok(app0.includes('say("h", quipLine(mo.quip), true)'), "a quip is said in the quip voice, cutting off whatever was being said");
+// Picking a captain says a name line (moments.js nameLine) in place of the plain name, then
+// what the hero does, as before.
+{
+  const pick = app0.slice(app0.indexOf("function wireCaptain"), app0.indexOf("function wirePlayers"));
+  assert.ok(/nameLine\(MS, team\.captain\)[\s\S]*say\("h", quipLine\(mo\.quip\), true\);\s*say\("p", heroPower\(HEROES\[team\.captain\]\)\);/.test(pick), "a pick says a captain line, then the hero's power");
+  assert.ok(!pick.includes("heroName("), "the captain line replaces the spoken name");
+}
 
 // app.js says only lines from lines.js: every say() takes a PHRASE, a lines.js helper, or a problem.
 const app = readFileSync(new URL("../js/app.js", import.meta.url), "utf8");
