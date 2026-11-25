@@ -30,8 +30,9 @@ for (const band of Object.keys(BANDS)) {
   for (const p of pool(band)) {
     const f = factOf(p.key, () => 0.9), before = hintFor(f, false), after = hintFor(f, true);
     assert.ok(before.model.startsWith("<svg") && before.grownups, p.key);
-    assert.ok(before.say.endsWith("= ?"), `${p.key}: ${before.say}`);
-    assert.ok(after.say.endsWith("= " + f.ans), `${p.key}: ${after.say}`);
+    // A comparison's answer is its symbol: "3 + 4 ? 8" before, "3 + 4 < 8" after.
+    assert.ok(before.say.endsWith(f.sym ? f.l + " ? " + f.r : "= ?"), `${p.key}: ${before.say}`);
+    assert.ok(after.say.endsWith(f.sym ? f.l + " " + f.sym + " " + f.r : "= " + f.ans), `${p.key}: ${after.say}`);
     assert.ok(!/NaN|undefined|-\d/.test(before.say.replace(/ − /g, " ")), `${p.key}: ${before.say}`);
   }
 }
@@ -40,12 +41,12 @@ console.log("✓ hints");
 // The help page's strategies: each sample problem gets the hint it's named for.
 import { STRATEGIES } from "../js/hints.js";
 const opening = { "Ten-frame": /^Put together/, "Draw and cross out": /^Take away/, "10 and some more": /^10 and some more/, "Make 10": /^Make 10/,
-  "Doubles plus one": /^Doubles plus one/, "Think addition": /^Think addition/, "Arrays": /rows of/, "Doubling": /^Double it/, "Break apart": /^Break apart/,
+  "Doubles plus one": /^Doubles plus one/, "Think addition": /^Think addition/, "Arrays": /rows of/, "Compare": /^3 \+ 4 is 7\. Line them up/, "Balance": /^Both sides are the same\. 3 \+ 4 = 7, so □ \+ 5 = 7\. 7 − 5 = /, "Doubling": /^Double it/, "Break apart": /^Break apart/,
   "Nines as tens": /minus one group/, "Counting coins": /^Count on from the biggest coin/, "Tens and ones": /^Tens and ones: 30 \+ 20 = 50, 8 \+ 5 = 13\. 50 \+ 13 = 63$/, "Count up by tens": /^Think addition: count up from 28 to 52\. 2 \+ 20 \+ 2 = 24$/, "Think multiplication": /^Think multiplication/ };
 assert.equal(STRATEGIES.length, Object.keys(opening).length);
 for (const s of STRATEGIES) {
   const h = hintFor(s.f, true);
   assert.match(h.say, opening[s.title], s.title);
-  assert.ok(h.grownups && h.say.endsWith("= " + s.f.ans), s.title);
+  assert.ok(h.grownups && h.say.endsWith(s.f.sym ? s.f.l + " " + s.f.sym + " " + s.f.r : "= " + s.f.ans), s.title);
 }
 console.log("✓ hint strategies");

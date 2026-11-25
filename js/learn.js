@@ -7,6 +7,7 @@
 import { facts } from "./problems.js";
 import { coinFacts, coinFactOf, COIN_LEVELS } from "./coins.js";
 import { twoDigitFacts, TWO_LEVELS } from "./twodigit.js";
+import { balanceFacts, balanceFactOf, BALANCE_LEVELS } from "./balance.js";
 
 // Facts by the order classrooms teach them (Missouri Learning Standards, DESIGN.md §2, §5.3).
 // A level opens when 70% of the level before it is learned (box 3 or more).
@@ -39,6 +40,9 @@ export const BANDS = {
       { name: "× and ÷ 11 and 12", has: big }
     ]
   },
+  // The Balance Hall (K–2nd): comparing with < = > (Chompers) and balancing equations (the
+  // Equal Twins). A band of its own, picked by picking the Wing.
+  balance: { label: "Balance", grades: "Kindergarten–2nd", unlock: 0.5, hearts: 7, fluentMs: 4000, facts: balanceFacts, levels: BALANCE_LEVELS },
   // A strand, not a band: the coin problems Trollar asks, from whichever Wing he's in. It has
   // its own levels and records, and nobody plays it as their band.
   coins: { label: "Coins", strand: true, hearts: 7, fluentMs: 5000, facts: coinFacts, levels: COIN_LEVELS },
@@ -52,13 +56,14 @@ const DUE_MS = { 3: 10 * 60e3, 4: 24 * 3600e3 };
 
 // One key per fact. Turnarounds share a key for + and × (3 + 4 is 4 + 3); − and ÷ don't.
 export function keyOf(f) {
-  if (f.op === "¢") return f.key;
+  if (f.op === "¢" || f.op === "○" || f.op === "=") return f.key;
   if (f.op === "+" || f.op === "×") return f.op + Math.min(f.x, f.y) + "," + Math.max(f.x, f.y);
   return f.op + f.x + "," + f.y;
 }
 // A problem for a key, turned around half the time for + and ×.
 export function factOf(key, rnd) {
   if (key[0] === "¢") return coinFactOf(key);
+  if (key[0] === "○" || key[0] === "=") return balanceFactOf(key);
   const op = key[0], [a, b] = key.slice(1).split(",").map(Number);
   const flip = (op === "+" || op === "×") && (rnd || Math.random)() < 0.5;
   const x = flip ? b : a, y = flip ? a : b;

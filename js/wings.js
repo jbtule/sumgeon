@@ -12,7 +12,9 @@ const mon = (n) => MON.find((m) => m.n === n);
 export const WINGS = [
   { id: "cellar", name: "The Counting Cellar", band: "sprout",
     pool: ["Plusquito", "Minustaur", "Quizard", "Trollar"], floors: ["Plusquito", "Minustaur", "rescue", "Quizard", "Trollar"], boss: "Make-Ten Golem" },
-  { id: "tower", name: "The Tables Tower", band: "apprentice",
+  { id: "hall", name: "The Balance Hall", band: "balance", after: "cellar",
+    pool: ["Chompers", "Equal Twins"], floors: ["Chompers", "Equal Twins", "rescue", "Chompers", "pool"], boss: "The Unknown" },
+  { id: "tower", name: "The Tables Tower", band: "apprentice", after: "cellar",
     pool: ["Timesaur", "Divvy", "Starbot", "Haberhasher"], floors: ["Timesaur", "Divvy", "rescue", "Starbot", "Haberhasher", "pool"], boss: "Sigma Rex" }
 ];
 // A Wing opens the next when its boss has been beaten and this share of its facts is learned.
@@ -50,21 +52,23 @@ export function learnedShare(wing, recs) {
 }
 
 // Which Wings are open. progress: { [wingId]: { boss: wins, best: floors } }; start: the band the
-// player started in (a 3rd grader starting in Apprentice has the Tower open from the start).
+// player started in. A Wing opens when the Wing it comes after (\`after\`) has its boss beaten and
+// 60% of its facts learned. Starting in a band opens every Wing at that grade or below: a 3rd
+// grader starting in Apprentice has the Hall and the Tower open from the start.
+const GRADE = { sprout: 0, balance: 1, apprentice: 2 };
 export function openWings(progress, recs, start) {
   const open = [];
   WINGS.forEach((w, i) => {
-    const startedHere = WINGS.findIndex((x) => x.band === start) >= i;
-    const prev = WINGS[i - 1];
-    const earned = prev && open.includes(prev.id) && ((progress[prev.id] || {}).boss || 0) > 0 && learnedShare(prev, recs) >= OPEN_AT;
-    if (i === 0 || startedHere || earned) open.push(w.id);
+    const prev = w.after && wingOf(w.after);
+    const earned = prev && ((progress[prev.id] || {}).boss || 0) > 0 && learnedShare(prev, recs) >= OPEN_AT;
+    if (i === 0 || GRADE[w.band] <= (GRADE[start] ?? 0) || earned) open.push(w.id);
   });
   return open;
 }
 
-// What's left to open a Wing, for the map: { boss: beaten?, share, need }.
+// What's left to open a Wing, for the map: { prev, boss: beaten?, share, need }.
 export function toOpen(wing, progress, recs) {
-  const i = WINGS.indexOf(wing), prev = WINGS[i - 1];
+  const prev = wing.after && wingOf(wing.after);
   if (!prev) return null;
   return { prev, boss: ((progress[prev.id] || {}).boss || 0) > 0, share: learnedShare(prev, recs), need: OPEN_AT };
 }

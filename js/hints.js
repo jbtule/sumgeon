@@ -130,8 +130,48 @@ function twoDigitHint(f, worked) {
     grownups: "Think addition on an open number line: kids count up from the smaller number, hopping to the next ten, then by tens, then the rest. It's how 2nd grade subtracts without borrowing." };
 }
 
+// The Balance Hall (K–2nd). Comparing: line the dots up (to 10, and sums), or tens then ones (to
+// 100). Balancing: both sides weigh the same, so work out the known side, then what's missing.
+function dotRow(y, groups) {
+  let s = "", i = 0;
+  groups.forEach(([n, color]) => { for (let k = 0; k < n; k++, i++) s += `<circle cx="${12 + i * 17}" cy="${y}" r="6.5" fill="${color}"/>`; });
+  return s;
+}
+const sideValue = (side) => side.split(" + ").reduce((t, n) => t + Number(n), 0);
+function balanceHint(f, worked) {
+  if (f.op === "○") {
+    const lv = sideValue(f.l), rv = sideValue(f.r), end = worked ? f.l + " " + f.sym + " " + f.r : f.l + " ? " + f.r;
+    const grownups = "Comparing: kids line up the dots (or compare tens, then ones) to see which is more. The open side of < and > faces the bigger number, like Chompers' mouth.";
+    if (Math.max(lv, rv) <= 10) {
+      const parts = f.l.split(" + ").map(Number), left = parts.length > 1 ? [[parts[0], C.a], [parts[1], C.b]] : [[lv, C.a]];
+      const model = svg(12 + 10 * 17, 44, dotRow(12, left) + dotRow(32, [[rv, C.ink]]), `${lv} dots and ${rv} dots`);
+      const sum = parts.length > 1 ? `${f.l} is ${lv}. ` : "";
+      return { model, say: `${sum}Line them up: is one row longer, or are they the same? ${end}`, grownups };
+    }
+    const a = blocks(lv, 4, C.a), b = blocks(rv, 4 + a.w + 18, C.b);
+    return { model: svg(a.w + b.w + 26, 58, a.s + b.s, `${lv} and ${rv} in tens and ones`),
+      say: `Compare the tens first, then the ones. ${end}`, grownups };
+  }
+  // Balance: the side without the □ is the total.
+  const known = f.l.includes("□") ? f.r : f.l, open = f.l.includes("□") ? f.l : f.r;
+  const total = sideValue(known), other = sideValue(open.replace("□", "0")), end = worked ? f.ans : "?";
+  const W = 260, beam = `<path d="M130 70 L118 92 H142 Z" fill="${C.muted}"/><line x1="20" y1="70" x2="240" y2="70" stroke="${C.ink}" stroke-width="3" stroke-linecap="round"/>`;
+  const pan = (cx, groups, box) => {
+    let s = `<path d="M${cx - 50} 64 Q${cx - 3} 78 ${cx + 44} 64" fill="none" stroke="${C.muted}" stroke-width="3" stroke-linecap="round"/>`, i = 0;
+    groups.forEach(([n, color]) => { for (let k = 0; k < n; k++, i++) s += `<circle cx="${cx - 40 + (i % 5) * 16}" cy="${56 - Math.floor(i / 5) * 15}" r="6" fill="${color}"/>`; });
+    if (box) s += `<rect x="${cx - 40 + (i % 5) * 16 - 7}" y="${49 - Math.floor(i / 5) * 15}" width="14" height="14" rx="3" fill="none" stroke="${C.a}" stroke-width="2" stroke-dasharray="3 2"/>`;
+    return s;
+  };
+  const kParts = known.split(" + ").map(Number), groups = kParts.length > 1 ? [[kParts[0], C.a], [kParts[1], C.b]] : [[total, C.a]];
+  const model = svg(W, 96, beam + pan(f.l.includes("□") ? 195 : 65, groups) + pan(f.l.includes("□") ? 65 : 195, [[other, C.ink]], true), `a balance: ${f.q}`);
+  const first = kParts.length > 1 ? `${known} = ${total}, so ` : "";
+  return { model, say: `Both sides are the same. ${first}${open} = ${total}. ${total} − ${other} = ${end}`,
+    grownups: "The equal sign means both sides are the same amount, not \"the answer comes next\". Kids work out the side they know, then find what makes the other side match." };
+}
+
 export function hintFor(f, worked) {
   if (f.op === "¢") return coinHint(f, worked);
+  if (f.op === "○" || f.op === "=") return balanceHint(f, worked);
   if ((f.op === "+" && f.ans > 20) || (f.op === "-" && f.x > 20)) return twoDigitHint(f, worked);
   const { op, x, y, ans } = f, end = (t) => (worked ? t : "?");
   if (op === "+") {
@@ -219,5 +259,7 @@ export const STRATEGIES = [
   { title: "Counting coins", grade: "K–1st", f: coinFact({ q: 0, d: 1, n: 1, p: 2 }) },
   { title: "Tens and ones", grade: "2nd", f: { op: "+", x: 38, y: 25 } },
   { title: "Count up by tens", grade: "2nd", f: { op: "-", x: 52, y: 28 } },
+  { title: "Compare", grade: "K–1st", f: { op: "○", l: "3 + 4", r: "8", sym: "<", ans: 8, q: "3 + 4 □ 8" } },
+  { title: "Balance", grade: "1st", f: { op: "=", l: "3 + 4", r: "□ + 5", ans: 2, q: "3 + 4 = □ + 5" } },
   { title: "Think multiplication", grade: "3rd", f: { op: "÷", x: 32, y: 8 } }
 ].map((s) => Object.assign(s, { f: Object.assign({ ans: { "+": s.f.x + s.f.y, "-": s.f.x - s.f.y, "×": s.f.x * s.f.y, "÷": s.f.x / s.f.y }[s.f.op] }, s.f) }));

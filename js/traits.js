@@ -9,6 +9,9 @@ export const TRAITS = {
   "Quizard": { icon: "❓", name: "Mystery", text: "Hides a number: find the one that's missing" },
   "Trollar": { icon: "🪙", name: "Toll", text: "Pays only in coins: count them up" },
   "Haberhasher": { icon: "🔢", name: "Tens and ones", text: "Asks two-digit sums and differences" },
+  "Chompers": { icon: "🐊", name: "Big Bite", text: "Eats the bigger number: that's your hit" },
+  "Equal Twins": { icon: "⚖️", name: "Balance", text: "Both sides must match" },
+  "The Unknown": { icon: "🌀", name: "Shapeshift", text: "Switches between comparing and balancing" },
   "Starbot": { icon: "⭐", name: "Stripes", text: "Loves the ×5 and ×10 tables" },
   "Make-Ten Golem": { icon: "🔟", name: "Ten Smash", text: "Answers of 10 or more smash it for double" },
   "Sigma Rex": { icon: "👑", name: "Second wind", text: "Armors up at half HP" }

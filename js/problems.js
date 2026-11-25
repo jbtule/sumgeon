@@ -59,14 +59,22 @@ export function spoken(n) {
 }
 var OP_WORDS = { "+": "plus", "-": "minus", "×": "times", "÷": "divided by" };
 
+// A side of a Balance Hall problem, spoken: "3 + □" → "three plus what".
+function spokenSide(side) { return side.split(" + ").map(function (t) { return t === "□" ? "what" : spoken(Number(t)); }).join(" plus "); }
+var CMP_WORDS = { "<": "is less than", ">": "is greater than", "=": "is equal to" };
+
 // "seven plus eight"; for coins, "two dimes and three pennies. How many cents?"
 export function spokenProblem(p) {
+  if (p.op === "○") return "Compare " + spokenSide(p.l) + " and " + spokenSide(p.r) + ".";
+  if (p.op === "=") return spokenSide(p.l) + " equals " + spokenSide(p.r);
   if (p.op === "¢") return coinWords(p.coins) + ". How many cents?";
   return spoken(p.x) + " " + OP_WORDS[p.op] + " " + spoken(p.y);
 }
 // "seven plus eight is fifteen" (said after a miss, with the right answer); for coins, "two dimes
 // and three pennies make twenty-three cents".
 export function spokenFact(p) {
+  if (p.op === "○") return spokenSide(p.l) + " " + CMP_WORDS[p.sym] + " " + spokenSide(p.r);
+  if (p.op === "=") return spokenSide(p.l.replace("□", p.ans)) + " equals " + spokenSide(p.r.replace("□", p.ans));
   if (p.op === "¢") return coinWords(p.coins) + (coinCount(p.coins) > 1 ? " make " : " is ") + spoken(p.ans) + (p.ans === 1 ? " cent" : " cents");
   return spokenProblem(p) + " is " + spoken(p.ans);
 }
