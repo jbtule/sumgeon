@@ -395,6 +395,18 @@ Respellings for the voice go in `SAY_AS` as usual (Twodini is "Toodini"; check "
 
 **Collecting.** The Heroes half of Monsters & Heroes shows each hero's quips heard ("Quips: 3 of 5"), a small reason to try different captains.
 
+**Reviewing them** (built with the feature). A grown-up page, `moments/` at `/sumgeon/moments/`, built like the listen check and the spell check: `noindex`, not linked from the game, and stamped with the deployed commit.
+- **Pick and play:** pick a hero, a quip and a monster (in any stratum's colors and wall), then play the whole moment exactly as the game runs it: the same code, sounds and voice clip.
+- **Controls:**
+  - **Replay** and **Play all.** Play all runs every hero's quips one after another, like the listen check.
+  - **Step through the frames** (wind-down, close-up, freeze, snap, hit).
+  - **Speed:** ½× or 1×.
+  - **Reduced motion:** a toggle to see that version.
+- **Flags:** **⚑ Something's wrong** flags a moment (the quip's wording, the voice, the timing, the art) with tags and a note. Like the listen check, unflagged ones count as fine, and **Report** copies the flags or opens a GitHub issue.
+- **Rarity:** a simulator plays a few hundred runs of answers and shows how often moments come (per floor and per run), and how often each hero and quip comes up, so the 8% + 4% rule can be tuned by feel.
+
+In the game, `?moments` makes every qualifying hit a moment, for testing.
+
 ---
 
 ## 9. Grown-ups' corner (parents and teachers)
