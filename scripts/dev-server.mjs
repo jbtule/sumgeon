@@ -31,7 +31,12 @@ function version() {
 const send = (res, code, type, body) => { res.writeHead(code, { "Content-Type": type, "Cache-Control": "no-store, max-age=0" }); res.end(body); };
 
 createServer((req, res) => {
-  let path = decodeURIComponent(new URL(req.url, "http://x").pathname);
+  // A bad request (an odd address, a broken escape) gets a 400 instead of taking the server down.
+  try { serve(req, res); } catch (e) { try { send(res, 400, "text/plain", "bad request"); } catch (e2) { /* already answered */ } }
+}).listen(port, "127.0.0.1", () => console.log(`Sumgeon dev server: http://localhost:${port}/ (pages stamped, nothing cached)`));
+
+function serve(req, res) {
+  let path = decodeURIComponent(new URL(req.url.replace(/^\/+/, "/"), "http://x").pathname);
   if (path.endsWith("/")) path += "index.html";
   const file = normalize(join(root, path));
   if (!file.startsWith(root) || file.split(sep).includes(".git")) return send(res, 403, "text/plain", "no");
@@ -58,4 +63,4 @@ createServer((req, res) => {
   }
   res.writeHead(200, { ...head, "Content-Length": size });
   return req.method === "HEAD" ? res.end() : createReadStream(file).pipe(res);
-}).listen(port, "127.0.0.1", () => console.log(`Sumgeon dev server: http://localhost:${port}/ (pages stamped, nothing cached)`));
+}
