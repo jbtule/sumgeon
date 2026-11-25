@@ -54,6 +54,8 @@ swap(mapMatch[1], "\n" + JSON.stringify(map, null, 2) + "\n");
 swap('<span id="buildSha">dev</span>', `<span id="buildSha">${short}</span>`);
 
 writeFileSync(join(out, "index.html"), html);
+// What's deployed, for the game's update check (app.js checkUpdate).
+writeFileSync(join(out, "version.json"), JSON.stringify({ sha: short }));
 
 // The listen check: the same badge, its script stamped, and an import map that stamps the
 // game's modules it reads (js/lines.js and what it imports), as the game's page does.

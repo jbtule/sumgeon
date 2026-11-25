@@ -749,6 +749,8 @@ function wingsHTML() {
 // "Enter the dungeon" docked at the bottom. Monsters & Heroes is on the pause screen. Players, chalk color and sounds are in
 // Settings, as in Sound Box. Names are optional.
 function menu() {
+  G.onMenu = true;
+  if (updateReady && !G.running) { reloadForUpdate(); return; } // a new version is waiting
   const list = store.profiles();
   show(`<div class="cardhead logo-head"><h2 class="logo">Sum<b>geon</b></h2><button class="icon-btn" id="openSettings" type="button" aria-label="Settings">${GEAR}</button></div>
   <p class="tag"><strong>Your answer is your attack.</strong> Get it right and your digits fly at the monster.</p>
@@ -781,6 +783,7 @@ function toggle(id, title, sub, on) {
 // From the pause screen (paused: true) it leaves out Players, since switching would end the run,
 // and Done goes back to the pause screen.
 function settings(paused) {
+  G.onMenu = false; // an update waits until the start screen
   show(`<div class="cardhead"><h2>Settings</h2></div>
   ${paused ? "" : `<div class="grp"><span>Players</span><div id="players">${playersHTML()}</div></div>`}
   <div class="grp"><span>Chalk color</span><div class="swatches" id="swatches">${swatchesHTML()}</div></div>
@@ -811,6 +814,7 @@ function badgesCopy() {
 // and a mastery ring for their kind of math (gold once it's full); and the ten heroes, rescued or
 // still cursed.
 function bookPage() {
+  G.onMenu = false; // an update waits until the start screen
   const ring = (share) => {
     const c = 2 * Math.PI * 46;
     return `<svg class="ring" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="46" fill="none" stroke="var(--line)" stroke-width="7"/>
@@ -964,6 +968,7 @@ function nextWingHint() {
 }
 // enter: from the start screen's "Enter the dungeon", which says so first.
 function start(depth, enter) {
+  G.onMenu = false;
   hide();
   newRun(depth);
   Object.assign(G, { hearts: band().hearts, streak: 0, solved: 0, tries: 0, running: true, retry: [], recent: [], next: false, paused: null, runStars: 0, flow: { fluent: 0, hits: 0, cool: 0, n: 0 } });
@@ -973,6 +978,40 @@ function start(depth, enter) {
   loadMonster(0);
   newProblem();
 }
+
+/* ---------- update checking ----------
+   When the game wakes up (back to the tab or the Home Screen app) and every 15 minutes, it asks
+   for version.json (written by scripts/stamp.mjs). If a newer version is deployed, it reloads at
+   the next safe moment: on the start screen, never during a run. Progress is saved as it goes.
+   Locally the badge reads "dev" and there's nothing to check. */
+const BUILD = $("buildSha") ? $("buildSha").textContent.trim() : "dev";
+let updateReady = false, lastCheck = 0;
+async function checkUpdate() {
+  if (BUILD === "dev" || updateReady || Date.now() - lastCheck < 5e3) return; // not twice in a moment (focus and wake arrive together)
+  lastCheck = Date.now();
+  try {
+    const r = await fetch("version.json?t=" + Date.now(), { cache: "no-store" });
+    if (!r.ok) return;
+    const v = await r.json();
+    // Once per new version: if the page still looks old after reloading for it, don't loop.
+    let tried = null;
+    try { tried = sessionStorage.getItem("sumgeon:update"); } catch (e) { /* no session storage */ }
+    if (v.sha && v.sha !== BUILD && tried !== v.sha) { updateReady = v.sha; applyUpdate(); }
+  } catch (e) { /* offline: try again later */ }
+}
+// Reloads if an update is waiting and the start screen is up. The address gets the new version,
+// so the browser can't hand back its cached copy of the old page.
+function reloadForUpdate() {
+  try { sessionStorage.setItem("sumgeon:update", updateReady); } catch (e) { /* fine */ }
+  const u = new URL(location.href);
+  u.searchParams.set("v", updateReady);
+  location.replace(u.toString());
+}
+function applyUpdate() { if (updateReady && !G.running && G.onMenu) reloadForUpdate(); }
+document.addEventListener("visibilitychange", () => { if (!document.hidden) checkUpdate(); });
+addEventListener("focus", checkUpdate);
+addEventListener("pageshow", checkUpdate);
+setInterval(checkUpdate, 15 * 60e3);
 
 /* ---------- no accidental zoom ----------
    Safari zooms on a pinch even with maximum-scale=1, so pinches are stopped here. Double-tap zoom
