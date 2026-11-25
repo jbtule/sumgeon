@@ -145,6 +145,38 @@ const wake = () => sfx.tick();
 let talkOver = false;
 document.querySelectorAll("[data-talk]").forEach((b) => (b.onclick = () => { talkOver = b.dataset.talk === "1"; pressed("[data-talk]", b); }));
 // The voice gets a second and a half in before the moment cuts it off.
+// The sound board: every effect on its own, with what it's meant to be (sfx.js).
+const SOUNDS = [
+  ["Hero Moment", [
+    ["Record scratch", "The voice is cut off before a moment", () => sfx.scratch()],
+    ["Tape slowdown", "Time dragging to slow motion", () => sfx.tapeStop(0.6)],
+    ["Heartbeat", "The freeze, under the quip", () => sfx.heartbeat()],
+    ["Reverse swell", "Building into the snap", () => sfx.swell(0.45)],
+    ["Whip", "The hero whips into the monster", () => sfx.whip()],
+    ["Slam", "A moment's hit", () => sfx.slam()],
+    ["Big slam", "A team-up's hit", () => sfx.slam(true)]]],
+  ["Hero moves (at a moment's hit)", HEROES.map((h) => [h.n, h.move, () => sfx.move(h.d)])],
+  ["Monsters", [
+    ["Lightning crackle", "Minustaur: a charged problem appears", () => sfx.charge()],
+    ["Thunder strike", "Minustaur: a charged miss (2 hearts)", () => sfx.thunder()],
+    ["Boss roar", "Every 9–15 s of a boss fight", () => sfx.roar()],
+    ["Monster appears", "A new floor's monster", () => sfx.appear(false)],
+    ["Boss appears", "The boss floor", () => sfx.appear(true)]]],
+  ["The fight", [
+    ["Key tap", "Each number-pad key", () => sfx.tick()],
+    ["Launch", "Your digits fly", () => sfx.launch(1)],
+    ["Launch, on a streak", "Digits fly with a streak going", () => sfx.launch(5)],
+    ["Hit", "An ordinary hit", () => sfx.impact(false)],
+    ["Critical hit", "A hit with crits on", () => sfx.impact(true)],
+    ["Miss", "A wrong answer", () => sfx.miss()],
+    ["Crack", "A failed spell, a heart lost", () => sfx.crack()],
+    ["Floor cleared", "A monster beaten", () => sfx.cleared()],
+    ["Victory", "The stratum cleared", () => sfx.victory()]]]
+];
+$("sounds").innerHTML = SOUNDS.map(([group, list], g) => `<h3>${esc(group)}</h3>` + list.map(([n, what], i) =>
+  `<div class="snd"><button type="button" data-snd="${g}:${i}" aria-label="Play ${esc(n)}">▶</button><span><b>${esc(n)}</b><small>${esc(what)}</small></span></div>`).join("")).join("");
+$("sounds").onclick = (e) => { const b = e.target.closest("[data-snd]"); if (!b) return; const [g, i] = b.dataset.snd.split(":").map(Number); SOUNDS[g][1][i][2](); };
+
 const talk = () => { if (!talkOver) return Promise.resolve(); say("p", monsterCleared(MON[0])); return new Promise((r) => setTimeout(r, 1500)); };
 $("play").onclick = () => { if (playing) return; wake(); talk().then(play); };
 $("next").onclick = () => { wake(); if (nextGate) nextGate(); };

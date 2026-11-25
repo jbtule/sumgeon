@@ -74,6 +74,11 @@
   .checks label{display:inline-flex;align-items:center;gap:3px;padding:4px 8px;border-radius:999px;background:var(--dark);font-size:13px;font-weight:800}
   [hidden]{display:none !important}
   .sound{color:var(--muted);font-size:13px;margin:4px 0 0}
+  .sounds{display:grid;gap:6px}
+  .sounds h3{font:400 13px Bungee,sans-serif;color:var(--muted);margin:12px 0 2px}
+  .snd{display:flex;align-items:center;gap:10px;padding:6px 8px;border:1px solid var(--line);border-radius:12px;background:var(--panel)}
+  .snd button{min-width:44px;min-height:40px;border-radius:10px;border:2px solid var(--edge);background:var(--btn);color:inherit;font-weight:900;cursor:pointer}
+  .snd b{display:block;font-size:14px}.snd small{color:var(--muted);font-size:12px}
 </style>
 </head>
 <body class="review">
@@ -133,6 +138,10 @@
     <div class="formbtns"><button class="small" type="button" id="cancelFlag">Cancel</button><button class="small" type="button" id="saveFlag">Save &amp; continue</button></div>
   </div>
   <ul class="list" id="recent" aria-label="Moments played"></ul>
+
+  <h2>Sounds</h2>
+  <p class="sub">Every sound effect on its own. Listen for: does it sound like what it says? Is it too loud or too soft next to the others? Is it too long? Does any feel harsh or annoying after a few times?</p>
+  <div class="sounds" id="sounds"></div>
 
   <h2>Rarity</h2>
   <section class="sim">
