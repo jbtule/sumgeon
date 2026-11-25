@@ -1,14 +1,18 @@
 // Draws the social card (social.png at the repo root, 1200 × 630), the picture a link to the game
 // shows in Messages, Slack and the like: the Counting Cellar's wall, the title and a few of the
-// game's monsters, all from the game's own art and colors (monsters.js, styles.css).
+// game's monsters, with a hint drawn as the game draws one (a ten-frame), all from the game's own art and colors (monsters.js, styles.css).
 // Run: node design/social/make.mjs   (needs Playwright and the network, for the Google Fonts)
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createRequire } from "node:module";
 import { MON, defs } from "../../js/monsters.js";
+import { hintFor } from "../../js/hints.js";
+import { factOf } from "../../js/learn.js";
 
 const here = dirname(fileURLToPath(import.meta.url)), root = join(here, "..", "..");
 const W = 1200, H = 630;
+// The hint, as the game shows it (hints.js): 3 + 4 on a ten-frame, drawn bigger.
+const hint = hintFor(factOf("+3,4"));
 const mon = (name, x, y, size, flip) => {
   const m = MON.find((t) => t.n === name);
   return `<g transform="translate(${x} ${y}) scale(${(flip ? -1 : 1) * size / 200} ${size / 200})${flip ? " translate(-200 0)" : ""}">${m.d(m.c)}</g>`;
@@ -25,11 +29,16 @@ const html = `<!doctype html><html><head><meta charset="utf-8">
 <style>
   body{margin:0;width:${W}px;height:${H}px;overflow:hidden;background:#21140f}
   svg.bg{position:absolute;inset:0}
-  .text{position:absolute;left:70px;top:150px;width:560px;color:#f3efe4}
+  :root{--gold:#ffc93c;--coral:#ff5a4e;--edge:#5d4536;--hint-line:#5d4536;--hint-empty:#5d4536}
+  .text{position:absolute;left:70px;top:64px;width:560px;color:#f3efe4}
   h1{font:400 112px/1 Bungee,sans-serif;margin:0;color:#ffc93c;text-shadow:0 6px 0 #0c171c}
   h1 b{color:#ff5a4e;font-weight:400}
   p{font:900 36px/1.25 Nunito,sans-serif;margin:26px 0 0;text-shadow:0 3px 0 #0c171c}
   .sub{font-weight:800;font-size:27px;color:#e6c9a8;margin-top:14px}
+  .hint{display:inline-grid;justify-items:center;gap:10px;margin-top:30px;padding:18px 24px;border-radius:20px;background:#120c0aee;border:3px solid #4a3328}
+  .hint svg{width:300px;height:auto;display:block}
+  .hint .say{font:800 26px Nunito,sans-serif;color:#f3efe4}
+  .hint .say b{font:400 26px Bungee,sans-serif;color:#ffc93c}
 </style></head><body>
 <svg class="bg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}">
   <rect width="${W}" height="${H}" fill="#21140f"/>${bricks}
@@ -42,7 +51,8 @@ const html = `<!doctype html><html><head><meta charset="utf-8">
 </svg>
 <div class="text"><h1>Sum<b>geon</b></h1>
 <p>Your answer is your attack.</p>
-<p class="sub">A math dungeon crawler for kids</p></div>
+<p class="sub">A math dungeon crawler for kids</p>
+<div class="hint">${hint.model}<div class="say">💡 3 and 4 make <b>7</b></div></div></div>
 </body></html>`;
 const require = createRequire(import.meta.url);
 const { chromium } = require("playwright");
