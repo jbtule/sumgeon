@@ -65,6 +65,22 @@ if (new URLSearchParams(location.search).has("layout")) {
   setTimeout(layoutProbe, 500);
   addEventListener("click", () => setTimeout(layoutProbe, 400));
 }
+// ?audio shows what Safari reports about the sound effects (Web Audio), with a button to test
+// one, for fixing sound on a real device. The voice uses an <audio> element instead.
+if (new URLSearchParams(location.search).has("audio")) {
+  const box = document.createElement("div");
+  box.style.cssText = "position:fixed;left:4px;top:4px;z-index:99;padding:6px 8px;font:12px/1.35 ui-monospace,monospace;background:#000d;color:#7fdc8a;border-radius:8px;white-space:pre";
+  const out = document.createElement("div"), test = document.createElement("button");
+  test.textContent = "Test sound"; test.style.cssText = "margin-top:6px;font:inherit;padding:4px 10px";
+  test.onclick = () => { sfx.cleared(); setTimeout(show, 300); };
+  box.append(out, test); document.body.append(box);
+  const show = () => {
+    const s = sfx.status();
+    out.textContent = [`context   ${s.state}`, `rate      ${s.rate}`, `sfx on    ${s.on}`, `played    ${s.played}`, `gestures  ${s.gestures}`, `error     ${s.error || "none"}`,
+      `browser   ${navigator.userAgent.replace(/.*(Version\/[\d.]+).*(Safari)\/[\d.]+.*/, "$2 $1").slice(0, 40)}`].join("\n");
+  };
+  show(); setInterval(show, 1000);
+}
 const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
 
 // localStorage can be missing or throw (private browsing); then progress lasts this visit only.
