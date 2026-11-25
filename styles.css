@@ -322,9 +322,9 @@ h1 b{color:var(--coral);font-weight:400}
    map. --wall is set by data-stratum on .game, and on each map layer. */
 :root{--wall-plain:repeating-linear-gradient(0deg,#16292f 0 38px,#13252b 38px 40px);--wall-cellar:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='36' height='36'%3E%3Crect width='36' height='36' fill='%233a2620'/%3E%3Cg fill='%2321140f'%3E%3Crect width='36' height='2.5'/%3E%3Crect y='18' width='36' height='2.5'/%3E%3Crect width='2.5' height='18'/%3E%3Crect x='18' y='18' width='2.5' height='18'/%3E%3C/g%3E%3Cg fill='%23ffffff0d'%3E%3Crect x='3' y='3' width='14' height='3'/%3E%3Crect x='21' y='21' width='14' height='3'/%3E%3C/g%3E%3C/svg%3E");--wall-hall:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='44' height='44'%3E%3Crect width='44' height='44' fill='%232a3346'/%3E%3Crect width='22' height='22' fill='%23323d54'/%3E%3Crect x='22' y='22' width='22' height='22' fill='%23323d54'/%3E%3Cpath d='M0 0H44M0 22H44M0 0V44M22 0V44' stroke='%231b2231' stroke-width='1.5'/%3E%3Cpath d='M4 30 Q12 26 16 34 T20 40' stroke='%23ffffff14' stroke-width='1.2' fill='none'/%3E%3Cpath d='M26 6 Q32 12 40 8' stroke='%23ffffff14' stroke-width='1.2' fill='none'/%3E%3C/svg%3E");--wall-tower:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='40'%3E%3Crect width='56' height='40' fill='%232c3a40'/%3E%3Cg fill='%2318232a'%3E%3Crect width='56' height='3'/%3E%3Crect y='20' width='56' height='3'/%3E%3Crect width='3' height='20'/%3E%3Crect x='28' y='20' width='3' height='20'/%3E%3C/g%3E%3Cg fill='%23ffffff0a'%3E%3Crect x='6' y='6' width='18' height='2'/%3E%3Crect x='34' y='26' width='16' height='2'/%3E%3C/g%3E%3Ccircle cx='44' cy='11' r='1.5' fill='%23ffffff12'/%3E%3Ccircle cx='14' cy='31' r='1.2' fill='%23ffffff12'/%3E%3C/svg%3E")}
 .game{--wall:var(--wall-plain)}
-body[data-stratum="cellar"] .game,.wing.cellar{--wall:var(--wall-cellar)}
-body[data-stratum="hall"] .game,.wing.hall{--wall:var(--wall-hall)}
-body[data-stratum="tower"] .game,.wing.tower{--wall:var(--wall-tower)}
+body[data-stratum="cellar"] .game,.wing.cellar,.d-layer.cellar{--wall:var(--wall-cellar)}
+body[data-stratum="hall"] .game,.wing.hall,.d-layer.hall{--wall:var(--wall-hall)}
+body[data-stratum="tower"] .game,.wing.tower,.d-layer.tower{--wall:var(--wall-tower)}
 
 /* The dive (diveUI): this stratum's depths down the side of the monster's box. It scrolls, with
    the line drawn per row so it runs the whole way, and fades at the ends. */
@@ -353,9 +353,9 @@ body[data-stratum="tower"] .game,.wing.tower{--wall:var(--wall-tower)}
 
 /* Each stratum's colors, to go with its wall: panels, borders, background and keys change;
    gold and coral stay the accents. Set by data-stratum on <body> (app.js newRun). */
-body[data-stratum="cellar"]{--bg:#1c1411;--panel:#2a1e19;--line:#4a3328;--btn:#3b2a22;--btn2:#4a362c;--edge:#5d4536;--muted:#c9b4a6;--dark:#120c0a}
-body[data-stratum="hall"]{--bg:#141a28;--panel:#1d2537;--line:#33405c;--btn:#2a3550;--btn2:#34415f;--edge:#46557a;--muted:#b0bcd6;--dark:#0d111b}
-body[data-stratum="tower"]{--bg:#151c1e;--panel:#20292c;--line:#36454a;--btn:#2c393d;--btn2:#364549;--edge:#4a5b60;--muted:#b3c0c2;--dark:#0d1213}
+body[data-stratum="cellar"],.descent.cellar,.d-layer.cellar{--bg:#1c1411;--panel:#2a1e19;--line:#4a3328;--btn:#3b2a22;--btn2:#4a362c;--edge:#5d4536;--muted:#c9b4a6;--dark:#120c0a}
+body[data-stratum="hall"],.descent.hall,.d-layer.hall{--bg:#141a28;--panel:#1d2537;--line:#33405c;--btn:#2a3550;--btn2:#34415f;--edge:#46557a;--muted:#b0bcd6;--dark:#0d111b}
+body[data-stratum="tower"],.descent.tower,.d-layer.tower{--bg:#151c1e;--panel:#20292c;--line:#36454a;--btn:#2c393d;--btn2:#364549;--edge:#4a5b60;--muted:#b3c0c2;--dark:#0d1213}
 body{transition:background-color .4s;--hint-empty:var(--edge);--hint-line:var(--edge)}
 
 /* Spell casting: the drawing pad takes the number pad's place, the same height, glowing. */
@@ -604,3 +604,52 @@ label.switch-row:focus-within{outline-offset:-3px}
   /* Your hero and hearts sit under the number pad, on your side. */
   .you{grid-area:you;margin-bottom:16px}
 }
+
+/* The descent (js/descent.js, DESIGN.md §8.3): tapping Enter, the start card falls away and the
+   camera drops past the grass and down through the strata to the chosen depth, then "Now entering
+   the Sumgeon!" slams in. Each layer takes its stratum's wall and palette (above); .descent has
+   the chosen stratum's, for the title. */
+.ov.leaving{pointer-events:none;background:transparent;transition:background .3s}
+.ov.leaving .card{animation:cardfall .45s cubic-bezier(.5,0,.9,.4) forwards}
+@keyframes cardfall{to{transform:translateY(110vh) rotate(7deg);opacity:.6}}
+.descent{position:fixed;left:0;top:0;width:100%;height:var(--app-h,100vh);z-index:8;overflow:hidden;background:var(--dark);transition:opacity .35s;touch-action:none;user-select:none;-webkit-user-select:none}
+.descent.out{opacity:0}
+.descent.quick{animation:dfade .15s ease-out}
+@keyframes dfade{from{opacity:0}}
+.d-stack{position:absolute;left:0;top:0;width:100%;will-change:transform}
+.d-surface{position:relative}
+.d-sky{position:relative;background:radial-gradient(1.5px 1.5px at 18% 22%,#f3efe4cc 50%,#0000),radial-gradient(1.5px 1.5px at 72% 14%,#f3efe4aa 50%,#0000),radial-gradient(1px 1px at 44% 36%,#f3efe499 50%,#0000),radial-gradient(1.5px 1.5px at 86% 44%,#f3efe488 50%,#0000),radial-gradient(1px 1px at 8% 56%,#f3efe477 50%,#0000),linear-gradient(#0b161b,#1b3640 70%,#2f5560)}
+.d-door{position:absolute;left:50%;bottom:0;width:clamp(64px,16vw,96px);aspect-ratio:3/4;transform:translateX(-50%);border-radius:999px 999px 0 0;background:#05090b;border:5px solid #6b5a4a;border-bottom:0;box-shadow:0 0 0 3px #0c171c}
+.d-grass{background:linear-gradient(#5fae4e,#3f7d38 14%,#2b4a2a 26%,#3a2a20 30%,#2a1d17);border-top:3px solid #0c171c}
+.d-layer{position:relative;background:linear-gradient(#0c171c50,#0c171c90),var(--wall);border-top:6px solid var(--dark);box-shadow:inset 0 10px 18px #0008}
+.d-name{position:absolute;left:0;right:0;top:40%;text-align:center;font:400 clamp(20px,6vw,34px) Bungee,sans-serif;color:var(--muted);opacity:.55;text-shadow:0 2px 0 var(--dark)}
+.d-layer.chosen .d-name{opacity:.8}
+.d-shaft{position:absolute;left:50%;width:4px;margin-left:-2px;background:linear-gradient(#f3efe455 70%,#f3efe400)}
+.d-marks{list-style:none;margin:0;padding:0}
+.d-marks li{position:absolute;left:50%;width:0;height:0}
+.d-marks i{position:absolute;left:-10px;top:-10px;width:20px;height:20px;border-radius:50%;border:2px solid #f3efe466;background:var(--dark)}
+.d-marks span{position:absolute;left:20px;top:-.7em;white-space:nowrap;font:400 clamp(13px,3.4vw,16px) Bungee,sans-serif;color:#f3efe499;text-shadow:0 1px 2px #000}
+.d-marks li.done i{background:var(--gold);border-color:var(--gold)}
+.d-marks li.done span{color:var(--ink)}
+.d-marks li.here i{left:-15px;top:-15px;width:30px;height:30px;background:var(--coral);border:3px solid #fff;box-shadow:0 0 18px #ff5a4ecc}
+.d-marks li.here span{color:#fff;font-size:clamp(16px,4.4vw,22px);left:26px}
+.descent.landed li.here i{animation:dping .7s ease-out}
+@keyframes dping{0%{box-shadow:0 0 0 0 #ff5a4eee}100%{box-shadow:0 0 0 26px #ff5a4e00}}
+.d-streaks{position:absolute;inset:0;pointer-events:none;opacity:0;transition:opacity .25s;background:repeating-linear-gradient(90deg,#0000 0 37px,#f3efe40f 37px 39px,#0000 39px 83px,#f3efe40a 83px 84px)}
+.descent.falling .d-streaks{opacity:1}
+.descent.landed .d-stack{animation:dland .32s ease-out}
+@keyframes dland{30%{translate:0 7px}60%{translate:0 -3px}}
+.d-title{position:absolute;left:16px;right:16px;top:46%;display:grid;justify-items:center;gap:10px;text-align:center;pointer-events:none}
+.d-title::before{content:"";position:absolute;inset:-40px -16px;z-index:-1;background:radial-gradient(ellipse 62% 58% at 50% 50%,#05090bee 0,#05090bb0 50%,#05090b00 100%);opacity:0;transition:opacity .3s}
+.d-title h2{margin:0;display:grid;justify-items:center;gap:2px;opacity:0}
+.d-now{font:400 clamp(18px,5.4vw,32px)/1.1 Bungee,sans-serif;color:var(--ink);text-shadow:0 3px 0 var(--dark)}
+.d-logo{font:400 clamp(40px,13vw,84px)/1 Bungee,sans-serif;color:var(--gold);text-shadow:0 4px 0 var(--dark),0 0 28px #000;text-wrap:balance}
+.d-logo b{color:var(--coral);font-weight:400}
+.d-title p{margin:0;padding:4px 14px;border-radius:999px;background:var(--panel);border:2px solid var(--edge);font:400 clamp(14px,3.8vw,18px) Bungee,sans-serif;color:var(--ink);opacity:0;transform:translateY(8px);transition:opacity .25s,transform .25s}
+.descent.titled .d-title::before{opacity:1}
+.descent.titled .d-title h2{opacity:1;animation:dslam .42s cubic-bezier(.2,1.4,.4,1)}
+@keyframes dslam{0%{transform:scale(2.6);opacity:0}55%{transform:scale(.94);opacity:1}100%{transform:scale(1)}}
+.descent.landed .d-title p{opacity:1;transform:none}
+.descent.quick .d-title h2{animation:none}
+@media (min-width: 760px){.d-title{top:50%}}
+@media(prefers-reduced-motion:reduce){.ov.leaving .card{animation:none;opacity:0}.descent.titled .d-title h2,.descent.landed .d-stack,.descent.landed li.here i{animation:none}}

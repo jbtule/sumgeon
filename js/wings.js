@@ -110,3 +110,30 @@ export function wingStars(wing, progress) {
   const p = (progress[wing.id] || {}).stars || [];
   return { got: p.reduce((a, b) => a + (b || 0), 0), max: (wing.floors.length + 1) * 3 };
 }
+
+// The descent (js/descent.js): tapping "Enter the dungeon" drops the camera from the grass down
+// through the strata to the chosen one and depth, then "Now entering the Sumgeon!" slams in.
+// Times in ms. A later stratum or a deeper start falls further and takes a little longer, up to
+// maxFall, so the whole thing is at most about 2.8 s. "Go deeper" falls one depth inside its
+// stratum; reduced motion is a quick fade with the title.
+export const DESCENT = { lead: 250, fall: 950, perLayer: 250, perDepth: 100, maxFall: 1500, hold: 700, fade: 350,
+  deeperLead: 150, deeperFall: 800, deeperHold: 550, quickIn: 150, quickHold: 300, quickFade: 150 };
+// mode: "enter" (from the start screen), "deeper" (Go deeper) or "reduced". Returns which Wings'
+// layers to draw (indexes into WINGS), whether the surface is on top, the depth the camera starts
+// at (0: the surface), and when each part happens: the fall starts at `lead` and lands at `land`,
+// the title shows at `titleAt`, the run starts at `ready`, and the overlay is gone at `total`.
+export function descentPlan(wingId, depth, mode) {
+  const T = DESCENT, i = Math.max(0, WINGS.findIndex((w) => w.id === wingId)), d = Math.max(1, depth || 1);
+  if (mode === "reduced") {
+    const ready = T.quickIn + T.quickHold;
+    return { layers: [i], surface: false, from: d, to: d, lead: 0, fall: 0, titleAt: 0, land: T.quickIn, ready, total: ready + T.quickFade };
+  }
+  if (mode === "deeper") {
+    const land = T.deeperLead + T.deeperFall, ready = land + T.deeperHold;
+    return { layers: [i], surface: false, from: d - 1, to: d, lead: T.deeperLead, fall: T.deeperFall, titleAt: land, land, ready, total: ready + T.fade };
+  }
+  const fall = Math.min(T.maxFall, T.fall + T.perLayer * i + T.perDepth * (d - 1));
+  const land = T.lead + fall, ready = land + T.hold;
+  return { layers: WINGS.slice(0, i + 1).map((w, n) => n), surface: true, from: 0, to: d, lead: T.lead, fall,
+    titleAt: T.lead + Math.round(fall / 2), land, ready, total: ready + T.fade };
+}

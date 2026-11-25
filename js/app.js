@@ -18,6 +18,7 @@ import * as sfx from "./sfx.js";
 import { say, stopSpeech, setVoice, speaking, cutOff } from "./speech.js";
 import { freshState as freshMoments, freshRun, decide as decideMoment, joined, heardOf, nameLine } from "./moments.js";
 import { playMoment } from "./slowmo.js";
+import { playDescent, descending } from "./descent.js";
 
 const $ = (id) => document.getElementById(id);
 const reduced = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -768,7 +769,7 @@ function end(win) {
     return false;
   };
   $("again").onclick = () => { if (ready()) start(depth); };
-  if (deeper) $("deeper").onclick = () => { if (ready()) start(depth + 1); };
+  if (deeper) $("deeper").onclick = () => { if (ready()) descend(depth + 1, "deeper"); };
   // A newly opened stratum, from its first depth.
   if (opened) $("nextStratum").onclick = () => { if (!ready()) return; st.band = opened.band; saveSettings(); start(1); };
   $("set").onclick = () => openMenu();
@@ -901,7 +902,7 @@ function menu() {
   if ($("switchPlayer")) $("switchPlayer").onclick = () => settings();
   $("go").onclick = () => {
     if (!hasCaptain()) { $("warn").textContent = freePick(team, fresh()) ? "Pick your hero first." : "Pick who leads first."; $("captain").scrollIntoView({ block: "center", behavior: "smooth" }); say("p", PHRASE.heroFirst, true); return; }
-    start(null, true);
+    descend(null, "enter");
   };
 }
 // Double-tapping a stratum on the start screen enters it: the first tap picks it (and redraws the
@@ -1168,16 +1169,35 @@ function nextWingHint() {
   const t = toOpen(next[0], progress, recs);
   return `<p>To open <strong>${next.map((x) => x.name).join("</strong> and <strong>")}</strong>, learn ${Math.round(t.need * 100)}% of the facts here. You're at ${Math.round(t.share * 100)}%.</p>`;
 }
-// enter: from the start screen's "Enter the dungeon", which says so first.
-function start(depth, enter) {
+// The descent (descent.js): "Enter the dungeon" (mode "enter") and "Go deeper" ("deeper") first
+// drop down through the strata to the depth, then start the run, exactly as without it. The
+// opening lines start on the tap (speech has to start in a tap on iOS), so start() doesn't say
+// them again. The start card falls away as it begins.
+function descend(depth, mode) {
+  if (descending()) return;
+  const d = depth || deepest(wing(), progress), enter = mode === "enter";
+  G.onMenu = false; // no update reload, no stratum double-tap, mid-descent
+  stopSpeech(); openingLines(enter, d);
+  const ov = $("ov");
+  ov.classList.add("leaving");
+  const fell = setTimeout(() => { ov.classList.remove("leaving"); hide(); }, reduced() ? 0 : 450);
+  playDescent({ wing: wing(), depth: d, mode, reduced: reduced(), title: enter ? PHRASE.enter : `Depth ${d}`, sub: enter ? `${wing().name} · Depth ${d}` : wing().name },
+    () => { clearTimeout(fell); ov.classList.remove("leaving"); start(d, enter, true); });
+}
+// What's said as a run begins: "Now entering the Sumgeon!" (from the start screen), then the depth.
+function openingLines(enter, d) {
+  if (enter) say("p", PHRASE.enter, false, null, ENTER_FX);
+  if (d > 1 && d <= DEPTH_MAX_SPOKEN) say("p", depthLine(d));
+}
+// enter: from the start screen's "Enter the dungeon", which says so first. voiced: the descent
+// already said the opening lines.
+function start(depth, enter, voiced) {
   G.onMenu = false;
   hide();
   newRun(depth);
   Object.assign(G, { hearts: band().hearts, streak: 0, solved: 0, tries: 0, running: true, retry: [], recent: [], next: false, paused: null, runStars: 0 });
   MR = freshRun();
-  stopSpeech();
-  if (enter) say("p", PHRASE.enter, false, null, ENTER_FX);
-  if (G.depth > 1 && G.depth <= DEPTH_MAX_SPOKEN) say("p", depthLine(G.depth));
+  if (!voiced) { stopSpeech(); openingLines(enter, G.depth); }
   loadMonster(0);
   // The player's first fight: how to attack, before the first problem is read (until they answer).
   if (once("hit")) say("p", PHRASE.hitHow, false, () => !G.tries && G.running);

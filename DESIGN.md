@@ -349,6 +349,7 @@ Hitting a monster should feel good. Today there is a shake and a damage pop. The
 ### 8.3 Juice checklist
 - Streak meter: a chalk flame next to the hearts that grows at 3, 5 and 10.
 - Boss intro: the floor darkens, the boss name slams in, and there's a one-line taunt.
+- **The descent** (built: `js/descent.js`): tapping Enter the dungeon, the start card falls away and the camera drops past the grass and down through the strata (the depth map's layers, each in its own wall and colors) to the chosen stratum and depth, about 2 s (longer the deeper you start, at most 2.8 s), over a falling rumble and wind. "Now entering the Sumgeon!" slams in as the voice says it, and on landing a whoomp, the stratum's name and "Depth N", then the room fades in. Any tap or key skips it. Go deeper gets a short fall of one depth; reduced motion gets a quick fade with the title.
 - **A stratum cleared** should be something really, really big (to design). For now it plays the same fanfare as a floor cleared.
 - Monster idle personality: each monster gets a slightly different idle motion. Octoloop sways, Timesaur rotates a few degrees and Divvy's dots orbit.
 - Haptics: `navigator.vibrate(15)` on hits and `(40)` on misses where supported, and respect a settings toggle.

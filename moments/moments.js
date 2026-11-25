@@ -162,6 +162,9 @@ const SOUNDS = [
     ["Boss roar", "Every 9–15 s of a boss fight", () => sfx.roar()],
     ["Monster appears", "A new floor's monster", () => sfx.appear(false)],
     ["Boss appears", "The boss floor", () => sfx.appear(true)]]],
+  ["The descent", [
+    ["Falling", "Enter the dungeon: down through the strata", () => sfx.fall(1.4)],
+    ["Whoomp", "Landing in the stratum", () => sfx.whoomp()]]],
   ["The fight", [
     ["Key tap", "Each number-pad key", () => sfx.tick()],
     ["Launch", "Your digits fly", () => sfx.launch(1)],

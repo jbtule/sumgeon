@@ -72,3 +72,25 @@ assert.deepEqual(wingStars(WINGS[0], { cellar: { stars: [3, 1, 2] } }), { got: 6
 assert.deepEqual(wingStars(tower, {}), { got: 0, max: 21 });
 assert.deepEqual(wingStars(hall, {}), { got: 0, max: 18 });
 console.log("✓ stars");
+
+// The descent: deeper starts fall longer, never past about 2.8 s; Go deeper and reduced motion are short.
+{
+  const { descentPlan, DESCENT } = await import("../js/wings.js");
+  const c1 = descentPlan("cellar", 1, "enter"), t1 = descentPlan("tower", 1, "enter"), t3 = descentPlan("tower", 3, "enter");
+  assert.deepEqual([c1.layers, c1.surface, c1.from, c1.to], [[0], true, 0, 1]);
+  assert.deepEqual(t1.layers, [0, 1, 2], "falls past every stratum above the Tower");
+  assert.ok(c1.fall < descentPlan("hall", 1, "enter").fall && descentPlan("hall", 1, "enter").fall < t1.fall, "a later stratum falls longer");
+  assert.ok(t1.fall < t3.fall, "a deeper start falls longer");
+  assert.equal(c1.total, 2250);
+  for (const w of WINGS) for (let d = 1; d <= 30; d++) {
+    const p = descentPlan(w.id, d, "enter");
+    assert.ok(p.total <= 2800, `${w.id} depth ${d}: ${p.total} ms`);
+    assert.ok(p.lead < p.titleAt && p.titleAt < p.land && p.land < p.ready && p.ready < p.total);
+  }
+  const deeper = descentPlan("hall", 4, "deeper");
+  assert.deepEqual([deeper.layers, deeper.surface, deeper.from, deeper.to], [[1], false, 3, 4]);
+  assert.ok(deeper.total < c1.total);
+  assert.equal(descentPlan("tower", 7, "reduced").total, 600, "reduced motion: a quick fade");
+  assert.equal(descentPlan("tower", 7, "reduced").fall, 0);
+  assert.ok(DESCENT.maxFall + DESCENT.lead + DESCENT.hold + DESCENT.fade <= 2800);
+}

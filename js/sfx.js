@@ -145,6 +145,54 @@ export function roar() {
   });
 }
 
+/* ---------- the descent (descent.js): falling down through the strata ---------- */
+// The fall: a deep rumble that swells, and wind rushing past, rising in pitch as you speed up,
+// for dur seconds. stopFall() cuts it short when the descent is skipped.
+var falling = null;
+export function fall(dur) {
+  var d = dur || 1.2;
+  play(function (t) {
+    var g = ctx.createGain();
+    g.gain.value = 1; g.connect(out);
+    // The rumble: low noise under a sub tone that sinks.
+    var r = ctx.createBufferSource(), rf = ctx.createBiquadFilter(), rg = ctx.createGain();
+    r.buffer = noiseBuf; r.loop = true;
+    rf.type = "lowpass"; rf.frequency.setValueAtTime(110, t); rf.frequency.linearRampToValueAtTime(220, t + d);
+    rg.gain.setValueAtTime(0.0001, t); rg.gain.exponentialRampToValueAtTime(0.5, t + d * 0.6); rg.gain.exponentialRampToValueAtTime(0.0001, t + d + 0.25);
+    r.connect(rf).connect(rg).connect(g);
+    var o = ctx.createOscillator(), og = ctx.createGain();
+    o.type = "sine"; o.frequency.setValueAtTime(58, t); o.frequency.exponentialRampToValueAtTime(34, t + d);
+    og.gain.setValueAtTime(0.0001, t); og.gain.exponentialRampToValueAtTime(0.28, t + d * 0.5); og.gain.exponentialRampToValueAtTime(0.0001, t + d + 0.2);
+    o.connect(og).connect(g);
+    // The wind: band-passed noise sweeping up, with a slow flutter.
+    var w = ctx.createBufferSource(), wf = ctx.createBiquadFilter(), wg = ctx.createGain(), lfo = ctx.createOscillator(), lg = ctx.createGain();
+    w.buffer = noiseBuf; w.loop = true;
+    wf.type = "bandpass"; wf.Q.value = 1.4; wf.frequency.setValueAtTime(380, t); wf.frequency.exponentialRampToValueAtTime(1500, t + d);
+    lfo.frequency.value = 5.5; lg.gain.value = 220; lfo.connect(lg).connect(wf.frequency);
+    wg.gain.setValueAtTime(0.0001, t); wg.gain.exponentialRampToValueAtTime(0.22, t + d * 0.8); wg.gain.exponentialRampToValueAtTime(0.0001, t + d + 0.15);
+    w.connect(wf).connect(wg).connect(g);
+    var end = t + d + 0.3;
+    [r, o, w, lfo].forEach(function (n) { n.start(t); n.stop(end); });
+    falling = { g: g, end: end };
+  });
+}
+export function stopFall() {
+  if (!ctx || !falling) return;
+  var f = falling, t = ctx.currentTime;
+  falling = null;
+  if (t >= f.end) return;
+  f.g.gain.cancelScheduledValues(t); f.g.gain.setValueAtTime(f.g.gain.value, t); f.g.gain.linearRampToValueAtTime(0, t + 0.12);
+}
+// The landing: a low, soft whoomp, a sinking thud with a puff of air.
+export function whoomp() {
+  play(function (t) {
+    tone("sine", 120, 30, t, 0.5, 0.75);
+    tone("triangle", 80, 40, t, 0.3, 0.2);
+    noise(t, 0.35, 0.35, "lowpass", 260);
+    noise(t, 0.12, 0.08, "bandpass", 900);
+  });
+}
+
 // A floor cleared: a rising mallet jingle.
 export function cleared() {
   play(function (t) { [72, 76, 79, 84].forEach(function (m, i) { mallet(m, t + i * 0.09, 0.3, 0.35); }); });

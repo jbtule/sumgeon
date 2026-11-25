@@ -108,7 +108,7 @@ assert.ok(app0.includes('say("h", quipLine(mo.quip), true)'), "a quip is said in
 const app = readFileSync(new URL("../js/app.js", import.meta.url), "utf8");
 const HELPERS = ["heroName", "heroJoins", "heroCursed", "heroRescue", "heroAlmost", "heroHelps", "traitLine"].join("|");
 for (const [call] of app.matchAll(/say\([^)]*\)/g)) {
-  assert.match(call, new RegExp(String.raw`say\("(p|m|q|h)", (quipLine\(mo\.quip\)|PHRASE\.\w+|BARK\.\w+|BARK\[\w+\]|monsterName\(m\)|monsterCleared\(m\)|monsterWon\(m\)|(${HELPERS})\((HEROES\[[\w.]+\]|\w+)\)|wingCleared\(\w+(\(\))?\)|wingOpened\(\w+\)|depthLine\(G\.depth\)|reversedLine\(\w+\)|howToWriteLine\(\w+\)|spokenProblem\(G\.cur\)|spokenFact\(said\)|spokenMissing\(G\.cur\))`), `${call} says a line that isn't in js/lines.js`);
+  assert.match(call, new RegExp(String.raw`say\("(p|m|q|h)", (quipLine\(mo\.quip\)|PHRASE\.\w+|BARK\.\w+|BARK\[\w+\]|monsterName\(m\)|monsterCleared\(m\)|monsterWon\(m\)|(${HELPERS})\((HEROES\[[\w.]+\]|\w+)\)|wingCleared\(\w+(\(\))?\)|wingOpened\(\w+\)|depthLine\((G\.depth|d)\)|reversedLine\(\w+\)|howToWriteLine\(\w+\)|spokenProblem\(G\.cur\)|spokenFact\(said\)|spokenMissing\(G\.cur\))`), `${call} says a line that isn't in js/lines.js`);
 }
 // Every PHRASE is said somewhere (PHRASE.win is older: a win says wingCleared instead).
 for (const k of Object.keys(PHRASE).filter((k) => k !== "win")) assert.ok(app.includes("PHRASE." + k), `PHRASE.${k} is recorded but never said`);
