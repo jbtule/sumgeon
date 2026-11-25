@@ -10,7 +10,9 @@ import { twoDigitFacts, TWO_LEVELS } from "./twodigit.js";
 import { balanceFacts, balanceFactOf, BALANCE_LEVELS } from "./balance.js";
 
 // Facts by the order classrooms teach them (Missouri Learning Standards, DESIGN.md §2, §5.3).
-// A level opens when 70% of the level before it is learned (box 3 or more).
+// A level opens when 70% of the level before it is learned (box 3 or more). A level marked
+// alongside is open from the start and doesn't hold back the one after it: its facts are asked
+// next to the newer levels' as learning and review.
 const within = (n) => (f) => (f.op === "+" && f.ans <= n) || (f.op === "-" && f.x <= n);
 const teen = (f) => (f.op === "+" && (f.x === 10 || f.y === 10)) || (f.op === "-" && f.x > 10 && f.ans === 10);
 const times = (set) => (f) => f.op === "×" && (set.includes(f.x) || set.includes(f.y)) && f.x <= 10 && f.y <= 10;
@@ -30,7 +32,10 @@ export const BANDS = {
   apprentice: {
     label: "Apprentice", grades: "2nd–3rd", hearts: 5, fluentMs: 4000,
     levels: [
-      { name: "Add and subtract within 20", has: within(20) },
+      // ± within 20 runs alongside ×, so a 3rd grader still shaky on teen subtraction isn't
+      // locked out of multiplication, the grade's main goal. It keeps coming up as new,
+      // learning and review facts, and still counts toward opening the next stratum.
+      { name: "Add and subtract within 20", has: within(20), alongside: true },
       { name: "× 2, 5 and 10", has: times([2, 5, 10]) },
       { name: "÷ 2, 5 and 10", has: divide([2, 5, 10]) },
       { name: "× 3 and 4", has: times([3, 4]) },
@@ -92,11 +97,13 @@ export function pool(bandKey) {
 export function learned(rec) { return !!rec && rec.b >= 3; }
 export function mastered(rec, fluentMs) { return !!rec && rec.b >= BOX_MAX && rec.ms > 0 && rec.ms < fluentMs; }
 
-// The highest open level: each level opens once 70% of the one before is learned.
+// The highest open level: each level opens once 70% of the one before is learned, or right
+// away after an alongside level.
 export function openLevel(bandKey, recs) {
   const band = BANDS[bandKey], p = pool(bandKey);
   let L = 0;
   while (L < band.levels.length - 1) {
+    if (band.levels[L].alongside) { L++; continue; }
     const here = p.filter((f) => f.level === L);
     const done = here.filter((f) => learned(recs[f.key])).length;
     if (!here.length || done / here.length < (band.unlock || UNLOCK)) break;
@@ -229,8 +236,13 @@ export function choose(bandKey, recs, opts) {
   let roll = rnd() * groups.reduce((s, [, w]) => s + w, 0), pick = groups[0][0];
   for (const [g, w] of groups) { if (roll < w) { pick = g; break; } roll -= w; }
   if (pick === fresh) {
-    const newest = Math.max(...fresh.map((f) => f.level));
-    const top = fresh.filter((f) => f.level === newest);
+    // From the newest level, or half the time from a level running alongside (± within 20 in
+    // Apprentice), so its new facts keep coming while each × level opens.
+    const levels = BANDS[bandKey].levels, along = fresh.filter((f) => levels[f.level].alongside);
+    let from = fresh.filter((f) => !levels[f.level].alongside);
+    if (!from.length || (along.length && rnd() < 0.5)) from = along;
+    const newest = Math.max(...from.map((f) => f.level));
+    const top = from.filter((f) => f.level === newest);
     return top[Math.floor(rnd() * top.length)].key;
   }
   if (pick === learning) {
