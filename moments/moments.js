@@ -9,7 +9,7 @@
 // tags, note, t }.
 import { HEROES } from "../js/heroes.js";
 import { MON, svg } from "../js/monsters.js";
-import { QUIPS, FINALS, CRIT, simulate } from "../js/moments.js";
+import { QUIPS, FINALS, CRIT, TEAM_LINES, TEAM_NUMBERS, simulate } from "../js/moments.js";
 import { playMoment, PHASES } from "../js/slowmo.js";
 import { quipLine } from "../js/lines.js";
 import { say, stopSpeech } from "../js/speech.js";
@@ -23,35 +23,78 @@ const TAGS = ["Wording", "Voice", "Timing", "Art"];
 let marks = {};
 try { marks = JSON.parse(localStorage.getItem(STORE)) || {}; } catch (e) { marks = {}; }
 function save() { try { localStorage.setItem(STORE, JSON.stringify(marks)); } catch (e) { /* this visit only */ } reportUI(); }
-const keyOf = (m) => m.hero + "|" + m.quip;
+// A moment's key: its hero (a team-up's "1+5": tens hero, then ones hero) and its quip.
+const keyOf = (m) => (m.partner != null ? m.hero + "+" + m.partner : m.hero) + "|" + m.quip;
+const nameOf = (m) => HEROES[m.hero].n + (m.partner != null ? " & " + HEROES[m.partner].n : "");
+// A team-up line's own number ("Perfect ten!" is 10), or undefined.
+const NUMBER_OF = Object.fromEntries(Object.entries(TEAM_NUMBERS).map(([n, q]) => [q, +n]));
 
-// Every moment Play all runs through: each hero's quips. (The two big ones are in each hero's Quip list.)
-// Every line: each hero's quips, then the boss-finishing lines and "Critical math!", said by the heroes in turn.
+// Every line Play all runs through: each hero's quips, then the boss-finishing lines and
+// "Critical math!", said by the heroes in turn; then the team-ups: each general line with a
+// sample pair, and each number's line with its own digits (64 is Sixlock and Sir Fourtress).
+const PAIRS = [[1, 5], [2, 4], [3, 7], [4, 2], [6, 8], [9, 3]];
 const ALL = HEROES.flatMap((h) => QUIPS[h.d].map((q) => ({ hero: h.d, quip: q })))
-  .concat(FINALS.concat([CRIT]).map((q, i) => ({ hero: i % 10, quip: q })));
+  .concat(FINALS.concat([CRIT]).map((q, i) => ({ hero: i % 10, quip: q })))
+  .concat(TEAM_LINES.map((q, i) => ({ hero: PAIRS[i % PAIRS.length][0], partner: PAIRS[i % PAIRS.length][1], quip: q })))
+  .concat(Object.entries(TEAM_NUMBERS).map(([n, q]) => ({ hero: +n[0], partner: +n[1], quip: q })));
 
 /* ---------- picking ---------- */
 const opts = { speed: 1, reduced: false, step: false };
 $("hero").innerHTML = HEROES.map((h) => `<option value="${h.d}">${h.d} · ${esc(h.n)}</option>`).join("");
 $("monster").innerHTML = MON.map((m, i) => `<option value="${i}">${esc(m.n)}${m.boss ? " (boss)" : ""}</option>`).join("");
+// Team-up with: None, or any other hero (on the right, the ones).
+function partnerOptions() {
+  const d = +$("hero").value, was = $("partner").value;
+  $("partner").innerHTML = `<option value="">None</option>` + HEROES.filter((h) => h.d !== d).map((h) => `<option value="${h.d}">${h.d} · ${esc(h.n)}</option>`).join("");
+  $("partner").value = was !== "" && +was !== d ? was : "";
+}
+const partnerOf = () => ($("partner").value === "" ? null : +$("partner").value);
+// The hero's quips and the big ones; then the team-up lines (a number's line shows its number).
+// A team-up option's value starts "T|", since a line can be in both ("Six, seven!" is
+// Sevenstein's and 67's).
 function quipOptions() {
-  const d = +$("hero").value;
-  $("quip").innerHTML = QUIPS[d].concat(FINALS, [CRIT]).map((q) => `<option>${esc(q)}</option>`).join("");
+  const d = +$("hero").value, was = $("quip").value, opt = (pre) => (q) => `<option value="${pre}${esc(q)}">${esc(q)}${pre && NUMBER_OF[q] ? ` (${NUMBER_OF[q]})` : ""}</option>`;
+  $("quip").innerHTML = `<optgroup label="${esc(HEROES[d].n)}">${QUIPS[d].concat(FINALS, [CRIT]).map(opt("")).join("")}</optgroup>` +
+    `<optgroup label="Team-ups">${TEAM_LINES.concat(Object.values(TEAM_NUMBERS)).map(opt("T|")).join("")}</optgroup>`;
+  if ([...$("quip").options].some((o) => o.value === was)) $("quip").value = was;
+}
+const quipOf = () => $("quip").value.replace(/^T\|/, "");
+const isTeamOption = () => $("quip").value.startsWith("T|");
+// Picks a quip: a team-up's from the Team-ups list, a solo one from the hero's.
+function setQuip(q, team) { $("quip").value = (team ? "T|" : "") + q; if (!$("quip").value) $("quip").value = (team ? "" : "T|") + q; }
+// The answer shown: the hero's digit, or a team-up's two digits in order (tens, then ones), or a
+// number line's own number.
+function answerFor(d, p, quip) {
+  if (p == null) return d === 0 ? 10 : d + 10;
+  const n = NUMBER_OF[quip];
+  if (n && Math.floor(n / 10) === d && n % 10 === p) return n;
+  return d === 0 ? Number(`${p === 1 ? 2 : 1}0${p}`) : d * 10 + p; // Zeroic can't lead: 105
 }
 function scene() {
-  const m = MON[+$("monster").value], s = $("stratum").value, d = +$("hero").value;
+  const m = MON[+$("monster").value], s = $("stratum").value, d = +$("hero").value, p = partnerOf(), quip = quipOf();
   document.body.dataset.stratum = s === "plain" ? "" : s;
   $("stage").style.setProperty("--wall", `var(--wall-${s})`);
   $("mName").textContent = m.n;
   $("mon").innerHTML = svg(m);
-  // A problem whose answer has the hero's digit.
-  const ans = d === 0 ? 10 : d + 10, x = Math.max(1, ans - 7);
+  // A problem whose answer has the hero's digit (or both heroes', in order).
+  const ans = answerFor(d, p, quip), x = Math.max(1, Math.round(ans * 0.4));
   $("prob").textContent = `${x} + ${ans - x} =`;
   $("ans").textContent = String(ans);
-  $("what").textContent = `${HEROES[d].n}: "${$("quip").value}"`;
+  $("what").textContent = `${nameOf({ hero: d, partner: p })}: "${quip}"`;
 }
-$("hero").onchange = () => { quipOptions(); scene(); };
-["quip", "monster", "stratum"].forEach((id) => ($(id).onchange = scene));
+// Picking a team-up line: a number's line brings its own digits; a general line with no partner
+// picks one.
+function teamFor() {
+  if (!isTeamOption()) return;
+  const q = quipOf(), n = NUMBER_OF[q];
+  if (n) {
+    const a = Math.floor(n / 10), b = n % 10;
+    if (+$("hero").value !== a || partnerOf() !== b) { $("hero").value = String(a); partnerOptions(); quipOptions(); setQuip(q, true); $("partner").value = String(b); }
+  } else if (partnerOf() == null) $("partner").value = String((+$("hero").value + 4) % 10 || 1);
+}
+$("hero").onchange = () => { partnerOptions(); quipOptions(); scene(); };
+$("quip").onchange = () => { teamFor(); scene(); };
+["partner", "monster", "stratum"].forEach((id) => ($(id).onchange = scene));
 document.querySelectorAll("[data-speed]").forEach((b) => (b.onclick = () => { opts.speed = +b.dataset.speed; pressed("[data-speed]", b); }));
 document.querySelectorAll("[data-reduced]").forEach((b) => (b.onclick = () => { opts.reduced = b.dataset.reduced === "1"; pressed("[data-reduced]", b); }));
 document.querySelectorAll("[data-step]").forEach((b) => (b.onclick = () => { opts.step = b.dataset.step === "1"; pressed("[data-step]", b); }));
@@ -63,12 +106,12 @@ let playing = false, nextGate = null, current = null;
 async function play() {
   if (playing) return false;
   playing = true; $("play").disabled = true; $("phase").textContent = "";
-  const d = +$("hero").value, quip = $("quip").value, m = { hero: d, quip };
+  const d = +$("hero").value, p = partnerOf(), quip = quipOf(), m = p == null ? { hero: d, quip } : { hero: d, partner: p, quip };
   current = m;
   const gate = opts.step ? (p) => new Promise((go) => { $("phase").textContent = `Next: ${p}`; $("next").hidden = false; nextGate = () => { $("next").hidden = true; nextGate = null; go(); }; }) : null;
   try {
     await playMoment({
-      hero: d, color: null, quip, speed: opts.speed, reduced: opts.reduced, gate,
+      hero: d, partner: p, color: null, quip, speed: opts.speed, reduced: opts.reduced, gate,
       speak: () => say("h", quipLine(quip), true),
       from: $("ans"), to: $("mon"), room: $("stage"),
       onPhase: (p) => { $("phase").textContent = `${PHASES.indexOf(p) + 1}. ${p}`; }
@@ -95,8 +138,7 @@ $("next").onclick = () => { wake(); if (nextGate) nextGate(); };
 // The sound effects' state, for checking on a device: the audio context, effects played, errors.
 setInterval(() => { const a = sfx.status(); $("sound").textContent = `Sound effects: ${a.state || "not started"} · ${a.played} played${a.error ? " · " + a.error : ""}`; }, 500);
 
-// Play all: every hero's quips, one after another, with a short gap.
-// Play all: every line, one after another, with a short gap. Pause stops after the moment
+// Play all: every line (ALL, team-ups last), one after another, with a short gap. Pause stops after the moment
 // playing, and Resume carries on from the next one; Restart goes back to the first. Where it got
 // to is kept on this device. Space pauses or resumes.
 const POS_KEY = "sumgeon:moments:pos";
@@ -114,7 +156,8 @@ async function playAll() {
   runningAll = true; allButtons();
   while (runningAll && pos < ALL.length) {
     const m = ALL[pos++]; keepPos();
-    $("hero").value = String(m.hero); quipOptions(); $("quip").value = m.quip; scene();
+    $("hero").value = String(m.hero); partnerOptions(); $("partner").value = m.partner == null ? "" : String(m.partner);
+    quipOptions(); setQuip(m.quip, m.partner != null); scene();
     await play();
     if (!runningAll) break;
     await new Promise((r) => setTimeout(r, 600));
@@ -141,7 +184,7 @@ function recentUI() {
   $("recent").innerHTML = recent.map((m, i) => {
     const k = marks[keyOf(m)] || {}, cls = k.s === "bad" ? "bad" : k.s === "ok" ? "ok" : "";
     return `<li class="${cls}"><span class="mark">${k.s === "bad" ? "✗" : k.s === "ok" ? "✓" : "·"}</span>
-      <span>${esc(HEROES[m.hero].n)}: "${esc(m.quip)}"${k.s === "bad" && (k.tags || k.note) ? `<span class="note">${esc([...(k.tags || []), k.note].filter(Boolean).join(" · "))}</span>` : ""}</span>
+      <span>${esc(nameOf(m))}: "${esc(m.quip)}"${k.s === "bad" && (k.tags || k.note) ? `<span class="note">${esc([...(k.tags || []), k.note].filter(Boolean).join(" · "))}</span>` : ""}</span>
       <span><button type="button" data-i="${i}" data-act="${k.s === "bad" ? "ok" : "flag"}" aria-label="${k.s === "bad" ? "Mark fine" : "Flag"}">${k.s === "bad" ? "✓" : "⚑"}</button></span></li>`;
   }).join("");
 }
@@ -155,9 +198,9 @@ $("recent").onclick = (e) => {
 /* ---------- flagging ---------- */
 let flagging = false, flagFor = null, afterFlag = null;
 function flag(m) {
-  flagging = true; flagFor = m || current || { hero: +$("hero").value, quip: $("quip").value };
+  flagging = true; flagFor = m || current || (partnerOf() == null ? { hero: +$("hero").value, quip: quipOf() } : { hero: +$("hero").value, partner: partnerOf(), quip: quipOf() });
   const k = marks[keyOf(flagFor)] || {};
-  $("flagWhat").textContent = `What's wrong with ${HEROES[flagFor.hero].n}'s "${flagFor.quip}"?`;
+  $("flagWhat").textContent = `What's wrong with ${nameOf(flagFor)}'s "${flagFor.quip}"?`;
   $("tags").innerHTML = TAGS.map((t) => `<button type="button" aria-pressed="${(k.tags || []).includes(t)}">${t}</button>`).join("");
   $("tags").querySelectorAll("button").forEach((b) => (b.onclick = () => b.setAttribute("aria-pressed", String(b.getAttribute("aria-pressed") !== "true"))));
   $("note").value = k.s === "bad" ? k.note || "" : "";
@@ -180,8 +223,9 @@ $("cancelFlag").onclick = () => closeFlag(false);
 function report() {
   const bad = Object.entries(marks).filter(([, m]) => m.s === "bad");
   return bad.map(([k, m]) => {
-    const [d, quip] = [k.slice(0, k.indexOf("|")), k.slice(k.indexOf("|") + 1)];
-    return `- ${HEROES[+d] ? HEROES[+d].n : d}: "${quip}"${m.tags && m.tags.length ? " — " + m.tags.join(", ") : ""}${m.note ? ": " + m.note : ""}`;
+    const [who, quip] = [k.slice(0, k.indexOf("|")), k.slice(k.indexOf("|") + 1)];
+    const ds = who.split("+").map(Number), name = ds.every((d) => HEROES[d]) ? ds.map((d) => HEROES[d].n).join(" & ") : who;
+    return `- ${name}: "${quip}"${m.tags && m.tags.length ? " — " + m.tags.join(", ") : ""}${m.note ? ": " + m.note : ""}`;
   }).join("\n");
 }
 function reportUI() {
@@ -223,10 +267,10 @@ $("simRun").onclick = () => {
       <div><b>${s.meanPerRun.toFixed(2)}</b><small>moments per run</small></div>
       <div><b>${(s.problems / s.floors).toFixed(1)}</b><small>problems per floor</small></div>
     </div>
-    <p class="sub">Why: ${s.why.boss} boss finishes, ${s.why.chance} by chance (one every ${s.chanceFloorsPer.toFixed(1)} floors), over ${s.runs} runs and ${s.floors} floors.</p>
+    <p class="sub">Why: ${s.why.boss} boss finishes, ${s.why.chance} by chance (one every ${s.chanceFloorsPer.toFixed(1)} floors; ${s.teamups} of them team-ups, ${s.why.chance ? Math.round(s.teamups / s.why.chance * 100) : 0}%), over ${s.runs} runs and ${s.floors} floors.</p>
     <h2>Moments per run</h2>${bars(Object.keys(dist).map(Number).sort((a, b) => a - b).map((n) => [`${n} moment${n === 1 ? "" : "s"}`, dist[n]]), s.runs)}
     <h2>Heroes</h2>${bars(HEROES.filter((h) => s.heroes[h.d]).map((h) => [h.n, s.heroes[h.d]]), s.moments)}
     <h2>Quips</h2>${bars(quips, s.moments)}`;
 };
 
-quipOptions(); scene(); reportUI();
+partnerOptions(); quipOptions(); scene(); reportUI();

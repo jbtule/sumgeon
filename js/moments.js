@@ -35,7 +35,16 @@ export const FINALS = ["Final answer!", "And that's the sum of it!", "Divided an
   "Boss solved!", "Equals: victory!", "Proof complete!", "Zero hit points. Math wins!", "Game, set, math!",
   "Problem solved!", "Check your answer: correct!", "That's the bottom line!"];
 export const FINAL = FINALS[0], CRIT = "Critical math!";
-const listOf = (d) => (d === "final" ? FINALS : QUIPS[d]);
+// Team-ups: a moment by chance on an answer with two different team heroes' digits is, half the
+// time (TEAMUP), both heroes at once. Their lines are a deck of their own (key "team"), and an
+// answer that is exactly one of TEAM_NUMBERS says that number's line instead. No per-pair lines.
+export const TEAMUP = 0.5;
+export const TEAM_LINES = ["Team-up!", "Tens and ones, together!", "Two digits, one strike!", "Place value power!", "The sum of us!", "Better together!", "Teamwork makes the dream work!"];
+// 67 (Sixlock and Sevenstein) says Sevenstein's own "Six, seven!": the same line, the same clip.
+export const TEAM_NUMBERS = { 10: "Perfect ten!", 12: "A dozen, done!", 13: "A baker's dozen! Chef Eight would approve!", 25: "Five squared! High five… times five!",
+  36: "Six squared! Elementary!", 49: "Seven squared! Sevenstein's not even here!", 64: "Eight squared! Somebody tell Chef Eight!",
+  67: "Six, seven!", 81: "Nine squared! Nine-ja must be hiding!" };
+const listOf = (d) => (d === "final" ? FINALS : d === "team" ? TEAM_LINES : QUIPS[d]);
 
 export function freshState(saved) {
   const s = saved || {};
@@ -78,9 +87,12 @@ export function drawQuip(state, d, rnd) {
 //   typed: the digits that fly; team: { captain, rescued }; hinted; spell: null, "good",
 //   "backwards" or "show" (a poor match); first: the player's first fight; floor: which floor of
 //   the run; n: this problem's number in the run; bossFinish: it finishes a boss; critStart: this
-//   hit turns crits on (the third in a row); always: ?moments (every qualifying hit).
+//   hit turns crits on (the third in a row); always: ?moments (every qualifying hit); teamup:
+//   ?teamup (a moment by chance with two heroes in the answer is always a team-up).
 // Only for a right answer (the caller asks only then). Returns null, or
-//   { hero, quip, why: "boss" | "debut" | "chance" }, and updates state and run.
+//   { hero, quip, why: "boss" | "debut" | "chance" }, and updates state and run. A team-up adds
+//   partner, the second hero: hero is on the left (the tens) and partner on the right, in the
+//   answer's digit order.
 export function decide(state, run, hit, rnd) {
   const r = rnd || Math.random;
   if (hit.floor !== run.floor) { run.floor = hit.floor; run.onFloor = 0; }
@@ -99,6 +111,17 @@ export function decide(state, run, hit, rnd) {
       if (r() >= CHANCE + BUILD * state.dry) { state.dry++; return null; }
     }
     hero = pick(heroes); why = "chance";
+    // A team-up, half the time, when the answer has two different team heroes (a double like 33
+    // has one). With three or more, the one picked and another; left to right as in the answer.
+    // It's the same moment, so the rarity rules above are unchanged.
+    if (heroes.length > 1 && (hit.teamup || r() < TEAMUP)) {
+      const others = heroes.filter((d) => d !== hero), other = others[Math.floor(r() * others.length)];
+      const [left, right] = heroes.filter((d) => d === hero || d === other);
+      const quip = TEAM_NUMBERS[Number(hit.typed)] || (hit.critStart ? CRIT : drawQuip(state, "team", r));
+      state.dry = 0; state.last = hero;
+      run.last = hit.n; run.onFloor++;
+      return { hero: left, partner: right, quip, why };
+    }
   }
   state.debut = state.debut.filter((d) => d !== hero);
   let quip;
@@ -119,7 +142,7 @@ export function simulate(opts) {
   const o = Object.assign({ runs: 300, wing: "cellar", team: { captain: 5, rescued: [5, 0, 1] }, accuracy: 0.9, hinted: 0.05, seed: 1 }, opts);
   const r = seeded(o.seed), w = WINGS.find((x) => x.id === o.wing) || WINGS[0], state = freshState();
   const all = {}, recsFor = (bk) => all[bk] || (all[bk] = Object.fromEntries(pool(bk).map((f) => [f.key, { b: 3 }])));
-  const out = { runs: o.runs, floors: 0, problems: 0, moments: 0, perRun: [], why: { boss: 0, debut: 0, chance: 0 }, heroes: {}, quips: {} };
+  const out = { runs: o.runs, floors: 0, problems: 0, moments: 0, perRun: [], why: { boss: 0, debut: 0, chance: 0 }, teamups: 0, heroes: {}, quips: {} };
   for (let k = 0; k < o.runs; k++) {
     const run = freshRun(), floors = runFloors(w, o.team, r, 1);
     let n = 0, streak = 0, got = 0;
@@ -143,6 +166,7 @@ export function simulate(opts) {
         if (mo) {
           got++; out.moments++; out.why[mo.why]++;
           out.heroes[mo.hero] = (out.heroes[mo.hero] || 0) + 1;
+          if (mo.partner != null) { out.teamups++; out.heroes[mo.partner] = (out.heroes[mo.partner] || 0) + 1; }
           out.quips[mo.quip] = (out.quips[mo.quip] || 0) + 1;
         }
       }

@@ -8,6 +8,7 @@
 //      move (heroes.js `move`);
 //   5. hit: a bigger impact and a screen shake. The caller then shows the damage, as for any hit.
 // With reduced motion there's no zoom or speed ramp: the hero, the bubble and the hit.
+// A team-up (two heroes, playTeamUp below) runs the same phases with both side by side.
 //
 // Used by the game (app.js) and the review page (moments/), so both play exactly this. Its styles
 // are here too, injected once, so the review page needn't load the game's stylesheet.
@@ -80,10 +81,12 @@ function bez(p0, c, p1, t) { const u = 1 - t; return { x: u * u * p0.x + 2 * u *
 //   from: the answer box; to: the monster; room: what zooms and shakes (the game);
 //   speed: 1 or 0.5; reduced: reduced motion; gate(phase): awaited before each phase (the review
 //   page's Step); onPhase(phase): told as each starts; onSnap(): the snap starts (the answer's
-//   other digits fly then).
+//   other digits fly then);
+//   partner: a team-up's second hero (on the right; hero is on the left), and partnerColor.
 // Resolves at the hit, then tidies up by itself.
 export async function playMoment(o) {
   style();
+  if (o.partner != null) return playTeamUp(o);
   const k = 1 / (o.speed || 1), T = (ms) => ms * k, h = HEROES[o.hero], move = MOVES[o.hero];
   const room = o.room, phase = async (p) => { if (o.gate) await o.gate(p); if (o.onPhase) o.onPhase(p); };
   const layer = document.createElement("div");
@@ -203,6 +206,141 @@ export async function playMoment(o) {
   hero.animate([{ opacity: 1 }, { opacity: 0, transform: hero.style.transform + " scale(.4)" }], { duration: T(160), fill: "forwards" });
   if (room) room.animate([{ transform: "none" }, { transform: "translate(-9px,5px)" }, { transform: "translate(8px,-6px)" }, { transform: "translate(-6px,3px)" }, { transform: "translate(4px,-2px)" }, { transform: "none" }], { duration: T(380) });
   // Tidy up: the dim fades, the layer goes.
+  tween(T(TIMING.after), (p) => { dim.style.opacity = String(0.5 * (1 - p)); }).then(() => setTimeout(() => layer.remove(), T(500)));
+  if (room) { room.style.transform = ""; room.style.transformOrigin = ""; }
+}
+
+/* ---------- a team-up: two heroes at once (moments.js TEAMUP) ----------
+   The same phases, with both heroes: they lift out of the answer together and swell in side by
+   side, the tens hero on the left and the ones hero on the right, under one bubble. At the snap
+   they whip out to opposite sides and in again, crossing at the monster, and land together with
+   one bigger slam. With reduced motion: both heroes, the bubble and the hit. */
+async function playTeamUp(o) {
+  const k = 1 / (o.speed || 1), T = (ms) => ms * k, ds = [o.hero, o.partner];
+  const room = o.room, phase = async (p) => { if (o.gate) await o.gate(p); if (o.onPhase) o.onPhase(p); };
+  const layer = document.createElement("div");
+  layer.className = "hm";
+  layer.setAttribute("aria-hidden", "true");
+  const colors = [o.color || null, o.partnerColor || null];
+  layer.innerHTML = `<div class="hm-dim"></div><div class="hm-edge"></div><div class="hm-lines"></div><div class="hm-flash"></div>
+    ${ds.map((d, i) => `<div class="hm-hero">${heroSvg(HEROES[d], { color: colors[i] })}</div>`).join("")}
+    ${ds.map((d) => `<div class="hm-fx">${MOVES[d].fx}</div>`).join("")}<div class="hm-bubble"></div>`;
+  document.body.appendChild(layer);
+  const q = (c) => layer.querySelector(c), all = (c) => [...layer.querySelectorAll(c)];
+  const heroes = all(".hm-hero"), fxs = all(".hm-fx"), bub = q(".hm-bubble"), dim = q(".hm-dim"), edge = q(".hm-edge"), lines = q(".hm-lines"), flash = q(".hm-flash");
+  bub.textContent = o.quip;
+  const a = centerOf(o.from), b = centerOf(o.to), W = innerWidth, H = innerHeight;
+  // Side by side: each a little smaller than a solo close-up, so both fit a phone's width.
+  const c = { x: W / 2, y: H * 0.5 }, big = Math.min(W * 0.36, H * 0.3, 240) / HW, small = 56 / HW;
+  const dx = HW * big * 0.56, side = [-1, 1], at = side.map((s) => ({ x: c.x + s * dx, y: c.y }));
+  const showBubble = (s) => {
+    const r = bub.getBoundingClientRect(), top = Math.max(8, c.y - HH * s / 2 - r.height - 18);
+    bub.style.transform = `translate(${Math.round(c.x - r.width / 2)}px,${Math.round(top)}px)`;
+  };
+  const rr = room ? room.getBoundingClientRect() : null;
+  const zoom = (z) => { if (room) { room.style.transformOrigin = `${b.x - rr.left}px ${b.y - rr.top}px`; room.style.transform = z === 1 ? "" : `scale(${z})`; } };
+  // The freeze holds for the quip: at least freezeMin, at most freezeMax.
+  const hold = async () => {
+    const t0 = performance.now();
+    await Promise.race([Promise.resolve(o.speak && o.speak()), sleep(T(TIMING.freezeMax))]);
+    const left = T(TIMING.freezeMin) - (performance.now() - t0);
+    if (left > 0) await sleep(left);
+  };
+
+  if (o.reduced) {
+    await phase("close-up");
+    dim.style.opacity = "0.7";
+    heroes.forEach((el, i) => place(el, at[i].x, at[i].y, big * 0.85));
+    await phase("freeze");
+    bub.style.opacity = "1"; showBubble(big * 0.85);
+    sfx.heartbeat();
+    await hold();
+    await phase("snap");
+    if (o.onSnap) o.onSnap();
+    await phase("hit");
+    heroes.forEach((el) => (el.style.opacity = "0")); bub.style.opacity = "0";
+    sfx.slam(true);
+    setTimeout(() => layer.remove(), T(TIMING.after));
+    return;
+  }
+
+  // 1. Wind-down: both lift out of the answer, side by side, time dragging to ¼×.
+  await phase("wind-down");
+  sfx.tapeStop(T(TIMING.wind) / 1000 + 0.1);
+  const starts = side.map((s) => ({ x: a.x + s * 22, y: a.y }));
+  const arcC = { x: (a.x + b.x) / 2 + (b.x - a.x) * 0.15, y: Math.min(a.y, b.y) - 90 };
+  let now = starts.slice(), rot = [0, 0];
+  await tween(T(TIMING.wind), (p) => {
+    const travelled = 0.55 * (p - 0.375 * p * p);
+    heroes.forEach((el, i) => {
+      const pt = bez(starts[i], arcC, { x: b.x + side[i] * 40, y: b.y }, travelled);
+      now[i] = pt; rot[i] = side[i] * travelled * 200;
+      place(el, pt.x, pt.y, small * (1 + 0.4 * travelled), rot[i]);
+    });
+    dim.style.opacity = String(0.6 * p);
+  });
+
+  // 2. Close-up: both swell toward the camera, side by side.
+  await phase("close-up");
+  const from = now.slice(), rot0 = rot.map((x) => x % 360);
+  await tween(T(TIMING.close), (p) => {
+    const e = ease(p);
+    heroes.forEach((el, i) => place(el, lerp(from[i].x, at[i].x, e), lerp(from[i].y, at[i].y, e), lerp(small * 1.2, big, e), lerp(rot0[i], 0, e)));
+    edge.style.opacity = String(e); lines.style.opacity = String(e * 0.8);
+    dim.style.opacity = String(0.6 + 0.4 * e);
+    zoom(1 + 0.06 * e);
+  });
+
+  // 3. Freeze: one bubble over both, the heartbeat, then the swell into the snap.
+  await phase("freeze");
+  bub.style.opacity = "1"; showBubble(big);
+  bub.animate([{ transform: bub.style.transform + " scale(.4)", opacity: 0 }, { transform: bub.style.transform + " scale(1.06)", opacity: 1, offset: 0.7 }, { transform: bub.style.transform, opacity: 1 }], { duration: T(180), easing: "ease-out" });
+  sfx.heartbeat();
+  const beats = setInterval(() => sfx.heartbeat(), T(1000));
+  const breathe = heroes.map((el, i) => el.animate([{ filter: "drop-shadow(0 6px 10px #0009) brightness(1)" }, { filter: "drop-shadow(0 0 18px #ffc93c) brightness(1.15)" }], { duration: T(700), delay: T(i * 350), direction: "alternate", iterations: Infinity }));
+  await hold();
+  clearInterval(beats);
+  sfx.swell(T(TIMING.swell) / 1000);
+  // They lean in toward each other.
+  await tween(T(TIMING.swell), (p) => { heroes.forEach((el, i) => place(el, at[i].x - side[i] * 6 * easeIn(p), at[i].y, big * (1 + 0.08 * easeIn(p)), side[i] * 8 * easeIn(p))); });
+  breathe.forEach((x) => x.cancel());
+
+  // 4. Snap: each whips out to its own side and in again, crossing at the monster. The second
+  //    starts a beat after the first, with its own whoosh.
+  await phase("snap");
+  bub.style.opacity = "0";
+  if (o.onSnap) o.onSnap();
+  sfx.whip();
+  const lag = 0.14, dur = T(TIMING.snap * 1.6);
+  setTimeout(() => sfx.whip(), dur * lag);
+  const reach = Math.min(W * 0.42, 280);
+  const out = side.map((s) => ({ x: Math.max(28, Math.min(W - 28, b.x + s * reach)), y: b.y - 50 }));
+  const land = side.map((s) => ({ x: b.x - s * 26, y: b.y + 6 })); // past the monster: they cross
+  await tween(dur, (p) => {
+    edge.style.opacity = lines.style.opacity = String(1 - p);
+    dim.style.opacity = String(1 - 0.5 * p);
+    zoom(lerp(1.06, 1, p));
+    heroes.forEach((el, i) => {
+      const u = Math.max(0, Math.min(1, (p - i * lag) / (1 - lag)));
+      const s = lerp(big, small * 1.4, ease(u));
+      let pt, r;
+      if (u < 0.4) { const v = ease(u / 0.4); pt = { x: lerp(at[i].x, out[i].x, v), y: lerp(at[i].y, out[i].y, v) }; r = side[i] * 200 * v; }
+      else { const v = easeIn((u - 0.4) / 0.6); pt = { x: lerp(out[i].x, land[i].x, v), y: lerp(out[i].y, land[i].y, v) }; r = side[i] * (200 + 160 * v); }
+      place(el, pt.x, pt.y, s, r);
+    });
+  });
+  zoom(1);
+
+  // 5. Hit: one bigger slam, both flourishes, a bigger shake.
+  await phase("hit");
+  sfx.slam(true);
+  fxs.forEach((el, i) => {
+    el.style.transform = `translate(${b.x - 28 + side[i] * 34}px,${b.y - 60 - i * 14}px)`;
+    el.animate([{ opacity: 0, transform: el.style.transform + " scale(.4)" }, { opacity: 1, transform: el.style.transform + " scale(1.35)", offset: 0.35 }, { opacity: 0, transform: el.style.transform + " translateY(-30px) scale(1)" }], { duration: T(760), delay: T(i * 60), easing: "ease-out", fill: "both" });
+  });
+  if (ds.some((d) => MOVES[d].flash)) flash.animate([{ opacity: 0.85 }, { opacity: 0 }], { duration: T(320), easing: "ease-out", fill: "forwards" });
+  heroes.forEach((el) => el.animate([{ opacity: 1 }, { opacity: 0, transform: el.style.transform + " scale(.4)" }], { duration: T(180), fill: "forwards" }));
+  if (room) room.animate([{ transform: "none" }, { transform: "translate(-12px,7px)" }, { transform: "translate(11px,-8px)" }, { transform: "translate(-8px,5px)" }, { transform: "translate(6px,-3px)" }, { transform: "translate(-3px,1px)" }, { transform: "none" }], { duration: T(460) });
   tween(T(TIMING.after), (p) => { dim.style.opacity = String(0.5 * (1 - p)); }).then(() => setTimeout(() => layer.remove(), T(500)));
   if (room) { room.style.transform = ""; room.style.transformOrigin = ""; }
 }

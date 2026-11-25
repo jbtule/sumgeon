@@ -393,19 +393,28 @@ With reduced motion: no zoom or speed ramp, just the hero, the quip and the hit.
 
 Respellings for the voice go in `SAY_AS` as usual (Twodini is "Toodini"; check "Bon appe-eight", "Nine-ja" and "Sixlock" on the listen check).
 
+**Team-ups** (built 2026-11-25). Two heroes at once, for two-digit answers.
+- **When:** a moment that fires by chance, on an answer with two different team heroes' digits (the captain or rescued), is a team-up half the time instead of a solo moment. It adds no moments: the rarity rules are unchanged. Doubles (33) have one hero, so they stay solo; so do debuts and boss finishes. With three or more digits, two different team heroes are picked.
+- **Who's where:** the tens hero on the left, the ones hero on the right, in the answer's digit order.
+- **The show:** both heroes swell in side by side under one speech bubble. At the snap they whip out to opposite sides and in again, crossing at the monster, with a second whoosh a beat after the first, and land together with one bigger slam and a bigger shake. With reduced motion: both heroes, the bubble and the hit. Each hero is a little smaller than in a solo close-up, so both fit an iPhone SE side by side.
+- **Lines** (in the quip voice, their own group on the listen check). No per-pair lines.
+  - From their own shuffled deck (key "team"): "Team-up!" · "Tens and ones, together!" · "Two digits, one strike!" · "Place value power!" · "The sum of us!" · "Better together!" · "Teamwork makes the dream work!"
+  - An answer that is exactly one of these numbers says its own line instead: 10 "Perfect ten!" · 12 "A dozen, done!" · 13 "A baker's dozen! Chef Eight would approve!" · 25 "Five squared! High five… times five!" · 36 "Six squared! Elementary!" · 49 "Seven squared! Sevenstein's not even here!" · 64 "Eight squared! Somebody tell Chef Eight!" · 67 "Six, seven!" (Sixlock and Sevenstein; the same line and clip as Sevenstein's quip) · 81 "Nine squared! Nine-ja must be hiding!" ("Nine-ja" is said "Nine-jah" through `SAY_AS`; the "…" reads as a pause as written)
+  - A team-up on the hit that turns crits on says "Critical math!", unless its number has a line.
+
 **Collecting.** The Heroes half of Monsters & Heroes shows each hero's quips heard ("Quips: 3 of 5"), a small reason to try different captains.
 
 **Reviewing them** (built with the feature). A grown-up page, `moments/` at `/sumgeon/moments/`, built like the listen check and the spell check: `noindex`, not linked from the game, and stamped with the deployed commit.
-- **Pick and play:** pick a hero, a quip and a monster (in any stratum's colors and wall), then play the whole moment exactly as the game runs it: the same code, sounds and voice clip.
+- **Pick and play:** pick a hero, a quip and a monster (in any stratum's colors and wall), then play the whole moment exactly as the game runs it: the same code, sounds and voice clip. **Team-up with** picks a second hero (or None), and the quip menu has the team-up lines; a number's line brings its own pair.
 - **Controls:**
-  - **Replay** and **Play all.** Play all runs every hero's quips one after another, like the listen check.
+  - **Replay** and **Play all.** Play all runs every hero's quips one after another, like the listen check, then the team-ups: each general line with a sample pair, and each number's line with its own digits.
   - **Step through the frames** (wind-down, close-up, freeze, snap, hit).
   - **Speed:** ½× or 1×.
   - **Reduced motion:** a toggle to see that version.
 - **Flags:** **⚑ Something's wrong** flags a moment (the quip's wording, the voice, the timing, the art) with tags and a note. Like the listen check, unflagged ones count as fine, and **Report** copies the flags or opens a GitHub issue.
-- **Rarity:** a simulator plays a few hundred runs of answers and shows how often moments come (per floor and per run), and how often each hero and quip comes up, so the 8% + 4% rule can be tuned by feel.
+- **Rarity:** a simulator plays a few hundred runs of answers and shows how often moments come (per floor and per run), and how often each hero and quip comes up, so the 8% + 4% rule can be tuned by feel. It also counts the team-ups.
 
-In the game, `?moments` makes every qualifying hit a moment, for testing.
+In the game, `?moments` makes every qualifying hit a moment, for testing, and `?teamup` does too, with every one that can be a team-up a team-up.
 
 ---
 

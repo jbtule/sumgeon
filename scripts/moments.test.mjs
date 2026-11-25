@@ -1,7 +1,7 @@
 // Hero Moments (DESIGN.md §8.4): when they happen (moments.js decide), the quip decks, and the
 // rarity simulator landing near one moment every 2–3 floors with a typical team.
 import assert from "node:assert/strict";
-import { QUIPS, FINAL, FINALS, CRIT, CHANCE, BUILD, REST, PER_FLOOR, freshState, freshRun, decide, drawQuip, heroesIn, heardOf, joined, simulate, seeded } from "../js/moments.js";
+import { QUIPS, FINAL, FINALS, CRIT, CHANCE, BUILD, REST, PER_FLOOR, TEAMUP, TEAM_LINES, TEAM_NUMBERS, freshState, freshRun, decide, drawQuip, heroesIn, heardOf, joined, simulate, seeded } from "../js/moments.js";
 import { HEROES } from "../js/heroes.js";
 import { OWN_KEYS } from "../js/store.js";
 
@@ -55,11 +55,12 @@ assert.ok(decide(freshState(), freshRun(), hit({ spell: "good" }), yes), "a spel
 {
   const s = freshState(), r = freshRun();
   let last = null;
-  for (let i = 0; i < 20; i++) {
+  for (let i = 0; i < 40; i++) {
     const mo = decide(s, r, hit({ n: i * 10, floor: i }), Math.random);
     if (!mo) continue;
-    if (last != null) assert.notEqual(mo.hero, last, "never the same hero twice running when there's a choice");
-    last = mo.hero;
+    // A team-up has both heroes; a solo moment is never the hero picked last time.
+    if (last != null && mo.partner == null) assert.notEqual(mo.hero, last, "never the same hero twice running when there's a choice");
+    last = s.last;
   }
   assert.ok(last != null);
   // With only one hero in the answer, it's that one.
@@ -121,6 +122,76 @@ assert.ok(decide(freshState(), freshRun(), hit({ spell: "good" }), yes), "a spel
   assert.ok(QUIPS[1].includes(drawQuip(back, 1, r)));
 }
 
+// Team-ups: a chance moment with two different team heroes in the answer is a team-up half the time.
+{
+  assert.equal(TEAMUP, 0.5);
+  const big = { captain: 1, rescued: [1, 2, 3, 4, 5, 6, 7, 8, 9, 0] };
+  // The split: about half of the moments on two-hero answers, over many seeded rolls.
+  const r = seeded(11);
+  let teams = 0, all = 0;
+  for (let i = 0; i < 4000; i++) {
+    const mo = decide(freshState(), freshRun(), hit({ typed: "15", always: true }), r);
+    all++; if (mo.partner != null) teams++;
+  }
+  assert.ok(Math.abs(teams / all - 0.5) < 0.03, `team-ups ${(teams / all * 100).toFixed(1)}% of two-hero moments`);
+  // A roll under TEAMUP is a team-up, at or over is solo; the moment itself was rolled the same way.
+  const rolls = (...xs) => { let i = 0; return () => xs[Math.min(i++, xs.length - 1)]; };
+  assert.ok(decide(freshState(), freshRun(), hit({ typed: "15" }), rolls(0, 0, 0.49, 0)).partner != null);
+  assert.equal(decide(freshState(), freshRun(), hit({ typed: "15" }), rolls(0, 0, 0.5, 0)).partner, undefined);
+  // It doesn't add moments: a missed roll is still no moment.
+  assert.equal(decide(freshState(), freshRun(), hit({ typed: "15", teamup: true }), no), null);
+  // ?teamup: always a team-up when there are two heroes.
+  for (let i = 0; i < 20; i++) assert.ok(decide(freshState(), freshRun(), hit({ typed: "15", always: true, teamup: true }), Math.random).partner != null);
+  // Doubles stay solo: 33 has one hero.
+  for (let i = 0; i < 20; i++) assert.equal(decide(freshState(), freshRun(), hit({ typed: "33", team: big, always: true, teamup: true }), Math.random).partner, undefined);
+  // Left and right in the answer's order: the tens on the left, whichever hero was picked.
+  for (const typed of ["15", "51", "10", "64", "98"]) {
+    for (let i = 0; i < 10; i++) {
+      const mo = decide(freshState(), freshRun(), hit({ typed, team: big, always: true, teamup: true }), Math.random);
+      assert.deepEqual([mo.hero, mo.partner], [+typed[0], +typed[1]], typed);
+    }
+  }
+  // Three or more digits: two different heroes, still left to right.
+  for (let i = 0; i < 30; i++) {
+    const mo = decide(freshState(), freshRun(), hit({ typed: "123", team: big, always: true, teamup: true }), Math.random);
+    assert.notEqual(mo.hero, mo.partner);
+    assert.ok("123".indexOf(mo.hero) < "123".indexOf(mo.partner), `${mo.hero} then ${mo.partner}`);
+  }
+  // Debuts and boss finishes stay solo.
+  {
+    const s = freshState(); joined(s, 0);
+    const d = decide(s, freshRun(), hit({ typed: "10", teamup: true }), yes);
+    assert.deepEqual([d.why, d.partner], ["debut", undefined]);
+    const b = decide(freshState(), freshRun(), hit({ typed: "15", bossFinish: true, teamup: true }), yes);
+    assert.deepEqual([b.why, b.partner], ["boss", undefined]);
+    assert.ok(FINALS.includes(b.quip));
+  }
+  // A number's own line wins for exactly that number, even on the crit hit; others draw the deck.
+  for (const [n, line] of Object.entries(TEAM_NUMBERS)) {
+    const mo = decide(freshState(), freshRun(), hit({ typed: n, team: big, always: true, teamup: true, critStart: true }), Math.random);
+    assert.deepEqual([mo.quip, mo.hero, mo.partner], [line, +n[0], +n[1]], n);
+  }
+  assert.ok(TEAM_LINES.includes(decide(freshState(), freshRun(), hit({ typed: "15", always: true, teamup: true }), Math.random).quip));
+  assert.equal(decide(freshState(), freshRun(), hit({ typed: "15", always: true, teamup: true, critStart: true }), Math.random).quip, CRIT);
+  // The team deck: each line once per deck, never the same line twice running across decks,
+  // and the heroes' own decks untouched.
+  const s = freshState(), rr = freshRun();
+  const got = [];
+  for (let i = 0; i < TEAM_LINES.length * 4; i++) got.push(decide(s, rr, hit({ typed: "15", n: i, floor: i, always: true, teamup: true }), seeded(100 + i)).quip);
+  const L = TEAM_LINES.length;
+  for (let k = 0; k < 4; k++) assert.deepEqual(got.slice(k * L, k * L + L).sort(), TEAM_LINES.slice().sort(), `deck ${k}`);
+  for (let i = 1; i < got.length; i++) assert.notEqual(got[i], got[i - 1], "no team line twice running");
+  assert.deepEqual(Object.keys(s.decks), ["team"]);
+  // 67 says Sevenstein's own "Six, seven!", which is in his deck too: the two decks don't mix.
+  assert.ok(TEAM_NUMBERS[67] === "Six, seven!" && QUIPS[7].includes("Six, seven!") && !TEAM_LINES.includes("Six, seven!"));
+  const s7 = freshState();
+  const solo = QUIPS[7].map(() => drawQuip(s7, 7, seeded(5)));
+  assert.deepEqual(solo.slice().sort(), QUIPS[7].slice().sort(), "Sevenstein's deck is whole");
+  const t67 = decide(s7, freshRun(), hit({ typed: "67", team: big, always: true, teamup: true }), Math.random);
+  assert.deepEqual([t67.hero, t67.partner, t67.quip], [6, 7, "Six, seven!"]);
+  assert.equal(s7.decks.team, undefined, "a number's line doesn't touch the team deck");
+}
+
 // The simulator: with a typical team (captain and two rescued), about one moment every 2–3
 // floors, in every Wing.
 for (const wing of ["cellar", "hall", "tower"]) {
@@ -130,4 +201,5 @@ for (const wing of ["cellar", "hall", "tower"]) {
   assert.ok(sim.heroes[5] && sim.heroes[0] && sim.heroes[1], "every hero on the team gets moments");
 }
 const sim = simulate({ runs: 300, wing: "cellar", team, seed: 3 });
-console.log(`✓ moments (Cellar, captain + 2: ${sim.meanPerRun.toFixed(2)} a run, one every ${sim.floorsPerMoment.toFixed(2)} floors; ${sim.why.boss} boss finishes, ${sim.why.chance} by chance)`);
+assert.ok(sim.teamups > 0 && sim.teamups < sim.why.chance, "some chance moments are team-ups");
+console.log(`✓ moments (Cellar, captain + 2: ${sim.meanPerRun.toFixed(2)} a run, one every ${sim.floorsPerMoment.toFixed(2)} floors; ${sim.why.boss} boss finishes, ${sim.why.chance} by chance, ${sim.teamups} of them team-ups)`);

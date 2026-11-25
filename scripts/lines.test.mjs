@@ -9,7 +9,7 @@ import { TRAITS, traitOf } from "../js/traits.js";
 import { cursedMonster } from "../js/wings.js";
 import { planClips, keyFor } from "./audio/build.mjs";
 import { GROUPS, quipLine } from "../js/lines.js";
-import { QUIPS, FINAL, FINALS, CRIT } from "../js/moments.js";
+import { QUIPS, FINAL, FINALS, CRIT, TEAM_LINES, TEAM_NUMBERS } from "../js/moments.js";
 import { createHash } from "node:crypto";
 const app0 = readFileSync(new URL("../js/app.js", import.meta.url), "utf8");
 
@@ -66,7 +66,16 @@ for (const d of Object.keys(QUIPS)) for (const q of QUIPS[d]) assert.ok(ids.has(
 assert.ok(ids.has("h:" + FINAL) && ids.has("h:" + CRIT) && ids.has("h:Final answer!") && ids.has("h:Critical math!"));
 assert.ok(FINALS.length >= 10 && FINALS.every((q) => ids.has("h:" + quipLine(q))), "every boss-finish line is recorded");
 assert.ok(ids.has("h:Six... seven!"), "Sevenstein's quip gets its pauses");
-assert.ok(GROUPS.includes("Hero quips") && spokenLines().filter((l) => l.kind === "h").every((l) => l.group === "Hero quips"));
+// Team-ups: every general line and every number's line, recorded as kind "h" (so in af_bella),
+// in their own group.
+const teamLines = TEAM_LINES.concat(Object.values(TEAM_NUMBERS));
+assert.equal(teamLines.length, 16);
+for (const q of teamLines) assert.ok(ids.has("h:" + quipLine(q)), `team-up line recorded: ${q}`);
+assert.ok(GROUPS.includes("Team-ups") && spokenLines().filter((l) => l.group === "Team-ups").every((l) => l.kind === "h"));
+// A team line that's also a hero's quip (67's "Six, seven!") is one line, one clip, in Hero quips.
+const heroQuips = new Set(Object.values(QUIPS).flat().map(quipLine));
+assert.ok(heroQuips.has(quipLine(TEAM_NUMBERS[67])) && spokenLines().filter((l) => l.text === "Six... seven!" && l.kind === "h").length === 1);
+assert.ok(GROUPS.includes("Hero quips") && spokenLines().filter((l) => l.kind === "h").every((l) => l.group === (teamLines.map(quipLine).includes(l.text) && !heroQuips.has(l.text) ? "Team-ups" : "Hero quips")));
 for (const l of spokenLines().filter((l) => l.kind === "h")) assert.ok(words(l.text) <= 8, `a quip is quick: ${l.text}`);
 
 // Keys are stable and unique.
@@ -75,6 +84,7 @@ assert.equal(new Set(plan.map((c) => c.key)).size, plan.length);
 // Quips are said in the second voice, and the voice is part of the key; every other line keeps
 // af_heart and the key it had before (so nothing already recorded is recorded again).
 assert.deepEqual([...new Set(plan.filter((c) => c.kind === "h").map((c) => c.voice))], ["af_bella"]);
+for (const q of teamLines) assert.equal(plan.find((c) => c.id === "h:" + quipLine(q)).voice, "af_bella", `${q} is in Bella's voice`);
 assert.deepEqual([...new Set(plan.filter((c) => c.kind !== "h").map((c) => c.voice))], ["af_heart"]);
 assert.notEqual(keyFor("h", "Up top!"), keyFor("p", "Up top!"));
 assert.equal(keyFor("p", "Oops!"), createHash("sha256").update(JSON.stringify(["kokoro-v1.0", "af_heart", "mp3-64k", "text-v1", 0.95, "p", "Oops!"])).digest("hex").slice(0, 20), "af_heart keys are unchanged");

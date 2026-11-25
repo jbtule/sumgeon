@@ -11,7 +11,7 @@ import { coinFacts } from "./coins.js";
 import { twoDigitFacts } from "./twodigit.js";
 import { balanceFacts } from "./balance.js";
 import { traitOf } from "./traits.js";
-import { QUIPS, FINALS, CRIT } from "./moments.js";
+import { QUIPS, FINALS, CRIT, TEAM_LINES, TEAM_NUMBERS } from "./moments.js";
 
 export var PHRASE = {
   enter: "Now entering the Sumgeon!",
@@ -126,7 +126,7 @@ export function depthLine(d) { return "Depth " + spoken(d) + "!"; }
 
 // [{ kind, text }], each once.
 // The groups the listen check (listen/) plays lines in.
-export var GROUPS = ["Phrases", "Monsters & heroes", "Add & subtract", "Times & divide", "Missing numbers", "Coins", "Two-digit", "Balance Hall", "Hero quips"];
+export var GROUPS = ["Phrases", "Monsters & heroes", "Add & subtract", "Times & divide", "Missing numbers", "Coins", "Two-digit", "Balance Hall", "Hero quips", "Team-ups"];
 
 // [{ kind, text, group, sprite? }], each once.
 export function spokenLines() {
@@ -182,6 +182,8 @@ export function spokenLines() {
   Object.keys(QUIPS).forEach(function (d) { QUIPS[d].forEach(function (q) { add("h", quipLine(q), "Hero quips"); }); });
   FINALS.forEach((q) => add("h", quipLine(q), "Hero quips"));
   add("h", quipLine(CRIT), "Hero quips");
+  // Team-ups (two heroes at once): the general lines, and the lines for their own numbers.
+  TEAM_LINES.concat(Object.values(TEAM_NUMBERS)).forEach((q) => add("h", quipLine(q), "Team-ups"));
   var seen = {};
   return out.filter(function (l) { var k = l.kind + ":" + l.text; if (seen[k]) return false; seen[k] = true; return true; });
 }

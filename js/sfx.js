@@ -199,14 +199,21 @@ export function whip() {
     tone("sine", hz(72), hz(91), t, 0.18, 0.08);
   });
 }
-// The landing: a bigger impact than a crit's, a deep thud, a crunch and a ring.
-export function slam() {
+// The landing: a bigger impact than a crit's, a deep thud, a crunch and a ring. big (a team-up's
+// landing): a lower, longer thud under it and a fuller ring.
+export function slam(big) {
   play(function (t) {
     tone("sine", 190, 32, t, 0.42, 0.7);
     noise(t, 0.16, 0.4, "lowpass", 700);
     noise(t, 0.3, 0.32, "bandpass", 2200);
     mallet(86, t + 0.02, 0.16, 0.6);
     mallet(93, t + 0.04, 0.12, 0.5);
+    if (big) {
+      tone("sine", 120, 24, t + 0.01, 0.4, 1.1);
+      noise(t + 0.03, 0.45, 0.22, "lowpass", 420);
+      mallet(81, t + 0.06, 0.12, 0.8);
+      mallet(98, t + 0.08, 0.08, 0.6);
+    }
   });
 }
 

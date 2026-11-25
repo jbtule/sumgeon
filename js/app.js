@@ -449,22 +449,25 @@ function heroBonus(typed) {
    Now and then a hero in a right answer gets a slow-motion close-up and a quip before it strikes
    (when: moments.js decide; the show: slowmo.js). Never in a player's first fight; always on a
    freed hero's debut and on the blow that finishes a boss. ?moments makes every qualifying hit
-   one, for testing. Input waits until it's over (G.busy stays set through the hit). */
-const MOMENTS_ALWAYS = new URLSearchParams(location.search).has("moments");
+   one, for testing; ?teamup does too, and makes every one with two heroes' digits a team-up.
+   Input waits until it's over (G.busy stays set through the hit). */
+const TEAMUP_ALWAYS = new URLSearchParams(location.search).has("teamup"), MOMENTS_ALWAYS = TEAMUP_ALWAYS || new URLSearchParams(location.search).has("moments");
 let MS = freshMoments(), MR = freshRun();
 function momentFor(typed, critStart, bossFinish) {
   const sp = G.cur.spell ? (G.cur.reversed ? "backwards" : G.cur.howTo ? "show" : "good") : null;
   const first = !Object.values(seen).some((s) => s.beaten > 0); // nothing beaten yet: the first fight
-  const mo = decideMoment(MS, MR, { typed, team, hinted: G.hinted, spell: sp, first, floor: G.floor, n: G.tries, bossFinish, critStart, always: MOMENTS_ALWAYS });
+  const mo = decideMoment(MS, MR, { typed, team, hinted: G.hinted, spell: sp, first, floor: G.floor, n: G.tries, bossFinish, critStart, always: MOMENTS_ALWAYS, teamup: TEAMUP_ALWAYS });
   if (mo) store.player(PID).set("moments", MS);
   return mo;
 }
-// Plays it: the hero takes the slow-motion turn, and the answer's other digits fly at the snap.
-// Resolves at the hit.
+// Plays it: the hero (or a team-up's two) takes the slow-motion turn, and the answer's other
+// digits fly at the snap. Resolves at the hit.
 function heroMoment(mo, typed, crit) {
-  const rest = typed.replace(String(mo.hero), "");
+  let rest = typed.replace(String(mo.hero), "");
+  if (mo.partner != null) rest = rest.replace(String(mo.partner), "");
   const from = $("blank") && $("blank").offsetParent ? $("blank") : $("ans");
-  return playMoment({ hero: mo.hero, color: mo.hero === team.captain ? team.color : null, quip: mo.quip,
+  const colorOf = (d) => (d === team.captain ? team.color : null);
+  return playMoment({ hero: mo.hero, partner: mo.partner, color: colorOf(mo.hero), partnerColor: mo.partner != null ? colorOf(mo.partner) : null, quip: mo.quip,
     speak: () => say("h", quipLine(mo.quip), true), from, to: $("mon"), room: document.querySelector(".game"),
     reduced: reduced(), onSnap: () => { if (rest) fly(rest, crit); } });
 }
