@@ -23,7 +23,12 @@ export var PHRASE = {
 //   "Twodini" (a Houdini pun) is too-DEE-nee; Kokoro reads it TOO-dih-nee, and "Toodini" comes
 //   out right (checked with its espeak phonemes).
 //   "Jr." and "Mr." are said in full, not letter by letter.
-var SAY_AS = [[/\bTwodini\b/g, "Toodini"], [/\bJr\./g, "Junior"], [/\bMr\./g, "Mister"]];
+//   "Plusington" (Kokoro: PLOOS-ington) is "Plussington"; "Chompette" (chum-PET) is
+//   "Chomp-ette"; "Nine-ja" (nine-ya) is "Nine-jah".
+//   Sevenstein's "Six, seven" gets pauses for its sing-song.
+var SAY_AS = [[/\bTwodini\b/g, "Toodini"], [/\bJr\./g, "Junior"], [/\bMr\./g, "Mister"],
+  [/\bPlusington\b/g, "Plussington"], [/\bChompette\b/g, "Chomp-ette"], [/\bNine-ja\b/g, "Nine-jah"],
+  [/Six, seven, gone\./g, "Six... seven! Gone."]];
 function sayAs(t) { return SAY_AS.reduce(function (s, r) { return s.replace(r[0], r[1]); }, t); }
 export function monsterName(m) { return sayAs(m.n + "!"); }
 export function monsterCleared(m) { return sayAs(m.n + " " + m.quip); }

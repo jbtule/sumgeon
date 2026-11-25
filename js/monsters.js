@@ -84,16 +84,18 @@ const KIT = {
   bowtie: (a) => { const [x, y] = a.neck; return `<path d="M${x} ${y} l-14 -8 l0 16 z M${x} ${y} l14 -8 l0 16 z" fill="#ff5a4e" ${st}/><circle cx="${x}" cy="${y}" r="4" fill="#ff5a4e" ${st}/>`; },
   medal: (a) => { const [x, y] = a.neck; return `<path d="M${x - 8} ${y - 12} L${x} ${y + 2} L${x + 8} ${y - 12}" stroke="#ff5a4e" stroke-width="5" fill="none"/><circle cx="${x}" cy="${y + 8}" r="8" fill="#ffc93c" ${st}/>`; }
 };
-// The looks: [name, accessories]. "mini" draws the monster smaller. Names are anything fun.
+// The looks: [name, accessories, he/she]. "mini" draws the monster smaller. Names are anything
+// fun. A look with "he" or "she" gets "his" or "her" in its lines (Minustaur's Mom loses her
+// footing); the rest keep the monster's own words.
 export const LOOKS = {
-  Plusquito: [["Captain Plunderquito", ["bandana", "eyepatch"]], ["Sir Plusington", ["tophat", "monocle"]], ["Plusquito Jr.", ["mini"]], ["Coach Plusquito", ["headband", "sunglasses"]]],
-  Minustaur: [["Minustaur's Mom", ["bow", "lashes", "blush"]], ["King Minus", ["crown"]], ["Baby Minustaur", ["mini"]], ["Professor Minustaur", ["mustache", "glasses"]]],
-  Quizard: [["The Quizard Queen", ["lashes", "blush", "sparkles"]], ["Quizard of Cool", ["sunglasses"]], ["Snoozard", ["lids"]], ["Professor Quizzle", ["monocle", "mustache"]]],
+  Plusquito: [["Captain Plunderquito", ["bandana", "eyepatch"]], ["Sir Plusington", ["tophat", "monocle"], "he"], ["Plusquito Jr.", ["mini"]], ["Coach Plusquito", ["headband", "sunglasses"]]],
+  Minustaur: [["Minustaur's Mom", ["bow", "lashes", "blush"], "she"], ["King Minus", ["crown"], "he"], ["Baby Minustaur", ["mini"]], ["Professor Minustaur", ["mustache", "glasses"]]],
+  Quizard: [["The Quizard Queen", ["lashes", "blush", "sparkles"], "she"], ["Quizard of Cool", ["sunglasses"]], ["Snoozard", ["lids"]], ["Professor Quizzle", ["monocle", "mustache"]]],
   Trollar: [["Trollar Jr.", ["mini"]], ["Mr. Moneybags", ["tophat", "monocle"]], ["Bridge Bandit", ["headband", "eyepatch"]], ["Snoozy Trollar", ["nightcap", "lids"]]],
-  Chompers: [["King of the Swamp", ["crown", "medal"]], ["Chompette", ["bow", "blush"]], ["Frostbite", ["scarf", "nightcap"]], ["Shades", ["sunglasses"]]],
+  Chompers: [["King of the Swamp", ["crown", "medal"], "he"], ["Chompette", ["bow", "blush"], "she"], ["Frostbite", ["scarf", "nightcap"]], ["Shades", ["sunglasses"]]],
   "Equal Twins": [["The Fancy Pair", ["bowtie", "monocle"]], ["Party Twins", ["sparkles", "blush"]], ["The Nap Twins", ["lids"]], ["Dizzy Twins", ["spiral"]]],
   Timesaur: [["Timesaur Tot", ["mini"]], ["The Ringmaster", ["tophat"]], ["Karate Kross", ["headband"]], ["Snoozasaur", ["nightcap", "lids"]]],
-  Divvy: [["Lord Divington", ["tophat", "bowtie"]], ["Dizzy Divvy", ["spiral"]], ["Captain Split", ["bandana", "eyepatch"]], ["Divvy Belle", ["bow", "lashes"]]],
+  Divvy: [["Lord Divington", ["tophat", "bowtie"], "he"], ["Dizzy Divvy", ["spiral"]], ["Captain Split", ["bandana", "eyepatch"]], ["Divvy Belle", ["bow", "lashes"], "she"]],
   Starbot: [["Glitterbot", ["sparkles"]], ["Low Battery", ["lids"]], ["Super Starbot", ["scarf", "medal"]], ["Turbo Starbot", ["headband"]]],
   Haberhasher: [["Jolly Hasher", ["blush", "sparkles"]], ["DJ Hashtag", ["sunglasses"]], ["Sir Hashalot", ["monocle", "mustache"]], ["Snoozehash", ["lids"]]]
 };
@@ -101,7 +103,10 @@ export const LOOKS = {
 // trait and kind of math.
 export function lookOf(m, i) {
   const l = i && (LOOKS[m.n] || [])[i - 1];
-  return l ? Object.assign({}, m, { n: l[0], base: m.n, look: l[1] }) : m;
+  if (!l) return m;
+  const his = l[2] === "she" ? "her" : l[2] === "he" ? "his" : null;
+  const quip = his ? m.quip.replace(/\b(its|his|her)\b/g, his) : m.quip;
+  return Object.assign({}, m, { n: l[0], base: m.n, look: l[1], quip });
 }
 export const allLooks = () => MON.flatMap((m) => (LOOKS[m.n] || []).map((_, i) => lookOf(m, i + 1)));
 function dress(m) {
