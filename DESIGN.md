@@ -31,6 +31,11 @@ The age range is 5–14 (kindergarten to 8th grade), which is too wide for one d
 
 The current Easy, Medium and Hard settings become difficulty levels *inside* a band. The operation checkboxes become a "custom practice" option for parents and teachers (§9).
 
+**Plan (2026-11-25): one band per grade, K through 5th.** The four bands above were drawn by age. A review against the Missouri Learning Standards and the curriculum guides of the players' school found that this mixes grades: Apprentice made a 3rd grader clear sums within 20 before multiplication, the Sprout Wing asked 2nd-grade coin counting, and 2nd grade's two-digit math hid in the Tables Tower. So Sprout, Balance and Apprentice become a band per grade, K, 1st, 2nd and 3rd, and Adept becomes 4th and 5th. Each grade's band is one stratum (§4), with its levels in the order the school teaches them. Master (6th–8th) stays as it is, for the later strata.
+- A new player picks their **grade** (K–5) instead of a band. It opens every stratum up to that grade, as the band does now.
+- What each grade asks follows the guides, limited to what works as a quick typed answer (§4). Shapes, angles, graphs, the coordinate plane, measurement conversions, prime or composite (a yes/no) and word problems are left out of fights.
+- The guides' own models and words decide how the hints teach (§5.3); the standards decide what each grade covers.
+
 **Design rules for the youngest players (Sprout):**
 - The target player is a **pre-reader who reads numbers and symbols fluently**. Problems are plain numerals and symbols, the same as in every other band. Only the *words* need help: every instruction, button and menu gets an icon, and can be read aloud with `speechSynthesis`. Reading problems aloud is available but not needed.
 - Hearts stay, at 7 instead of 5. Losing a run is fine at this age as long as the copy is kind and the next run starts right away.
@@ -80,21 +85,38 @@ The monsters are all **operators and symbols**. Digits are on the player's side 
 
 ## 4. World structure: the Wings of the Sumgeon
 
-The dungeon is a map of **Wings**, one per math strand. Each Wing has its own floor palette, monsters and boss, and maps onto the content bands. **Mastery unlocks Wings, not grade.** The Wings form a chain, from the Counting Cellar through the Tables Tower and on to the later Wings. A Wing unlocks the next one when its boss is beaten **and** over 60% of its facts are mastered, the same bar as the *Legend Loading…* achievement (§14.2). A kindergartner who masters her facts climbs into multiplication. A 3rd grader can't skip ahead without mastering the facts below.
-- **The band is a starting point, not a ceiling.** When a player is created, their grade opens every Wing up to and including their band's, so a 3rd grader doesn't have to grind through kindergarten. It also sets their help defaults (read-aloud, hints, timer).
+The dungeon is a map of **Wings**, shown in the game as **strata**. Each Wing has its own floor palette, monsters and boss. **Mastery unlocks Wings, not grade.** The Wings form a chain going down. A Wing unlocks the next one when its boss is beaten **and** over 60% of its facts are mastered, the same bar as the *Legend Loading…* achievement (§14.2). A kindergartner who masters her facts climbs into multiplication. A 3rd grader can't skip ahead without mastering the facts below.
+- **The grade is a starting point, not a ceiling.** When a player is created, their grade opens every Wing up to and including theirs, so a 3rd grader doesn't have to grind through kindergarten. It also sets their help defaults (read-aloud, hints, timer).
 - **Lower Wings are always open,** so an older player can drop back for fast, easy practice (§6.7).
 - **New content gets taught as it arrives.** The first time a kind of problem appears, the captain demonstrates it, and a new fact starts with its model shown (§5.3). That's what makes working ahead possible for a young player.
 - **There is no manual unlock.** See §9 for why nothing needs a grown-up lock.
 
-| Wing | Strand | Bands | Monsters (glyph) | Boss |
+### 4.1 The grade strata (plan, 2026-11-25)
+One stratum per grade, in a **straight chain**: each opens only the next. The levels inside each follow the school's teaching order.
+
+| Stratum | Grade | Levels (in order) | Monsters | Boss |
 |---|---|---|---|---|
-| **The Counting Cellar** | Add/subtract within 20 | Sprout | Plusquito (+), Minustaur (−), Doublet (+ + twins, doubles facts), Quizard (?), Shoutandcomma (!), Slimelipsis (…), Trollar ($) | **Make-Ten Golem** |
-| **The Tables Tower** | × ÷ facts | Apprentice | Timesaur (×), Divvy (÷), Starbot (*) | **Sigma Rex** (Σ) |
-| **The Fraction Forge** | Fractions and decimals | Adept | Halfling (½), Dotty (.), Quarterjack (¼), Boomainder (R) | **The Denominator** |
-| **The Negative Zone** | Integers and negatives | Master | Negasicle (−, an icy minus-sign popsicle), Absolutely (\|x\|) | **Lord Undefined** (÷0) |
-| **The Root Cellar** | Exponents and roots | Master | Rootling (√), Squaresquatch (²), Exponent-tron (^) | **Hydra of Powers** (heads = exponent) |
-| **Pirate Cove** | Percent and π basics | Master | % Gremlin, π Pirate, Slashbuckler (/), Colon-el Ratio (:) | **Dread Pirate Radius** |
-| **The Balance Hall** | Comparison and balance (built for K–2nd; equations and Parenthesaurus later) | Balance (K–2nd) | Equal Twins (=), Chompers (< >, the "alligator mouth"); later Parenthesaurus (( )) | **The Unknown** (x) |
+| **The Counting Cellar** (built) | K | Within 5, with zero (4 + 0, 4 − 4) → within 10 → make 10 (7 + □ = 10) and number bonds → teen numbers as 10 and some more (10 + 4, 14 − 4) | Plusquito (+), Minustaur (−), Trollar ($: find the coin, each coin's worth), Chompers in a K form (which is more, 7 or 4? type 7: comparing without symbols), a dot-flash monster (how many at a glance, up to 5) | **Make-Ten Golem** |
+| **The Balance Hall** (built) | 1st | Within 20 without crossing 10 → crossing 10 (make a ten, use a ten, doubles) → missing numbers and the equal sign → ± tens (34 + 20, 10 more, 10 less) | Quizard (?), Chompers (< = >), Equal Twins (=, balancing and true or false), Doublet (doubles), a three-addend monster (4 + 3 + 6), Tick-Tockus (hours and half hours) | **The Unknown** |
+| **The Crystal Caverns** (new) | 2nd | Two-digit ± within 100, adding and subtracting mixed → with regrouping → ± 10 and 100 within 1000 | Haberhasher (tens and ones), Trollar (counting coins with ¢ and $), Slimelipsis (skip counting by 2s, 5s and 10s), an array monster (up to 5 × 5 as 5 + 5 + 5), Tick-Tockus (to 5 minutes) | **The Centipede** |
+| **The Tables Tower** (built) | 3rd | × and ÷ only: ×0, 1, 2, 5, 10 and their ÷ → ×3, 4, 6 and ÷ → ×7, 8, 9 and ÷ → × tens (4 × 30) → ×÷ 11 and 12, kept as an extra bottom level | Timesaur (×), Divvy (÷), Starbot (*), Tick-Tockus (to the minute) | **Sigma Rex** |
+| **The Fraction Forge** | 4th | ×10, 100, 1000; 2-digit × 1-digit, then 2-digit × 2-digit (area model); factors (6 × □ = 48); remainders (29 ÷ 4 = 7 R1); equivalent fractions (3/4 = □/8); adding and subtracting like denominators; whole × fraction; decimals in tenths and hundredths; area and perimeter | Halfling (½), Quarterjack (¼), Dotty (.), Boomainder (R) | **The Denominator** |
+| **The Parenthesis Pyramid** (new) | 5th | Unlike denominators (1/2 + 1/4 = □/4); a fraction of a number (1/2 of 12); dividing by a unit fraction (3 ÷ 1/2); powers of ten; decimals × and ÷ 10, 100, 1000; order of operations; volume (l × w × h) | Shoutandcomma (!, big numbers and powers of ten), fraction and volume monsters (to design) | **Parenthesaurus** (order of operations) |
+
+- **What changes from today:** the Tower becomes × and ÷ only (its sums within 20 belong to 1st and 2nd grade, so the "alongside" level in Apprentice goes away); Haberhasher moves to the Caverns; Quizard moves to the Hall, since hidden numbers are 1st grade; coin counting moves to the Caverns, and the Cellar keeps finding coins and their worth, which the K guide teaches.
+- **Answers stay whole numbers where possible.** Most 4th- and 5th-grade problems hide a whole number in a box (3/4 = □/8), so the answer is still the damage, as with missing numbers. New pad keys appear only when a problem needs them: **R** for remainders, **.** for decimals. Typing a whole fraction and the fraction-segment HP of §7.2 wait until a problem needs them.
+- **Tick-Tockus** asks time the way Trollar asks coins: one monster whose problems follow the stratum's grade.
+- **Saved progress:** a dungeon version bump starts runs over and keeps what's been learned.
+- **Build order** (stacked PRs): (1) this plan; (2) restructure K–3 into grade strata with today's monsters (the levels in the school's order, zero facts, make-10 partners, ×0 and ×1, × tens, monsters moved), with a stand-in wall and boss for the Caverns; (3) the Crystal Caverns' wall, palette, the Centipede and voice lines; (4) the new K–3 monsters: Doublet, Slimelipsis, dot flash, three addends, arrays, Tick-Tockus; (5) the Fraction Forge; (6) the Parenthesis Pyramid.
+
+### 4.2 Later strata (Master, 6th–8th)
+Below the Pyramid, unchanged from the first design:
+
+| Wing | Strand | Monsters (glyph) | Boss |
+|---|---|---|---|
+| **The Negative Zone** | Integers and negatives | Negasicle (−, an icy minus-sign popsicle), Absolutely (\|x\|) | **Lord Undefined** (÷0) |
+| **The Root Cellar** | Exponents and roots | Rootling (√), Squaresquatch (²), Exponent-tron (^) | **Hydra of Powers** (heads = exponent) |
+| **Pirate Cove** | Percent and π basics | % Gremlin, π Pirate, Slashbuckler (/), Colon-el Ratio (:) | **Dread Pirate Radius** |
 
 **Endless Descent** (§6.4) has its own boss, the **Endless Specter** (∞).
 
@@ -110,9 +132,13 @@ Every Wing also has one **rescue floor** holding a cursed digit (§6.6). The pro
 - **π Pirate**: one leg on each side of the π bar and an eyepatch. For Master it asks circle facts, and otherwise it does decimal arithmetic.
 - **Halfling (½)**: its body is literally split in two. When hit, it shows the damage as a filling fraction bar.
 - **Quizard (?)**: a question mark in a wizard hat, holding a wand. *Mystery*: the missing number moves around (3 + □ = 7).
-- **Shoutandcomma (!)**: a mummy whose tall wrapped body is the !, with the dot as its feet. The name is a pun on Tutankhamun. *Count on*: problems that count on from the bigger number (8 + 3).
-- **Slimelipsis (…)**: three little slimes in a row. *What comes next*: counting sequences that follow the band: by 1s and 10s and backward from 10 in K, by 5s in grade 1, by 2s in grade 2 (2, 4, 6, □).
-- **Trollar ($)**: a bridge troll with a $ on his belly who wants coins to let you pass. *Pocket change*: follows the band: name the coin (K), then know each coin's value (grade 1). Adding mixed bills and coins with $ and ¢ waits for Apprentice (grade 2).
+- **Shoutandcomma (!)**: a mummy whose tall wrapped body is the !, with the dot as its feet. The name is a pun on Tutankhamun. It lives in the Parenthesis Pyramid (5th grade). *Big numbers*: powers of ten and place value (10 × 10 × 10 = □; how many zeros in 10⁵).
+- **Slimelipsis (…)**: three little slimes in a row, in the Crystal Caverns (2nd grade). *What comes next*: skip counting by 2s, 5s and 10s (2, 4, 6, □; 15, 20, □).
+- **Doublet (+ + twins)**: two plus signs who do everything together, in the Balance Hall. *Doubles*: doubles facts and doubles to subtract (8 + 8, 16 − 8).
+- **Tick-Tockus**: a clock monster whose hands are its arms. *Tell the time*: hours and half hours in the Hall, 5 minutes in the Caverns, the minute in the Tower; the answer is the minutes or the hour, typed.
+- **The Centipede**: the Crystal Caverns' boss. Centi- means a hundred: its legs come in tens, for counting by tens and hundreds, and it nods to cents.
+- **Parenthesaurus (( ))**: the Parenthesis Pyramid's boss, a dinosaur whose ribs are brackets. *Order of operations*: 3 + 4 × 2, and (3 + 4) × 2.
+- **Trollar ($)**: a bridge troll with a $ on his belly who wants coins to let you pass. *Pocket change*: follows the stratum: find each coin and know its worth in the Cellar (K, as the K guide teaches), then count collections with ¢ and $ in the Crystal Caverns (2nd grade).
 - **Starbot (*)**: a robot with a star-burst head, since * is how computers write ×. *Stripes*: favors the ×5 and ×10 tables.
 - **Boomainder (R)**: a ghost who haunts the leftovers. Division with remainders (17 ÷ 5 = 3 R2), which leads into mixed numbers (3⅖).
 - **Slashbuckler (/)**: a swashbuckler whose sword is the slash. Writes division as 24 / 6, so kids learn the other notation.
@@ -389,6 +415,8 @@ Each milestone should be playable and shippable on its own.
    Fact records, Leitner selection, the retry queue, hints after repeated misses, adaptive range within a band, and content bands replacing raw Easy/Medium/Hard.
 3. **M3 — Wings and the Bestiary** ✅ (2026-11-24). The digit heroes (captain, summon attack, power hit, rescue floors with Lucky Number), the Counting Cellar and Tables Tower with mastery opening the Tower, the Make-Ten Golem and Starbot, monster traits, per-floor stars, and the Monsters & Heroes pages with mastery rings. The new Counting Cellar monsters (Quizard, Shoutandcomma, Slimelipsis, Trollar) need new problem types and come later.
    Split the operator monsters into the Counting Cellar and the Tables Tower, add the digit heroes (captain pick, summon attack, rescue floors, Heroes page; §6.6), the Wing map, per-floor stars, the Bestiary with mastery rings, and monster traits.
+3½. **M3½ — Grade strata** (next; §4.1)
+   One stratum per grade, K–3 first: restructure with today's monsters, the Crystal Caverns, then the new K–3 monsters and Tick-Tockus. The Fraction Forge and the Parenthesis Pyramid follow in M5.
 4. **M4 — Replay**
    Achievements with spoken cards, the 🏆 sheet and share cards (§14), between-floor item choices, Endless Descent, Daily Dungeon, and captain cosmetics.
 5. **M5 — New math**
