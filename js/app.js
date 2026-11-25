@@ -5,7 +5,7 @@ import { spokenProblem, spokenFact } from "./problems.js";
 import { BANDS, choose, factOf, record as recordAnswer, helpFor, openLevel, monsterHP, probeKey, tierOf, skipTo, SKIP_PROBES, SKIP_WINDOW, MAX_LEAP, fluentTime, spellKey } from "./learn.js";
 import { hintFor, STRATEGIES } from "./hints.js";
 import { openStore, displayName } from "./store.js";
-import { PHRASE, monsterName, monsterCleared, monsterWon, heroName, heroJoins, heroCursed, heroPower, wingCleared, wingOpened, depthLine, DEPTH_MAX_SPOKEN, reversedLine } from "./lines.js";
+import { PHRASE, monsterName, monsterCleared, monsterWon, heroName, heroJoins, heroCursed, heroPower, heroRescue, heroAlmost, heroHelps, traitLine, BARK, wingCleared, wingOpened, depthLine, DEPTH_MAX_SPOKEN, reversedLine } from "./lines.js";
 import { WINGS, wingOf, runFloors, openWings, toOpen, floorStars, wingStars, depthScale, depthHP, deepest, MAP_DEPTHS } from "./wings.js";
 import { missingOf, pickBlank, filled, spokenMissing, MISSING_SHARE } from "./missing.js";
 import { coinsSvg, pileOf, coinOf } from "./coins.js";
@@ -319,7 +319,7 @@ function loadMonster(i, quiet) {
   const t = traitOf(m), badge = $("trait");
   badge.hidden = !t;
   if (t) { badge.textContent = `${t.icon} ${t.name}`; badge.title = t.text; }
-  G.onFloor = 0; G.halved = false; G.floorLost = 0; G.floorStreak = 0; G.floorSlow = false;
+  G.onFloor = 0; G.halved = false; G.floorLost = 0; G.floorStreak = 0; G.floorSlow = false; G.barked = {};
   if (!quiet) setMsg(t ? `${t.icon} ${t.name}: ${t.text}` : "Your answer is your attack.");
   $("floorLbl").textContent = (G.depth > 1 ? `Depth ${G.depth} · ` : "") + (m.boss ? "Boss floor" : m.cursed != null ? "Rescue floor" : `Floor ${i + 1} / ${G.floors.length}`);
   hpUI(); heartsUI(); streakUI();
@@ -328,6 +328,9 @@ function loadMonster(i, quiet) {
   sfx.appear(m.boss);
   if (m.boss) say("p", PHRASE.boss);
   say("m", monsterName(m));
+  // The rescue floor says who you're freeing; a trait says what it does, the first times you meet it.
+  if (m.cursed != null) say("p", heroRescue(HEROES[m.cursed]));
+  if (t && once("trait:" + t.name, 2)) say("p", traitLine(m));
 }
 // The next problem, chosen by the learning engine (learn.js): a missed fact when it's due back,
 // otherwise learning, review or new facts, with the monster's operation preferred.
@@ -350,6 +353,7 @@ function newProblem() {
   // Charge (Minustaur): every 4th problem on the floor, a miss costs 2 hearts.
   G.charged = charged(m, G.onFloor++);
   $("charge").hidden = !G.charged;
+  if (G.charged) say("p", PHRASE.charged, false, () => G.charged && !G.busy);
   G.cur = factOf(key);
   G.cur.probe = !!probe;
   G.recentAns = [G.cur.op + " " + G.cur.ans].concat(G.recentAns || []).slice(0, 2);
@@ -512,7 +516,8 @@ function learnFrom(ok) {
   store.player(PID).set("facts", recs);
   if (skipped) { say("p", PHRASE.skip); return "Skipping ahead! You already know these."; }
   const after = openLevel(bk, recs);
-  return after > before ? `New level: ${b.levels[after].name}!` : null;
+  if (after > before) { say("p", BARK.level); return `New level: ${b.levels[after].name}!`; }
+  return null;
 }
 
 function submit() {
@@ -534,7 +539,8 @@ function submit() {
     G.input = ""; ansUI();
     $("hint").hidden = true; $("hintBtn").hidden = true;
     sfx.launch(G.streak);
-    if (G.streak === 3 && !G.hinted) say("p", PHRASE.crits);
+    const critsNow = G.streak === 3 && !G.hinted;
+    if (critsNow) say("p", PHRASE.crits);
     fly(typed, crit).then(() => {
       sfx.impact(crit); burst(crit);
       G.hp -= dmg;
@@ -550,6 +556,12 @@ function submit() {
         setMsg(half.note, "good");
         if (half.split) { $("mon").innerHTML = `<div class="split">${monsterArt(m)}${monsterArt(m)}</div>`; }
       }
+      // One short bark for what this hit did, at most: the half-HP change, the trait, or a power
+      // hit, each once a floor. None when something else was just said (a new level, skipping
+      // ahead, a backwards spell, or "Critical hits!", unless it's the half-HP change, which only
+      // happens once).
+      const bark = half ? (half.split ? "split" : "second") : trait.mult > 1 ? "double" : trait.mult < 1 ? "half" : bonus.power ? "power" : null;
+      if (bark && !level && (half || !critsNow) && !G.cur.reversed && !G.barked[bark]) { G.barked[bark] = true; say("p", BARK[bark]); }
       if (G.hp <= 0) { setTimeout(() => { $("mon").className = "mon dead"; }, 300); setTimeout(cleared, 1100); }
       else setTimeout(newProblem, level ? 1200 : 450);
     });
@@ -576,6 +588,7 @@ function miss(why) {
   // The whole fact, said out loud: "three plus four is seven".
   const said = G.cur.fact || G.cur;
   say("q", spokenFact(said));
+  if (cost > 1) say("p", PHRASE.chargedMiss);
   setTimeout(() => {
     sfx.crack();
     heartsUI(lost);
@@ -632,6 +645,7 @@ function cleared() {
     const h = HEROES[m.cursed], r = crackCurse(team, m.cursed);
     Object.assign(team, r.team); saveTeam();
     say("p", PHRASE.crack);
+    if (CURSE_HITS - r.cracks === 1) say("p", heroAlmost(h)); else say("p", PHRASE.crackTwo);
     show(`<h2>The curse is cracking!</h2>
     <div class="cardmon rescued">${heroSvg(h, { cursed: true, cracks: r.cracks })}</div>
     <p><strong>${r.cracks} of ${CURSE_HITS}</strong> cracks in the curse on ${h.n}. Beat it ${CURSE_HITS - r.cracks === 1 ? "once more" : `${CURSE_HITS - r.cracks} more times`} to set ${h.n} free.</p>
@@ -643,6 +657,7 @@ function cleared() {
     const h = HEROES[m.cursed];
     Object.assign(team, crackCurse(team, m.cursed).team); saveTeam();
     say("p", heroJoins(h));
+    say("p", heroHelps(h));
     show(`<h2>${h.n} is free!</h2>
     <div class="cardmon rescued">${heroSvg(h)}</div>
     <p><strong>${h.n} joins your team.</strong> When your answer has a ${h.d}, ${h.n} jumps in and hits harder.</p>
@@ -656,6 +671,8 @@ function cleared() {
   ${next}
   <div class="btns"><button class="big" id="next">Floor ${G.floor + 2}</button></div>`, "float");
   }
+  if (healed) say("p", PHRASE.heart);
+  if (nx.boss) say("p", PHRASE.nextBoss);
   $("next").onclick = () => { hide(); loadMonster(G.floor + 1); newProblem(); };
 }
 function end(win) {
