@@ -49,8 +49,8 @@ export const BANDS = {
     facts: () => facts().concat(balanceFacts(), firstHidden(), twoDigitFacts()),
     levels: [
       // Within 10 and 10 and some more (10 + 6, 16 − 6) are the Cellar's: here, the rest of the
-      // teens (13 + 4, 17 − 5).
-      { name: "Within 20, not crossing 10", has: any((f) => within(20)(f) && !within(10)(f) && !teen(f) && !crosses(f), inSet("Compare to 10"), inSet("The other side")) },
+      // teens (13 + 4, 17 − 5; a teen take away a teen, 17 − 12, is left out to keep the level short).
+      { name: "Within 20, not crossing 10", has: any((f) => within(20)(f) && !within(10)(f) && !teen(f) && !crosses(f) && !(f.op === "-" && f.y > 10), inSet("Compare to 10"), inSet("The other side")) },
       { name: "Crossing 10", has: any((f) => within(20)(f) && crosses(f), inSet("Compare sums")) },
       { name: "Missing numbers and the equal sign", has: any(hidden, inSet("Balance both sides")) },
       { name: "Add and subtract tens", has: any(twoLevel("Add tens", "Subtract tens", "10 more", "10 less", "Add tens to a number"), inSet("Compare to 100")) }

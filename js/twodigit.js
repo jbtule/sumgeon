@@ -31,7 +31,7 @@ export const TWO_LEVELS = [
   { name: "Add ones", op: "+", test: (x, y) => x < 10 && ones(x) + ones(y) < 10 && y > 10, n: 24 },
   { name: "Add tens and ones", op: "+", test: (x, y) => x > 10 && ones(x) && ones(y) && ones(x) + ones(y) < 10, n: 24 },
   { name: "Add and regroup", op: "+", test: (x, y) => ones(x) + ones(y) >= 10 && ones(x) && ones(y), n: 30 },
-  { name: "Subtract tens", op: "-", test: (x, y) => !ones(x) && !ones(y), n: 99 },
+  { name: "Subtract tens", op: "-", test: (x, y) => !ones(x) && !ones(y), n: 24 }, // (a subset of the 44 it had: the same shuffle, cut shorter)
   { name: "Subtract, no regrouping", op: "-", test: (x, y) => ones(y) && ones(x) > ones(y), n: 24 },
   { name: "Subtract and regroup", op: "-", test: (x, y) => ones(y) && ones(x) < ones(y), n: 30 },
   // 1st grade (1.NBT.C.4–5): 10 more and 10 less than a number, and adding tens to a number.

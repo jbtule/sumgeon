@@ -327,7 +327,7 @@ h1 b{color:var(--coral);font-weight:400}
 .frac>span:first-child{border-bottom:.09em solid currentColor;padding:0 .1em .04em}
 .frac>span:last-child{padding-top:.06em}
 .frac .blank{font-size:1em;line-height:1}
-.game.find .prob svg.rectfig{max-width:min(60vw,260px);height:auto}
+.game.find .prob svg.rectfig{max-width:min(60vw,260px);max-height:min(18vh,170px);width:auto;height:auto}
 .game.cents .ans::after{content:"¢";margin-left:2px;font-size:.7em;opacity:.75}
 
 /* Comparisons (Chompers): < = > keys fill the number pad's space, three rows tall, so nothing moves */

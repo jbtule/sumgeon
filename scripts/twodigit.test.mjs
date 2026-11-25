@@ -7,7 +7,7 @@ import { facts } from "../js/problems.js";
 import { hintFor } from "../js/hints.js";
 
 const fs = twoDigitFacts();
-assert.equal(fs.length, 300);
+assert.equal(fs.length, 280);
 assert.deepEqual(fs, twoDigitFacts(), "the sample never changes");
 assert.equal(new Set(fs.map(keyOf)).size, fs.length, "each fact once");
 const lv = (name) => fs.filter((f) => TWO_LEVELS[f.lv].name === name);
