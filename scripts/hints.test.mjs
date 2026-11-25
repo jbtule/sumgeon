@@ -41,7 +41,7 @@ console.log("✓ hints");
 import { STRATEGIES } from "../js/hints.js";
 const opening = { "Ten-frame": /^Put together/, "Draw and cross out": /^Take away/, "10 and some more": /^10 and some more/, "Make 10": /^Make 10/,
   "Doubles plus one": /^Doubles plus one/, "Think addition": /^Think addition/, "Arrays": /rows of/, "Doubling": /^Double it/, "Break apart": /^Break apart/,
-  "Nines as tens": /minus one group/, "Think multiplication": /^Think multiplication/ };
+  "Nines as tens": /minus one group/, "Counting coins": /^Count on from the biggest coin/, "Think multiplication": /^Think multiplication/ };
 assert.equal(STRATEGIES.length, Object.keys(opening).length);
 for (const s of STRATEGIES) {
   const h = hintFor(s.f, true);

@@ -1,3 +1,5 @@
+import { coinWords } from "./coins.js";
+
 // Problem generation and spoken text. No DOM: runs in Node for the tests and, later, the
 // audio build (which records the same spoken text the app asks for).
 
@@ -57,10 +59,18 @@ export function spoken(n) {
 }
 var OP_WORDS = { "+": "plus", "-": "minus", "×": "times", "÷": "divided by" };
 
-// "seven plus eight"
-export function spokenProblem(p) { return spoken(p.x) + " " + OP_WORDS[p.op] + " " + spoken(p.y); }
-// "seven plus eight is fifteen" (said after a miss, with the right answer)
-export function spokenFact(p) { return spokenProblem(p) + " is " + spoken(p.ans); }
+// "seven plus eight"; for coins, "two dimes and three pennies. How many cents?"
+export function spokenProblem(p) {
+  if (p.op === "¢") return coinWords(p.coins) + ". How many cents?";
+  return spoken(p.x) + " " + OP_WORDS[p.op] + " " + spoken(p.y);
+}
+// "seven plus eight is fifteen" (said after a miss, with the right answer); for coins, "two dimes
+// and three pennies make twenty-three cents".
+export function spokenFact(p) {
+  if (p.op === "¢") return coinWords(p.coins) + (coinCount(p.coins) > 1 ? " make " : " is ") + spoken(p.ans) + (p.ans === 1 ? " cent" : " cents");
+  return spokenProblem(p) + " is " + spoken(p.ans);
+}
+function coinCount(c) { return c.q + c.d + c.n + c.p; }
 
 /* ---------- facts ----------
    The facts that get recorded clips (DESIGN.md §13): sums and differences within 20 and the

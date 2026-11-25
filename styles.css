@@ -250,6 +250,10 @@ h1 b{color:var(--coral);font-weight:400}
 .game.missing .probrow{grid-column:1/-1;justify-self:center}
 @media (min-width: 760px){.game.missing .probrow{grid-column:2/-1;margin-right:16px}}
 
+/* Coin problems (Trollar): the coins stand in for the numbers, and the answer is in cents */
+.prob svg.coins{height:1.2em;width:auto;max-width:min(60vw,440px);vertical-align:middle;overflow:visible}
+.game.cents .ans::after{content:"¢";margin-left:2px;font-size:.7em;opacity:.75}
+
 /* Screens other than the battle (show() in app.js). A "page" (the menu, Settings, the book, a
    run's end) fills a phone's screen, with its buttons docked full-width at the bottom; a "float"
    (a floor cleared, a miss) floats over the game as a centered card. */

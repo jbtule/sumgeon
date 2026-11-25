@@ -5,6 +5,7 @@
 //   Right and unhinted moves a fact up a box (two when fast, from box 1 on); a miss sends it to
 //   box 0; a hinted answer changes nothing, so mastery needs solves without help.
 import { facts } from "./problems.js";
+import { coinFacts, coinFactOf, COIN_LEVELS } from "./coins.js";
 
 // Facts by the order classrooms teach them (Missouri Learning Standards, DESIGN.md §2, §5.3).
 // A level opens when 70% of the level before it is learned (box 3 or more).
@@ -36,7 +37,10 @@ export const BANDS = {
       { name: "÷ 6, 7, 8 and 9", has: divide([6, 7, 8, 9]) },
       { name: "× and ÷ 11 and 12", has: big }
     ]
-  }
+  },
+  // A strand, not a band: the coin problems Trollar asks, from whichever Wing he's in. It has
+  // its own levels and records, and nobody plays it as their band.
+  coins: { label: "Coins", strand: true, hearts: 7, fluentMs: 5000, facts: coinFacts, levels: COIN_LEVELS }
 };
 export const UNLOCK = 0.7;
 const BOX_MAX = 4;
@@ -45,11 +49,13 @@ const DUE_MS = { 3: 10 * 60e3, 4: 24 * 3600e3 };
 
 // One key per fact. Turnarounds share a key for + and × (3 + 4 is 4 + 3); − and ÷ don't.
 export function keyOf(f) {
+  if (f.op === "¢") return f.key;
   if (f.op === "+" || f.op === "×") return f.op + Math.min(f.x, f.y) + "," + Math.max(f.x, f.y);
   return f.op + f.x + "," + f.y;
 }
 // A problem for a key, turned around half the time for + and ×.
 export function factOf(key, rnd) {
+  if (key[0] === "¢") return coinFactOf(key);
   const op = key[0], [a, b] = key.slice(1).split(",").map(Number);
   const flip = (op === "+" || op === "×") && (rnd || Math.random)() < 0.5;
   const x = flip ? b : a, y = flip ? a : b;
@@ -62,7 +68,7 @@ const poolCache = {};
 export function pool(bandKey) {
   if (poolCache[bandKey]) return poolCache[bandKey];
   const band = BANDS[bandKey], seen = {}, out = [];
-  for (const f of facts()) {
+  for (const f of (band.facts || facts)()) {
     const key = keyOf(f);
     if (seen[key]) continue;
     const level = band.levels.findIndex((l) => l.has(f));
@@ -157,7 +163,7 @@ export function monsterHP(m, bandKey, recs) {
   const mine = open.filter((f) => f.op === m.op);
   // A monster that hides a number (m.blank, Quizard) is hit by the hidden number: on average,
   // the mean of the fact's two numbers.
-  const val = (f) => { if (!m.blank) return f.ans; const [a, b] = f.key.slice(1).split(",").map(Number); return (a + b) / 2; };
+  const val = (f) => { if (!m.blank || f.op === "¢") return f.ans; const [a, b] = f.key.slice(1).split(",").map(Number); return (a + b) / 2; };
   const avg = (fs) => fs.reduce((s, f) => s + val(f), 0) / fs.length;
   const mean = mine.length ? avg(mine) * 0.7 + avg(open) * 0.3 : avg(open);
   return Math.max(10, Math.round(mean * m.hits));

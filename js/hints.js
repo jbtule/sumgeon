@@ -1,3 +1,5 @@
+import { coinsSvg, coinFact } from "./coins.js";
+
 // Hints (DESIGN.md §5.3): the models classrooms use now, with the classroom's words, and a line
 // for grown-ups who learned it another way. No DOM: returns { model, say, grownups } where model
 // is an SVG string, so the tests run in Node.
@@ -64,7 +66,25 @@ function hops(a, b, via) {
   return svg(W, 72, s, `count up from ${a} to ${b}`);
 }
 
+// Coins (DESIGN.md §5.3): each coin's value under it, then count on from the biggest. A single
+// coin is a value to remember, so its hint is the four coins with their values.
+function coinHint(f, worked) {
+  const vals = f.q.split(" + ").map(Number), end = worked ? f.ans : "?";
+  const grownups = "Counting coins: kids learn each coin's value (1st grade), then count on from the biggest coin, skip counting by 10s and 5s.";
+  if (vals.length === 1) {
+    return { model: coinsSvg(worked ? f.coins : { q: 1, d: 1, n: 1, p: 1 }, true),
+      say: `Penny 1¢, nickel 5¢, dime 10¢, quarter 25¢. This coin = ${end}`, grownups };
+  }
+  let run = 0;
+  const steps = vals.map((v) => (run += v));
+  const say = vals.every((v) => v === 1)
+    ? `Count the pennies, 1 cent each: ${f.q} = ${end}`
+    : `Count on from the biggest coin${worked ? ": " + steps.join(", ") + "." : ":"} ${f.q} = ${end}`;
+  return { model: coinsSvg(f.coins, true), say, grownups };
+}
+
 export function hintFor(f, worked) {
+  if (f.op === "¢") return coinHint(f, worked);
   const { op, x, y, ans } = f, end = (t) => (worked ? t : "?");
   if (op === "+") {
     const big = Math.max(x, y), small = Math.min(x, y);
@@ -148,5 +168,6 @@ export const STRATEGIES = [
   { title: "Doubling", grade: "3rd", f: { op: "×", x: 4, y: 7 } },
   { title: "Break apart", grade: "3rd", f: { op: "×", x: 6, y: 7 } },
   { title: "Nines as tens", grade: "3rd", f: { op: "×", x: 9, y: 7 } },
+  { title: "Counting coins", grade: "K–1st", f: coinFact({ q: 0, d: 1, n: 1, p: 2 }) },
   { title: "Think multiplication", grade: "3rd", f: { op: "÷", x: 32, y: 8 } }
 ].map((s) => Object.assign(s, { f: Object.assign({ ans: { "+": s.f.x + s.f.y, "-": s.f.x - s.f.y, "×": s.f.x * s.f.y, "÷": s.f.x / s.f.y }[s.f.op] }, s.f) }));

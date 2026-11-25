@@ -8,6 +8,7 @@ import { openStore, displayName } from "./store.js";
 import { PHRASE, monsterName, monsterCleared, monsterWon, heroName, heroJoins, wingCleared, wingOpened } from "./lines.js";
 import { WINGS, wingOf, runFloors, openWings, toOpen, floorStars, wingStars, STREAK_STAR, depthScale } from "./wings.js";
 import { missingOf, pickBlank, filled, spokenMissing, MISSING_SHARE } from "./missing.js";
+import { coinsSvg } from "./coins.js";
 import { traitOf, charged, prefers, hitBy, atHalf } from "./traits.js";
 import { roster, mastery, meet, beat } from "./bestiary.js";
 import { HEROES, CHALK, heroSvg, freePick, pickHero, curseCaptain } from "./heroes.js";
@@ -173,8 +174,19 @@ function ansUI() {
 function probUI() {
   const p = G.cur, box = $("prob");
   if (p.blank) box.innerHTML = esc(p.q).replace("□", '<span class="blank" id="blank">?</span>');
+  else if (p.op === "¢") box.innerHTML = coinsSvg(p.coins) + " =";
   else box.textContent = p.q + " =";
   document.querySelector(".game").classList.toggle("missing", !!p.blank);
+  document.querySelector(".game").classList.toggle("cents", p.op === "¢");
+}
+// The facts a monster asks: its own strand (Trollar's coins) or the player's band.
+const strandOf = (m) => m.strand || st.band;
+// A problem with its answer, for the miss message and the Oops card: "3 + 4 = 7", "3 + 4 = 7"
+// for 3 + □ = 7, and "10 + 5 + 1 = 16¢" for coins (just "16¢" for one coin).
+function shownFact(p, ans) {
+  if (p.blank) return filled(p, ans);
+  if (p.op === "¢") return (p.q.includes("+") ? p.q + " = " : "") + ans + "¢";
+  return `${esc(p.q)} = ${ans}`;
 }
 // The fact whose hint helps: for 3 + □ = 7 that's 7 − 3.
 const hintFact = () => G.cur.inverse || G.cur;
@@ -185,7 +197,7 @@ function loadMonster(i, quiet) {
   const m = G.floors[i];
   G.floor = i;
   // Deeper floors are tougher: about 80% of the usual HP on floor 1, up to 130% for the boss.
-  G.max = G.hp = Math.round(monsterHP(m, st.band, recs) * depthScale(i, G.floors.length));
+  G.max = G.hp = Math.round(monsterHP(m, strandOf(m), recs) * depthScale(i, G.floors.length));
   const el = $("mon");
   el.className = "mon";
   el.innerHTML = monsterArt(m);
@@ -212,14 +224,14 @@ function newProblem() {
   const due = G.retry.find((r) => r.after <= 0);
   if (due) G.retry.splice(G.retry.indexOf(due), 1);
   const m = G.floors[G.floor];
-  const key = choose(st.band, recs, { now: Date.now(), recent: G.recent, retry: due ? due.key : null, op: m.op === "mix" ? null : m.op, like: prefers(m) });
+  const key = choose(strandOf(m), recs, { now: Date.now(), recent: G.recent, retry: due ? due.key : null, op: m.op === "mix" || m.strand ? null : m.op, like: prefers(m) });
   // Charge (Minustaur): every 4th problem on the floor, a miss costs 2 hearts.
   G.charged = charged(m, G.onFloor++);
   $("charge").hidden = !G.charged;
   G.cur = factOf(key);
   // Quizard hides a number in every problem; other monsters sometimes do, for facts in review.
   const rec = recs[key];
-  if (m.blank || (rec && rec.b >= 3 && Math.random() < MISSING_SHARE)) G.cur = missingOf(G.cur, pickBlank());
+  if (G.cur.op !== "¢" && (m.blank || (rec && rec.b >= 3 && Math.random() < MISSING_SHARE))) G.cur = missingOf(G.cur, pickBlank());
   G.recent = [key].concat(G.recent).slice(0, 3);
   G.input = ""; G.busy = false; G.hinted = false; G.t0 = performance.now();
   probUI();
@@ -320,7 +332,7 @@ function openWorked() {
   const h = hintFor(hintFact(), true);
   $("hint").hidden = true; $("hintBtn").hidden = true;
   show(`<div class="worked"><h2>Oops!</h2>
-    <p class="worked-fact">${G.cur.blank ? filled(G.cur, `<b>${G.cur.ans}</b>`) : `${esc(G.cur.q)} = <b>${G.cur.ans}</b>`}</p>
+    <p class="worked-fact">${shownFact(G.cur, `<b>${G.cur.ans}</b>`)}</p>
     <div class="model">${h.model}</div><p class="hsay">${esc(h.say)}</p>
     <div class="btns"><button class="big" type="button" id="gotIt">Got it</button></div></div>`, "float");
   $("gotIt").onclick = nextAfterMiss;
@@ -389,7 +401,7 @@ function miss(why) {
   sfx.miss();
   restartAnim($("mon"), "lunge");
   streakUI();
-  setMsg(`${why} ${G.cur.blank ? filled(G.cur, G.cur.ans) : `${G.cur.q} = ${G.cur.ans}`}${cost > 1 ? " ⚡ −2 hearts" : ""}`, "bad");
+  setMsg(`${why} ${shownFact(G.cur, G.cur.ans)}${cost > 1 ? " ⚡ −2 hearts" : ""}`, "bad");
   say("p", PHRASE.oops, true);
   // The whole fact, said out loud: "three plus four is seven".
   const said = G.cur.fact || G.cur;

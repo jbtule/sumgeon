@@ -14,7 +14,8 @@ export function roster() {
 // The share (0–1) of a monster's facts learned: its operation's facts in its Wing's band, or every
 // fact there for a monster that mixes or prefers none.
 export function mastery(m, wing, recs) {
-  const p = pool(wing.band), mine = p.filter((f) => f.op === m.op);
+  // A monster with its own strand (Trollar's coins) is measured on that strand.
+  const p = pool(m.strand || wing.band), mine = p.filter((f) => f.op === m.op);
   const facts = mine.length ? mine : p;
   return facts.filter((f) => learned(recs[f.key])).length / facts.length;
 }
