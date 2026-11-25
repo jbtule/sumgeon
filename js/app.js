@@ -910,7 +910,7 @@ function menu() {
   if (updateReady && !G.running) { reloadForUpdate(); return; } // a new version is waiting
   const list = store.profiles();
   const head = `<div class="cardhead logo-head"><h2 class="logo">Sum<b>geon</b></h2><button class="icon-btn" id="openSettings" type="button" aria-label="Settings">${GEAR}</button></div>
-  <p class="tag"><strong>Your answer is your attack.</strong> Get it right and your digits fly at the monster.</p>
+  ${st.grade == null ? "" : `<p class="tag"><strong>Your answer is your attack.</strong> Get it right and your digits fly at the monster.</p>`}
   ${list.length > 1 ? `<p class="playing">Playing as <b>${esc(displayName(list, PID))}</b> <button class="link" type="button" id="switchPlayer">Switch</button></p>` : ""}`;
   // A player with no grade yet is asked once, first (the kid picks: an older grade opens more strata).
   if (st.grade == null) {
