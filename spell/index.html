@@ -53,7 +53,13 @@
   body.recording h1{font-size:18px}
   body.recording .badge{margin-top:0}
   body.recording .tabs{margin:8px 0 8px}
-  .askDigit{font:400 clamp(72px,13svh,140px)/1 Bungee,sans-serif;color:var(--gold);text-shadow:0 5px 0 var(--dark)}
+  .askDigit{height:clamp(72px,13svh,140px);display:grid;place-items:center}
+  /* The digit to copy, in school-style handwriting (js/handwriting.js), not a font. */
+  .hand{height:100%;width:auto;overflow:visible;filter:drop-shadow(0 5px 0 var(--dark))}
+  .hand path{fill:none;stroke:var(--gold);stroke-width:11;stroke-linecap:round;stroke-linejoin:round}
+  .hand.mini{height:56px}
+  .hand.mini path{stroke:var(--ok)}
+  .howto{display:flex;align-items:center;justify-content:center;gap:10px;color:var(--ok);font-weight:900}
   #rpad{width:min(100%,520px,calc(100svh - 350px));min-width:240px}
   .rbtns{display:grid;grid-template-columns:1fr 1fr 1.4fr;gap:10px;width:min(100%,520px)}
   .rbtn{display:grid;justify-items:center;align-content:center;gap:2px;min-height:72px;border-radius:18px;border:2px solid var(--edge);background:var(--btn);font-weight:900;font-size:14px;padding:8px 4px}
@@ -82,7 +88,7 @@
   <div class="tabs" role="group" aria-label="Mode"><button type="button" data-view="try" aria-pressed="true">Try it</button><button type="button" data-view="record" aria-pressed="false">Record</button></div>
 
   <section id="tryView">
-    <p class="sub">Draw any digit to see what the spell reader makes of it: the digit, how sure it is, and whether it's backwards. A read counts in the game when it's <b>clear</b>.</p>
+    <p class="sub">Draw any digit to see what the spell reader makes of it: the digit, how sure it is, and whether it's backwards. Pick what it's <b>expecting</b> to see what the game would do with it, knowing the answer.</p>
 
     <div class="pad">
       <canvas id="pad" aria-label="Draw a digit here"></canvas>
@@ -91,6 +97,7 @@
     <div class="bar">
       <button class="small" id="clear" type="button">Clear</button>
       <label>Handwriting: <select id="player"></select></label>
+      <label>Expecting: <select id="expect"></select></label>
     </div>
 
     <h2>Backwards, by player</h2>
@@ -103,7 +110,7 @@
   <section id="recView" hidden>
     <div class="who"><label>Who's drawing: <select id="who"></select></label><span class="count" id="count"></span></div>
     <div class="rec" id="stage">
-      <div class="askDigit" id="askDigit" aria-live="polite">0</div>
+      <div class="askDigit" id="askDigit" aria-live="polite"></div>
       <canvas id="rpad" aria-label="Draw the digit here"></canvas>
       <div class="rbtns">
         <button class="rbtn" id="redo" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" d="M4 12a8 8 0 1 0 2.4-5.7M4 4v4.5h4.5"/></svg><span>Redo</span></button>

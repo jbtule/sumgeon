@@ -110,6 +110,9 @@ export function wingOpened(w) { return w.name + " is open!"; }
 // screen adds an arrow. For the digits whose mirror image looks different.
 export var REVERSIBLE = [1, 2, 3, 4, 5, 6, 7, 9];
 export function reversedLine(d) { return "Your " + spoken(d) + " is facing backwards. It faces this way."; }
+// A spell that was right but hard to read (sigil.js judge): "Here's how to write a four.", as
+// the school-style digit (handwriting.js) is drawn over it. For every digit.
+export function howToWriteLine(d) { return "Here's how to write " + aDigit(d) + "."; }
 // "Depth two!", said as a run starts below depth 1. Recorded to depth 20.
 export var DEPTH_MAX_SPOKEN = 20;
 export function depthLine(d) { return "Depth " + spoken(d) + "!"; }
@@ -145,6 +148,7 @@ export function spokenLines() {
   Object.keys(BARK).forEach(function (k) { add("p", BARK[k], "Phrases"); });
   for (var d = 2; d <= DEPTH_MAX_SPOKEN; d++) add("p", depthLine(d), "Phrases");
   REVERSIBLE.forEach(function (n) { add("p", reversedLine(n), "Phrases"); });
+  for (var w = 0; w <= 9; w++) add("p", howToWriteLine(w), "Phrases");
   WINGS.forEach(function (w, i) {
     add("p", wingCleared(w), "Phrases");
     if (i) add("p", wingOpened(w), "Phrases");

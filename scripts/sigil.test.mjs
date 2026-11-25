@@ -2,10 +2,14 @@
 // digit reversed, messy copies still read right, and a scribble isn't clear.
 import assert from "node:assert/strict";
 import { readFileSync, existsSync } from "node:fs";
-import { read, cloud, TEMPLATES, SHAPES_FOR_TESTS, mirror } from "../js/sigil.js";
+import { read, judge, ACCEPT, cloud, TEMPLATES, SHAPES_FOR_TESTS, mirror } from "../js/sigil.js";
+import { HANDWRITING } from "../js/handwriting.js";
 
 const CAN_REVERSE = new Set([1, 2, 3, 4, 5, 6, 7, 9]);
-let seed = 12345;
+// SIGIL_SEED=<n> runs the random parts with another seed (for the rate across seeds); the check
+// runs the fixed one.
+const SEED = Number(process.env.SIGIL_SEED) || 12345;
+let seed = SEED;
 const rnd = () => ((seed = (seed * 1103515245 + 12345) % 2147483648) / 2147483648);
 // A messy copy: tilted, stretched and wobbly, the way a kid's finger draws.
 function messy(strokes, rot, stretch, jit) {
@@ -83,6 +87,8 @@ function vary(strokes) {
       X * Math.sin(a) + Y * Math.cos(a) + w * Math.sin(p2 + f2 * 6 * (x - cx) / size)];
   }));
 }
+// Seeded afresh here, so adding a shape doesn't reshuffle the screenshots' variants.
+seed = SEED;
 const safety = { n: 0, right: 0, unclear: 0, wrong: [] };
 const drawings = FIXTURES.filter((f) => f.id.startsWith("shot-")).map((f) => ({ digit: f.digit, strokes: f.strokes, symmetric: false, count: 40 }))
   .concat(SHAPES_FOR_TESTS.map((sh) => ({ ...sh, count: 15 })));
@@ -112,6 +118,46 @@ assert.equal(read(scribble).clear, false, "a scribble isn't read clearly");
 assert.equal(read([]), null);
 assert.equal(read([[[10, 10]]]), null, "a single dot is nothing");
 
+// Kids' drawings (drawer-2, a kindergartner, and drawer-3): each reads at least as well as when
+// it was recorded (f.read: a clear right read stays clear and right), and knowing the answer,
+// the game hits with every one. Only drawer-2's squared-U 4 is a poor match: it hits but shows
+// how to write a 4 and isn't learned (the game teaches the school 4 rather than keep his shape).
+const kids = FIXTURES.filter((f) => f.who !== "drawer-1");
+const judged = { n: 0, good: 0, show: 0 };
+for (const f of kids) {
+  const r = read(f.strokes), j = judge(r, f.digit);
+  if (f.read.clear && f.read.digit === f.digit && !f.read.reversed) assert.ok(r.clear && r.digit === f.digit && !r.reversed, `the real ${f.digit} ${f.id} (${f.who}) still reads clearly (got ${how(r)})`);
+  assert.ok(j.outcome === "hit" || j.outcome === "show", `knowing the answer, the real ${f.digit} ${f.id} (${f.who}) hits (got ${j.outcome}, ${how(r)})`);
+  judged.n++; judged[j.outcome === "hit" ? "good" : "show"]++;
+}
+const u4 = kids.find((f) => f.who === "drawer-2" && f.digit === 4);
+if (u4) {
+  const j = judge(read(u4.strokes), 4);
+  assert.ok(j.outcome === "show" && !j.learn, "the squared-U 4 hits, shows how to write a 4, and isn't learned");
+}
+// The answer-aware rule on every real drawing and every handwriting variant above, with every
+// answer: a clear read is wrong for any other answer, never accepted; an unclear one is never
+// wrong. Drawings accepted for an answer they aren't are counted (the gap rule), not failed.
+const other = { n: 0, accepted: 0 };
+for (const f of FIXTURES) {
+  const r = read(f.strokes);
+  for (let d = 0; d <= 9; d++) {
+    if (d === f.digit) continue;
+    const j = judge(r, d);
+    other.n++;
+    if (r.clear) assert.ok(j.outcome === "wrong" || (r.digit === d && j.outcome === "backwards"), `a clear ${how(r)} isn't accepted as ${d}`);
+    else { assert.notEqual(j.outcome, "wrong", "only a clear read is wrong"); if (j.outcome === "hit" || j.outcome === "show") other.accepted++; }
+  }
+}
+// The built-ins alone read a drawing clearly as another digit: it may hit (a personal template
+// matched), but it's never learned.
+const clear7 = read([[[20, 8], [80, 8], [40, 95]]]);
+assert.equal(judge({ ...clear7, clear: false, digit: 1, reversed: false, fit: 0.9, margin: 0.5, forward: { 1: 0.9, 7: 0.9 } }, 1, clear7).learn, false, "never learn what the built-ins read clearly as another digit");
+assert.equal(judge(null, 3).outcome, "retry");
+assert.ok(ACCEPT.floor < ACCEPT.good);
+// The school-style digits (handwriting.js, shown to copy) read clearly as themselves.
+HANDWRITING.forEach((st, d) => { const r = read(st); assert.ok(r.digit === d && r.clear && !r.reversed && judge(r, d).outcome === "hit", `handwriting ${d} (got ${how(r)})`); });
+
 // A personal template (the player's own 7) is used.
 const odd7 = [[[20, 30], [80, 10], [30, 95]]];
 assert.equal(read(odd7, [{ digit: 7, points: cloud(odd7) }]).digit, 7);
@@ -120,4 +166,4 @@ const t0 = performance.now();
 for (const f of FIXTURES) for (let k = 0; k < 5; k++) read(f.strokes);
 const ms = (performance.now() - t0) / (FIXTURES.length * 5);
 assert.ok(ms < 30, `a read takes ${ms.toFixed(1)} ms`);
-console.log(`✓ sigils (${TEMPLATES.length} templates, messy ${right}/${total}, real drawings ${real.right}/${real.n} clear, ${real.unclear} unclear; handwriting variants ${safety.right}/${safety.n} right, ${(safety.unclear / safety.n * 100).toFixed(1)}% unclear, 0 wrong, ${ms.toFixed(1)} ms a read)`);
+console.log(`✓ sigils (${TEMPLATES.length} templates, messy ${right}/${total}, real drawings ${real.right}/${real.n} clear, ${real.unclear} unclear; handwriting variants ${safety.right}/${safety.n} right, ${(safety.unclear / safety.n * 100).toFixed(1)}% unclear, 0 wrong; kids' drawings hit ${judged.good + judged.show}/${judged.n} knowing the answer (${judged.show} showing how to write it); other answers accepted ${other.accepted}/${other.n}; ${ms.toFixed(1)} ms a read)`);
