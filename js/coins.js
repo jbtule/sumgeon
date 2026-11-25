@@ -24,12 +24,12 @@ export function coinFactOf(key) {
 }
 const count = (c) => c.q + c.d + c.n + c.p;
 
-// Every coin fact, once: pennies to 10; each coin by itself; then nickels, dimes and quarters
-// with smaller coins.
+// Every coin fact, once: 2 to 6 pennies; each coin by itself; then nickels, dimes and quarters
+// with smaller coins. (Few penny-only problems, so Trollar soon moves on to real coins.)
 export function coinFacts() {
   const out = [], add = (q, d, n, p) => out.push(coinFact({ q, d, n, p }));
-  for (let p = 1; p <= 10; p++) add(0, 0, 0, p);
-  add(0, 0, 1, 0); add(0, 1, 0, 0); add(1, 0, 0, 0);
+  for (let p = 2; p <= 6; p++) add(0, 0, 0, p);
+  add(0, 0, 0, 1); add(0, 0, 1, 0); add(0, 1, 0, 0); add(1, 0, 0, 0);
   for (let n = 1; n <= 2; n++) for (let p = 0; p <= 4; p++) if (n + p > 1) add(0, 0, n, p);
   for (let d = 1; d <= 3; d++) for (let n = 0; n <= 1; n++) for (let p = 0; p <= 4; p++) if (d + n + p > 1) add(0, d, n, p);
   for (let q = 1; q <= 2; q++) for (let d = 0; d <= 2; d++) for (let n = 0; n <= 1; n++) for (let p = 0; p <= 3; p++) if (q + d + n + p > 1) add(q, d, n, p);
@@ -37,7 +37,7 @@ export function coinFacts() {
 }
 // The coin levels, in the order they're taught (K: pennies; 1st: each coin's value, then mixed).
 export const COIN_LEVELS = [
-  { name: "Pennies", has: (f) => count(f.coins) === f.coins.p },
+  { name: "Pennies", has: (f) => count(f.coins) > 1 && count(f.coins) === f.coins.p },
   { name: "Each coin", has: (f) => count(f.coins) === 1 },
   { name: "Nickels and pennies", has: (f) => !f.coins.q && !f.coins.d },
   { name: "Dimes", has: (f) => !f.coins.q },

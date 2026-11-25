@@ -41,9 +41,11 @@ export const BANDS = {
   },
   // A strand, not a band: the coin problems Trollar asks, from whichever Wing he's in. It has
   // its own levels and records, and nobody plays it as their band.
-  coins: { label: "Coins", strand: true, hearts: 7, fluentMs: 5000, facts: coinFacts, levels: COIN_LEVELS },
+  // Strands open their next level at half learned: they're asked one floor a run, so 70% kept
+  // Trollar on pennies for runs on end.
+  coins: { label: "Coins", strand: true, unlock: 0.5, hearts: 7, fluentMs: 5000, facts: coinFacts, levels: COIN_LEVELS },
   // Two-digit + and − within 100 (2nd grade), asked by Haberhasher in the Tables Tower.
-  place: { label: "Two-digit", strand: true, hearts: 5, fluentMs: 6000, facts: twoDigitFacts, levels: TWO_LEVELS }
+  place: { label: "Two-digit", strand: true, unlock: 0.5, hearts: 5, fluentMs: 6000, facts: twoDigitFacts, levels: TWO_LEVELS }
 };
 export const UNLOCK = 0.7;
 const BOX_MAX = 4;
@@ -92,7 +94,7 @@ export function openLevel(bandKey, recs) {
   while (L < band.levels.length - 1) {
     const here = p.filter((f) => f.level === L);
     const done = here.filter((f) => learned(recs[f.key])).length;
-    if (!here.length || done / here.length < UNLOCK) break;
+    if (!here.length || done / here.length < (band.unlock || UNLOCK)) break;
     L++;
   }
   return L;
