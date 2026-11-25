@@ -18,7 +18,9 @@ export var STORAGE_VERSION = 2;
 // reversed: { digit: count }, cast: count }.
 // "told": how many times the voice has explained each thing ({ tag: count }, app.js `once`), so
 // an explanation is said the first time or first few, not every time.
-export var OWN_KEYS = ["settings", "best", "facts", "heroes", "wings", "bestiary", "dungeon", "spells", "told"];
+// "moments": Hero Moments (moments.js): each hero's quip deck and the quips heard, heroes waiting
+// for their debut, and the chance building toward the next moment.
+export var OWN_KEYS = ["settings", "best", "facts", "heroes", "wings", "bestiary", "dungeon", "spells", "told", "moments"];
 // band: "sprout" or "apprentice" (learn.js BANDS). ops and diff are the prototype's, kept only to
 // pick a band for a player who had them.
 export var DEFAULT_SETTINGS = { band: "sprout", ops: ["+", "-"], diff: "easy", timer: false, sfx: true, voice: true };

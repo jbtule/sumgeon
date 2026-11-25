@@ -5,7 +5,7 @@ import { spokenProblem, spokenFact } from "./problems.js";
 import { BANDS, choose, factOf, record as recordAnswer, helpFor, openLevel, monsterHP, probeKey, tierOf, skipTo, SKIP_PROBES, SKIP_WINDOW, MAX_LEAP, fluentTime, spellKey } from "./learn.js";
 import { hintFor, STRATEGIES } from "./hints.js";
 import { openStore, displayName } from "./store.js";
-import { PHRASE, monsterName, monsterCleared, monsterWon, heroName, heroJoins, heroCursed, heroPower, heroRescue, heroAlmost, heroHelps, traitLine, BARK, wingCleared, wingOpened, depthLine, DEPTH_MAX_SPOKEN, reversedLine, howToWriteLine } from "./lines.js";
+import { PHRASE, monsterName, monsterCleared, monsterWon, heroName, heroJoins, heroCursed, heroPower, heroRescue, heroAlmost, heroHelps, traitLine, BARK, wingCleared, wingOpened, depthLine, DEPTH_MAX_SPOKEN, reversedLine, howToWriteLine, quipLine } from "./lines.js";
 import { WINGS, wingOf, runFloors, openWings, toOpen, floorStars, wingStars, depthScale, depthHP, deepest, MAP_DEPTHS } from "./wings.js";
 import { missingOf, pickBlank, filled, spokenMissing, MISSING_SHARE } from "./missing.js";
 import { coinsSvg, pileOf, coinOf } from "./coins.js";
@@ -16,6 +16,8 @@ import { roster, mastery, meet, beat } from "./bestiary.js";
 import { HEROES, CHALK, heroSvg, freePick, pickHero, curseCaptain, crackCurse, CURSE_HITS, resetTeam } from "./heroes.js";
 import * as sfx from "./sfx.js";
 import { say, stopSpeech, setVoice } from "./speech.js";
+import { freshState as freshMoments, freshRun, decide as decideMoment, joined, heardOf } from "./moments.js";
+import { playMoment } from "./slowmo.js";
 
 const $ = (id) => document.getElementById(id);
 const reduced = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -137,6 +139,7 @@ function loadPlayer() {
   team = Object.assign({ captain: null, color: CHALK[0], rescued: [] }, store.player(PID).get("heroes", {}));
   progress = store.player(PID).get("wings", {}) || {};
   seen = store.player(PID).get("bestiary", {}) || {};
+  MS = freshMoments(store.player(PID).get("moments", null));
   // A captain picked before heroes could change stays on the team.
   if (team.captain != null && !team.rescued.includes(team.captain)) { team.rescued.push(team.captain); saveTeam(); }
   // The band a player started in opens its Wing from the start (DESIGN.md §4).
@@ -442,6 +445,29 @@ function heroBonus(typed) {
   const power = hasCaptain() && digits.includes(team.captain);
   return { mult: (1 + helpers * 0.1) * (power ? 1.5 : 1), power, helpers };
 }
+/* ---------- Hero Moments (DESIGN.md §8.4) ----------
+   Now and then a hero in a right answer gets a slow-motion close-up and a quip before it strikes
+   (when: moments.js decide; the show: slowmo.js). Never in a player's first fight; always on a
+   freed hero's debut and on the blow that finishes a boss. ?moments makes every qualifying hit
+   one, for testing. Input waits until it's over (G.busy stays set through the hit). */
+const MOMENTS_ALWAYS = new URLSearchParams(location.search).has("moments");
+let MS = freshMoments(), MR = freshRun();
+function momentFor(typed, critStart, bossFinish) {
+  const sp = G.cur.spell ? (G.cur.reversed ? "backwards" : G.cur.howTo ? "show" : "good") : null;
+  const first = !Object.values(seen).some((s) => s.beaten > 0); // nothing beaten yet: the first fight
+  const mo = decideMoment(MS, MR, { typed, team, hinted: G.hinted, spell: sp, first, floor: G.floor, n: G.tries, bossFinish, critStart, always: MOMENTS_ALWAYS });
+  if (mo) store.player(PID).set("moments", MS);
+  return mo;
+}
+// Plays it: the hero takes the slow-motion turn, and the answer's other digits fly at the snap.
+// Resolves at the hit.
+function heroMoment(mo, typed, crit) {
+  const rest = typed.replace(String(mo.hero), "");
+  const from = $("blank") && $("blank").offsetParent ? $("blank") : $("ans");
+  return playMoment({ hero: mo.hero, color: mo.hero === team.captain ? team.color : null, quip: mo.quip,
+    speak: () => say("h", quipLine(mo.quip), true), from, to: $("mon"), room: document.querySelector(".game"),
+    reduced: reduced(), onSnap: () => { if (rest) fly(rest, crit); } });
+}
 // Chalk sparks bursting from the monster on impact.
 function burst(crit) {
   if (reduced()) return;
@@ -542,12 +568,16 @@ function submit() {
     sfx.launch(G.streak);
     const critsNow = G.streak === 3 && !G.hinted;
     if (critsNow) say("p", PHRASE.crits);
-    fly(typed, crit).then(() => {
-      sfx.impact(crit); burst(crit);
+    // Now and then a Hero Moment: a slow-motion close-up and a quip before the hit (moments.js).
+    // The damage is the same.
+    const mo = momentFor(typed, critsNow, !!m.boss && G.hp - dmg <= 0);
+    (mo ? heroMoment(mo, typed, crit) : fly(typed, crit)).then(() => {
+      if (!mo) sfx.impact(crit); // a moment lands with its own, bigger impact and shake
+      burst(crit);
       G.hp -= dmg;
       pop((bonus.power ? "Power! " : crit ? "Crit! " : "") + "−" + dmg, crit || bonus.power);
       restartAnim($("mon"), "hit");
-      if (crit) restartAnim($("arena"), "shake");
+      if (crit && !mo) restartAnim($("arena"), "shake");
       setMsg(G.cur.reversed ? `Your ${G.cur.ans} is facing backwards. It faces this way → Half damage: ${dmg}` : G.cur.howTo ? `Here's how to write it. Hit for ${dmg}!` : level ? level : trait.note ? `${trait.note}: ${dmg}!` : bonus.power ? `${HEROES[team.captain].n} power hit for ${dmg}!` : crit ? `Critical hit for ${dmg}!` : `Hit for ${dmg}!`, "good");
       hpUI(); streakUI();
       // Half HP: Divvy splits in two, Sigma Rex armors up (traits.js).
@@ -657,6 +687,7 @@ function cleared() {
     // A rescue: the last crack breaks the curse and the hero joins the team.
     const h = HEROES[m.cursed];
     Object.assign(team, crackCurse(team, m.cursed).team); saveTeam();
+    joined(MS, h.d); store.player(PID).set("moments", MS); // their first answer on the team is a Hero Moment
     say("p", heroJoins(h));
     say("p", heroHelps(h));
     show(`<h2>${h.n} is free!</h2>
@@ -968,7 +999,7 @@ function bookPage() {
   beasts += "</div>";
   const heroes = HEROES.map((h) => onTeam(h.d)
     ? `<section class="hero-card${h.d === team.captain ? " captain-card" : ""}">${heroSvg(h, { color: h.d === team.captain ? team.color : null })}
-        <b>${esc(h.n)}</b><small>${esc(h.cls)}</small><small>${esc(h.move)}</small>${h.d === team.captain ? '<small class="cap-tag">Your hero</small>' : ""}</section>`
+        <b>${esc(h.n)}</b><small>${esc(h.cls)}</small><small>${esc(h.move)}</small>${quipsHeard(h.d)}${h.d === team.captain ? '<small class="cap-tag">Your hero</small>' : ""}</section>`
     : `<section class="hero-card unmet">${heroSvg(h, { cursed: true, cracks: cracksOf(h.d) })}<b>???</b><small>${cracksOf(h.d) ? `Curse cracked ${cracksOf(h.d)} of ${CURSE_HITS}` : "Still cursed"}</small></section>`).join("");
   const freed = HEROES.filter((h) => onTeam(h.d)).length, met = roster().filter((x) => seen[x.m.n]).length;
   show(`<div class="cardhead"><h2>Monsters &amp; Heroes</h2></div>
@@ -980,6 +1011,11 @@ function bookPage() {
   <div class="btns"><button class="big" id="bookBack">Back</button></div>`);
   // Back to the pause screen mid-run, or to the start screen.
   $("bookBack").onclick = () => G.paused ? pause() : menu();
+}
+// A hero's quips heard in Hero Moments (moments.js), "Quips: 1 of 3", gold when all are.
+function quipsHeard(d) {
+  const q = heardOf(MS, d);
+  return `<small class="quips${q.heard === q.of ? " all" : ""}">Quips: ${q.heard} of ${q.of}</small>`;
 }
 // A monster's looks (monsters.js LOOKS) on its card: the ones met, and silhouettes for the rest.
 function looksRow(m) {
@@ -1109,6 +1145,7 @@ function start(depth, enter) {
   hide();
   newRun(depth);
   Object.assign(G, { hearts: band().hearts, streak: 0, solved: 0, tries: 0, running: true, retry: [], recent: [], next: false, paused: null, runStars: 0 });
+  MR = freshRun();
   stopSpeech();
   if (enter) say("p", PHRASE.enter);
   if (G.depth > 1 && G.depth <= DEPTH_MAX_SPOKEN) say("p", depthLine(G.depth));

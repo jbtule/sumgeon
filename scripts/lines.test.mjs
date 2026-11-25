@@ -7,7 +7,11 @@ import { MON, allLooks } from "../js/monsters.js";
 import { HEROES } from "../js/heroes.js";
 import { TRAITS, traitOf } from "../js/traits.js";
 import { cursedMonster } from "../js/wings.js";
-import { planClips } from "./audio/build.mjs";
+import { planClips, keyFor } from "./audio/build.mjs";
+import { GROUPS, quipLine } from "../js/lines.js";
+import { QUIPS, FINAL, CRIT } from "../js/moments.js";
+import { createHash } from "node:crypto";
+const app0 = readFileSync(new URL("../js/app.js", import.meta.url), "utf8");
 
 const ids = new Set(spokenLines().map((l) => l.kind + ":" + l.text));
 for (const t of Object.values(PHRASE)) assert.ok(ids.has("p:" + t), t);
@@ -56,15 +60,30 @@ assert.ok(ids.has("p:Sevenstein comes unbolted. Six... seven! Gone."));
 // After a spell that was right but hard to read, for every digit (an eight).
 assert.ok(ids.has("p:Here's how to write a four.") && ids.has("p:Here's how to write an eight.") && ids.has("p:Here's how to write a zero."));
 
+// Hero Moments' quips (moments.js): every one recorded as kind "h" in the quip voice, in its own
+// listen-check group, with "Final answer!" and "Critical math!".
+for (const d of Object.keys(QUIPS)) for (const q of QUIPS[d]) assert.ok(ids.has("h:" + quipLine(q)), q);
+assert.ok(ids.has("h:" + FINAL) && ids.has("h:" + CRIT) && ids.has("h:Final answer!") && ids.has("h:Critical math!"));
+assert.ok(ids.has("h:Six... seven!"), "Sevenstein's quip gets its pauses");
+assert.ok(GROUPS.includes("Hero quips") && spokenLines().filter((l) => l.kind === "h").every((l) => l.group === "Hero quips"));
+for (const l of spokenLines().filter((l) => l.kind === "h")) assert.ok(words(l.text) <= 8, `a quip is quick: ${l.text}`);
+
 // Keys are stable and unique.
 const plan = planClips();
 assert.equal(new Set(plan.map((c) => c.key)).size, plan.length);
+// Quips are said in the second voice, and the voice is part of the key; every other line keeps
+// af_heart and the key it had before (so nothing already recorded is recorded again).
+assert.deepEqual([...new Set(plan.filter((c) => c.kind === "h").map((c) => c.voice))], ["af_bella"]);
+assert.deepEqual([...new Set(plan.filter((c) => c.kind !== "h").map((c) => c.voice))], ["af_heart"]);
+assert.notEqual(keyFor("h", "Up top!"), keyFor("p", "Up top!"));
+assert.equal(keyFor("p", "Oops!"), createHash("sha256").update(JSON.stringify(["kokoro-v1.0", "af_heart", "mp3-64k", "text-v1", 0.95, "p", "Oops!"])).digest("hex").slice(0, 20), "af_heart keys are unchanged");
+assert.ok(app0.includes('say("h", quipLine(mo.quip), true)'), "a quip is said in the quip voice, cutting off whatever was being said");
 
 // app.js says only lines from lines.js: every say() takes a PHRASE, a lines.js helper, or a problem.
 const app = readFileSync(new URL("../js/app.js", import.meta.url), "utf8");
 const HELPERS = ["heroName", "heroJoins", "heroCursed", "heroPower", "heroRescue", "heroAlmost", "heroHelps", "traitLine"].join("|");
 for (const [call] of app.matchAll(/say\([^)]*\)/g)) {
-  assert.match(call, new RegExp(String.raw`say\("(p|m|q)", (PHRASE\.\w+|BARK\.\w+|BARK\[\w+\]|monsterName\(m\)|monsterCleared\(m\)|monsterWon\(m\)|(${HELPERS})\((HEROES\[[\w.]+\]|\w+)\)|wingCleared\(\w+(\(\))?\)|wingOpened\(\w+\)|depthLine\(G\.depth\)|reversedLine\(\w+\)|howToWriteLine\(\w+\)|spokenProblem\(G\.cur\)|spokenFact\(said\)|spokenMissing\(G\.cur\))`), `${call} says a line that isn't in js/lines.js`);
+  assert.match(call, new RegExp(String.raw`say\("(p|m|q|h)", (quipLine\(mo\.quip\)|PHRASE\.\w+|BARK\.\w+|BARK\[\w+\]|monsterName\(m\)|monsterCleared\(m\)|monsterWon\(m\)|(${HELPERS})\((HEROES\[[\w.]+\]|\w+)\)|wingCleared\(\w+(\(\))?\)|wingOpened\(\w+\)|depthLine\(G\.depth\)|reversedLine\(\w+\)|howToWriteLine\(\w+\)|spokenProblem\(G\.cur\)|spokenFact\(said\)|spokenMissing\(G\.cur\))`), `${call} says a line that isn't in js/lines.js`);
 }
 // Every PHRASE is said somewhere (PHRASE.win is older: a win says wingCleared instead).
 for (const k of Object.keys(PHRASE).filter((k) => k !== "win")) assert.ok(app.includes("PHRASE." + k), `PHRASE.${k} is recorded but never said`);

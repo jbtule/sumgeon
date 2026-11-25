@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!-- A grown-up tool for reviewing Hero Moments (js/moments.js, js/slowmo.js). Nothing in the game
+     links here, and search engines are asked to skip it. -->
+<meta name="robots" content="noindex, nofollow">
+<title>Hero Moments · Sumgeon</title>
+<meta name="color-scheme" content="dark">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bungee&family=Nunito:wght@600;800;900&display=swap">
+<!-- The game's stylesheet, for the strata's colors and walls; this page's own layout overrides it. -->
+<link rel="stylesheet" href="../styles.css">
+<style>
+  html body.review{display:block;height:auto;min-height:100vh;overflow:visible;--ok:#7fdc8a}
+  .wrap{max-width:760px;margin:0 auto;padding:max(16px,env(safe-area-inset-top)) 16px 40px}
+  .head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap}
+  h1{font:400 28px Bungee,sans-serif;color:var(--gold);margin:0}
+  h2{font:400 16px Bungee,sans-serif;color:var(--muted);margin:24px 0 8px}
+  .sub{color:var(--muted);margin:4px 0 14px}
+  .badge{display:inline-flex;align-items:center;gap:6px;min-height:28px;padding:3px 10px;border:1.5px solid var(--line);border-radius:999px;background:var(--panel);color:var(--muted);font-size:.75rem;font-weight:800;text-decoration:none;margin-top:6px}
+  .badge svg{width:14px;height:14px}
+  #buildSha{font-family:ui-monospace,"SF Mono",Menlo,monospace}
+  .bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:10px 0}
+  .small{min-height:40px;padding:0 14px;border-radius:12px;border:2px solid var(--edge);background:var(--btn);font-weight:900}
+  .small:disabled{opacity:.5;cursor:default}
+  .small.go{background:var(--coral);border-color:var(--coral);color:#fff}
+  select,input[type=number]{min-height:40px;border-radius:12px;border:2px solid var(--edge);background:var(--panel);color:var(--ink);font:inherit;padding:0 10px;max-width:100%}
+  label.pick{display:grid;gap:2px;font-size:13px;color:var(--muted);font-weight:800}
+  .picks{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}
+  .seg{display:inline-flex;gap:4px;background:var(--dark);border-radius:999px;padding:4px}
+  .seg button{border:0;background:none;border-radius:999px;padding:6px 12px;color:var(--muted);font-weight:800}
+  .seg button[aria-pressed="true"]{background:var(--btn);color:var(--ink)}
+  .mstage{position:relative;border-radius:22px;border:2px solid var(--line);overflow:hidden;padding:14px 14px 18px;display:grid;gap:10px;justify-items:center;
+    background:radial-gradient(ellipse 58% 46% at 50% 60%,#ffe9b838 0,#ffe9b814 42%,#0000 70%),radial-gradient(ellipse 95% 90% at 50% 55%,#0000 40%,#05090bc0 100%),var(--wall,var(--wall-plain))}
+  .mstage .mname{font:400 16px Bungee,sans-serif;color:var(--ink);text-shadow:0 2px 0 #000}
+  .mstage .monbox{position:relative;width:min(56vw,220px);aspect-ratio:1}
+  .mstage .monbox svg{width:100%;height:100%;overflow:visible;display:block}
+  .mstage .monbox.hit{animation:hit .4s}
+  .mstage .probline{display:flex;align-items:center;gap:10px;font:400 clamp(24px,6vw,34px) Bungee,sans-serif;background:#0c171cc0;border-radius:16px;padding:6px 14px}
+  .mstage .ansbox{min-width:2.4em;text-align:center;border:3px solid var(--gold);border-radius:12px;padding:0 8px;color:var(--gold)}
+  .mstage .dmg{position:absolute;left:50%;top:30%;transform:translateX(-50%);font:400 44px Bungee,sans-serif;color:var(--gold);-webkit-text-stroke:2px var(--dark);animation:pop .9s ease-out forwards;white-space:nowrap}
+  .now{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-top:10px}
+  .now .what{font-weight:900}
+  .now .phase{color:var(--gold);font:400 14px Bungee,sans-serif}
+  .controls{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+  .controls .flag{color:var(--coral)}
+  .flagform{margin-top:12px;padding:14px;border-radius:14px;background:var(--dark);border:2px solid var(--coral)}
+  .flagform p{margin:0 0 8px;font-weight:900}
+  .tags{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
+  .tags button{padding:6px 12px;border-radius:999px;border:2px solid var(--edge);background:none;font-weight:800;font-size:14px}
+  .tags button[aria-pressed="true"]{background:var(--coral);border-color:var(--coral);color:#fff}
+  textarea{width:100%;min-height:64px;border-radius:10px;border:2px solid var(--edge);background:var(--panel);color:var(--ink);font:inherit;padding:8px}
+  .formbtns{display:flex;gap:8px;justify-content:flex-end;margin-top:8px}
+  #status{color:var(--muted);font-size:14px}
+  #reportText{flex-basis:100%;min-height:120px;font-size:13px}
+  .list{list-style:none;margin:10px 0 0;padding:0;display:grid;gap:4px}
+  .list li{display:grid;grid-template-columns:1.4em 1fr auto;gap:8px;align-items:center;padding:5px 10px;border-radius:12px;background:var(--panel);font-size:14px}
+  .list .mark{text-align:center;font-weight:900;color:var(--muted)}
+  .list .ok .mark{color:var(--ok)}.list .bad .mark{color:var(--coral)}
+  .list .note{display:block;color:var(--coral);font-size:12px}
+  .list li button{min-width:36px;height:32px;border-radius:10px;border:2px solid var(--edge);background:var(--btn)}
+  .sim{background:var(--panel);border:2px solid var(--line);border-radius:18px;padding:14px}
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin:10px 0}
+  .stats div{background:var(--dark);border-radius:12px;padding:8px 10px}
+  .stats b{display:block;font:400 22px Bungee,sans-serif;color:var(--gold)}
+  .stats small{color:var(--muted);font-size:12px}
+  .bars{display:grid;gap:3px;font-size:13px}
+  .bars .row{display:grid;grid-template-columns:minmax(0,11em) 1fr 3.2em;gap:8px;align-items:center}
+  .bars .row span:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--muted)}
+  .bars i{display:block;height:12px;border-radius:0 6px 6px 0;background:var(--gold);min-width:2px}
+  .bars .row span:last-child{text-align:right;font-variant-numeric:tabular-nums}
+  .checks{display:flex;flex-wrap:wrap;gap:4px}
+  .checks label{display:inline-flex;align-items:center;gap:3px;padding:4px 8px;border-radius:999px;background:var(--dark);font-size:13px;font-weight:800}
+  [hidden]{display:none !important}
+</style>
+</head>
+<body class="review">
+<main class="wrap">
+  <div class="head"><h1>Sum<b>geon</b> Hero Moments</h1>
+  <!-- scripts/stamp.mjs fills in the commit at deploy time; locally it reads "dev". -->
+  <a class="badge" id="buildLink" href="https://github.com/jbtule/sumgeon" target="_blank" rel="noopener" title="Deployed version">
+    <svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+    <span id="buildSha">dev</span>
+  </a>
+  </div>
+  <p class="sub">Plays a hero's slow-motion moment exactly as the game does: the same code, sounds and voice clip. A moment that plays to the end without a flag counts as fine. See something wrong? ⚑, say what, and carry on. Marks stay on this device.</p>
+
+  <div class="bar">
+    <button class="small" id="copyBtn" type="button">Copy the issues</button>
+    <button class="small" id="issueBtn" type="button">Open a GitHub issue</button>
+    <span id="status" role="status"></span>
+    <textarea id="reportText" readonly hidden aria-label="The flagged moments, to copy"></textarea>
+  </div>
+
+  <h2>Pick and play</h2>
+  <div class="picks">
+    <label class="pick">Hero<select id="hero"></select></label>
+    <label class="pick">Quip<select id="quip"></select></label>
+    <label class="pick">Monster<select id="monster"></select></label>
+    <label class="pick">Stratum<select id="stratum">
+      <option value="cellar">The Counting Cellar</option><option value="hall">The Balance Hall</option><option value="tower">The Tables Tower</option><option value="plain">Plain</option>
+    </select></label>
+  </div>
+  <div class="bar">
+    <span class="seg" role="group" aria-label="Speed"><button type="button" data-speed="0.5" aria-pressed="false">½×</button><button type="button" data-speed="1" aria-pressed="true">1×</button></span>
+    <span class="seg" role="group" aria-label="Motion"><button type="button" data-reduced="0" aria-pressed="true">Full motion</button><button type="button" data-reduced="1" aria-pressed="false">Reduced motion</button></span>
+    <span class="seg" role="group" aria-label="Frames"><button type="button" data-step="0" aria-pressed="true">Play through</button><button type="button" data-step="1" aria-pressed="false">Step frames</button></span>
+  </div>
+
+  <section class="mstage" id="stage">
+    <div class="mname" id="mName"></div>
+    <div class="monbox" id="mon"></div>
+    <div class="probline"><span id="prob"></span><span class="ansbox" id="ans"></span></div>
+  </section>
+  <div class="now"><span class="what" id="what"></span><span class="phase" id="phase"></span></div>
+  <div class="controls">
+    <button class="small go" type="button" id="play">▶ Replay</button>
+    <button class="small" type="button" id="next" hidden>Next frame ›</button>
+    <button class="small" type="button" id="playAll">Play all</button>
+    <button class="small" type="button" id="stopAll" hidden>Stop</button>
+    <button class="small flag" type="button" id="flag">⚑ Something's wrong</button>
+  </div>
+  <div class="flagform" id="flagform" hidden>
+    <p id="flagWhat"></p>
+    <div class="tags" id="tags"></div>
+    <textarea id="note" placeholder="What's wrong? (optional)"></textarea>
+    <div class="formbtns"><button class="small" type="button" id="cancelFlag">Cancel</button><button class="small" type="button" id="saveFlag">Save &amp; continue</button></div>
+  </div>
+  <ul class="list" id="recent" aria-label="Moments played"></ul>
+
+  <h2>Rarity</h2>
+  <section class="sim">
+    <p class="sub">Simulated runs of answers through the game's own rule (js/moments.js): 8% a qualifying hit, plus 4% for each one without a moment, none in the 6 problems after one, at most 2 a floor, always on a boss's finishing blow. Target: about one moment every 2–3 floors.</p>
+    <div class="picks">
+      <label class="pick">Stratum<select id="simWing"><option value="cellar">The Counting Cellar</option><option value="hall">The Balance Hall</option><option value="tower">The Tables Tower</option></select></label>
+      <label class="pick">Captain<select id="simCaptain"></select></label>
+      <label class="pick">Runs<input type="number" id="simRuns" value="300" min="10" max="5000" step="10"></label>
+      <label class="pick">Right answers %<input type="number" id="simAcc" value="90" min="10" max="100" step="5"></label>
+    </div>
+    <p class="sub" style="margin:10px 0 4px">Rescued heroes on the team:</p>
+    <div class="checks" id="simTeam"></div>
+    <div class="bar"><button class="small go" type="button" id="simRun">Simulate</button></div>
+    <div id="simOut"></div>
+  </section>
+</main>
+<!-- The game's modules, stamped with the deployed commit by scripts/stamp.mjs (as the listen
+     check's are). Locally it's empty and the plain files load. -->
+<script type="importmap">
+{ "imports": {} }
+</script>
+<script type="module" src="moments.js"></script>
+</body>
+</html>

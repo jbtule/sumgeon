@@ -1,6 +1,7 @@
 // Every line the game says, in one place: app.js takes its words from here, and the audio
 // build (scripts/audio/build.mjs) records exactly these. No DOM, runs in Node.
-// Kinds: "p" phrase, "m" monster line, "q" problem (see speech.js).
+// Kinds: "p" phrase, "m" monster line, "q" problem, "h" a hero's quip, said in its own voice
+// (see speech.js).
 import { MON, allLooks } from "./monsters.js";
 import { HEROES } from "./heroes.js";
 import { WINGS, cursedMonster } from "./wings.js";
@@ -10,6 +11,7 @@ import { coinFacts } from "./coins.js";
 import { twoDigitFacts } from "./twodigit.js";
 import { balanceFacts } from "./balance.js";
 import { traitOf } from "./traits.js";
+import { QUIPS, FINAL, CRIT } from "./moments.js";
 
 export var PHRASE = {
   enter: "Now entering the Sumgeon!",
@@ -49,11 +51,15 @@ export var PHRASE = {
 //   "Jr." and "Mr." are said in full, not letter by letter.
 //   "Plusington" (Kokoro: PLOOS-ington) is "Plussington"; "Chompette" (chum-PET) is
 //   "Chomp-ette"; "Nine-ja" (nine-ya) is "Nine-jah".
-//   Sevenstein's "Six, seven" gets pauses for its sing-song.
+//   Sevenstein's "Six, seven" gets pauses for its sing-song, in his monster line and his quip.
+//   The quips' other names and puns read right as written ("Bon appe-eight" is bahn uh-PEH-EIGHT,
+//   "Zeroic" zee-ROH-ic, "Abraca-double", "Four-ward"; checked with Kokoro's espeak phonemes).
 var SAY_AS = [[/\bTwodini\b/g, "Toodini"], [/\bJr\./g, "Junior"], [/\bMr\./g, "Mister"],
   [/\bPlusington\b/g, "Plussington"], [/\bChompette\b/g, "Chomp-ette"], [/\bNine-ja\b/g, "Nine-jah"],
-  [/Six, seven, gone\./g, "Six... seven! Gone."]];
+  [/Six, seven, gone\./g, "Six... seven! Gone."], [/^Six, seven!$/g, "Six... seven!"]];
 function sayAs(t) { return SAY_AS.reduce(function (s, r) { return s.replace(r[0], r[1]); }, t); }
+// A Hero Moment's quip (moments.js), as the voice says it.
+export function quipLine(q) { return sayAs(q); }
 export function monsterName(m) { return sayAs(m.n + "!"); }
 export function monsterCleared(m) { return sayAs(m.n + " " + m.quip); }
 export function monsterWon(m) { return sayAs(m.n + " won this round."); }
@@ -119,7 +125,7 @@ export function depthLine(d) { return "Depth " + spoken(d) + "!"; }
 
 // [{ kind, text }], each once.
 // The groups the listen check (listen/) plays lines in.
-export var GROUPS = ["Phrases", "Monsters & heroes", "Add & subtract", "Times & divide", "Missing numbers", "Coins", "Two-digit", "Balance Hall"];
+export var GROUPS = ["Phrases", "Monsters & heroes", "Add & subtract", "Times & divide", "Missing numbers", "Coins", "Two-digit", "Balance Hall", "Hero quips"];
 
 // [{ kind, text, group, sprite? }], each once.
 export function spokenLines() {
@@ -171,6 +177,10 @@ export function spokenLines() {
   });
   // The Balance Hall: "Compare three plus four and eight.", "three plus four is less than eight".
   balanceFacts().forEach(function (f) { add("q", spokenProblem(f), "Balance Hall"); add("q", spokenFact(f), "Balance Hall"); });
+  // Hero Moments (moments.js): every hero's quips, and the two for the big moments.
+  Object.keys(QUIPS).forEach(function (d) { QUIPS[d].forEach(function (q) { add("h", quipLine(q), "Hero quips"); }); });
+  add("h", quipLine(FINAL), "Hero quips");
+  add("h", quipLine(CRIT), "Hero quips");
   var seen = {};
   return out.filter(function (l) { var k = l.kind + ":" + l.text; if (seen[k]) return false; seen[k] = true; return true; });
 }

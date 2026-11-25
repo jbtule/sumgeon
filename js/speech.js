@@ -5,7 +5,9 @@ import { audioContext } from "./sfx.js";
 // device voice: lines without a clip, local dev, or a clip that fails to load. On iOS speech
 // only works after a tap; everything fails quietly.
 //
-// Kinds: "p" phrase (UI and instructions), "m" monster or hero line, "n" number, "q" problem.
+// Kinds: "p" phrase (UI and instructions), "m" monster or hero line, "n" number, "q" problem,
+// "h" a hero's quip (Hero Moments), recorded in a second voice (af_bella). With the device voice,
+// a quip is said a little higher, so it still doesn't sound like an instruction.
 
 var synth = window.speechSynthesis, voice = null, on = true;
 
@@ -40,13 +42,13 @@ if (synth) { pickVoice(); try { synth.addEventListener("voiceschanged", pickVoic
 
 // Device voice. Resolves when speech ends, or after a timeout scaled to the text, since
 // onend doesn't always fire.
-function speak(text, rate) {
+function speak(text, rate, pitch) {
   return new Promise(function (resolve) {
     if (!synth) { setTimeout(resolve, 300); return; }
     try {
       var u = new SpeechSynthesisUtterance(text);
       if (voice) u.voice = voice;
-      u.lang = "en-US"; u.rate = rate || 0.95;
+      u.lang = "en-US"; u.rate = rate || 0.95; u.pitch = pitch || 1;
       var t = setTimeout(resolve, 1500 + text.length * 120);
       u.onend = function () { clearTimeout(t); resolve(); };
       u.onerror = function () { clearTimeout(t); resolve(); };
@@ -66,7 +68,7 @@ var sprites = [], spriteOf = {}, source = null;
 function ac() { return audioContext(); }
 var queue = Promise.resolve(), epoch = 0;
 // The device-voice rate each kind is spoken at.
-var RATE = { p: 0.95, m: 0.95, n: 0.95, q: 0.85 };
+var RATE = { p: 0.95, m: 0.95, n: 0.95, q: 0.85, h: 1 }, PITCH = { h: 1.3 };
 
 (function loadClips() {
   try {
@@ -165,12 +167,12 @@ export function say(kind, text, cancel, live) {
   queue = queue.then(function () {
     if (my !== epoch || (live && !live())) return;
     var key = clips[kind + ":" + text], hit = spriteOf[kind + ":" + text];
-    if (!key) return speak(text, RATE[kind]);
+    if (!key) return speak(text, RATE[kind], PITCH[kind]);
     if (hit && hit.s.buf && ac()) return playSprite(hit).then(function (ok) {
       if (!ok && my === epoch) return playClip(clipBase + key + ".mp3");
     });
     return playClip(clipBase + key + ".mp3").then(function (ok) {
-      if (!ok && my === epoch) return speak(text, RATE[kind]);
+      if (!ok && my === epoch) return speak(text, RATE[kind], PITCH[kind]);
     });
   });
   return queue;

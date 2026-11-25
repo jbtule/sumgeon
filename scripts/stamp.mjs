@@ -23,7 +23,7 @@ const v = "?v=" + short;
 const root = fileURLToPath(new URL("..", import.meta.url));
 const out = join(root, "_site");
 // Every file the site serves. New top-level site files go here.
-const SITE = ["index.html", "LICENSE.md", "styles.css", "js", "listen", "spell",
+const SITE = ["index.html", "LICENSE.md", "styles.css", "js", "listen", "spell", "moments",
   "manifest.webmanifest", "favicon.svg", "apple-touch-icon.png", "icon-192.png", "icon-512.png", "social.png"];
 // Written by scripts/audio/build.mjs in the deploy; without it the game uses the device voice.
 const OPTIONAL = ["audio.json"];
@@ -63,16 +63,19 @@ writeFileSync(join(out, "index.html"), html);
 // What's deployed, for the game's update check (app.js checkUpdate).
 writeFileSync(join(out, "version.json"), JSON.stringify({ sha: short }));
 
-// The grown-up pages (the listen check and the spell check): the same badge, their script
-// stamped, and an import map that stamps the game's modules they read, as the game's page does.
-for (const [dir, script] of [["listen", "listen.js"], ["spell", "spell.js"]]) {
+// The grown-up pages (the listen check, the spell check and the Hero Moments review): the same
+// badge, their script stamped, and an import map that stamps the game's modules they read, as
+// the game's page does. The moments page also loads the game's stylesheet (the strata's walls).
+const PAGE_EXTRA = { moments: ['href="../styles.css"'] };
+for (const [dir, script] of [["listen", "listen.js"], ["spell", "spell.js"], ["moments", "moments.js"]]) {
   let page = readFileSync(join(root, dir, "index.html"), "utf8");
   const pmap = { imports: {} };
   for (const f of readdirSync(join(root, "js")).filter((f) => f.endsWith(".js"))) pmap.imports[`../js/${f}`] = `../js/${f}${v}`;
   const m = page.match(/<script type="importmap">([\s\S]*?)<\/script>/);
   if (!m) throw new Error(`stamp: no import map in ${dir}/index.html`);
   page = page.replace(m[1], "\n" + JSON.stringify(pmap, null, 2) + "\n");
-  for (const [from, to] of [['<span id="buildSha">dev</span>', `<span id="buildSha">${short}</span>`], [`src="${script}"`, `src="${script}${v}"`]]) {
+  const extra = (PAGE_EXTRA[dir] || []).map((a) => [a, a.replace(/"$/, v + '"')]);
+  for (const [from, to] of [['<span id="buildSha">dev</span>', `<span id="buildSha">${short}</span>`], [`src="${script}"`, `src="${script}${v}"`], ...extra]) {
     if (page.split(from).length !== 2) throw new Error(`stamp: expected 1 match for ${JSON.stringify(from)} in ${dir}/index.html`);
     page = page.replace(from, to);
   }

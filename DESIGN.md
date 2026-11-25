@@ -352,7 +352,7 @@ Hitting a monster should feel good. Today there is a shake and a damage pop. The
 - Haptics: `navigator.vibrate(15)` on hits and `(40)` on misses where supported, and respect a settings toggle.
 - `prefers-reduced-motion` keeps working: no shake, projectiles replaced by fades, no particles.
 
-### 8.4 Hero Moments (plan, 2026-11-25)
+### 8.4 Hero Moments (built 2026-11-25: js/moments.js, js/slowmo.js, moments/)
 Now and then, a hero in your answer gets a slow-motion close-up and a quip before it strikes. It's a surprise, so it has to stay rare and never repeat itself.
 
 **When it happens.** Only on a right, unhinted answer that contains the digit of a hero on your team (the captain or a rescued hero), and never in a player's first fight.
@@ -389,7 +389,7 @@ With reduced motion: no zoom or speed ramp, just the hero, the quip and the hit.
 - **Sevenstein (7):** "It's alive! And it's prime!" · "Lucky seven stomp!" · "Six, seven!"
 - **Chef Eight (8):** "Bon appe-eight!" · "Two cubed, served hot!" · "Order up: one sizzling eight!"
 - **Nine-ja (9):** "Nine lives, zero mercy!" · "Three threes, one strike!" · "Now you see nine…"
-- **For the big moments:** "Final answer!" on a boss's finishing blow, and "Critical math!" during a crit streak.
+- **For the big moments:** "Final answer!" on a boss's finishing blow, and "Critical math!" on a moment that lands on the hit that turns crits on.
 
 Respellings for the voice go in `SAY_AS` as usual (Twodini is "Toodini"; check "Bon appe-eight", "Nine-ja" and "Sixlock" on the listen check).
 

@@ -150,6 +150,66 @@ export function cleared() {
   play(function (t) { [72, 76, 79, 84].forEach(function (m, i) { mallet(m, t + i * 0.09, 0.3, 0.35); }); });
 }
 
+/* ---------- Hero Moments (DESIGN.md §8.4, slowmo.js) ---------- */
+// Time drags: a tape slowing down, a sweep that drops in pitch through a closing filter.
+export function tapeStop(dur) {
+  var d = dur || 0.5;
+  play(function (t) {
+    [0, 7].forEach(function (cents, i) {
+      var o = ctx.createOscillator(), f = ctx.createBiquadFilter(), g = ctx.createGain();
+      o.type = "sawtooth"; o.detune.value = cents;
+      o.frequency.setValueAtTime(420, t); o.frequency.exponentialRampToValueAtTime(55, t + d);
+      f.type = "lowpass"; f.Q.value = 4; f.frequency.setValueAtTime(3200, t); f.frequency.exponentialRampToValueAtTime(220, t + d);
+      g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(i ? 0.08 : 0.14, t + 0.03); g.gain.exponentialRampToValueAtTime(0.0001, t + d + 0.08);
+      o.connect(f).connect(g).connect(out);
+      o.start(t); o.stop(t + d + 0.1);
+    });
+    noise(t, d * 0.6, 0.06, "lowpass", 900);
+  });
+}
+// The freeze: a slow double heartbeat, lub-dub.
+export function heartbeat() {
+  play(function (t) {
+    tone("sine", 70, 38, t, 0.16, 0.55);
+    tone("sine", 62, 34, t + 0.24, 0.2, 0.42);
+    noise(t, 0.05, 0.08, "lowpass", 180);
+  });
+}
+// Into the snap: a reverse cymbal, noise that swells and cuts off.
+export function swell(dur) {
+  var d = dur || 0.4;
+  play(function (t) {
+    var s = ctx.createBufferSource(), f = ctx.createBiquadFilter(), g = ctx.createGain();
+    s.buffer = noiseBuf; s.loop = true;
+    f.type = "highpass"; f.frequency.setValueAtTime(2500, t); f.frequency.exponentialRampToValueAtTime(6000, t + d);
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.3, t + d); g.gain.linearRampToValueAtTime(0, t + d + 0.02);
+    s.connect(f).connect(g).connect(out);
+    s.start(t); s.stop(t + d + 0.05);
+  });
+}
+// The hero whips into the monster: a fast whoosh.
+export function whip() {
+  play(function (t) {
+    var s = ctx.createBufferSource(), f = ctx.createBiquadFilter(), g = ctx.createGain();
+    s.buffer = noiseBuf;
+    f.type = "bandpass"; f.Q.value = 2; f.frequency.setValueAtTime(500, t); f.frequency.exponentialRampToValueAtTime(4500, t + 0.18);
+    g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(0.45, t + 0.12); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.24);
+    s.connect(f).connect(g).connect(out);
+    s.start(t); s.stop(t + 0.3);
+    tone("sine", hz(72), hz(91), t, 0.18, 0.08);
+  });
+}
+// The landing: a bigger impact than a crit's, a deep thud, a crunch and a ring.
+export function slam() {
+  play(function (t) {
+    tone("sine", 190, 32, t, 0.42, 0.7);
+    noise(t, 0.16, 0.4, "lowpass", 700);
+    noise(t, 0.3, 0.32, "bandpass", 2200);
+    mallet(86, t + 0.02, 0.16, 0.6);
+    mallet(93, t + 0.04, 0.12, 0.5);
+  });
+}
+
 // The Sumgeon cleared: a short fanfare.
 export function victory() {
   play(function (t) {
