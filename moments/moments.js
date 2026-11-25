@@ -144,8 +144,9 @@ const wake = () => sfx.tick();
 // with the record scratch (sfx.SCRATCH_AT; try ?scratch=<ms> to move it).
 let talkOver = false;
 document.querySelectorAll("[data-talk]").forEach((b) => (b.onclick = () => { talkOver = b.dataset.talk === "1"; pressed("[data-talk]", b); }));
-const talk = () => { if (talkOver) say("p", monsterCleared(MON[0])); };
-$("play").onclick = () => { wake(); talk(); play(); };
+// The voice gets a second and a half in before the moment cuts it off.
+const talk = () => { if (!talkOver) return Promise.resolve(); say("p", monsterCleared(MON[0])); return new Promise((r) => setTimeout(r, 1500)); };
+$("play").onclick = () => { if (playing) return; wake(); talk().then(play); };
 $("next").onclick = () => { wake(); if (nextGate) nextGate(); };
 // The sound effects' state, for checking on a device: the audio context, effects played, errors.
 setInterval(() => { const a = sfx.status(); $("sound").textContent = `Sound effects: ${a.state || "not started"} · ${a.played} played${a.error ? " · " + a.error : ""}`; }, 500);
