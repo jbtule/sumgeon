@@ -956,7 +956,7 @@ function menu() {
 // The start scene (DESIGN.md §8.3): while the start screen is up, the fight is hidden and the
 // surface (descent.js surfaceHTML) shows behind the card: the night sky, the hill with the
 // Sumgeon's door, your captain by it in your chalk color and the rest of your team around them
-// (with nobody picked, two dark silhouettes). The card's scene-gap is its window: the horizon sits
+// (with nobody picked, just the door). The card's scene-gap is its window: the horizon sits
 // just above where the card's sheet starts (--sheet), so the team stands on a strip of grass.
 // Settings, the book and help opened from here keep it behind them. Entering, the descent starts
 // from this same surface (sceneNow), and start() takes it away.
@@ -965,7 +965,7 @@ function sceneHeroes() {
   const art = (d, role, o) => ({ svg: heroSvg(HEROES[d], o || {}), role });
   const rest = team.rescued.filter((d) => d !== team.captain).sort((a, b) => a - b).map((d) => art(d, "team"));
   if (hasCaptain()) return [art(team.captain, "cap", { color: team.color }), ...rest];
-  return rest.length ? rest : [art(1, "ghost"), art(7, "ghost")];
+  return rest; // with nobody picked, just the door
 }
 function drawScene() {
   const sc = $("scene"), card = $("card"), gap = card.querySelector(".scene-gap");

@@ -20,9 +20,9 @@ export const descending = () => !!active;
 // top of the hill, and the team standing by it. The start screen (app.js drawScene) shows it
 // behind its card, and the descent starts from the very same frame, so tapping Enter is one move
 // down from the start scene into the fight. It's one screen tall (H px, W wide), with the flat
-// grass line hz px from the top. heroes: [{ svg, role: "cap" | "team" | "ghost" }]: the captain
+// grass line hz px from the top. heroes: [{ svg, role: "cap" | "team" }]: the captain
 // stands left of the door; the team, smaller, around and behind it, alternating right and left;
-// with nobody picked, a couple of dark "ghost" silhouettes. The idle (twinkling stars, a slight
+// with nobody picked, none. The idle (twinkling stars, a slight
 // bob) runs off the page clock (--t0), so the descent's copy carries on in step with the start
 // scene's.
 const STARS = [[6, 10, 2, 0], [14, 34, 1.5, 1.2], [22, 16, 2.5, 2.1], [31, 48, 1.5, .6], [38, 8, 2, 2.9], [47, 28, 1.5, 1.7], [55, 12, 2, .3], [63, 40, 1.5, 2.5],

@@ -647,7 +647,6 @@ label.switch-row:focus-within{outline-offset:-3px}
 .d-door::after{content:"Σ";position:absolute;left:50%;top:-14%;width:42%;translate:-50% 0;aspect-ratio:1;display:grid;place-items:center;font:400 calc(var(--dh,96px)*.17)/1 Bungee,sans-serif;color:#0c171c}
 .d-hero{position:absolute;display:block;animation:bob 2.6s ease-in-out infinite;animation-delay:calc(var(--t0,0ms) - var(--d,0s))}
 .d-hero svg{display:block;width:100%;height:auto;overflow:visible;filter:drop-shadow(0 3px 0 #0c171c80)}
-.d-hero.ghost svg{filter:brightness(0) opacity(.55)}
 @keyframes bob{0%,100%{translate:0 0}50%{translate:0 -3px}}
 .d-grass{background:linear-gradient(#5fae4e,#3f7d38 16px,#2b4a2a 36px,#3a2a20 52px,#2a1d17 70%);border-top:3px solid #0c171c}
 .d-layer{position:relative;background:linear-gradient(#0c171c50,#0c171c90),var(--wall);border-top:6px solid var(--dark);box-shadow:inset 0 10px 18px #0008}
