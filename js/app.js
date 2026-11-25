@@ -697,7 +697,7 @@ function menu() {
   if ($("switchPlayer")) $("switchPlayer").onclick = () => settings();
   $("go").onclick = () => {
     if (!hasCaptain()) { $("warn").textContent = freePick(team) ? "Pick your hero first." : "Pick who leads first."; $("captain").scrollIntoView({ block: "center", behavior: "smooth" }); return; }
-    start();
+    start(null, true);
   };
 }
 
@@ -891,12 +891,14 @@ function nextWingHint() {
   const t = toOpen(next[0], progress, recs);
   return `<p>To open <strong>${next.map((x) => x.name).join("</strong> and <strong>")}</strong>, learn ${Math.round(t.need * 100)}% of the facts here. You're at ${Math.round(t.share * 100)}%.</p>`;
 }
-function start(depth) {
+// enter: from the start screen's "Enter the dungeon", which says so first.
+function start(depth, enter) {
   hide();
   newRun(depth);
-  if (G.depth > 1 && G.depth <= DEPTH_MAX_SPOKEN) say("p", depthLine(G.depth));
   Object.assign(G, { hearts: band().hearts, streak: 0, solved: 0, tries: 0, running: true, retry: [], recent: [], next: false, paused: null, runStars: 0 });
   stopSpeech();
+  if (enter) say("p", PHRASE.enter);
+  if (G.depth > 1 && G.depth <= DEPTH_MAX_SPOKEN) say("p", depthLine(G.depth));
   loadMonster(0);
   newProblem();
 }
