@@ -1,6 +1,7 @@
 // The Wings of the Sumgeon (DESIGN.md §4): each Wing is a run of floors drawn from its monster
-// pool, with a rescue floor and a boss, and asks one band's facts. Mastery opens the next Wing.
-// No DOM: runs in Node for the tests.
+// pool, with a rescue floor and a boss, and asks one grade's band of facts (§4.1: one stratum per
+// grade, K to 3rd). They make a straight chain: mastery opens only the next. No DOM: runs in Node
+// for the tests.
 import { MON, LOOKS, lookOf } from "./monsters.js";
 import { HEROES } from "./heroes.js";
 import { pool, learned } from "./learn.js";
@@ -8,15 +9,22 @@ import { pool, learned } from "./learn.js";
 const mon = (n) => MON.find((m) => m.n === n);
 
 // floors: a monster's name, "rescue" (a cursed digit, or a pool monster once all are free) or
-// "pool" (any pool monster). The boss is always last.
+// "pool" (any pool monster). The boss is always last. strands: monsters that ask a strand of their
+// own here instead of the band (learn.js BANDS: Trollar's coins, Chompers' "which is more?").
 export const WINGS = [
-  { id: "cellar", name: "The Counting Cellar", band: "sprout",
-    pool: ["Plusquito", "Minustaur", "Quizard", "Trollar"], floors: ["Plusquito", "Minustaur", "rescue", "Quizard", "Trollar"], boss: "Make-Ten Golem" },
-  { id: "hall", name: "The Balance Hall", band: "balance", after: "cellar",
-    pool: ["Chompers", "Equal Twins"], floors: ["Chompers", "Equal Twins", "rescue", "Chompers", "pool"], boss: "The Unknown" },
-  { id: "tower", name: "The Tables Tower", band: "apprentice", after: "cellar",
-    pool: ["Timesaur", "Divvy", "Starbot", "Haberhasher"], floors: ["Timesaur", "Divvy", "rescue", "Starbot", "Haberhasher", "pool"], boss: "Sigma Rex" }
+  { id: "cellar", name: "The Counting Cellar", band: "kinder", strands: { Trollar: "coinsK", Chompers: "more" },
+    pool: ["Plusquito", "Minustaur", "Chompers", "Trollar"], floors: ["Plusquito", "Minustaur", "rescue", "Chompers", "Trollar"], boss: "Make-Ten Golem" },
+  { id: "hall", name: "The Balance Hall", band: "first", after: "cellar",
+    pool: ["Quizard", "Chompers", "Equal Twins", "Minustaur"], floors: ["Quizard", "Chompers", "rescue", "Equal Twins", "pool"], boss: "The Unknown" },
+  // Plusquito and Minustaur stand in for the Mines' own monsters, and The Centipede is the Golem's
+  // shape for now (build steps 3 and 4, DESIGN.md §4.1).
+  { id: "mines", name: "The Crystal Mines", band: "second", after: "hall", strands: { Trollar: "coins" },
+    pool: ["Haberhasher", "Trollar", "Plusquito", "Minustaur"], floors: ["Haberhasher", "Plusquito", "rescue", "Trollar", "Minustaur"], boss: "The Centipede" },
+  { id: "tower", name: "The Tables Tower", band: "third", after: "mines",
+    pool: ["Timesaur", "Divvy", "Starbot"], floors: ["Timesaur", "Divvy", "rescue", "Starbot", "pool"], boss: "Sigma Rex" }
 ];
+// The band a monster asks in a Wing: its strand there, or the Wing's band.
+export const bandOf = (wing, m) => (wing.strands || {})[m.base || m.n] || wing.band;
 // A Wing opens the ones after it when its boss has been beaten and this share of its facts is
 // learned. Its depths go on below it either way.
 export const OPEN_AT = 0.6;
@@ -70,6 +78,7 @@ export const depthHP = (d) => 1 + 0.15 * ((d || 1) - 1);
 export const deepest = (wing, progress) => ((progress[wing.id] || {}).depth || 1);
 
 // The share of a Wing's facts learned (box 3 or more).
+// (The Wing's band only: strands are asked one floor a run.)
 export function learnedShare(wing, recs) {
   const p = pool(wing.band);
   return p.filter((f) => learned(recs[f.key])).length / p.length;
@@ -78,23 +87,25 @@ export function learnedShare(wing, recs) {
 // Which Wings are open. progress: { [wingId]: { boss: wins, best: floors } }; start: the band the
 // player started in. A Wing opens when the Wing it comes after (\`after\`) has its boss beaten and
 // 60% of its facts learned. Starting in a band opens every Wing at that grade or below: a 3rd
-// grader starting in Apprentice has the Hall and the Tower open from the start.
-const GRADE = { sprout: 0, balance: 1, apprentice: 2 };
+// grader starting in the Tower has all four open from the start.
+const GRADE = { kinder: 0, first: 1, second: 2, third: 3 };
+// Bands saved before the grade strata (dungeon version 5), as today's.
+export const OLD_BANDS = { sprout: "kinder", balance: "first", apprentice: "third" };
 export function openWings(progress, recs, start) {
   const open = [];
   WINGS.forEach((w, i) => {
     const prev = w.after && wingOf(w.after);
-    const earned = prev && ((progress[prev.id] || {}).boss || 0) > 0 && learnedShare(prev, recs) >= OPEN_AT;
+    const earned = prev && open.includes(prev.id) && ((progress[prev.id] || {}).boss || 0) > 0 && learnedShare(prev, recs) >= OPEN_AT;
     if (i === 0 || GRADE[w.band] <= (GRADE[start] ?? 0) || earned) open.push(w.id);
   });
   return open;
 }
 
-// The grade a player picks (0 = K … 5), saved as settings.grade (DESIGN.md §2, §4.1). Until the
-// strata are rebuilt by grade, it maps onto today's: K and 1st start in the Counting Cellar, 2nd
-// also opens the Balance Hall, 3rd and up open all three.
+// The grade a player picks (0 = K … 5), saved as settings.grade (DESIGN.md §2, §4.1): K starts in
+// the Counting Cellar, 1st in the Balance Hall, 2nd in the Crystal Mines, and 3rd and up in the
+// Tables Tower, each with every stratum above it open.
 export const GRADES = [0, 1, 2, 3, 4, 5];
-export const gradeBand = (g) => (g >= 3 ? "apprentice" : g === 2 ? "balance" : "sprout");
+export const gradeBand = (g) => ["kinder", "first", "second"][g] || "third";
 export const gradeLabel = (g) => (g === 0 ? "K" : String(g));
 export const gradeName = (g) => (g === 0 ? "Kindergarten" : `Grade ${g}`);
 // Settings with a grade picked: { ...st, grade, start, band }. Only settings change: what's been
@@ -136,7 +147,7 @@ export function wingStars(wing, progress) {
 // maxFall. After landing it holds long enough to read the title (hold); a tap goes on at once.
 // The whole thing is at most about 4.3 s. "Go deeper" falls one depth inside its
 // stratum; reduced motion is a quick fade with the title.
-export const DESCENT = { lead: 250, fall: 950, perLayer: 250, perDepth: 100, maxFall: 1500, hold: 2200, fade: 350,
+export const DESCENT = { lead: 250, fall: 950, perLayer: 150, perDepth: 100, maxFall: 1500, hold: 2200, fade: 350,
   deeperLead: 150, deeperFall: 800, deeperHold: 1500, quickIn: 150, quickHold: 300, quickFade: 150 };
 // mode: "enter" (from the start screen), "deeper" (Go deeper) or "reduced". Returns which Wings'
 // layers to draw (indexes into WINGS), whether the surface is on top, the depth the camera starts

@@ -320,6 +320,14 @@ h1 b{color:var(--coral);font-weight:400}
 .game.find .prob svg.coins{max-width:min(64vw,440px)}
 .prob .find{white-space:nowrap;font-size:.6em}
 .prob .find .blank{font-size:1.4em}
+/* Which is more (7 or 4), fractions stacked, rounding's "nearest 10", and a drawn rectangle. */
+.prob .or{font:800 .45em Nunito,sans-serif;color:var(--muted);vertical-align:middle;margin:0 .15em}
+.prob .to{display:block;font:800 .32em Nunito,sans-serif;color:var(--muted);letter-spacing:.02em}
+.frac{display:inline-flex;flex-direction:column;align-items:center;vertical-align:middle;font-size:.62em;line-height:1}
+.frac>span:first-child{border-bottom:.09em solid currentColor;padding:0 .1em .04em}
+.frac>span:last-child{padding-top:.06em}
+.frac .blank{font-size:1em;line-height:1}
+.game.find .prob svg.rectfig{max-width:min(60vw,260px);height:auto}
 .game.cents .ans::after{content:"¢";margin-left:2px;font-size:.7em;opacity:.75}
 
 /* Comparisons (Chompers): < = > keys fill the number pad's space, three rows tall, so nothing moves */
@@ -336,6 +344,9 @@ h1 b{color:var(--coral);font-weight:400}
 body[data-stratum="cellar"] .game,.wing.cellar,.d-layer.cellar{--wall:var(--wall-cellar)}
 body[data-stratum="hall"] .game,.wing.hall,.d-layer.hall{--wall:var(--wall-hall)}
 body[data-stratum="tower"] .game,.wing.tower,.d-layer.tower{--wall:var(--wall-tower)}
+/* The Crystal Mines: a stand-in wall of crystals until its own (DESIGN.md §4.1, build step 3). */
+:root{--wall-mines:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='48'%3E%3Crect width='48' height='48' fill='%231e1830'/%3E%3Cpath d='M8 40 L14 18 L20 40Z' fill='%2333285a'/%3E%3Cpath d='M14 18 L20 40 L17 40Z' fill='%234a3b82'/%3E%3Cpath d='M28 30 L33 8 L38 30Z' fill='%232c2350'/%3E%3Cpath d='M33 8 L38 30 L35 30Z' fill='%2343367a'/%3E%3Cpath d='M36 46 L40 34 L44 46Z' fill='%2333285a'/%3E%3Ccircle cx='24' cy='12' r='1' fill='%238b7bd8'/%3E%3Ccircle cx='6' cy='8' r='0.8' fill='%238b7bd8'/%3E%3C/svg%3E")}
+body[data-stratum="mines"] .game,.wing.mines,.d-layer.mines{--wall:var(--wall-mines)}
 
 /* The dive (diveUI): this stratum's depths down the side of the monster's box. It scrolls, with
    the line drawn per row so it runs the whole way, and fades at the ends. */
@@ -366,6 +377,7 @@ body[data-stratum="tower"] .game,.wing.tower,.d-layer.tower{--wall:var(--wall-to
    gold and coral stay the accents. Set by data-stratum on <body> (app.js newRun). */
 body[data-stratum="cellar"],.descent.cellar,.d-layer.cellar,.title-scene{--bg:#1c1411;--panel:#2a1e19;--line:#4a3328;--btn:#3b2a22;--btn2:#4a362c;--edge:#5d4536;--muted:#c9b4a6;--dark:#120c0a}
 body[data-stratum="hall"],.descent.hall,.d-layer.hall{--bg:#141a28;--panel:#1d2537;--line:#33405c;--btn:#2a3550;--btn2:#34415f;--edge:#46557a;--muted:#b0bcd6;--dark:#0d111b}
+body[data-stratum="mines"],.descent.mines,.d-layer.mines{--bg:#17132a;--panel:#211b3a;--line:#3c3266;--btn:#2d2550;--btn2:#372e60;--edge:#4c4080;--muted:#bdb2e0;--dark:#0e0b1a}
 body[data-stratum="tower"],.descent.tower,.d-layer.tower{--bg:#151c1e;--panel:#20292c;--line:#36454a;--btn:#2c393d;--btn2:#364549;--edge:#4a5b60;--muted:#b3c0c2;--dark:#0d1213}
 body{transition:background-color .4s;--hint-empty:var(--edge);--hint-line:var(--edge)}
 

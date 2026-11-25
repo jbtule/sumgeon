@@ -79,7 +79,7 @@ for (const band of Object.keys(BANDS)) {
         if (f.op === "×" && Math.max(f.x, f.y) >= 10) assert.ok(!/× 5 \+/.test(say), `${label}: ${say}`);
         if (f.op === "+" && f.x === f.y && f.ans > 10 && f.ans < 20) assert.match(say, /^Doubles:/, label);
         if (f.op === "×" && Math.min(f.x, f.y) === 2 && Math.max(f.x, f.y) < 10) assert.match(say, /^Doubles:/, label);
-        assert.ok(!/ \+ 0\b|\b0 \+ /.test(say), `${label}: ${say}`);
+        if (f.x !== 0 && f.y !== 0) assert.ok(!/ \+ 0\b|\b0 \+ /.test(say), `${label}: ${say}`);
       }
     }
   }
@@ -95,7 +95,12 @@ const opening = { "Ten-frame": /^Put together/, "Draw and cross out": /^Take awa
   "Doubles": /^Doubles: two rows of 8\. 5 \+ 5 = 10, and 3 \+ 3 = 6\. 10 \+ 6 = 16$/, "Take away from 10 and some more": /^15 is 10 and 5\. Take away 3 from the 5: 5 − 3 = 2\. 10 \+ 2 = 12$/,
   "Doubles to subtract": /^Doubles: 8 \+ 8 = 16, so 16 − 8 = 8$/, "Count back through 10": /^Count back to 10, then the rest: 13 − 3 = 10\. 10 − 1 = 9$/, "Times 2 as doubles": /^Doubles: 2 × 8 is 8 \+ 8 = 16$/,
   "Times 10 as tens": /^Count by tens: 7 tens is 70\. 7 × 10 = 70$/, "Elevens and twelves": /^Break apart: 6 × 10 \+ 6 × 2 = 60 \+ 12 = 72$/,
-  "Take away tens and ones": /^Take away the tens, then the ones: 60 − 20 = 40, 9 − 6 = 3\. 40 \+ 3 = 43$/, "Back to a ten": /^Back to 50, then 5 more: 52 − 2 = 50\. 50 − 5 = 45$/, "Think multiplication": /^Think multiplication/ };
+  "Take away tens and ones": /^Take away the tens, then the ones: 60 − 20 = 40, 9 − 6 = 3\. 40 \+ 3 = 43$/, "Back to a ten": /^Back to 50, then 5 more: 52 − 2 = 50\. 50 − 5 = 45$/, "Think multiplication": /^Think multiplication/,
+  "Adding zero": /^Adding zero: 4 and none more\. 4 \+ 0 = 4$/, "Which is more": /^Line them up: the longer row is more\. More = 7$/,
+  "Make 10 partners": /^How many more make 10\? Count the empty spaces\. 7 \+ □ = 10, □ = 3$/, "Number bonds": /^6 is 4 and how many more\? 4 \+ □ = 6, □ = 2$/,
+  "10 and 100 more": /^100 more: the hundreds go up by 1\. 345 \+ 100 = 445$/, "Times zero": /^Zero groups/, "Times tens": /^4 × 3 tens is 12 tens, 120\. 4 × 30 = 120$/,
+  "Equal fractions": /^The same amount is shaded\. Count the shaded fourths: □ = 2$/, "Rounding": /^47 is between 40 and 50\. Halfway is 45, and 47 is past halfway, so it rounds up\. □ = 50$/,
+  "Area": /^Count the squares, or rows × columns: 3 × 4 = 12$/, "Perimeter": /^Add all four sides: 4 \+ 3 \+ 4 \+ 3 = 14$/ };
 assert.equal(STRATEGIES.length, Object.keys(opening).length);
 for (const s of STRATEGIES) {
   const h = hintFor(s.f, true);
@@ -103,3 +108,34 @@ for (const s of STRATEGIES) {
   assert.ok(h.grownups && h.say.endsWith(s.f.sym ? s.f.l + " " + s.f.sym + " " + s.f.r : "= " + s.f.ans), s.title);
 }
 console.log("✓ hint strategies");
+
+// The grade strata's new kinds of problem (DESIGN.md §4.1, §5.3), in the classroom's models.
+import { hiddenFact } from "../js/missing.js";
+import { fractionFact, roundFact, rectFact } from "../js/third.js";
+import { moreFact } from "../js/balance.js";
+{
+  const w = (f) => hintFor(f, true), b = (f) => hintFor(f, false);
+  // K: zero, make 10 on a ten-frame, number bonds, 10 and some more.
+  assert.match(b({ op: "-", x: 4, y: 4, ans: 0 }).say, /^Take away all of them: none are left\. 4 − 4 = \?$/);
+  assert.match(b({ op: "-", x: 4, y: 0, ans: 4 }).say, /^Take away none/);
+  assert.match(b(hiddenFact("+", 7, 3)).model, /ten-frame: 7 and the empty spaces/);
+  assert.match(b(hiddenFact("+", 4, 2)).model, /number bond: 6 is 4 and \?/);
+  assert.equal(w(hiddenFact("+", 10, 4)).say, "14 is 10 and some more. 10 + □ = 14, □ = 4");
+  assert.match(b(moreFact(3, 8)).model, /3 dots and 8 dots/);
+  // 1st grade's □ facts use the fact that works them out: 8 + □ = 13 is 13 − 8.
+  assert.match(b(hiddenFact("+", 8, 5)).say, /^Think addition: 8 \+ \? = 13/);
+  // 3rd: × 0 and × 1, 0 ÷ n, × tens, fractions, rounding (halfway rounds up), area and perimeter.
+  assert.match(b({ op: "×", x: 7, y: 0, ans: 0 }).say, /^Zero groups/);
+  assert.equal(b({ op: "×", x: 1, y: 8, ans: 8 }).say, "1 row of 8. 1 × 8 = ?", "× 1 isn't doubling");
+  assert.match(b({ op: "÷", x: 0, y: 5, ans: 0 }).say, /^Share nothing into 5 groups/);
+  assert.match(b({ op: "÷", x: 7, y: 1, ans: 7 }).say, /^Think multiplication: 1 × \? = 7/);
+  assert.match(w({ op: "×", x: 90, y: 7, ans: 630 }).say, /^7 × 9 tens is 63 tens, 630\. 90 × 7 = 630$/);
+  assert.match(b(fractionFact(1, 1, 4)).say, /Count the shaded fourths: □ = \?$/);
+  assert.match(w(roundFact(45, 10)).say, /45 is halfway, so it rounds up\. □ = 50$/);
+  assert.match(w(roundFact(349, 100)).say, /^349 is between 300 and 400\. Halfway is 350, and 349 is before halfway, so it rounds down\. □ = 300$/);
+  assert.match(b(rectFact("a", 5, 2)).model, /a rectangle 5 by 2/);
+  assert.equal(w(rectFact("p", 5, 2)).say, "Add all four sides: 5 + 2 + 5 + 2 = 14");
+  // Hints never show a fraction's answer as a number before answering.
+  for (const f of [fractionFact(1, 2, 4), fractionFact(3, 4, 8), fractionFact(2, 1, 3)]) assert.ok(!b(f).say.includes(String(f.ans) + " "), b(f).say);
+}
+console.log("✓ grade strata hints");

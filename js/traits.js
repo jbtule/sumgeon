@@ -17,8 +17,22 @@ export const TRAITS = {
   "The Unknown": { icon: "🌀", name: "Shapeshift", text: "Switches between comparing and balancing" },
   "Starbot": { icon: "⭐", name: "Stripes", text: "Loves the ×5 and ×10 tables" },
   "Make-Ten Golem": { icon: "🔟", name: "Ten Smash", text: "Answers of 10 or more smash it for double" },
-  "Sigma Rex": { icon: "👑", name: "Second wind", text: "Armors up at half HP" }
+  "Sigma Rex": { icon: "👑", name: "Second wind", text: "Armors up at half HP" },
+  // A stand-in until the Crystal Mines' boss is drawn (DESIGN.md §4.1, build step 3).
+  "The Centipede": { icon: "💯", name: "Hundred Legs", text: "Answers of 100 or more hit double" }
 };
+
+// The kinds of problem a monster asks at all, as a test on a fact's operation: the comparing
+// monsters only compare (and the Equal Twins only balance), and the others never do, since a
+// < = > problem is no use to Plusquito. Quizard asks balancing too: it's a missing number.
+export function asks(m) {
+  const k = kind(m);
+  if (k === "Chompers") return (op) => op === "○" || op === "more";
+  if (k === "Equal Twins") return (op) => op === "=";
+  if (k === "The Unknown") return (op) => op === "○" || op === "=";
+  if (k === "Quizard") return (op) => op !== "○";
+  return (op) => op !== "○" && op !== "=";
+}
 
 // A monster's trait, or null. Cursed digits have Lucky Number (DESIGN.md §6.6).
 export function traitOf(m) {
@@ -40,6 +54,7 @@ export function prefers(m) {
 export function hitBy(m, ans, typed, low) {
   if (m.cursed != null && String(typed).includes(String(m.cursed))) return { mult: 2, note: `Lucky ${m.cursed}! Double damage` };
   if (m.n === "Make-Ten Golem" && ans >= 10) return { mult: 2, note: "Ten Smash! Double damage" };
+  if (m.n === "The Centipede" && ans >= 100) return { mult: 2, note: "Hundred Legs! Double damage" };
   if (kind(m) === "Timesaur" && ans < 10) return { mult: 0.5, note: "Armor! Half damage" };
   if (m.n === "Sigma Rex" && low && ans < 10) return { mult: 0.5, note: "Armor! Half damage" };
   return { mult: 1, note: "" };

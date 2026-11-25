@@ -1,21 +1,22 @@
 // The Bestiary (DESIGN.md §6.2): every Wing's monsters, which ones a player has met and beaten,
 // and a mastery ring per monster for how much of its kind of math is learned. No DOM.
 import { MON } from "./monsters.js";
-import { WINGS } from "./wings.js";
+import { WINGS, bandOf } from "./wings.js";
 import { pool, learned } from "./learn.js";
 
-// [{ wing, m }] in Wing order: each Wing's pool, then its boss.
+// [{ wing, m }] in Wing order: each Wing's pool, then its boss. A monster in more than one Wing
+// (Chompers, Trollar, Minustaur) is listed once, in the first.
 export function roster() {
-  const out = [];
-  for (const w of WINGS) for (const n of w.pool.concat([w.boss])) out.push({ wing: w, m: MON.find((x) => x.n === n) });
+  const out = [], seen = new Set();
+  for (const w of WINGS) for (const n of w.pool.concat([w.boss])) if (!seen.has(n)) { seen.add(n); out.push({ wing: w, m: MON.find((x) => x.n === n) }); }
   return out;
 }
 
 // The share (0–1) of a monster's facts learned: its operation's facts in its Wing's band, or every
 // fact there for a monster that mixes or prefers none.
 export function mastery(m, wing, recs) {
-  // A monster with its own strand (Trollar's coins) is measured on that strand.
-  const p = pool(m.strand || wing.band), mine = p.filter((f) => f.op === m.op);
+  // A monster with its own strand there (Trollar's coins) is measured on that strand.
+  const p = pool(bandOf(wing, m)), mine = p.filter((f) => f.op === m.op);
   const facts = mine.length ? mine : p;
   return facts.filter((f) => learned(recs[f.key])).length / facts.length;
 }

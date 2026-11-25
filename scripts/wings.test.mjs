@@ -1,16 +1,31 @@
-// Wings: runs with a rescue floor and a boss, rescue order, and mastery opening the Tower.
+// Wings: runs with a rescue floor and a boss, rescue order, and mastery opening the next stratum.
 import assert from "node:assert/strict";
-import { WINGS, runFloors, nextRescue, openWings, learnedShare, toOpen } from "../js/wings.js";
-import { pool } from "../js/learn.js";
+import { WINGS, runFloors, nextRescue, openWings, learnedShare, toOpen, bandOf } from "../js/wings.js";
+import { pool, BANDS } from "../js/learn.js";
 
-const [cellar, hall, tower] = ["cellar", "hall", "tower"].map((id) => WINGS.find((w) => w.id === id));
+const [cellar, hall, mines, tower] = ["cellar", "hall", "mines", "tower"].map((id) => WINGS.find((w) => w.id === id));
+// One stratum per grade, K to 3rd, in a straight chain (DESIGN.md §4.1).
+assert.deepEqual(WINGS.map((w) => w.id), ["cellar", "hall", "mines", "tower"]);
+assert.deepEqual(WINGS.map((w) => BANDS[w.band].grade), [0, 1, 2, 3]);
+assert.deepEqual(WINGS.map((w) => w.after || null), [null, "cellar", "hall", "mines"], "each opens only the next");
+assert.equal(mines.name, "The Crystal Mines");
+// Each stratum's monsters, and what they ask there.
+const M = (w) => w.pool.concat([w.boss]);
+assert.deepEqual(M(cellar), ["Plusquito", "Minustaur", "Chompers", "Trollar", "Make-Ten Golem"]);
+assert.deepEqual(M(hall), ["Quizard", "Chompers", "Equal Twins", "Minustaur", "The Unknown"]);
+assert.deepEqual(M(mines), ["Haberhasher", "Trollar", "Plusquito", "Minustaur", "The Centipede"]);
+assert.deepEqual(M(tower), ["Timesaur", "Divvy", "Starbot", "Sigma Rex"]);
+const named = (n) => ({ n });
+assert.deepEqual([bandOf(cellar, named("Trollar")), bandOf(mines, named("Trollar")), bandOf(cellar, named("Chompers")), bandOf(hall, named("Chompers")), bandOf(mines, named("Haberhasher"))],
+  ["coinsK", "coins", "more", "first", "second"], "Trollar finds coins in the Cellar and counts them in the Mines");
+assert.equal(bandOf(cellar, { n: "Baby Trollar", base: "Trollar" }), "coinsK", "a look asks what its monster does");
 const run = runFloors(cellar, { captain: 5, rescued: [] }, () => 0);
 assert.equal(run.length, 6);
-assert.equal(run[3].n, "Quizard", "floor 4 is Quizard");
+assert.equal(run[3].n, "Chompers", "floor 4 is Chompers");
 assert.equal(run[2].cursed, 0, "floor 3 holds the lowest digit not rescued");
 assert.ok(run[run.length - 1].boss, "the boss is last");
 assert.ok(run.every((m) => m && m.n), "every floor has a monster");
-assert.equal(runFloors(tower, { captain: 0, rescued: [] }, () => 0).length, 7);
+assert.equal(runFloors(tower, { captain: 0, rescued: [] }, () => 0).length, 6);
 
 // Rescue order skips the captain and the rescued; null once all nine are free.
 assert.equal(nextRescue({ captain: 0, rescued: [] }), 1);
@@ -22,19 +37,28 @@ assert.equal(allFree[2].cursed, undefined, "with everyone free, the rescue floor
 // Every Wing's monsters exist and their art draws.
 for (const w of WINGS) for (const m of runFloors(w, { captain: 0, rescued: [1, 2, 3, 4, 5, 6, 7, 8, 9] })) assert.ok(m.d, `${w.id}: ${m.n}`);
 
-// The Tower opens for a Sprout player only after the Golem is beaten and 60% of the Cellar is learned.
-assert.deepEqual(openWings({}, {}, "sprout"), ["cellar"]);
-assert.deepEqual(openWings({}, {}, "apprentice"), ["cellar", "hall", "tower"], "starting in Apprentice opens the Hall and the Tower");
+// The Hall opens for a kindergartner only after the Golem is beaten and 60% of the Cellar is learned.
+assert.deepEqual(openWings({}, {}, "kinder"), ["cellar"]);
+assert.deepEqual(openWings({}, {}, "third"), ["cellar", "hall", "mines", "tower"], "starting in 3rd grade opens all four");
 const recs = {};
-const cellarFacts = pool("sprout");
+const cellarFacts = pool("kinder");
 cellarFacts.slice(0, Math.ceil(cellarFacts.length * 0.6)).forEach((f) => (recs[f.key] = { b: 3, n: 3, c: 3, ms: 2000, t: 0 }));
 assert.ok(learnedShare(cellar, recs) >= 0.6);
-assert.deepEqual(openWings({}, recs, "sprout"), ["cellar"], "learning alone isn't enough: beat the boss too");
-assert.deepEqual(openWings({ cellar: { boss: 1 } }, {}, "sprout"), ["cellar"], "the boss alone isn't enough: learn the facts too");
-assert.deepEqual(openWings({ cellar: { boss: 1 } }, recs, "sprout"), ["cellar", "hall", "tower"], "the Cellar opens both the Hall and the Tower");
-assert.equal(toOpen(hall, {}, {}).prev.id, "cellar", "the Hall comes after the Cellar, and doesn't block the Tower");
+assert.deepEqual(openWings({}, recs, "kinder"), ["cellar"], "learning alone isn't enough: beat the boss too");
+assert.deepEqual(openWings({ cellar: { boss: 1 } }, {}, "kinder"), ["cellar"], "the boss alone isn't enough: learn the facts too");
+assert.deepEqual(openWings({ cellar: { boss: 1 } }, recs, "kinder"), ["cellar", "hall"], "the Cellar opens only the Hall");
+assert.equal(toOpen(tower, {}, {}).prev.id, "mines", "the Tower comes after the Mines");
+// The chain, one at a time: the Hall opens the Mines, the Mines the Tower.
+{
+  const r = {}, learn = (b) => { const p = pool(b); p.slice(0, Math.ceil(p.length * 0.6)).forEach((f) => (r[f.key] = { b: 3, n: 3, c: 3, ms: 2000, t: 0 })); };
+  learn("kinder"); learn("first");
+  assert.deepEqual(openWings({ cellar: { boss: 1 }, hall: { boss: 1 } }, r, "kinder"), ["cellar", "hall", "mines"]);
+  learn("second");
+  assert.deepEqual(openWings({ cellar: { boss: 1 }, hall: { boss: 1 }, mines: { boss: 1 } }, r, "kinder"), ["cellar", "hall", "mines", "tower"]);
+  assert.deepEqual(openWings({ cellar: { boss: 1 }, mines: { boss: 1 } }, r, "kinder"), ["cellar", "hall"], "no skipping the Hall's boss");
+}
 // Going deep doesn't open what's below: only mastery does.
-assert.deepEqual(openWings({ cellar: { boss: 9, depth: 10 } }, {}, "sprout"), ["cellar"]);
+assert.deepEqual(openWings({ cellar: { boss: 9, depth: 10 } }, {}, "kinder"), ["cellar"]);
 assert.equal(toOpen(tower, {}, {}).boss, false);
 // Depth: floor 1 is easier, the boss tougher, rising evenly.
 import { depthScale } from "../js/wings.js";
@@ -69,7 +93,8 @@ import { floorStars, wingStars } from "../js/wings.js";
 assert.deepEqual(floorStars(0, true), [true, true, true]);
 assert.deepEqual(floorStars(2, false), [true, false, false]);
 assert.deepEqual(wingStars(WINGS[0], { cellar: { stars: [3, 1, 2] } }), { got: 6, max: 18 });
-assert.deepEqual(wingStars(tower, {}), { got: 0, max: 21 });
+assert.deepEqual(wingStars(tower, {}), { got: 0, max: 18 });
+assert.deepEqual(wingStars(mines, {}), { got: 0, max: 18 });
 assert.deepEqual(wingStars(hall, {}), { got: 0, max: 18 });
 console.log("✓ stars");
 
@@ -78,7 +103,7 @@ console.log("✓ stars");
   const { descentPlan, DESCENT } = await import("../js/wings.js");
   const c1 = descentPlan("cellar", 1, "enter"), t1 = descentPlan("tower", 1, "enter"), t3 = descentPlan("tower", 3, "enter");
   assert.deepEqual([c1.layers, c1.surface, c1.from, c1.to], [[0], true, 0, 1]);
-  assert.deepEqual(t1.layers, [0, 1, 2], "falls past every stratum above the Tower");
+  assert.deepEqual(t1.layers, [0, 1, 2, 3], "falls past every stratum above the Tower");
   assert.ok(c1.fall < descentPlan("hall", 1, "enter").fall && descentPlan("hall", 1, "enter").fall < t1.fall, "a later stratum falls longer");
   assert.ok(t1.fall < t3.fall, "a deeper start falls longer");
   assert.equal(c1.total, 3750);
@@ -96,33 +121,42 @@ console.log("✓ stars");
   assert.ok(DESCENT.hold >= 2000, "long enough to read the title");
 }
 
-// The grade (DESIGN.md §2, §4.1): K and 1st start in the Cellar, 2nd opens the Hall, 3rd and up all three.
+// The grade (DESIGN.md §2, §4.1): K starts in the Cellar, 1st in the Hall, 2nd in the Mines, and
+// 3rd and up in the Tower, each with every stratum above it open.
 {
-  const { GRADES, gradeBand, withGrade } = await import("../js/wings.js");
-  assert.deepEqual(GRADES.map(gradeBand), ["sprout", "sprout", "balance", "apprentice", "apprentice", "apprentice"]);
-  assert.deepEqual(openWings({}, {}, gradeBand(2)), ["cellar", "hall"]);
-  assert.deepEqual(openWings({}, {}, gradeBand(5)), ["cellar", "hall", "tower"]);
-  const base = { band: "sprout", start: "sprout", sfx: true };
+  const { GRADES, gradeBand, withGrade, OLD_BANDS } = await import("../js/wings.js");
+  assert.deepEqual(GRADES.map(gradeBand), ["kinder", "first", "second", "third", "third", "third"]);
+  assert.deepEqual(openWings({}, {}, gradeBand(0)), ["cellar"]);
+  assert.deepEqual(openWings({}, {}, gradeBand(1)), ["cellar", "hall"]);
+  assert.deepEqual(openWings({}, {}, gradeBand(2)), ["cellar", "hall", "mines"]);
+  assert.deepEqual(openWings({}, {}, gradeBand(5)), ["cellar", "hall", "mines", "tower"]);
+  assert.deepEqual(OLD_BANDS, { sprout: "kinder", balance: "first", apprentice: "third" });
+  const base = { band: "kinder", start: "kinder", sfx: true };
   // A new player starts in their grade's stratum.
-  assert.deepEqual(withGrade(base, 3, { first: true, fresh: true }), { ...base, grade: 3, start: "apprentice", band: "apprentice" });
-  assert.equal(withGrade(base, 0, { first: true, fresh: true }).band, "sprout");
+  assert.deepEqual(withGrade(base, 3, { first: true, fresh: true }), { ...base, grade: 3, start: "third", band: "third" });
+  assert.equal(withGrade(base, 1, { first: true, fresh: true }).band, "first");
+  assert.equal(withGrade(base, 2, { first: true, fresh: true }).band, "second");
+  assert.equal(withGrade(base, 0, { first: true, fresh: true }).band, "kinder");
   // A player with progress keeps the stratum they're in.
-  assert.equal(withGrade(base, 4, { first: true }).band, "sprout");
-  // The first pick never lowers what a player already had open.
-  const had = { band: "apprentice", start: "apprentice" };
-  assert.equal(withGrade(had, 0, { first: true }).start, "apprentice");
-  assert.equal(withGrade(had, 0, { first: true }).band, "apprentice");
-  // Changing it later can lower it: a stratum no longer open falls back to the Cellar...
+  assert.equal(withGrade(base, 4, { first: true }).band, "kinder");
+  // Picking an older grade opens more; the first pick never lowers what a player already had open.
+  const had = { band: "third", start: "third" };
+  assert.equal(withGrade(had, 0, { first: true }).start, "third");
+  assert.equal(withGrade(had, 0, { first: true }).band, "third");
+  // Changing it later (a grade picked by mistake) can lower it: a stratum no longer open falls
+  // back to the Cellar...
   const lowered = withGrade({ ...had, grade: 3 }, 1);
-  assert.deepEqual([lowered.grade, lowered.start, lowered.band], [1, "sprout", "sprout"]);
+  assert.deepEqual([lowered.grade, lowered.start, lowered.band], [1, "first", "kinder"]);
   // ...and it only changes settings: progress and facts stay as they were, and strata opened by
-  // mastery stay open.
-  const progress = { cellar: { boss: 2, best: 6, depth: 3, depthStars: { 1: 12 }, stars: [3, 3, 2] }, tower: { boss: 1, depth: 2 } };
-  const keep = JSON.stringify([progress, recs]);
-  const mastered = withGrade({ band: "apprentice", start: "apprentice", grade: 3 }, 0, { progress, recs });
-  assert.equal(JSON.stringify([progress, recs]), keep, "lowering the grade never touches progress");
-  assert.equal(mastered.start, "sprout");
-  assert.equal(mastered.band, "apprentice", "the Tower stays open: it was opened by mastery");
-  assert.deepEqual(openWings(progress, recs, mastered.start), ["cellar", "hall", "tower"]);
+  // mastery or played stay open.
+  const progress = { cellar: { boss: 2, best: 6, depth: 3, depthStars: { 1: 12 }, stars: [3, 3, 2] }, hall: { boss: 1 }, mines: { boss: 1, depth: 2 } };
+  const r = {};
+  for (const b of ["kinder", "first", "second"]) { const p = pool(b); p.slice(0, Math.ceil(p.length * 0.6)).forEach((f) => (r[f.key] = { b: 3, n: 3, c: 3, ms: 2000, t: 0 })); }
+  const keep = JSON.stringify([progress, r]);
+  const mastered = withGrade({ band: "third", start: "third", grade: 3 }, 0, { progress, recs: r });
+  assert.equal(JSON.stringify([progress, r]), keep, "lowering the grade never touches progress");
+  assert.equal(mastered.start, "kinder");
+  assert.equal(mastered.band, "third", "the Tower stays open: it was opened by mastery");
+  assert.deepEqual(openWings(progress, r, mastered.start), ["cellar", "hall", "mines", "tower"]);
   console.log("✓ grades");
 }

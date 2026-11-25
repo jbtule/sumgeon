@@ -11,7 +11,7 @@
 // A run's state (not saved): { last: the problem number of the last moment, floor, onFloor,
 //   }.
 import { pool, monsterHP } from "./learn.js";
-import { WINGS, runFloors, depthScale } from "./wings.js";
+import { WINGS, runFloors, depthScale, bandOf } from "./wings.js";
 import { HEROES } from "./heroes.js";
 
 // The chance on a qualifying hit: CHANCE, plus BUILD for each one that rolled without a moment,
@@ -187,7 +187,7 @@ export function simulate(opts) {
     const run = freshRun(), floors = runFloors(w, o.team, r, 1);
     let n = 0, streak = 0, got = 0;
     floors.forEach((m, i) => {
-      const bk = m.strand || w.band, facts = pool(bk), recs = recsFor(bk);
+      const bk = bandOf(w, m), facts = pool(bk), recs = recsFor(bk);
       let hp = Math.round(monsterHP(m, bk, recs) * depthScale(i, floors.length));
       out.floors++;
       for (let guard = 0; hp > 0 && guard < 200; guard++) {

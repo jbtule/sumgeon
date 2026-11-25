@@ -5,15 +5,18 @@ import { pool } from "../js/learn.js";
 import { WINGS, cursedMonster } from "../js/wings.js";
 
 const r = roster();
-assert.deepEqual(r.map((x) => x.m.n), ["Plusquito", "Minustaur", "Quizard", "Trollar", "Make-Ten Golem", "Chompers", "Equal Twins", "The Unknown", "Timesaur", "Divvy", "Starbot", "Haberhasher", "Sigma Rex"]);
+assert.deepEqual(r.map((x) => x.m.n), ["Plusquito", "Minustaur", "Chompers", "Trollar", "Make-Ten Golem", "Quizard", "Equal Twins", "The Unknown", "Haberhasher", "The Centipede", "Timesaur", "Divvy", "Starbot", "Sigma Rex"]);
 assert.ok(r.every((x) => x.m && x.wing));
+assert.equal(new Set(r.map((x) => x.m.n)).size, r.length, "a monster in two strata is listed once, in the first");
 
 const plus = r[0], recs = {};
 assert.equal(mastery(plus.m, plus.wing, recs), 0);
-pool("sprout").filter((f) => f.op === "+").forEach((f) => (recs[f.key] = { b: 3, n: 3, c: 3, ms: 2000, t: 0 }));
+pool("kinder").filter((f) => f.op === "+").forEach((f) => (recs[f.key] = { b: 3, n: 3, c: 3, ms: 2000, t: 0 }));
 assert.equal(mastery(plus.m, plus.wing, recs), 1, "every + fact learned fills Plusquito's ring");
 assert.equal(mastery(r[1].m, r[1].wing, recs), 0, "Minustaur's ring is subtraction");
-const golem = r[2];
+const golem = r[4];
+// Chompers is listed in the Cellar, measured on its "which is more?" strand there.
+assert.equal(mastery(r[2].m, r[2].wing, recs), 0);
 assert.ok(mastery(golem.m, golem.wing, recs) > 0 && mastery(golem.m, golem.wing, recs) <= 1);
 
 const seen = {};

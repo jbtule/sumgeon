@@ -33,4 +33,24 @@ const p = { op: "+", x: 7, y: 8, ans: 15 };
 assert.equal(spokenProblem(p), "seven plus eight");
 assert.equal(spokenFact(p), "seven plus eight is fifteen");
 assert.equal(spokenProblem({ op: "÷", x: 56, y: 7, ans: 8 }), "fifty-six divided by seven");
+// The zero facts and × 0, × 1 (K and 3rd grade), spoken.
+import { facts } from "../js/problems.js";
+assert.equal(spokenFact({ op: "-", x: 4, y: 4, ans: 0 }), "four minus four is zero");
+assert.ok(facts().some((f) => f.op === "÷" && f.x === 0) && !facts().some((f) => f.op === "÷" && f.y === 0), "0 ÷ 7, never ÷ 0");
+// 3rd grade past the tables (third.js): every answer a whole number, and its words.
+import { timesTens, fractionFacts, fractionFact, roundFacts, roundFact, rectFacts, rectFact } from "../js/third.js";
+for (const f of [].concat(timesTens(), fractionFacts(), roundFacts(), rectFacts())) assert.ok(Number.isInteger(f.ans) && f.ans > 0, f.key || f.q);
+assert.ok(timesTens().every((f) => f.x >= 2 && f.x <= 9 && f.y % 10 === 0 && f.y >= 20 && f.y <= 90 && f.ans === f.x * f.y));
+assert.equal(new Set(fractionFacts().map((f) => f.key)).size, fractionFacts().length);
+assert.ok(fractionFacts().every((f) => f.a * f.d === f.ans * f.b && [1, 2, 3, 4, 6, 8].includes(f.b) && [2, 3, 4, 6, 8].includes(f.d)), "equal fractions");
+assert.deepEqual([fractionFact(1, 2, 4).q, fractionFact(1, 2, 4).ans], ["1/2 = □/4", 2]);
+assert.equal(spokenProblem(fractionFact(1, 2, 4)), "one half equals what fourths");
+assert.equal(spokenFact(fractionFact(2, 4, 2)), "two fourths equals one half");
+assert.equal(spokenProblem(fractionFact(1, 1, 3)), "one equals what thirds");
+assert.deepEqual([roundFact(45, 10).ans, roundFact(44, 10).ans, roundFact(250, 100).ans, roundFact(951, 100).ans], [50, 40, 300, 1000], "halfway rounds up");
+assert.equal(spokenProblem(roundFact(347, 100)), "Round three hundred forty-seven to the nearest hundred.");
+assert.equal(spokenFact(roundFact(47, 10)), "Forty-seven rounds to fifty.");
+assert.deepEqual([rectFact("a", 4, 3).ans, rectFact("p", 4, 3).ans], [12, 14]);
+assert.equal(spokenProblem(rectFact("p", 4, 3)), "What is the perimeter of a four by three rectangle?");
+assert.equal(spokenFact(rectFact("a", 4, 3)), "A four by three rectangle has an area of twelve.");
 console.log("✓ problems");

@@ -21,7 +21,7 @@ for (const m of MON) {
   if (!m.boss) assert.ok(ids.has("p:" + monsterCleared(m)));
 }
 const fs = facts();
-assert.equal(fs.length, 633);
+assert.equal(fs.length, 713, "within 20, the zero facts, and the 0–12 tables");
 for (const f of fs) { assert.ok(ids.has("q:" + spokenProblem(f))); assert.ok(ids.has("q:" + spokenFact(f))); }
 assert.ok(ids.has("q:seven plus eight is fifteen"));
 assert.ok(ids.has("q:three plus what is seven") && ids.has("q:what times four is twenty"), "missing-number problems are recorded");

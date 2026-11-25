@@ -6,71 +6,111 @@
 //   box 0; a hinted answer changes nothing, so mastery needs solves without help.
 import { facts } from "./problems.js";
 import { coinFacts, coinFactOf, COIN_LEVELS } from "./coins.js";
-import { twoDigitFacts, TWO_LEVELS } from "./twodigit.js";
-import { balanceFacts, balanceFactOf, BALANCE_LEVELS } from "./balance.js";
+import { twoDigitFacts, twoLevel } from "./twodigit.js";
+import { balanceFacts, balanceFactOf, inSet, moreFacts, moreFactOf, MORE_LEVELS } from "./balance.js";
+import { hiddenFactOf, kinderHidden, firstHidden } from "./missing.js";
+import { timesTens, fractionFacts, fractionFactOf, roundFacts, roundFactOf, rectFacts, rectFactOf } from "./third.js";
+import { asks as asksOf } from "./traits.js";
 
-// Facts by the order classrooms teach them (Missouri Learning Standards, DESIGN.md §2, §5.3).
-// A level opens when 70% of the level before it is learned (box 3 or more). A level marked
-// alongside is open from the start and doesn't hold back the one after it: its facts are asked
-// next to the newer levels' as learning and review.
-const within = (n) => (f) => (f.op === "+" && f.ans <= n) || (f.op === "-" && f.x <= n);
-const teen = (f) => (f.op === "+" && (f.x === 10 || f.y === 10)) || (f.op === "-" && f.x > 10 && f.ans === 10);
+// One band per grade, K to 3rd (DESIGN.md §2, §4.1), each the facts of one stratum, with its
+// levels in the order the school teaches them (Missouri Learning Standards and the school's
+// curriculum guides). A level opens when 70% of the level before it is learned (box 3 or more).
+// Strands are small bands a stratum gives one monster (Trollar's coins, Chompers' "which is
+// more?" in the Cellar): asked one floor a run, with their own levels.
+const plain = (f) => !f.blank;
+const within = (n) => (f) => plain(f) && ((f.op === "+" && f.ans <= n) || (f.op === "-" && f.x <= n));
+const teen = (f) => plain(f) && ((f.op === "+" && (f.x === 10 || f.y === 10) && f.ans <= 20) || (f.op === "-" && f.x > 10 && f.x <= 20 && f.ans === 10));
+// Crossing 10: the ones make more than a ten (8 + 5, 13 + 9), or taking away needs to break one
+// (13 − 4, 20 − 1). 9 + 1 and 13 + 7 only reach it.
+const crosses = (f) => (f.op === "+" ? (f.x % 10) + (f.y % 10) > 10 : f.x > 10 && f.y % 10 > f.x % 10);
 const times = (set) => (f) => f.op === "×" && (set.includes(f.x) || set.includes(f.y)) && f.x <= 10 && f.y <= 10;
 const divide = (set) => (f) => f.op === "÷" && set.includes(f.y) && f.ans <= 10;
+const tens = (f) => f.op === "×" && Math.max(f.x, f.y) >= 20;
 const big = (f) => (f.op === "×" && (f.x > 10 || f.y > 10)) || (f.op === "÷" && (f.y > 10 || f.ans > 10));
+const is = (op) => (f) => f.op === op;
+const any = (...tests) => (f) => tests.some((t) => t(f));
+const hidden = (f) => !!f.blank;
 
 export const BANDS = {
-  sprout: {
-    label: "Sprout", grades: "Kindergarten–1st", hearts: 7, fluentMs: 4000,
+  // The Counting Cellar.
+  kinder: {
+    label: "Kindergarten", grade: 0, hearts: 7, fluentMs: 4000,
+    facts: () => facts().concat(kinderHidden()),
     levels: [
-      { name: "Within 5", has: within(5) },
+      { name: "Within 5, with zero", has: within(5) },
       { name: "Within 10", has: within(10) },
-      { name: "10 and some more", has: teen },
-      { name: "Within 20", has: within(20) }
+      { name: "Make 10 and number bonds", has: (f) => hidden(f) && f.fact.ans <= 10 },
+      { name: "10 and some more", has: any(teen, (f) => hidden(f) && f.x === 10) }
     ]
   },
-  apprentice: {
-    label: "Apprentice", grades: "2nd–3rd", hearts: 5, fluentMs: 4000,
+  // The Balance Hall.
+  first: {
+    label: "1st grade", grade: 1, hearts: 7, fluentMs: 4000,
+    facts: () => facts().concat(balanceFacts(), firstHidden(), twoDigitFacts()),
     levels: [
-      // ± within 20 runs alongside ×, so a 3rd grader still shaky on teen subtraction isn't
-      // locked out of multiplication, the grade's main goal. It keeps coming up as new,
-      // learning and review facts, and still counts toward opening the next stratum.
-      { name: "Add and subtract within 20", has: within(20), alongside: true },
-      { name: "× 2, 5 and 10", has: times([2, 5, 10]) },
-      { name: "÷ 2, 5 and 10", has: divide([2, 5, 10]) },
-      { name: "× 3 and 4", has: times([3, 4]) },
-      { name: "÷ 3 and 4", has: divide([3, 4]) },
-      { name: "× 6, 7, 8 and 9", has: times([6, 7, 8, 9]) },
-      { name: "÷ 6, 7, 8 and 9", has: divide([6, 7, 8, 9]) },
+      // Within 10 and 10 and some more (10 + 6, 16 − 6) are the Cellar's: here, the rest of the
+      // teens (13 + 4, 17 − 5).
+      { name: "Within 20, not crossing 10", has: any((f) => within(20)(f) && !within(10)(f) && !teen(f) && !crosses(f), inSet("Compare to 10"), inSet("The other side")) },
+      { name: "Crossing 10", has: any((f) => within(20)(f) && crosses(f), inSet("Compare sums")) },
+      { name: "Missing numbers and the equal sign", has: any(hidden, inSet("Balance both sides")) },
+      { name: "Add and subtract tens", has: any(twoLevel("Add tens", "Subtract tens", "10 more", "10 less", "Add tens to a number"), inSet("Compare to 100")) }
+    ]
+  },
+  // The Crystal Mines: two-digit ± within 100, adding and subtracting mixed, then regrouping,
+  // then 10 and 100 more or less within 1000.
+  second: {
+    label: "2nd grade", grade: 2, hearts: 5, fluentMs: 6000, facts: twoDigitFacts,
+    levels: [
+      { name: "Add and subtract, no regrouping", has: twoLevel("Add ones", "Add tens and ones", "Subtract, no regrouping") },
+      { name: "Add and subtract, regrouping", has: twoLevel("Add and regroup", "Subtract and regroup") },
+      { name: "10 and 100 more or less", has: twoLevel("10 more, 10 less to 1000", "100 more, 100 less") }
+    ]
+  },
+  // The Tables Tower: × and ÷ only, in the school's order, then the rest of 3rd grade.
+  third: {
+    label: "3rd grade", grade: 3, hearts: 5, fluentMs: 4000,
+    facts: () => facts().concat(timesTens(), fractionFacts(), roundFacts(), rectFacts()),
+    levels: [
+      { name: "× 0, 1, 2, 5 and 10", has: times([0, 1, 2, 5, 10]) },
+      { name: "÷ 1, 2, 5 and 10", has: divide([1, 2, 5, 10]) },
+      { name: "× 3, 4 and 6", has: times([3, 4, 6]) },
+      { name: "÷ 3, 4 and 6", has: divide([3, 4, 6]) },
+      { name: "× 7, 8 and 9", has: times([7, 8, 9]) },
+      { name: "÷ 7, 8 and 9", has: divide([7, 8, 9]) },
+      { name: "× tens", has: tens },
+      { name: "Fractions", has: is("/") },
+      { name: "Rounding", has: is("≈") },
+      { name: "Area and perimeter", has: is("▭") },
       { name: "× and ÷ 11 and 12", has: big }
     ]
   },
-  // The Balance Hall (K–2nd): comparing with < = > (Chompers) and balancing equations (the
-  // Equal Twins). A band of its own, picked by picking the Wing.
-  balance: { label: "Balance", grades: "Kindergarten–2nd", unlock: 0.5, hearts: 7, fluentMs: 4000, facts: balanceFacts, levels: BALANCE_LEVELS },
-  // A strand, not a band: the coin problems Trollar asks, from whichever Wing he's in. It has
-  // its own levels and records, and nobody plays it as their band.
   // Strands open their next level at half learned: they're asked one floor a run, so 70% kept
   // Trollar on pennies for runs on end.
-  coins: { label: "Coins", strand: true, unlock: 0.5, hearts: 7, fluentMs: 5000, facts: coinFacts, levels: COIN_LEVELS },
-  // Two-digit + and − within 100 (2nd grade), asked by Haberhasher in the Tables Tower.
-  place: { label: "Two-digit", strand: true, unlock: 0.5, hearts: 5, fluentMs: 6000, facts: twoDigitFacts, levels: TWO_LEVELS }
+  // Coins in the Cellar (K): find the coin, and what each is worth.
+  coinsK: { label: "Coins", strand: true, unlock: 0.5, hearts: 7, fluentMs: 5000, facts: coinFacts, levels: COIN_LEVELS.slice(0, 2) },
+  // Counting coins in the Mines (2nd grade; 1st grade's counting comes along).
+  coins: { label: "Counting coins", strand: true, unlock: 0.5, hearts: 5, fluentMs: 5000, facts: coinFacts,
+    levels: COIN_LEVELS.slice(2).map((l) => ({ name: l.name, has: (f) => !f.find && !COIN_LEVELS[1].has(f) && l.has(f) })) },
+  // Which is more (K): Chompers in the Cellar.
+  more: { label: "Which is more", strand: true, unlock: 0.5, hearts: 7, fluentMs: 4000, facts: moreFacts, levels: MORE_LEVELS }
 };
 export const UNLOCK = 0.7;
 const BOX_MAX = 4;
 // Review spacing by box: a box-3 fact comes back after 10 minutes, box 4 after a day.
 const DUE_MS = { 3: 10 * 60e3, 4: 24 * 3600e3 };
 
-// One key per fact. Turnarounds share a key for + and × (3 + 4 is 4 + 3); − and ÷ don't.
+// One key per fact. Turnarounds share a key for + and × (3 + 4 is 4 + 3); − and ÷ don't. Facts
+// that carry a key of their own (coins, comparing, balancing, □ facts, fractions, rounding,
+// rectangles) keep it.
 export function keyOf(f) {
-  if (f.op === "¢" || f.op === "○" || f.op === "=") return f.key;
+  if (f.key && !"+-×÷".includes(f.key[0])) return f.key;
   if (f.op === "+" || f.op === "×") return f.op + Math.min(f.x, f.y) + "," + Math.max(f.x, f.y);
   return f.op + f.x + "," + f.y;
 }
 // A problem for a key, turned around half the time for + and ×.
 export function factOf(key, rnd) {
-  if (key[0] === "¢") return coinFactOf(key);
-  if (key[0] === "○" || key[0] === "=") return balanceFactOf(key);
+  const own = { "¢": coinFactOf, "○": balanceFactOf, "=": balanceFactOf, "□": hiddenFactOf, "M": moreFactOf, "/": fractionFactOf, "≈": roundFactOf, "▭": rectFactOf }[key[0]];
+  if (own) return own(key, rnd);
   const op = key[0], [a, b] = key.slice(1).split(",").map(Number);
   const flip = (op === "+" || op === "×") && (rnd || Math.random)() < 0.5;
   const x = flip ? b : a, y = flip ? a : b;
@@ -97,13 +137,11 @@ export function pool(bandKey) {
 export function learned(rec) { return !!rec && rec.b >= 3; }
 export function mastered(rec, fluentMs) { return !!rec && rec.b >= BOX_MAX && rec.ms > 0 && rec.ms < fluentMs; }
 
-// The highest open level: each level opens once 70% of the one before is learned, or right
-// away after an alongside level.
+// The highest open level: each level opens once 70% of the one before is learned.
 export function openLevel(bandKey, recs) {
   const band = BANDS[bandKey], p = pool(bandKey);
   let L = 0;
   while (L < band.levels.length - 1) {
-    if (band.levels[L].alongside) { L++; continue; }
     const here = p.filter((f) => f.level === L);
     const done = here.filter((f) => learned(recs[f.key])).length;
     if (!here.length || done / here.length < (band.unlock || UNLOCK)) break;
@@ -154,6 +192,7 @@ export const SKIP_PROBES = 5, SKIP_WINDOW = 6, MAX_LEAP = 4;
 export function fluentTime(bandMs, answer) { return bandMs + 1000 * Math.max(0, String(answer).length - 1); }
 // How hard a fact is inside its level: its answer, and a bit more for crossing ten.
 function hardness(f) {
+  if (!"+-×÷".includes(f.key[0])) return f.ans;
   const [a, b] = String(f.key).slice(1).split(",").map((n) => parseInt(n, 10));
   if (f.op === "+" && a < 10 && b < 10 && a + b > 10) return f.ans + 6;
   if (f.op === "-" && a > 10 && b % 10 > a % 10) return a + 6;
@@ -180,12 +219,14 @@ export function frontier(bandKey, recs) {
 }
 // A probe: a fact not learned yet from `leap` tiers above the frontier (1 by default; the top
 // tier at most), or null when there's none.
-export function probeKey(bandKey, recs, rnd, recent, avoidAns, leap) {
+// asks: the kinds of problem the monster asks (traits.js asks), as a test on an operation.
+export function probeKey(bandKey, recs, rnd, recent, avoidAns, leap, asks) {
   const t = tiers(bandKey), fr = frontier(bandKey, recs);
   if (fr + 1 >= t.length) return null;
   const i = Math.min(t.length - 1, fr + Math.max(1, leap || 1));
-  const ansOf = (k) => { const f = pool(bandKey).find((x) => x.key === k) || {}; return f.op + " " + f.ans; };
-  let fresh = t[i].filter((k) => !learned(recs[k]) && !(recent || []).includes(k));
+  const factAt = (k) => pool(bandKey).find((x) => x.key === k) || {};
+  const ansOf = (k) => { const f = factAt(k); return f.op + " " + f.ans; };
+  let fresh = t[i].filter((k) => !learned(recs[k]) && !(recent || []).includes(k) && (!asks || asks(factAt(k).op)));
   const varied = fresh.filter((k) => !(avoidAns || []).includes(ansOf(k)));
   if (varied.length) fresh = varied;
   return fresh.length ? fresh[Math.floor((rnd || Math.random)() * fresh.length)] : null;
@@ -203,21 +244,26 @@ export function skipTo(bandKey, recs, upto, now, fluentMs) {
 }
 
 // The next fact's key. opts: { now, rnd, recent: [keys] (not again so soon), retry: key due now
-// or null, op: the monster's operation, preferred 70% of the time when it has facts here,
-// like: a test on a key for facts the monster asks more often (a trait), also 70% }.
+// or null, asks: a test on an operation for the kinds of problem the monster asks at all
+// (traits.js asks: Chompers only compares), op: the monster's operation, preferred 70% of the
+// time when it has facts here, like: a test on a key for facts the monster asks more often (a
+// trait), also 70% }.
 // About 60% learning facts (seen, box 0–2, weighted to box 0 and the longest unseen), 25%
 // review facts that are due, 15% new ones (from the newest open level first).
 export function choose(bandKey, recs, opts) {
   const rnd = opts.rnd || Math.random, now = opts.now, recent = opts.recent || [];
   if (opts.retry) return opts.retry;
   const L = openLevel(bandKey, recs);
-  let open = pool(bandKey).filter((f) => f.level <= L && !recent.includes(f.key));
-  if (!open.length) open = pool(bandKey).filter((f) => f.level <= L);
+  let open = asked(bandKey, L, opts.asks).filter((f) => !recent.includes(f.key));
+  if (!open.length) open = asked(bandKey, L, opts.asks);
   // Not the same kind of problem with the same answer as the last couple (opts.avoidAns, as
   // "op ans" like "- 10"), when there's anything else: the teen subtraction facts (17 − 7,
   // 15 − 5, 12 − 2) all equal 10 and came up in a row. A different kind (3 + 7) is fine.
   const varied = open.filter((f) => !(opts.avoidAns || []).includes(f.op + " " + f.ans));
   if (varied.length) open = varied;
+  // New facts come from everything open when the monster's own operation has none left, so a
+  // new level of another kind (fractions, under Timesaur) still arrives.
+  const allFresh = open.filter((f) => !recs[f.key] || !recs[f.key].n);
   if (opts.op) {
     const mine = open.filter((f) => f.op === opts.op);
     if (mine.length && rnd() < 0.7) open = mine;
@@ -240,7 +286,8 @@ export function choose(bandKey, recs, opts) {
     const other = open.filter((f) => !String(f.ans).includes(String(opts.digit)));
     if (other.length) open = other;
   }
-  const fresh = open.filter((f) => !recs[f.key] || !recs[f.key].n);
+  let fresh = open.filter((f) => !recs[f.key] || !recs[f.key].n);
+  if (!fresh.length) fresh = allFresh;
   const learning = open.filter((f) => recs[f.key] && recs[f.key].n && recs[f.key].b <= 2);
   const due = open.filter((f) => { const r = recs[f.key]; return r && r.b >= 3 && now - r.t >= DUE_MS[r.b]; });
   // Deeper in a Wing (opts.depth), more of the newest problems: 15% at depth 1, up to 35%.
@@ -250,13 +297,9 @@ export function choose(bandKey, recs, opts) {
   let roll = rnd() * groups.reduce((s, [, w]) => s + w, 0), pick = groups[0][0];
   for (const [g, w] of groups) { if (roll < w) { pick = g; break; } roll -= w; }
   if (pick === fresh) {
-    // From the newest level, or half the time from a level running alongside (± within 20 in
-    // Apprentice), so its new facts keep coming while each × level opens.
-    const levels = BANDS[bandKey].levels, along = fresh.filter((f) => levels[f.level].alongside);
-    let from = fresh.filter((f) => !levels[f.level].alongside);
-    if (!from.length || (along.length && rnd() < 0.5)) from = along;
-    const newest = Math.max(...from.map((f) => f.level));
-    const top = from.filter((f) => f.level === newest);
+    // From the newest level.
+    const newest = Math.max(...fresh.map((f) => f.level));
+    const top = fresh.filter((f) => f.level === newest);
     return top[Math.floor(rnd() * top.length)].key;
   }
   if (pick === learning) {
@@ -274,7 +317,7 @@ export function choose(bandKey, recs, opts) {
 // one of the last few; the monster's operation preferred. Null when there's none.
 export function spellKey(bandKey, recs, opts) {
   const rnd = opts.rnd || Math.random, recent = opts.recent || [], L = openLevel(bandKey, recs);
-  let ok = pool(bandKey).filter((f) => f.level <= L && "+-×÷".includes(f.op) && f.ans >= 0 && f.ans <= 9 && learned(recs[f.key]) && !recent.includes(f.key));
+  let ok = asked(bandKey, L, opts.asks).filter((f) => "+-×÷".includes(f.key[0]) && f.ans >= 0 && f.ans <= 9 && learned(recs[f.key]) && !recent.includes(f.key));
   const varied = ok.filter((f) => !(opts.avoidAns || []).includes(f.op + " " + f.ans));
   if (varied.length) ok = varied;
   const mine = ok.filter((f) => f.op === opts.op);
@@ -284,13 +327,28 @@ export function spellKey(bandKey, recs, opts) {
 
 // Monster HP (DESIGN.md §5.5): the average answer of what this player is actually being asked
 // (the open levels, with the monster's operation preferred) × its hits. app.js scales it by depth.
+// A few big answers (rounding to 100, 7 × 90) would make every fight long, so each answer counts
+// at most 3 times the middle one.
 export function monsterHP(m, bandKey, recs) {
-  const L = openLevel(bandKey, recs), open = pool(bandKey).filter((f) => f.level <= L);
+  const L = openLevel(bandKey, recs), open = asked(bandKey, L, asksOf(m));
   const mine = open.filter((f) => f.op === m.op);
   // A monster that hides a number (m.blank, Quizard) is hit by the hidden number: on average,
   // the mean of the fact's two numbers.
-  const val = (f) => { if (!m.blank || f.op === "¢") return f.ans; const [a, b] = f.key.slice(1).split(",").map(Number); return (a + b) / 2; };
-  const avg = (fs) => fs.reduce((s, f) => s + val(f), 0) / fs.length;
+  const val = (f) => { if (!m.blank || !"+-×÷".includes(f.key[0])) return f.ans; const [a, b] = f.key.slice(1).split(",").map(Number); return (a + b) / 2; };
+  const avg = (fs) => { const v = fs.map(val).sort((a, b) => a - b), cap = Math.max(10, 3 * v[v.length >> 1]); return v.reduce((s, x) => s + Math.min(x, cap), 0) / v.length; };
   const mean = mine.length ? avg(mine) * 0.7 + avg(open) * 0.3 : avg(open);
   return Math.max(10, Math.round(mean * m.hits));
+}
+// The facts open to a monster: the open levels' facts of the kinds it asks. With none open (the
+// Equal Twins before any balancing is), its kind from the lowest level that has it; with none at
+// all, everything open.
+function asked(bandKey, L, asks) {
+  const open = pool(bandKey).filter((f) => f.level <= L);
+  if (!asks) return open;
+  const mine = open.filter((f) => asks(f.op));
+  if (mine.length) return mine;
+  const kind = pool(bandKey).filter((f) => asks(f.op));
+  if (!kind.length) return open;
+  const low = Math.min(...kind.map((f) => f.level));
+  return kind.filter((f) => f.level === low);
 }

@@ -24,7 +24,7 @@ function fakeStorage(init) {
   s.upgrade();
   const st = s.settings("default");
   assert.deepEqual(st.ops, ["×", "÷"]); assert.equal(st.diff, "hard"); assert.equal(st.timer, true); assert.equal(st.sfx, true);
-  assert.equal(st.band, "apprentice", "a player who practiced × or ÷ starts in Apprentice");
+  assert.equal(st.band, "third", "a player who practiced × or ÷ starts in 3rd grade");
   assert.equal(s.player("default").get("best", 0), 4);
   assert.equal(ls.getItem("sumgeon"), null);
   // Running it again changes nothing.

@@ -21,10 +21,10 @@ export var STORAGE_VERSION = 2;
 // "moments": Hero Moments (moments.js): each hero's quip deck and the quips heard, heroes waiting
 // for their debut, and the chance building toward the next moment.
 export var OWN_KEYS = ["settings", "best", "facts", "heroes", "wings", "bestiary", "dungeon", "spells", "told", "moments"];
-// band: "sprout" or "apprentice" (learn.js BANDS); start: the band opened from the start; grade:
+// band: a grade band, "kinder" to "third" (learn.js BANDS); start: the band opened from the start; grade:
 // 0 = K … 5, picked by the player (wings.js withGrade), missing until they pick. ops and diff are the prototype's, kept only to
 // pick a band for a player who had them.
-export var DEFAULT_SETTINGS = { band: "sprout", ops: ["+", "-"], diff: "easy", timer: false, sfx: true, voice: true };
+export var DEFAULT_SETTINGS = { band: "kinder", ops: ["+", "-"], diff: "easy", timer: false, sfx: true, voice: true };
 
 export function profilePrefix(id) { return DEVICE + "@" + id + ":"; }
 
@@ -81,7 +81,7 @@ export function openStore(ls) {
         if (p.get("settings", null) == null) {
           var s = Object.assign({}, DEFAULT_SETTINGS);
           if (Array.isArray(o.ops) && o.ops.length) s.ops = o.ops;
-          if (s.ops.some(function (x) { return x === "×" || x === "÷"; })) s.band = "apprentice";
+          if (s.ops.some(function (x) { return x === "×" || x === "÷"; })) s.band = "third";
           if (o.diff) s.diff = o.diff;
           if (typeof o.timer === "boolean") s.timer = o.timer;
           p.set("settings", s);
@@ -127,7 +127,7 @@ export function openStore(ls) {
     settings: function (id) {
       var saved = player(id).get("settings", {}) || {}, s = Object.assign({}, DEFAULT_SETTINGS, saved);
       // Before bands: a player who practiced × or ÷ starts in Apprentice.
-      if (!saved.band && Array.isArray(saved.ops) && saved.ops.some(function (o) { return o === "×" || o === "÷"; })) s.band = "apprentice";
+      if (!saved.band && Array.isArray(saved.ops) && saved.ops.some(function (o) { return o === "×" || o === "÷"; })) s.band = "third";
       return s;
     }
   };

@@ -37,15 +37,21 @@ const pile = pileOf(q2, rnd);
 assert.equal(pile.filter((c) => c.k === "q").length, 2);
 assert.deepEqual(pileOf(dimeNickel3).map((c) => c.k).join(""), "dnppp", "counted biggest first, heads up");
 // Levels open in teaching order: find the coin, each coin's worth, then counting.
-const p = pool("coins");
-assert.equal(p.length, fs.length);
-assert.deepEqual(COIN_LEVELS.map((_, i) => p.filter((f) => f.level === i).length), [36, 8, 5, 9, 29, 47]);
-assert.equal(openLevel("coins", {}), 0);
-assert.match(choose("coins", {}, { now: 0, rnd: () => 0.5 }), /^¢\?[qdnp]:/, "a new player finds coins");
+// The kindergarten coins (find the coin, each coin's worth) are the Cellar's strand; counting
+// them is the Mines' (pennies, then nickels, dimes and quarters).
+const pk = pool("coinsK"), pc = pool("coins");
+assert.equal(pk.length + pc.length, fs.length, "every coin fact in one strand");
+assert.deepEqual([0, 1].map((i) => pk.filter((f) => f.level === i).length), [36, 8]);
+assert.deepEqual([0, 1, 2, 3].map((i) => pc.filter((f) => f.level === i).length), [5, 9, 29, 47]);
+assert.ok(pc.every((f) => !factOf(f.key).find && factOf(f.key).q.includes("+")), "the Mines only count coins");
+assert.equal(COIN_LEVELS.length, 6);
+assert.equal(openLevel("coinsK", {}), 0);
+assert.match(choose("coinsK", {}, { now: 0, rnd: () => 0.5 }), /^¢\?[qdnp]:/, "a new player finds coins");
+assert.match(choose("coins", {}, { now: 0, rnd: () => 0.5 }), /^¢0,0,0,\d$/, "counting starts with pennies");
 // Half the finding learned opens "Each coin" (strands open at 50%, not 70%).
 const recs = {};
-p.filter((f) => f.level === 0).slice(0, 18).forEach((f) => (recs[f.key] = { b: 3, n: 2, c: 2, ms: 2000, t: 0 }));
-assert.equal(openLevel("coins", recs), 1);
+pk.filter((f) => f.level === 0).slice(0, 18).forEach((f) => (recs[f.key] = { b: 3, n: 2, c: 2, ms: 2000, t: 0 }));
+assert.equal(openLevel("coinsK", recs), 1);
 // Drawing and words.
 const s = coinsSvg(dimeNickel3.coins);
 assert.ok(s.startsWith("<svg") && (s.match(/<circle/g) || []).length >= 5 && !/undefined|NaN/.test(s));

@@ -1,4 +1,7 @@
 import { coinsSvg, coinFact, findFact, coinOf, pileOf, COINS } from "./coins.js";
+import { unitName, rectSvg, fractionFact, roundFact, rectFact } from "./third.js";
+import { hiddenFact } from "./missing.js";
+import { moreFact } from "./balance.js";
 
 // Hints (DESIGN.md §5.3): the models classrooms use now, with the classroom's words, and a line
 // for grown-ups who learned it another way. No DOM: returns { model, say, grownups } where model
@@ -221,9 +224,150 @@ function balanceHint(f, worked) {
     grownups: "The equal sign means both sides are the same amount, not \"the answer comes next\". Kids work out the side they know, then find what makes the other side match." };
 }
 
+// Which is more (K): line the dots up, and the longer row is more.
+function moreHint(f, worked) {
+  const model = svg(12 + 10 * 17, 44, dotRow(12, [[f.x, C.a]]) + dotRow(32, [[f.y, C.b]]), `${f.x} dots and ${f.y} dots`);
+  return { model, say: `Line them up: the longer row is more. More = ${worked ? f.ans : "?"}`,
+    grownups: "Which is more: kids line up two groups and see which row is longer, before they compare with the < and > signs in 1st grade." };
+}
+
+// A number bond: the whole on top, its two parts below, the hidden part a glowing □.
+function bond(whole, part, open) {
+  const ring = (cx, cy, t, glow) => `<circle cx="${cx}" cy="${cy}" r="17" fill="none" stroke="${glow ? C.a : C.line}" stroke-width="3"${glow ? ' stroke-dasharray="4 3"' : ""}/><text x="${cx}" y="${cy + 6}" text-anchor="middle" fill="${C.ink}" font-size="17" font-weight="900">${t}</text>`;
+  const s = `<path d="M75 36 L45 66 M85 36 L115 66" stroke="${C.line}" stroke-width="3"/>` + ring(80, 20, whole) + ring(40, 78, part) + ring(120, 78, open, true);
+  return svg(160, 98, s, `number bond: ${whole} is ${part} and ${open}`);
+}
+// Missing-number facts of their own (missing.js hiddenFact): make 10 on a ten-frame with the
+// empty spaces to count, number bonds, and teen numbers as 10 and some more. Others (1st grade's
+// 8 + □ = 13, and Quizard's) use the fact that works it out: 13 − 8.
+function hiddenHint(f, worked) {
+  const { x } = f, whole = f.fact.ans, end = worked ? f.ans : "?", line = `${x} + □ = ${whole}, □ = ${end}`;
+  if (f.op === "+" && whole === 10) {
+    return { model: svg(FRAME_W, FRAME_H, tenFrame(0, 0, fill(x, C.a).concat(worked ? fill(f.ans, C.b) : [])), `ten-frame: ${x} and the empty spaces`),
+      say: `How many more make 10? Count the empty spaces. ${line}`,
+      grownups: "Make 10: kids find the partner that fills a ten-frame (7 and 3). These partners are what make 10 and adding within 20 build on." };
+  }
+  if (f.op === "+" && x === 10) {
+    return { model: svg(FRAME_W * 2 + 10, FRAME_H, tenFrame(0, 0, fill(10, C.a)) + tenFrame(FRAME_W + 10, 0, fill(f.ans, C.b)), `${whole} is 10 and ${f.ans}`),
+      say: `${whole} is 10 and some more. ${line}`,
+      grownups: "Teen numbers as 10 and some more: 14 is a full ten-frame and 4 more, so 10 + 4 = 14." };
+  }
+  if (f.op === "+" && whole < 10) {
+    return { model: bond(whole, x, worked ? f.ans : "?"),
+      say: `${whole} is ${x} and how many more? ${line}`,
+      grownups: "Number bonds: a whole and its two parts. Kids learn every way to break apart numbers to 10 (6 is 4 and 2), which is how they'll add and subtract later." };
+  }
+  return hintFor(f.inverse, worked);
+}
+
+// Zero and one (K and 3rd grade).
+function zeroHint(f, worked) {
+  const { op, x, y, ans } = f, end = worked ? ans : "?";
+  if (op === "+") {
+    const n = x || y;
+    return { model: svg(FRAME_W, FRAME_H, tenFrame(0, 0, fill(n, C.a)), `${n} dots and none more`),
+      say: `Adding zero: ${n} and none more. ${x} + ${y} = ${end}`,
+      grownups: "Adding zero: none more, so the number stays the same." };
+  }
+  if (op === "-") {
+    return { model: svg(FRAME_W, FRAME_H, tenFrame(0, 0, fill(x, C.a), x - y), `${x} dots, take away ${y}`),
+      say: (y === 0 ? `Take away none: they're all still there.` : `Take away all of them: none are left.`) + ` ${x} − ${y} = ${end}`,
+      grownups: "Zero in subtraction: taking away none leaves them all; taking away all of them leaves none." };
+  }
+  // × 0 and 0 ÷ n: empty groups.
+  const groups = Math.max(1, op === "×" ? x || y : y);
+  let s = "";
+  for (let i = 0; i < groups; i++) s += `<circle cx="${16 + i * 30}" cy="16" r="12" fill="none" stroke="${C.line}" stroke-width="2.5"/>`;
+  const model = svg(groups * 30 + 2, 32, s, `${groups} empty groups`);
+  if (op === "×") return { model, say: `Zero groups, or groups with nothing in them: nothing at all. ${x} × ${y} = ${end}`,
+    grownups: "Times zero: zero groups of 7, or 7 groups of zero, is nothing at all." };
+  return { model, say: `Share nothing into ${y} groups: nothing in each. ${x} ÷ ${y} = ${end}`,
+    grownups: "Zero divided by a number: sharing nothing out leaves nothing in each group. (Dividing by zero isn't asked: it has no answer.)" };
+}
+
+// Three-digit numbers, 10 or 100 more or less (2nd grade): a place-value chart, with the place
+// that changes in coral.
+function placeChart(n, changed) {
+  const ds = String(n).padStart(3, "0").split(""), names = ["hundreds", "tens", "ones"];
+  let s = "";
+  ds.forEach((d, i) => {
+    const x = 6 + i * 62, on = i === changed;
+    s += `<rect x="${x}" y="4" width="56" height="62" rx="6" fill="none" stroke="${on ? C.b : C.line}" stroke-width="${on ? 3.5 : 2}"/>`;
+    s += `<text x="${x + 28}" y="44" text-anchor="middle" fill="${on ? C.b : C.ink}" font-size="30" font-weight="900">${d}</text>`;
+    s += `<text x="${x + 28}" y="60" text-anchor="middle" fill="${C.muted}" font-size="10" font-weight="800">${names[i]}</text>`;
+  });
+  return svg(194, 70, s, `${n} in hundreds, tens and ones`);
+}
+function hundredsHint(f, worked) {
+  const { op, x, y, ans } = f, n = op === "+" ? Math.max(x, y) : x, step = op === "+" ? Math.min(x, y) : y, end = worked ? ans : "?";
+  const tens = Math.floor(n / 10) % 10, place = step === 100 ? "hundreds" : "tens", more = op === "+";
+  const grownups = "10 more and 100 more: with place value, only one digit changes (345 + 10 = 355). When the tens are full (395 + 10), 10 tens make a new hundred.";
+  let say;
+  if (step === 10 && more && tens === 9) say = `10 more: 9 tens and 1 more ten is 10 tens, a new hundred.`;
+  else if (step === 10 && !more && tens === 0) say = `10 less: there are no tens, so break a hundred into 10 tens.`;
+  else say = `${step} ${more ? "more" : "less"}: the ${place} go ${more ? "up" : "down"} by 1.`;
+  return { model: placeChart(n, step === 100 ? 0 : 1), say: `${say} ${x} ${op === "+" ? "+" : "−"} ${y} = ${end}`, grownups };
+}
+
+// × tens (3rd grade): 4 × 30 is 4 rows of 3 tens (rods), 12 tens.
+function timesTensHint(f, worked) {
+  const a = Math.min(f.x, f.y), T = Math.max(f.x, f.y), t = T / 10;
+  let s = "";
+  for (let r = 0; r < a; r++) for (let c = 0; c < t; c++) s += `<rect x="${4 + c * 9}" y="${4 + r * 26}" width="6" height="22" rx="1.5" fill="${C.a}"/>`;
+  return { model: svg(t * 9 + 6, a * 26 + 4, s, `${a} rows of ${t} tens`),
+    say: `${a} × ${t} tens is ${a * t} tens${worked ? ", " + f.ans : ""}. ${f.x} × ${f.y} = ${worked ? f.ans : "?"}`,
+    grownups: "Times tens: 4 × 30 is 4 groups of 3 tens, which is 12 tens, 120. It's the fact 4 × 3 in tens, place value rather than \"add a zero\"." };
+}
+
+// Fractions (3rd grade): two fraction bars the same length, the same amount shaded.
+function fractionHint(f, worked) {
+  const wholes = Math.max(1, Math.ceil(f.a / f.b), Math.ceil(f.ans / f.d)), W = 220 / wholes;
+  const bar = (y, parts, shaded, color, dashed) => {
+    let s = "";
+    for (let w = 0; w < wholes; w++) for (let i = 0; i < parts; i++) {
+      const k = w * parts + i, x = 6 + w * W + i * (W / parts);
+      s += `<rect x="${x}" y="${y}" width="${W / parts}" height="26" fill="${k < shaded ? color : "none"}" fill-opacity="${dashed ? 0.35 : 1}" stroke="${C.ink}" stroke-width="2"/>`;
+    }
+    return s;
+  };
+  const model = svg(232, 70, bar(4, f.b, f.a, C.a) + bar(38, f.d, (f.a / f.b) * f.d, C.b, !worked), `fraction bars`);
+  const unit = unitName(f.d);
+  return { model, say: `The same amount is shaded. Count the shaded ${unit}: □ = ${worked ? f.ans : "?"}`,
+    grownups: "Equal fractions with fraction bars: two bars the same length, cut into different pieces. 1/2 and 2/4 shade the same amount, so they're equal. A whole is all its pieces: 4/4 = 1." };
+}
+
+// Rounding (3rd grade): where the number sits on a number line between two tens (or hundreds).
+function roundHint(f, worked) {
+  const lo = Math.floor(f.n / f.to) * f.to, hi = lo + f.to, mid = lo + f.to / 2, x = (n) => 14 + (n - lo) / f.to * 232;
+  let s = `<line x1="8" y1="40" x2="252" y2="40" stroke="${C.line}" stroke-width="3" stroke-linecap="round"/>`;
+  for (const [n, col] of [[lo, C.ink], [mid, C.muted], [hi, C.ink]]) s += `<line x1="${x(n)}" y1="33" x2="${x(n)}" y2="47" stroke="${col}" stroke-width="2.5"/><text x="${x(n)}" y="64" text-anchor="middle" fill="${col}" font-size="13" font-weight="800">${n}</text>`;
+  s += `<circle cx="${x(f.n)}" cy="40" r="6" fill="${C.b}"/><text x="${x(f.n)}" y="22" text-anchor="middle" fill="${C.b}" font-size="14" font-weight="900">${f.n}</text>`;
+  const where = f.n === mid ? "is halfway, so it rounds up" : f.n > mid ? "is past halfway, so it rounds up" : "is before halfway, so it rounds down";
+  return { model: svg(260, 70, s, `${f.n} on a number line from ${lo} to ${hi}`),
+    say: `${f.n} is between ${lo} and ${hi}. Halfway is ${mid}, and ${f.n} ${where}. □ = ${worked ? f.ans : "?"}`,
+    grownups: "Rounding on a number line: kids find the two tens (or hundreds) a number sits between and which one it's closer to. Halfway rounds up." };
+}
+
+// Area and perimeter (3rd grade): the rectangle with its squares, or its four sides.
+function rectHint(f, worked) {
+  const end = worked ? f.ans : "?";
+  if (f.kind === "a") return { model: rectSvg(f), say: `Count the squares, or rows × columns: ${f.h} × ${f.w} = ${end}`,
+    grownups: "Area: the squares that cover a shape. Kids count them, then see the rows and columns as multiplication." };
+  return { model: rectSvg(f), say: `Add all four sides: ${f.w} + ${f.h} + ${f.w} + ${f.h} = ${end}`,
+    grownups: "Perimeter: the distance all the way around, every side added. A rectangle's opposite sides are the same." };
+}
+
 export function hintFor(f, worked) {
   if (f.op === "¢") return coinHint(f, worked);
   if (f.op === "○" || f.op === "=") return balanceHint(f, worked);
+  if (f.op === "more") return moreHint(f, worked);
+  if (f.op === "/") return fractionHint(f, worked);
+  if (f.op === "≈") return roundHint(f, worked);
+  if (f.op === "▭") return rectHint(f, worked);
+  if (f.blank) return hiddenHint(f, worked);
+  if ((f.op === "+" || f.op === "-") && (Math.max(f.x, f.y) >= 100 || f.ans > 100)) return hundredsHint(f, worked);
+  if (f.op === "×" && Math.min(f.x, f.y) >= 2 && Math.max(f.x, f.y) >= 20) return timesTensHint(f, worked);
+  if (f.x === 0 || f.y === 0 || (f.op === "-" && f.x === f.y)) return zeroHint(f, worked);
   if ((f.op === "+" && f.ans > 20) || (f.op === "-" && f.x > 20)) return twoDigitHint(f, worked);
   const { op, x, y, ans } = f, end = (t) => (worked ? t : "?");
   if (op === "+") {
@@ -296,6 +440,9 @@ export function hintFor(f, worked) {
   }
   if (op === "×") {
     const rows = Math.min(x, y), cols = Math.max(x, y);
+    // × 1 is one group: 1 × 7 is 7.
+    if (rows === 1) return { model: array(1, cols, 0), say: `1 row of ${cols}. ${x} × ${y} = ${end(ans)}`,
+      grownups: "Times one: one group of 7 is just 7." };
     // × 10 is groups of ten: 7 × 10 is 7 tens (base-ten rods), not a break apart at 5.
     if (x === 10 || y === 10) {
       const n = x === 10 ? y : x, rods = blocks(n * 10, 4, C.a);
@@ -349,6 +496,10 @@ export function hintFor(f, worked) {
 // the grown-ups lines live (the hints in play show only the drawing and its words).
 export const STRATEGIES = [
   { title: "Ten-frame", grade: "K", f: { op: "+", x: 3, y: 4 } },
+  { title: "Adding zero", grade: "K", f: { op: "+", x: 4, y: 0 } },
+  { title: "Which is more", grade: "K", f: moreFact(7, 4) },
+  { title: "Make 10 partners", grade: "K", f: hiddenFact("+", 7, 3) },
+  { title: "Number bonds", grade: "K", f: hiddenFact("+", 4, 2) },
   { title: "Draw and cross out", grade: "K", f: { op: "-", x: 9, y: 4 } },
   { title: "10 and some more", grade: "K–1st", f: { op: "+", x: 10, y: 4 } },
   { title: "Make 10", grade: "1st", f: { op: "+", x: 8, y: 5 } },
@@ -372,7 +523,14 @@ export const STRATEGIES = [
   { title: "Take away tens and ones", grade: "2nd", f: { op: "-", x: 69, y: 26 } },
   { title: "Back to a ten", grade: "2nd", f: { op: "-", x: 52, y: 7 } },
   { title: "Count up by tens", grade: "2nd", f: { op: "-", x: 52, y: 28 } },
+  { title: "10 and 100 more", grade: "2nd", f: { op: "+", x: 345, y: 100 } },
   { title: "Compare", grade: "K–1st", f: { op: "○", l: "3 + 4", r: "8", sym: "<", ans: 8, q: "3 + 4 □ 8" } },
   { title: "Balance", grade: "1st", f: { op: "=", l: "3 + 4", r: "□ + 5", ans: 2, q: "3 + 4 = □ + 5" } },
-  { title: "Think multiplication", grade: "3rd", f: { op: "÷", x: 32, y: 8 } }
+  { title: "Think multiplication", grade: "3rd", f: { op: "÷", x: 32, y: 8 } },
+  { title: "Times zero", grade: "3rd", f: { op: "×", x: 0, y: 7 } },
+  { title: "Times tens", grade: "3rd", f: { op: "×", x: 4, y: 30 } },
+  { title: "Equal fractions", grade: "3rd", f: fractionFact(1, 2, 4) },
+  { title: "Rounding", grade: "3rd", f: roundFact(47, 10) },
+  { title: "Area", grade: "3rd", f: rectFact("a", 4, 3) },
+  { title: "Perimeter", grade: "3rd", f: rectFact("p", 4, 3) }
 ].map((s) => Object.assign(s, { f: Object.assign({ ans: { "+": s.f.x + s.f.y, "-": s.f.x - s.f.y, "×": s.f.x * s.f.y, "÷": s.f.x / s.f.y }[s.f.op] }, s.f) }));
