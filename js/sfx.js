@@ -217,6 +217,25 @@ export function slam(big) {
   });
 }
 
+// Minustaur's Charge (traits.js): a charged problem crackles as it appears, and a miss on it is
+// a thunder strike (it costs 2 hearts) instead of the plain miss.
+export function charge() {
+  play(function (t) {
+    for (var i = 0; i < 5; i++) noise(t + i * 0.045 + Math.random() * 0.02, 0.03, 0.22, "highpass", 3500 + Math.random() * 3000);
+    tone("sawtooth", 120, 118, t, 0.35, 0.05);
+    tone("square", 1800, 2600, t + 0.05, 0.08, 0.03);
+  });
+}
+export function thunder() {
+  play(function (t) {
+    noise(t, 0.08, 0.6, "highpass", 2500);
+    noise(t + 0.01, 0.12, 0.45, "bandpass", 1200);
+    tone("sawtooth", 90, 40, t + 0.05, 0.5, 0.35);
+    noise(t + 0.08, 1.1, 0.4, "lowpass", 160);
+    tone("triangle", 330, 240, t + 0.2, 0.16, 0.15);
+  });
+}
+
 // Each hero's own move, at a Hero Moment's hit (heroes.js move; slowmo.js). d: the hero's digit.
 var MOVE = {
   // Zeroic, fist-first: a rising whoosh into a punchy pow.

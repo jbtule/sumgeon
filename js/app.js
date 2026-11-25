@@ -357,7 +357,7 @@ function newProblem() {
   // Charge (Minustaur): every 4th problem on the floor, a miss costs 2 hearts.
   G.charged = charged(m, G.onFloor++);
   $("charge").hidden = !G.charged;
-  if (G.charged) say("p", PHRASE.charged, false, () => G.charged && !G.busy);
+  if (G.charged) { sfx.charge(); say("p", PHRASE.charged, false, () => G.charged && !G.busy); }
   G.cur = factOf(key);
   G.cur.probe = !!probe;
   G.recentAns = [G.cur.op + " " + G.cur.ans].concat(G.recentAns || []).slice(0, 2);
@@ -614,7 +614,7 @@ function miss(why) {
   learnFrom(false);
   // after counts down at each new problem, so 3–5 means 2–4 other problems in between.
   G.retry = G.retry.filter((r) => r.key !== G.cur.key).concat([{ key: G.cur.key, after: 3 + Math.floor(Math.random() * 3) }]);
-  sfx.miss();
+  if (cost > 1) sfx.thunder(); else sfx.miss(); // a charged miss is a thunder strike
   restartAnim($("mon"), "lunge");
   streakUI();
   setMsg(`${why} ${shownFact(G.cur, G.cur.ans)}${cost > 1 ? " ⚡ −2 hearts" : ""}`, "bad");
