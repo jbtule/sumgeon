@@ -217,6 +217,22 @@ export function slam(big) {
   });
 }
 
+// A record scratch: a Hero Moment cutting off the voice mid-line (app.js, the moments page).
+export function scratch() {
+  play(function (t) {
+    [[0, 900, 2600, 0.09], [0.09, 2600, 700, 0.11], [0.2, 800, 2200, 0.07]].forEach(function (s) {
+      var n = ctx.createBufferSource(), f = ctx.createBiquadFilter(), g = ctx.createGain();
+      n.buffer = noiseBuf;
+      f.type = "bandpass"; f.Q.value = 6; f.frequency.setValueAtTime(s[1], t + s[0]); f.frequency.exponentialRampToValueAtTime(s[2], t + s[0] + s[3]);
+      g.gain.setValueAtTime(0.0001, t + s[0]); g.gain.linearRampToValueAtTime(0.5, t + s[0] + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, t + s[0] + s[3]);
+      n.connect(f).connect(g).connect(out);
+      n.start(t + s[0]); n.stop(t + s[0] + s[3] + 0.02);
+    });
+    tone("sawtooth", 180, 520, t, 0.09, 0.06);
+    tone("sawtooth", 520, 140, t + 0.09, 0.11, 0.06);
+  });
+}
+
 // Minustaur's Charge (traits.js): a charged problem crackles as it appears, and a miss on it is
 // a thunder strike (it costs 2 hearts) instead of the plain miss.
 export function charge() {

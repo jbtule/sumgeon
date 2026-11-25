@@ -12,7 +12,7 @@ import { MON, svg } from "../js/monsters.js";
 import { QUIPS, FINALS, CRIT, TEAM_LINES, TEAM_NUMBERS, CAPTAIN_LINES, captainNames, simulate } from "../js/moments.js";
 import { playMoment, PHASES } from "../js/slowmo.js";
 import { quipLine } from "../js/lines.js";
-import { say, stopSpeech } from "../js/speech.js";
+import { say, stopSpeech, speaking } from "../js/speech.js";
 import * as sfx from "../js/sfx.js";
 
 const $ = (id) => document.getElementById(id);
@@ -118,7 +118,7 @@ async function play() {
   try {
     await playMoment({
       hero: d, partner: p, color: null, quip, speed: opts.speed, reduced: opts.reduced, gate,
-      speak: () => say("h", quipLine(quip), true),
+      speak: () => { if (speaking()) sfx.scratch(); return say("h", quipLine(quip), true); },
       from: $("ans"), to: $("mon"), room: $("stage"),
       onPhase: (p) => { $("phase").textContent = `${PHASES.indexOf(p) + 1}. ${p}`; }
     });

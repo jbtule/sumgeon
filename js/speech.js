@@ -66,7 +66,7 @@ var clips = {}, clipBase = "", player = null, finishClip = null;
 var sprites = [], spriteOf = {}, source = null;
 // The sound effects' Web Audio context (sfx.js), shared: one context is what Safari handles well.
 function ac() { return audioContext(); }
-var queue = Promise.resolve(), epoch = 0;
+var queue = Promise.resolve(), epoch = 0, pending = 0;
 // The device-voice rate each kind is spoken at.
 var RATE = { p: 0.95, m: 0.95, n: 0.95, q: 0.85, h: 1 }, PITCH = { h: 1.3 };
 
@@ -168,6 +168,8 @@ export function say(kind, text, cancel, live) {
   if (!on) return Promise.resolve();
   if (cancel) stopSpeech();
   var my = epoch;
+  pending++;
+  var done = function () { if (my === epoch) pending = Math.max(0, pending - 1); };
   queue = queue.then(function () {
     if (my !== epoch || (live && !live())) return;
     var key = clips[kind + ":" + text], hit = spriteOf[kind + ":" + text];
@@ -179,12 +181,20 @@ export function say(kind, text, cancel, live) {
       if (!ok && my === epoch) return speak(text, RATE[kind], PITCH[kind]);
     });
   });
+  queue = queue.then(done, done);
   return queue;
+}
+
+// Whether the voice is saying something, or has lines waiting: a Hero Moment that has to cut it
+// off plays a record scratch (sfx.scratch).
+export function speaking() {
+  try { if (synth && synth.speaking) return true; } catch (e) { /* no speech */ }
+  return pending > 0;
 }
 
 // Stops the clip or speech in progress and drops anything queued.
 export function stopSpeech() {
-  epoch++;
+  epoch++; pending = 0;
   queue = Promise.resolve();
   if (finishClip) finishClip(true);
   if (player) { try { player.pause(); } catch (e) {} }
