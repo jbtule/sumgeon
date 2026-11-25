@@ -19,11 +19,17 @@ export var PHRASE = {
   oops: "Oops!",
   win: "You cleared the Sumgeon!"
 };
-export function monsterName(m) { return m.n + "!"; }
-export function monsterCleared(m) { return m.n + " " + m.quip; }
-export function monsterWon(m) { return m.n + " won this round."; }
-export function heroName(h) { return h.n + "!"; }
-export function heroJoins(h) { return h.n + " joins your team!"; }
+// Names spelled the way the voice should say them. The screen keeps the real spelling.
+//   "Twodini" (a Houdini pun) is too-DEE-nee; Kokoro reads it TOO-dih-nee, and "Toodini" comes
+//   out right (checked with its espeak phonemes).
+//   "Jr." and "Mr." are said in full, not letter by letter.
+var SAY_AS = [[/\bTwodini\b/g, "Toodini"], [/\bJr\./g, "Junior"], [/\bMr\./g, "Mister"]];
+function sayAs(t) { return SAY_AS.reduce(function (s, r) { return s.replace(r[0], r[1]); }, t); }
+export function monsterName(m) { return sayAs(m.n + "!"); }
+export function monsterCleared(m) { return sayAs(m.n + " " + m.quip); }
+export function monsterWon(m) { return sayAs(m.n + " won this round."); }
+export function heroName(h) { return sayAs(h.n + "!"); }
+export function heroJoins(h) { return sayAs(h.n + " joins your team!"); }
 export function wingCleared(w) { return "You cleared " + w.name + "!"; }
 export function wingOpened(w) { return w.name + " is open!"; }
 // "Depth two!", said as a run starts below depth 1. Recorded to depth 20.

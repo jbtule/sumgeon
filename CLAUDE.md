@@ -44,6 +44,7 @@ A math-practice dungeon crawler. The player fights anthropomorphic monsters buil
 - `sfx.js` synthesizes every effect with Web Audio. The context is created on the first tap (with a moment of silence played inside it) and woken from any state but "running" on every tap, click or key, for iOS and for macOS Safari, which can leave it "interrupted". Open the game with `?audio` to see the context's state, errors and a Test sound button.
 - `speech.js` `say(kind, text)` plays a recorded clip from `audio.json` when there is one, or falls back to the device voice.
   - Kinds: `p` phrase, `m` monster line, `n` number, `q` problem.
+  - Names the voice should say differently from how they're written go in `SAY_AS` in `lines.js`: "Twodini" is said "Toodini" (too-DEE-nee, for the Houdini pun; Kokoro stresses "Twodini" up front), "Jr." is "Junior", "Mr." is "Mister". Check a spelling with Kokoro's espeak phonemes before adding it.
   - Every line the game says lives in `js/lines.js` (`PHRASE`, monster lines, and `facts()` from `problems.js`: sums and differences within 20, the 2–12 tables and their division facts, each as the problem and as "… is …"). `app.js` only says lines from there; `scripts/lines.test.mjs` fails on any other `say()`.
   - `scripts/audio/build.mjs` (patterned on Sound Box's) records each line as one whole clip with Kokoro (`af_heart`, speed 0.95). Whole clips won a listen test against stitched numbers, which sounded choppy.
     - Clip names hash model, voice, encoding, method, speed, kind and text, so a clip never changes once made.
