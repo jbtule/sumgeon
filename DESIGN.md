@@ -9,7 +9,7 @@ _Last updated 2026-11-23. Companion to `CLAUDE.md`. That file describes what the
 **Sumgeon is a math-fact dungeon crawler where your answer is your weapon.** Every problem you solve becomes an attack. The number you type flies at a monster made of numbers and symbols. The game should feel like a real game first, with practice built in. A kid should want "one more floor" without anyone asking them to do math.
 
 ### Design pillars
-1. **The answer is the attack.** Every system should support the idea that math is the player's power. Correct answers do damage, faster and streakier answers do more, and harder problems hit harder. We never add a mechanic that lets you win without doing math.
+1. **The answer is the attack.** Every system should support the idea that math is the player's power. Correct answers do damage, streaks do more, and harder problems hit harder. We never add a mechanic that lets you win without doing math.
 2. **Failure teaches and never shames.** A miss always shows the right answer, and that problem comes back later. Losing a run costs a little and gives the player something to learn from. No mocking copy and no red "WRONG" screens.
 3. **One game, ages 5 to 14.** The same dungeon and the same monsters work for a kindergartner doing 3 + 4 and an eighth-grader doing −3 × (4 − 9). Difficulty comes from *content bands*, not separate games.
 4. **Short sessions and instant start.** A floor takes 1–2 minutes and a full run about 10–15. Opening the page gets you into play within two taps.
@@ -20,14 +20,14 @@ _Last updated 2026-11-23. Companion to `CLAUDE.md`. That file describes what the
 
 ## 2. Audience and content bands
 
-The age range is 5–14 (kindergarten to 8th grade), which is too wide for one difficulty slider. The game instead has **four content bands**. Each band sets which problem types appear, the number ranges, the input method and the defaults for timer and hints. A player (or parent) picks a band, and the game adapts within it (see §5).
+The age range is 5–14 (kindergarten to 8th grade), which is too wide for one difficulty slider. The game instead has **four content bands**. Each band sets which problem types appear, the number ranges, the input method and the defaults for hints. A player (or parent) picks a band, and the game adapts within it (see §5).
 
 | Band | Ages (≈ grade) | Core skills | Defaults |
 |---|---|---|---|
-| **Sprout** | 5–7 (K–1) | How many? (dot flash); compare; add/subtract fluently within 5, then within 10, then 20; make 10; teen numbers as 10 + ones; counting on; doubles; count by 1s and 10s, then 5s; coin names, then values | No timer, word-free UI with spoken instructions, visual hints (dots, ten-frames), 7 hearts |
-| **Apprentice** | 8–9 (2–3) | Add/subtract within 100; count by 2s; arrays up to 5×5; money with $ and ¢; times tables to 10; division as an inverse fact | Timer off, hints on, 5 hearts |
-| **Adept** | 10–11 (4–5) | Multi-digit ×÷, tables to 12, fractions (equivalent, add like denominators), decimals to tenths and hundredths | Timer optional, 5 hearts |
-| **Master** | 12–14 (6–8) | Negatives, order of operations, percents, exponents and roots, one-step equations | Timer on, 5 hearts, harder bosses |
+| **Sprout** | 5–7 (K–1) | How many? (dot flash); compare; add/subtract fluently within 5, then within 10, then 20; make 10; teen numbers as 10 + ones; counting on; doubles; count by 1s and 10s, then 5s; coin names, then values | Word-free UI with spoken instructions, visual hints (dots, ten-frames), 7 hearts |
+| **Apprentice** | 8–9 (2–3) | Add/subtract within 100; count by 2s; arrays up to 5×5; money with $ and ¢; times tables to 10; division as an inverse fact | Hints on, 5 hearts |
+| **Adept** | 10–11 (4–5) | Multi-digit ×÷, tables to 12, fractions (equivalent, add like denominators), decimals to tenths and hundredths | 5 hearts |
+| **Master** | 12–14 (6–8) | Negatives, order of operations, percents, exponents and roots, one-step equations | 5 hearts, harder bosses |
 
 The current Easy, Medium and Hard settings become difficulty levels *inside* a band. The operation checkboxes become a "custom practice" option for parents and teachers (§9).
 
@@ -40,7 +40,7 @@ The current Easy, Medium and Hard settings become difficulty levels *inside* a b
 - The target player is a **pre-reader who reads numbers and symbols fluently**. Problems are plain numerals and symbols, the same as in every other band. Only the *words* need help: every instruction, button and menu gets an icon, and can be read aloud with `speechSynthesis`. Reading problems aloud is available but not needed.
 - Hearts stay, at 7 instead of 5. Losing a run is fine at this age as long as the copy is kind and the next run starts right away.
 - **No multiple choice in any band.** Every answer is typed, so the player has to work it out rather than recognize or guess it.
-- No timer by default. Pressure stops young kids from learning. (The prototype's optional countdown was removed on 2026-11-24 until there's a plan for it; the timer ideas below are parked.)
+- **No timer, in any band.** Pressure stops young kids from learning. Speed is used for two things only: judging fluency and the ★ all-fast star (§6.7). (Settled 2026-11-25; the prototype's countdown was removed on 2026-11-24.)
 - Use bigger touch targets (≥ 64 px) and fewer buttons on screen at once.
 - Show a visual model next to the numbers: dot groups for 3 + 4 and a ten-frame for make-ten.
 
@@ -56,7 +56,7 @@ What changes:
 
 | Current | Direction |
 |---|---|
-| Damage = answer; crit ×2 after a 3-streak | Keep both. Add a **speed bonus** when the timer is on (answering in the first third of the time gives +25%). This rewards fluency, not only accuracy. |
+| Damage = answer; crit ×2 after a 3-streak | Keep both. No speed bonus: speed never changes damage (§6.7). |
 | A miss costs a heart and shows the answer | Keep. Also **queue the missed problem** to come back 2–4 problems later (see §5). Getting it right the second time shows a small "Got it!" moment. |
 | The answer pops up as a number | **Your answer summons its digits**: each digit is a hero that attacks (§6.6). |
 | One monster per floor | Floors can sometimes have **two weak minions** or **an elite** variant, such as a gold-outlined Plusquito with more HP and a special rule. |
@@ -86,7 +86,7 @@ The monsters are all **operators and symbols**. Digits are on the player's side 
 ## 4. World structure: the Wings of the Sumgeon
 
 The dungeon is a map of **Wings**, shown in the game as **strata**. Each Wing has its own floor palette, monsters and boss. **Mastery unlocks Wings, not grade.** The Wings form a chain going down. A Wing unlocks the next one when its boss is beaten **and** over 60% of its facts are mastered, the same bar as the *Legend Loading…* achievement (§14.2). A kindergartner who masters her facts climbs into multiplication. A 3rd grader can't skip ahead without mastering the facts below.
-- **The grade is a starting point, not a ceiling.** When a player is created, their grade opens every Wing up to and including theirs, so a 3rd grader doesn't have to grind through kindergarten. It also sets their help defaults (read-aloud, hints, timer).
+- **The grade is a starting point, not a ceiling.** When a player is created, their grade opens every Wing up to and including theirs, so a 3rd grader doesn't have to grind through kindergarten. It also sets their help defaults (read-aloud and hints).
 - **Lower Wings are always open,** so an older player can drop back for fast, easy practice (§6.7).
 - **New content gets taught as it arrives.** The first time a kind of problem appears, the captain demonstrates it, and a new fact starts with its model shown (§5.3). That's what makes working ahead possible for a young player.
 - **There is no manual unlock.** See §9 for why nothing needs a grown-up lock.
@@ -176,7 +176,7 @@ The game should **teach first, then fade the help out** as a fact gets learned, 
 
 **First time a new *kind* of problem appears** (Quizard's □, Trollar's coins), the player's captain shows one example. It takes about 10 seconds, is read aloud, can be skipped, and is shown once per player.
 
-**Hints never punish:** no heart lost, full damage, and the timer pauses while a hint is open. A hinted solve doesn't build the crit streak and doesn't move the fact up a box, so mastery needs solves without help. Grown-ups can set hints to automatic, on tap, or off.
+**Hints never punish:** no heart lost and full damage. A hinted solve doesn't build the crit streak and doesn't move the fact up a box, so mastery needs solves without help. Grown-ups can set hints to automatic, on tap, or off.
 
 **Hints teach a strategy and never just show the answer** (the same rule as Sound Box: scaffolds help the player work it out). Strategies by problem type:
 
@@ -245,7 +245,7 @@ Inventory holds 3 items. This adds a small strategic layer without making math o
 - Keep a local high score table per band, with optional initials (no names required).
 
 ### 6.5 Daily Dungeon
-- A seeded run that is the same for everyone on the same date: 5 floors, fixed monsters, fixed modifiers such as "Timer on" or "Crits from streak 2".
+- A seeded run that is the same for everyone on the same date: 5 floors, fixed monsters, fixed modifiers such as "Crits from streak 2".
 - One attempt per day for score and unlimited practice tries. It works offline because the seed is just the date.
 
 ### 6.6 Digit heroes (the player's side)
@@ -285,13 +285,12 @@ Inventory holds 3 items. This adds a small strategic layer without making math o
 
 **Cosmetics** (unlocked with stars and achievements, looks only and never stats): hats, capes, chalk trails and arena chalk colors for your captain.
 
-### 6.7 Speed (fluency) for every player
-Fast recall is the goal of fact practice, so speed counts **whether or not the timer is on**:
-- Each fact's average answer time is already tracked, and "mastered" requires it to be fast (§5.1). An older player in a lower Wing turns easy facts into a fluency workout.
-- **Speed medals per floor** (🥉🥈🥇) by clear time, and a **personal-best time per Wing**, shown on the floor-clear card. Medals scale to the problem mix, so a Sprout floor and a Tables floor are judged fairly.
-- **A speed bonus with the timer on** (§3). Each player can turn their own timer on.
-- **A ⚡ Lightning track** in achievements (§14.4).
-- **Never sibling against sibling.** Every score, medal and best time is per player. Nothing ever shows one player's numbers beside another's, not even in the player list. A shared device must never turn into a race between a 3rd grader and a kindergartner.
+### 6.7 Speed is for fluency, not pressure
+Fast recall is the goal of fact practice, but there is no timer and speed never changes damage. Speed is used for exactly two things (settled 2026-11-25):
+- **Judging fluency.** Each fact's answer time is tracked, and a fact counts as fluent only when it's right, unhinted and quick (`fluentTime`, §5.1). Fluency drives placement, skipping ahead and moving a fact up two boxes. An older player in a lower stratum turns easy facts into a fluency workout this way.
+- **The ★ all-fast star** on each floor (§6.1): every answer right, quick and without a hint.
+
+No speed medals, clear-time records, speed bonuses, countdowns or comparisons between players.
 
 ### 6.8 Achievements, players and linking
 Achievements are in §14. Profiles ("remember players") and linking devices are in §15. Both copy sound-box-crosswords.
@@ -360,7 +359,7 @@ Hitting a monster should feel good. Today there is a shake and a damage pop. The
 **No lock, because nothing needs one.** Any gate a kid can't pass, a strong 3rd grader can: a "hard math problem" gate is a puzzle in a math game, and a hold-to-open button is a dare. So, as in Sound Box, **nothing in settings can make progress easier or skip mastery**, and then there's nothing worth guarding:
 - **Wings** unlock only through mastery (§4). There's no manual unlock to abuse.
 - **Grade/band** only sets the starting Wings and help defaults. Faking a higher grade on a new player just means harder math.
-- **Hints, read-aloud and the timer** are comfort settings. Hinted solves never count toward mastery (§5.3), so turning hints on is no shortcut.
+- **Hints and read-aloud** are comfort settings. Hinted solves never count toward mastery (§5.3), so turning hints on is no shortcut.
 - **Custom practice**, e.g. "only the 6, 7 and 8 times tables", runs as a separate Practice run outside the Wings. It builds fact mastery like any other play but never unlocks a Wing.
 - **Destructive actions only ever touch this device.** Start over asks for a typed phrase (§15.5). Removing a player asks for a second tap, and the **Remove button only exists on a device with two or more players**, never for the one playing. A kid's own device, with only them on it, has no delete at all. A shared device (a parent's phone) holds players linked from the kids' devices, so if a sibling removes the other there, their own device still has them and can send them back (§15.2).
 
@@ -379,7 +378,7 @@ The corner holds:
 - Full keyboard play, as today, extended to the new input keys.
 - Color is never the only signal. Crits use text and size as well as coral. Mastery rings use fill amount as well as color.
 - Text sizes respect user zoom, with a dyslexia-friendly toggle that switches the body font and adds letter spacing.
-- Timer is always optional, and timer length is adjustable in the grown-ups' corner.
+- There is no timer (§6.7), so no one is rushed.
 
 ---
 
@@ -510,7 +509,7 @@ Spoken parts are shared, as in Sound Box ("Champion!", the Wing's name, "Beat th
 | Practice days (1, 3, 7, 14, 30, 60, 100) | 🕯️ First Torch → 🗝️ Key Finder → 🚪 Door Opener → 🪜 Deeper Down → 🏰 Castle Keeper → 🐉 Dragon's Den → 👑 Dungeon Royalty | Going deeper into the dungeon |
 | Flawless floors, no hearts lost (1, 5, 10, 25, 50, 100) | 🪵 Wooden Shield → 🛡️ Iron Shield → ✨ Shining Shield → 💎 Crystal Shield → 🌟 Starlight Shield → 🌈 Unbreakable | A shield that gets stronger |
 | Comebacks, a missed fact later right first try (1, 5, 10, 25, 50) | 🌧️ Through the Rain → 🌦️ Clearing Up → 🌈 Rainbow After → ☀️ Sunny Side → 🦅 Soaring | Weather clearing |
-| Lightning solves, a correct answer in under 3 s (25, 100, 250, 500, 1000) | 🔋 Charged Up → ⚡ Quick Spark → 🌩️ Thunderclap → 🌪️ Whirlwind → ☄️ Lightning Legend | Speed for any player, any Wing (§6.7) |
+| Fluent facts, known by heart: right, unhinted and quick (25, 100, 250, 500, 1000) | 🔋 Charged Up → ⚡ Quick Spark → 🌩️ Thunderclap → 🌪️ Whirlwind → ☄️ Lightning Legend | Fluency, for any player in any stratum (§6.7) |
 | Total damage (1k, 5k, 25k, 100k, 500k) | 💨 Chalk Dust → 🌪️ Chalk Storm → ⚡ Chalk Lightning → ☄️ Chalk Comet → 🌋 Chalkcano | Bigger chalk power |
 | Monsters met, the Bestiary (5, 10, 20, all) | 📓 Field Notes → 🔍 Monster Spotter → 🗺️ Explorer → 📚 Monsterologist | A growing notebook |
 | Heroes rescued (1, 3, 6, 9) | 🔓 Curse Breaker → 🤝 Team-Up → 🎪 Big Band → 🎉 Full House | A party that fills up; Full House means all ten digits are free |
@@ -579,7 +578,7 @@ Start over sits in Settings and asks the grown-up to type "start over", as in So
 - **Multiple choice:** no, in any band. Answers are always typed.
 - **Names checked against existing characters (2026-11-23):** Numberjacks (BBC) has digits 0–9 as heroes vs. villains, but our names, looks and summon mechanic are our own. The 0 hero is **Zeroic**, not "Hero Zero" (too close to the classroom tradition and picture book *Zero the Hero*). The 8 hero is **Chef Eight**, not a tentacle superhero (too close to Numberblocks' Octoblock). The old Pirate Cove boss was **Dread Pirate Radius**, not Captain Circumference (the *Sir Cumference* books use the same pun); Pirate Cavern's boss is now **π Pirate**. The negatives monster is **Negasicle**.
 - **Hints follow the Missouri Learning Standards** and the models and words local curricula use (§5.3). Missouri doesn't name a method, so hints show strategy models, and a "For grown-ups" note explains each one. Sprout starts at fluency within 5, as the K standard says.
-- **Mastery unlocks Wings** (boss beaten plus over 60% of facts mastered). Grade only sets the starting Wings and help defaults. Lower Wings stay open, and speed counts for every player, never compared across siblings (§4, §6.7).
+- **Mastery unlocks Wings** (boss beaten plus over 60% of facts mastered). Grade only sets the starting Wings and help defaults. Lower Wings stay open. Speed only judges fluency and earns the all-fast star, and is never compared across siblings (§4, §6.7).
 - **No grown-up lock** (§9): nothing in settings makes progress easier, so there's nothing to guard. Destructive actions only affect the device they're done on. Remove only appears on devices with two or more players, so a kid's own device can't delete anyone, and linked devices can restore a player removed elsewhere.
 - **Digit heroes:** the digits 0–9 are the player's heroes and the operators are the monsters. Your captain is your avatar, your answer summons its digits, and one cursed digit is rescued per Wing clear (§6.6).
 - **Pre-reader support:** the target pre-reader reads numbers fluently, so only words (instructions, menus, story text) need icons and voice. Problems stay numeric.
@@ -589,7 +588,7 @@ Start over sits in Settings and asks the grown-up to type "start over", as in So
 
 **Open**
 
-- **Speed vs. accuracy:** how much should a fast answer be rewarded before it pressures slower thinkers? The speed bonus is timer-only for now.
+- **Speed vs. accuracy** (settled 2026-11-25): speed only judges fluency and earns the ★ all-fast star. There's no timer and no speed bonus (§6.7).
 - **Word problems:** Master-band "story" problems would fit the fiction ("The pirate has 3 chests of 12 coins…"), but reading load is high. Consider them later, after read-aloud exists.
 - **Classroom use:** players plus linking cover home use and shared devices. A teacher's class view would need accounts or names on a server, which goes against pillar 6, so default to no.
 - **Number clips:** record "fifty-six!" for damage callouts on every hit, or only on crits and finishing blows to keep it from getting noisy?
