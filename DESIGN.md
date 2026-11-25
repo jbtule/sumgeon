@@ -92,7 +92,7 @@ The dungeon is a map of **Wings**, shown in the game as **strata**. Each Wing ha
 - **There is no manual unlock.** See §9 for why nothing needs a grown-up lock.
 
 ### 4.1 The grade strata (plan, 2026-11-25)
-One stratum per grade, in a **straight chain**: each opens only the next. The levels inside each follow the school's teaching order.
+One stratum per grade, in a **straight chain**: each opens only the next. The levels inside each follow the school's teaching order. The audience stops at 5th grade, but one **stretch stratum** of 6th-grade math, Pirate Cove, sits under the Pyramid so a 5th grader who finishes it can keep going. Its content follows the school's 6th-grade guide; inequalities, plotting points, data and surface area are left out.
 
 | Stratum | Grade | Levels (in order) | Monsters | Boss |
 |---|---|---|---|---|
@@ -102,21 +102,21 @@ One stratum per grade, in a **straight chain**: each opens only the next. The le
 | **The Tables Tower** (built) | 3rd | × and ÷ only: ×0, 1, 2, 5, 10 and their ÷ → ×3, 4, 6 and ÷ → ×7, 8, 9 and ÷ → × tens (4 × 30) → ×÷ 11 and 12, kept as an extra bottom level | Timesaur (×), Divvy (÷), Starbot (*), Tick-Tockus (to the minute) | **Sigma Rex** |
 | **The Fraction Forge** | 4th | ×10, 100, 1000; 2-digit × 1-digit, then 2-digit × 2-digit (area model); factors (6 × □ = 48); remainders (29 ÷ 4 = 7 R1); equivalent fractions (3/4 = □/8); adding and subtracting like denominators; whole × fraction; decimals in tenths and hundredths; area and perimeter | Halfling (½), Quarterjack (¼), Dotty (.), Boomainder (R) | **The Denominator** |
 | **The Parenthesis Pyramid** (new) | 5th | Unlike denominators (1/2 + 1/4 = □/4); a fraction of a number (1/2 of 12); dividing by a unit fraction (3 ÷ 1/2); powers of ten; decimals × and ÷ 10, 100, 1000; order of operations; volume (l × w × h) | Parenthesaurus (( ), order of operations), fraction and volume monsters (to design) | **Shoutandcomma** (!), the mummy in the deepest chamber |
+| **Pirate Cove** (stretch) | 6th, for 5th graders who finish the Pyramid | GCF and LCM (GCF of 12 and 18; 12 + 20 = 4 × (3 + □)) and dividing fractions (3/4 ÷ 1/8) → ratios (2:3 = □:12) and unit rates (12 for $3, so □ for $1) → percent (25% of 80; 3/4 = □%) → opposites, absolute value and comparing negatives (\|−7\| = □; −3 ○ −8) → expressions and one-step equations (3x + 2 when x = 4; x + 7 = 15; 4x = 28) → area of triangles | Slashbuckler (/, GCF, LCM and dividing fractions), Colon-el Ratio (:, ratios and rates), % Gremlin (percent), Negasicle (−) and Absolutely (\|x\|) (negatives), an x monster for equations (to design, Quizard's grown-up cousin) | **Dread Pirate Radius** |
 
 - **What changes from today:** the Tower becomes × and ÷ only (its sums within 20 belong to 1st and 2nd grade, so the "alongside" level in Apprentice goes away); Haberhasher moves to the Caverns; Quizard moves to the Hall, since hidden numbers are 1st grade; coin counting moves to the Caverns, and the Cellar keeps finding coins and their worth, which the K guide teaches.
-- **Answers stay whole numbers where possible.** Most 4th- and 5th-grade problems hide a whole number in a box (3/4 = □/8), so the answer is still the damage, as with missing numbers. New pad keys appear only when a problem needs them: **R** for remainders, **.** for decimals. Typing a whole fraction and the fraction-segment HP of §7.2 wait until a problem needs them.
+- **Answers stay whole numbers where possible.** Most 4th- and 5th-grade problems hide a whole number in a box (3/4 = □/8), so the answer is still the damage, as with missing numbers. New pad keys appear only when a problem needs them: **R** for remainders, **.** for decimals, **−** for negatives (Pirate Cove), and the stacked fraction input (§7.1) for problems whose answer is a fraction. A fraction, decimal or percent answer hits for its value as a percent (§7.2).
 - **Tick-Tockus** asks time the way Trollar asks coins: one monster whose problems follow the stratum's grade.
 - **Saved progress:** a dungeon version bump starts runs over and keeps what's been learned.
 - **Build order** (stacked PRs): (1) this plan; (2) restructure K–3 into grade strata with today's monsters (the levels in the school's order, zero facts, make-10 partners, ×0 and ×1, × tens, monsters moved), with a stand-in wall and boss for the Caverns; (3) the Crystal Caverns' wall, palette, the Centipede and voice lines; (4) the new K–3 monsters: Doublet, Slimelipsis, dot flash, three addends, arrays, Tick-Tockus; (5) the Fraction Forge; (6) the Parenthesis Pyramid.
 
 ### 4.2 Later strata (Master, 6th–8th)
-Below the Pyramid, unchanged from the first design:
+Below Pirate Cove, unchanged from the first design (π Pirate, from Pirate Cove's first design, waits for circles in 7th grade):
 
 | Wing | Strand | Monsters (glyph) | Boss |
 |---|---|---|---|
 | **The Negative Zone** | Integers and negatives | Negasicle (−, an icy minus-sign popsicle), Absolutely (\|x\|) | **Lord Undefined** (÷0) |
 | **The Root Cellar** | Exponents and roots | Rootling (√), Squaresquatch (²), Exponent-tron (^) | **Hydra of Powers** (heads = exponent) |
-| **Pirate Cove** | Percent and π basics | % Gremlin, π Pirate, Slashbuckler (/), Colon-el Ratio (:) | **Dread Pirate Radius** |
 
 **Endless Descent** (§6.4) has its own boss, the **Endless Specter** (∞).
 
@@ -319,7 +319,7 @@ On a keyboard, `-`, `.` and `/` map to these keys.
 ### 7.2 Damage rule for non-whole answers
 "Damage = answer" needs a rule once answers can be −6 or ¾:
 - **Negatives:** damage is the **absolute value**. Fiction: Negative Zone monsters are made of "debt," and a negative answer pays it off. The hit animation shows the number flipping sign as it lands.
-- **Fractions and decimals:** Fraction Forge monsters have **HP measured in wholes** (e.g. 3 ⬤⬤⬤) drawn as pie or bar segments. A ¾ answer erases ¾ of a segment. This makes fraction size *visible*, which is the learning goal.
+- **Fractions, decimals and percents** (plan, 2026-11-25): the answer is a **multiplier**. It hits for its value × 100, its percent: ¾ hits for 75, 0.3 for 30, 25% for 25, 1½ for 150. The hit shows the change ("¾ → 75!"), so every hit practices fraction = decimal = percent. Monster HP is built the same way (from the average answer, × 100), so fights last as many problems as any other. Any equivalent fraction counts (6/8 hits like ¾). This replaces the earlier plan of HP drawn in whole segments.
 - **Comparisons:** each correct comparison deals a fixed "chomp" of 1 segment, and the monster has segment HP.
 - **Big answers** (e.g. 144): unchanged, because the monster HP rule already scales to the problem pool.
 
