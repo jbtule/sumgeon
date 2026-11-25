@@ -6,7 +6,7 @@ import { BANDS, choose, factOf, record as recordAnswer, helpFor, openLevel, mons
 import { hintFor, STRATEGIES } from "./hints.js";
 import { openStore, displayName } from "./store.js";
 import { PHRASE, monsterName, monsterCleared, monsterWon, heroJoins, heroCursed, heroRescue, heroAlmost, heroHelps, traitLine, BARK, wingCleared, wingOpened, depthLine, DEPTH_MAX_SPOKEN, reversedLine, howToWriteLine, quipLine } from "./lines.js";
-import { WINGS, wingOf, runFloors, openWings, toOpen, floorStars, wingStars, depthScale, depthHP, deepest, MAP_DEPTHS } from "./wings.js";
+import { WINGS, wingOf, runFloors, openWings, toOpen, floorStars, wingStars, depthScale, depthHP, deepest, MAP_DEPTHS, GRADES, gradeLabel, gradeName, withGrade } from "./wings.js";
 import { missingOf, pickBlank, filled, spokenMissing, MISSING_SHARE } from "./missing.js";
 import { coinsSvg, pileOf, coinOf } from "./coins.js";
 import { read as readSigil, judge as judgeSigil } from "./sigil.js";
@@ -834,13 +834,37 @@ function chip(type, name, value, checked, label, id) {
 }
 function playersHTML() {
   const list = store.profiles();
-  const rows = list.map((p, i) => `<li class="prow${p.id === PID ? " me" : ""}" data-id="${esc(p.id)}">
+  const rows = list.map((p, i) => {
+    const me = p.id === PID, g = me ? st.grade : store.settings(p.id).grade;
+    return `<li class="prow${me ? " me" : ""}" data-id="${esc(p.id)}">
     <input type="text" maxlength="24" value="${esc(p.name)}" placeholder="Player ${i + 1}" aria-label="Player ${i + 1}'s name (optional)">
-    ${p.id === PID ? '<span class="now">Playing</span>' : '<button class="small" type="button" data-act="play">Play</button>'}
+    ${!me && g != null ? `<span class="pgrade" aria-label="${gradeName(g)}">Grade ${gradeLabel(g)}</span>` : ""}
+    ${me ? '<span class="now">Playing</span>' : '<button class="small" type="button" data-act="play">Play</button>'}
     ${store.canRemove(p.id) ? '<button class="small danger" type="button" data-act="remove" aria-label="Remove">✕</button>' : ""}
-  </li>`).join("");
+    ${me ? `<div class="pgrades"><span>Grade</span>${gradesHTML(true)}</div>` : ""}
+  </li>`;
+  }).join("");
   return `<ul class="players">${rows}
   <li class="prow"><input type="text" id="newName" maxlength="24" placeholder="New player (name optional)" aria-label="New player's name (optional)"><button class="small" type="button" id="addPlayer">+ Add</button></li></ul>`;
+}
+// The grade buttons, K to 5: big on the start screen's question, a compact row (mini) in
+// Settings → Players. A pre-reader can read them: they're K and digits.
+function gradesHTML(mini) {
+  return `<div class="grades${mini ? " mini" : ""}" role="group" aria-label="Grade">${GRADES.map((g) => {
+    const on = g === st.grade;
+    return `<button type="button" class="gpick${on ? " on" : ""}" data-g="${g}" aria-pressed="${on}" aria-label="${gradeName(g)}"><b>${gradeLabel(g)}</b>${mini ? "" : `<small>${g ? "grade" : "kinder"}</small>`}</button>`;
+  }).join("")}</div>`;
+}
+// A grade picked (or changed): its strata open from the start. Only settings change; progress
+// and what's been learned stay (wings.js withGrade).
+function setGrade(g) {
+  const was = st.band;
+  st = withGrade(st, g, { first: st.grade == null, fresh: fresh(), progress, recs });
+  saveSettings();
+  if (st.band !== was) { G.running = false; newRun(); loadMonster(0, true); }
+}
+function wireGrades(after) {
+  $("card").querySelectorAll(".gpick").forEach((b) => b.onclick = () => { setGrade(Number(b.dataset.g)); after(); });
 }
 // "Level 2 of 4: Within 10", from the player's own fact records.
 function levelLine() {
@@ -882,12 +906,21 @@ function wingsHTML() {
 function menu() {
   G.onMenu = true;
   // With no hero yet, the first tap here asks for one out loud (below), once per player a visit.
-  if (!hasCaptain() && G.askedFor !== PID) G.askHero = true;
+  if ((!hasCaptain() || st.grade == null) && G.askedFor !== PID) G.askHero = true;
   if (updateReady && !G.running) { reloadForUpdate(); return; } // a new version is waiting
   const list = store.profiles();
-  show(`<div class="cardhead logo-head"><h2 class="logo">Sum<b>geon</b></h2><button class="icon-btn" id="openSettings" type="button" aria-label="Settings">${GEAR}</button></div>
+  const head = `<div class="cardhead logo-head"><h2 class="logo">Sum<b>geon</b></h2><button class="icon-btn" id="openSettings" type="button" aria-label="Settings">${GEAR}</button></div>
   <p class="tag"><strong>Your answer is your attack.</strong> Get it right and your digits fly at the monster.</p>
-  ${list.length > 1 ? `<p class="playing">Playing as <b>${esc(displayName(list, PID))}</b> <button class="link" type="button" id="switchPlayer">Switch</button></p>` : ""}
+  ${list.length > 1 ? `<p class="playing">Playing as <b>${esc(displayName(list, PID))}</b> <button class="link" type="button" id="switchPlayer">Switch</button></p>` : ""}`;
+  // A player with no grade yet is asked once, first (the kid picks: an older grade opens more strata).
+  if (st.grade == null) {
+    show(`${head}<div class="grp" id="gradeAsk"><span>What grade are you in?</span>${gradesHTML()}</div>`);
+    wireGrades(() => { if (!hasCaptain()) { G.askHero = false; G.askedFor = PID; say("p", PHRASE.pickHero, true); } menu(); });
+    $("openSettings").onclick = () => settings();
+    if ($("switchPlayer")) $("switchPlayer").onclick = () => settings();
+    return;
+  }
+  show(`${head}
   ${captainHTML()}
   <div class="grp"><span>Pick a stratum</span><div class="wings strata"><div class="surface" aria-hidden="true"></div>${wingsHTML()}</div></div>
   <div class="btns"><p class="warn" id="warn" role="status"></p><button class="big" id="go">Enter the dungeon</button></div>`);
@@ -916,12 +949,15 @@ document.addEventListener("click", (e) => {
   if (lastWingTap && lastWingTap.id === id && now - lastWingTap.t < 450) { lastWingTap = null; $("go").click(); return; }
   lastWingTap = { id, t: now };
 }, true);
-// "Pick your hero!": speech can only start in a tap, so it waits for the first tap on the start
-// screen (not one on a hero, which says that hero's name instead).
+// "What grade are you in?" (with no grade yet), then "Pick your hero!": speech can only start in a
+// tap, so it waits for the first tap on the start screen (not one on a grade or a hero, which say
+// their own thing).
 document.addEventListener("pointerdown", (e) => {
   if (!G.askHero) return;
   G.askHero = false; G.askedFor = PID;
-  if (G.onMenu && !hasCaptain() && !$("ov").hidden && !e.target.closest(".hpick")) say("p", PHRASE.pickHero);
+  if (!G.onMenu || $("ov").hidden || e.target.closest(".hpick, .gpick")) return;
+  if (st.grade == null) say("p", PHRASE.pickGrade);
+  else if (!hasCaptain()) say("p", PHRASE.pickHero);
 }, true);
 
 // Settings, in tabs: Players (names optional), Game (chalk color, sounds as on/off switches) and
@@ -1148,6 +1184,7 @@ function wirePlayers() {
       refreshPlayers();
     };
   });
+  wireGrades(refreshPlayers);
   const add = () => { const id = store.addProfile($("newName").value); switchTo(id); };
   $("addPlayer").onclick = add;
   $("newName").onkeydown = (e) => { if (e.key === "Enter") add(); };

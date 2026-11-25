@@ -95,3 +95,34 @@ console.log("✓ stars");
   assert.ok(DESCENT.maxFall + DESCENT.lead + DESCENT.hold + DESCENT.fade <= 4300);
   assert.ok(DESCENT.hold >= 2000, "long enough to read the title");
 }
+
+// The grade (DESIGN.md §2, §4.1): K and 1st start in the Cellar, 2nd opens the Hall, 3rd and up all three.
+{
+  const { GRADES, gradeBand, withGrade } = await import("../js/wings.js");
+  assert.deepEqual(GRADES.map(gradeBand), ["sprout", "sprout", "balance", "apprentice", "apprentice", "apprentice"]);
+  assert.deepEqual(openWings({}, {}, gradeBand(2)), ["cellar", "hall"]);
+  assert.deepEqual(openWings({}, {}, gradeBand(5)), ["cellar", "hall", "tower"]);
+  const base = { band: "sprout", start: "sprout", sfx: true };
+  // A new player starts in their grade's stratum.
+  assert.deepEqual(withGrade(base, 3, { first: true, fresh: true }), { ...base, grade: 3, start: "apprentice", band: "apprentice" });
+  assert.equal(withGrade(base, 0, { first: true, fresh: true }).band, "sprout");
+  // A player with progress keeps the stratum they're in.
+  assert.equal(withGrade(base, 4, { first: true }).band, "sprout");
+  // The first pick never lowers what a player already had open.
+  const had = { band: "apprentice", start: "apprentice" };
+  assert.equal(withGrade(had, 0, { first: true }).start, "apprentice");
+  assert.equal(withGrade(had, 0, { first: true }).band, "apprentice");
+  // Changing it later can lower it: a stratum no longer open falls back to the Cellar...
+  const lowered = withGrade({ ...had, grade: 3 }, 1);
+  assert.deepEqual([lowered.grade, lowered.start, lowered.band], [1, "sprout", "sprout"]);
+  // ...and it only changes settings: progress and facts stay as they were, and strata opened by
+  // mastery stay open.
+  const progress = { cellar: { boss: 2, best: 6, depth: 3, depthStars: { 1: 12 }, stars: [3, 3, 2] }, tower: { boss: 1, depth: 2 } };
+  const keep = JSON.stringify([progress, recs]);
+  const mastered = withGrade({ band: "apprentice", start: "apprentice", grade: 3 }, 0, { progress, recs });
+  assert.equal(JSON.stringify([progress, recs]), keep, "lowering the grade never touches progress");
+  assert.equal(mastered.start, "sprout");
+  assert.equal(mastered.band, "apprentice", "the Tower stays open: it was opened by mastery");
+  assert.deepEqual(openWings(progress, recs, mastered.start), ["cellar", "hall", "tower"]);
+  console.log("✓ grades");
+}

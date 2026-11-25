@@ -18,6 +18,7 @@ export var PHRASE = {
   // Instructions for a player who can't read yet (app.js says each where it's needed, and the
   // ones that explain only the first time or first few: app.js `once`). Short and kid-simple.
   hitHow: "Tap your answer, then tap Hit!",
+  pickGrade: "What grade are you in?",
   pickHero: "Pick your hero!",
   heroFirst: "Tap a hero first!",
   cmpHow: "Tap the sign whose mouth opens to the greater side!",

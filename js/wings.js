@@ -90,6 +90,25 @@ export function openWings(progress, recs, start) {
   return open;
 }
 
+// The grade a player picks (0 = K … 5), saved as settings.grade (DESIGN.md §2, §4.1). Until the
+// strata are rebuilt by grade, it maps onto today's: K and 1st start in the Counting Cellar, 2nd
+// also opens the Balance Hall, 3rd and up open all three.
+export const GRADES = [0, 1, 2, 3, 4, 5];
+export const gradeBand = (g) => (g >= 3 ? "apprentice" : g === 2 ? "balance" : "sprout");
+export const gradeLabel = (g) => (g === 0 ? "K" : String(g));
+export const gradeName = (g) => (g === 0 ? "Kindergarten" : `Grade ${g}`);
+// Settings with a grade picked: { ...st, grade, start, band }. Only settings change: what's been
+// played and learned (wings, stars, depth, facts) is never touched, and strata opened by mastery
+// stay open (openWings). `first`: the player had no grade yet, so their start never goes lower
+// than it was. `fresh`: nothing played yet, so they start in their grade's stratum.
+export function withGrade(st, grade, { first = false, fresh = false, progress = {}, recs = {} } = {}) {
+  const b = gradeBand(grade);
+  const start = first && (GRADE[st.start] ?? 0) > GRADE[b] ? st.start : b;
+  let band = fresh ? start : st.band;
+  if (!openWings(progress, recs, start).includes(WINGS.find((w) => w.band === band)?.id)) band = WINGS[0].band;
+  return Object.assign({}, st, { grade, start, band });
+}
+
 // What's left to open a Wing, for the map: { prev, boss: beaten?, share, need }.
 export function toOpen(wing, progress, recs) {
   const prev = wing.after && wingOf(wing.after);

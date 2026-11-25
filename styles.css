@@ -177,6 +177,17 @@ h1 b{color:var(--coral);font-weight:400}
 .hpick.on{border-color:var(--gold);background:#ffc93c1f}
 .hpick.on small{color:var(--gold)}
 .hpick[disabled]{opacity:.55;cursor:default}
+/* The grade: big K–5 buttons on the start screen's question, a compact row in Settings → Players */
+.grades{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+@media (min-width: 760px){.grades{grid-template-columns:repeat(6,minmax(0,1fr))}}
+.gpick{display:grid;justify-items:center;align-content:center;gap:0;min-height:88px;padding:6px 2px;border-radius:16px;border:3px solid var(--edge);background:var(--btn);color:var(--ink);cursor:pointer}
+.gpick b{font:400 40px/1 Bungee,sans-serif}
+.gpick small{font-size:12px;font-weight:900;color:var(--muted);margin-top:4px}
+.gpick.on{border-color:var(--gold);background:#ffc93c1f;color:var(--gold)}
+.gpick:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+.grades.mini{grid-template-columns:repeat(6,minmax(0,1fr));gap:6px;flex:1}
+.grades.mini .gpick{min-height:44px;border-width:2px;border-radius:12px}
+.grades.mini .gpick b{font-size:18px}
 .swatches{display:flex;gap:8px;overflow-x:auto;padding:4px 3px;scrollbar-width:none}
 .swatch{flex:none;width:38px;height:38px;border-radius:50%;border:3px solid var(--dark);background:var(--sw);box-shadow:0 0 0 2px var(--edge)}
 .swatch.on{box-shadow:0 0 0 3px var(--ink)}
@@ -402,6 +413,10 @@ body{transition:background-color .4s;--hint-empty:var(--edge);--hint-line:var(--
 .players .prow input{flex:1 1 auto;width:0;min-height:44px;background:var(--panel);border-color:var(--line)}
 .players .prow.me input{border-color:var(--gold)}
 .players .now{padding:0 10px;font-size:13px;white-space:nowrap}
+.players .prow.me{flex-wrap:wrap}
+.players .pgrade{font-size:13px;font-weight:900;color:var(--muted);white-space:nowrap}
+.pgrades{flex:1 0 100%;display:flex;align-items:center;gap:8px}
+.pgrades>span{font:400 12px Bungee,sans-serif;color:var(--muted)}
 .players .small{flex:none;white-space:nowrap;padding:0 12px}
 .players .danger[data-sure="1"]{background:#ff8a7f;color:var(--dark)}
 .list{display:grid;background:var(--dark);border:2px solid var(--line);border-radius:16px;overflow:hidden}
