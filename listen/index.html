@@ -26,6 +26,9 @@
   .pill{padding:2px 9px;border-radius:999px;background:var(--dark);color:var(--muted);white-space:nowrap}
   .pill.new{color:var(--gold)}.pill.bad{color:var(--coral)}.pill.ok{color:var(--ok)}
   .bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:16px 0}
+  .report{margin-top:0}
+  #reportText{flex-basis:100%;min-height:120px;font-size:13px}
+  .small:disabled{opacity:.5;cursor:default}
   .small{min-height:40px;padding:0 14px;border-radius:12px;border:2px solid var(--edge);background:var(--btn);font-weight:900}
   .link{background:none;border:0;color:var(--muted);padding:6px 0;text-decoration:underline}
   .mode{display:flex;gap:4px;background:var(--dark);border-radius:999px;padding:4px}
@@ -64,13 +67,16 @@
   <h1>Sum<b>geon</b> listen check</h1>
   <p class="sub">Plays each group's recorded lines one after another. A line that plays to the end without a flag counts as OK. Hear something wrong? ⚑, say what, and carry on. Marks stay on this device.</p>
 
+  <!-- The flagged lines, always in reach: on the groups and while playing. -->
+  <div class="bar report">
+    <button class="small" id="copyBtn" type="button">Copy the issues</button>
+    <button class="small" id="issueBtn" type="button">Open a GitHub issue</button>
+    <span id="status" role="status"></span>
+    <textarea id="reportText" readonly hidden aria-label="The flagged lines, to copy"></textarea>
+  </div>
+
   <section id="home">
     <div class="groups" id="groups"></div>
-    <div class="bar">
-      <button class="small" id="copyBtn" type="button">Copy the issues</button>
-      <button class="small" id="issueBtn" type="button">Open a GitHub issue</button>
-      <span id="status" role="status"></span>
-    </div>
   </section>
 
   <section id="player" hidden>
