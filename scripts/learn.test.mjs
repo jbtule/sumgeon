@@ -82,16 +82,18 @@ assert.ok(minus > 700, `Minustaur asks subtraction ${minus} times in 1000`);
 assert.ok(monsterHP(MON[0], "sprout", {}) >= 10);
 assert.ok(monsterHP(MON[3], "apprentice", {}) < monsterHP(MON[3], "apprentice", Object.fromEntries(pool("apprentice").map((p) => [p.key, { b: 4, n: 5, c: 5, ms: 1000, t: 0 }]))),
   "HP grows as bigger facts open");
-// Variety: not the same answer as the last couple, when there's anything else.
+// Variety: not the same kind of problem with the same answer as the last couple.
 {
   const recs = {};
   pool("sprout").filter((f) => f.level <= 2).forEach((f) => (recs[f.key] = { b: 3, n: 3, c: 3, ms: 900, t: 0 }));
   let seed = 7; const rnd = () => ((seed = (seed * 9301 + 49297) % 233280) / 233280);
   const asked = [];
   for (let i = 0; i < 30; i++) {
-    const key = choose("sprout", recs, { now: 1, rnd, recent: [], op: "-", avoidAns: asked.slice(-2) });
-    asked.push(factOf(key).ans);
+    const f = factOf(choose("sprout", recs, { now: 1, rnd, recent: [], op: "-", avoidAns: asked.slice(-2) }));
+    asked.push(f.op + " " + f.ans);
   }
-  for (let i = 2; i < asked.length; i++) assert.ok(asked[i] !== asked[i - 1] && asked[i] !== asked[i - 2], `answer ${asked[i]} again at ${i}: ${asked.join(",")}`);
+  for (let i = 2; i < asked.length; i++) assert.ok(asked[i] !== asked[i - 1] && asked[i] !== asked[i - 2], `${asked[i]} again at ${i}: ${asked.join(",")}`);
+  // A different kind of problem with the same answer is fine.
+  assert.ok(pool("sprout").some((f) => f.op === "+" && f.ans === 10 && f.level <= 2), "3 + 7 is still allowed after 17 − 7");
 }
 console.log(`✓ learn (Sprout ${pool("sprout").length} facts, Apprentice ${pool("apprentice").length})`);

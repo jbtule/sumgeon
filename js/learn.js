@@ -169,7 +169,7 @@ export function frontier(bandKey, recs) {
 export function probeKey(bandKey, recs, rnd, recent, avoidAns) {
   const t = tiers(bandKey), i = frontier(bandKey, recs) + 1;
   if (i >= t.length) return null;
-  const ansOf = (k) => (pool(bandKey).find((f) => f.key === k) || {}).ans;
+  const ansOf = (k) => { const f = pool(bandKey).find((x) => x.key === k) || {}; return f.op + " " + f.ans; };
   let fresh = t[i].filter((k) => (!recs[k] || !recs[k].n) && !(recent || []).includes(k));
   const varied = fresh.filter((k) => !(avoidAns || []).includes(ansOf(k)));
   if (varied.length) fresh = varied;
@@ -198,9 +198,10 @@ export function choose(bandKey, recs, opts) {
   const L = openLevel(bandKey, recs);
   let open = pool(bandKey).filter((f) => f.level <= L && !recent.includes(f.key));
   if (!open.length) open = pool(bandKey).filter((f) => f.level <= L);
-  // Not the same answer as the last couple (opts.avoidAns), when there's anything else: the
-  // teen subtraction facts (17 − 7, 15 − 5, 12 − 2) all equal 10 and came up in a row.
-  const varied = open.filter((f) => !(opts.avoidAns || []).includes(f.ans));
+  // Not the same kind of problem with the same answer as the last couple (opts.avoidAns, as
+  // "op ans" like "- 10"), when there's anything else: the teen subtraction facts (17 − 7,
+  // 15 − 5, 12 − 2) all equal 10 and came up in a row. A different kind (3 + 7) is fine.
+  const varied = open.filter((f) => !(opts.avoidAns || []).includes(f.op + " " + f.ans));
   if (varied.length) open = varied;
   if (opts.op) {
     const mine = open.filter((f) => f.op === opts.op);
