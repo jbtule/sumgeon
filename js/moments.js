@@ -62,7 +62,7 @@ export function captainNames(d) {
   const n = "Captain " + HEROES[d].n;
   return [n + ", reporting for duty!", n + ", at your service!", n + " leads the charge!", "Make way for " + n + "!"];
 }
-const listOf = (d) => (d === "final" ? FINALS : d === "team" ? TEAM_LINES : d === "captain" ? CAPTAIN_LINES : /^name\d$/.test(d) ? captainNames(+d.slice(4)) : QUIPS[d]);
+const listOf = (d) => (d === "style" ? STYLES : d === "final" ? FINALS : d === "team" ? TEAM_LINES : d === "captain" ? CAPTAIN_LINES : /^name\d$/.test(d) ? captainNames(+d.slice(4)) : QUIPS[d]);
 
 export function freshState(saved) {
   const s = saved || {};
@@ -104,15 +104,19 @@ export function drawQuip(state, d, rnd) {
 // What hero d says on being picked as captain: "reporting for duty" the first time they're ever
 // picked, then their name deck (which counts that first line as heard, so a new deck doesn't
 // open with it).
+// The styles rotate across all picks, whichever hero (a shared deck of the four, key "style"), so
+// tapping through heroes doesn't say "reporting for duty" every time. The very first captain a
+// player ever picks reports for duty.
+const STYLES = ["0", "1", "2", "3"];
 export function nameLine(state, d, rnd) {
   state.named = state.named || [];
-  if (!state.named.includes(d)) {
-    state.named.push(d);
-    const q = captainNames(d)[0], k = "name" + d;
-    state.heard[k] = (state.heard[k] || []).filter((x) => x !== q).concat([q]);
-    return q;
-  }
-  return drawQuip(state, "name" + d, rnd);
+  const first = !state.named.length;
+  if (!state.named.includes(d)) state.named.push(d);
+  const i = first ? 0 : +drawQuip(state, "style", rnd);
+  if (first) state.heard.style = ["0"];
+  const q = captainNames(d)[i], k = "name" + d;
+  state.heard[k] = (state.heard[k] || []).filter((x) => x !== q).concat([q]);
+  return q;
 }
 
 // Whether this answer gets a moment, and whose. hit:

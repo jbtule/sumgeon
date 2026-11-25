@@ -5,7 +5,7 @@ import { spokenProblem, spokenFact } from "./problems.js";
 import { BANDS, choose, factOf, record as recordAnswer, helpFor, openLevel, monsterHP, probeKey, tierOf, skipTo, SKIP_PROBES, SKIP_WINDOW, MAX_LEAP, fluentTime, spellKey } from "./learn.js";
 import { hintFor, STRATEGIES } from "./hints.js";
 import { openStore, displayName } from "./store.js";
-import { PHRASE, monsterName, monsterCleared, monsterWon, heroJoins, heroCursed, heroPower, heroRescue, heroAlmost, heroHelps, traitLine, BARK, wingCleared, wingOpened, depthLine, DEPTH_MAX_SPOKEN, reversedLine, howToWriteLine, quipLine } from "./lines.js";
+import { PHRASE, monsterName, monsterCleared, monsterWon, heroJoins, heroCursed, heroRescue, heroAlmost, heroHelps, traitLine, BARK, wingCleared, wingOpened, depthLine, DEPTH_MAX_SPOKEN, reversedLine, howToWriteLine, quipLine } from "./lines.js";
 import { WINGS, wingOf, runFloors, openWings, toOpen, floorStars, wingStars, depthScale, depthHP, deepest, MAP_DEPTHS } from "./wings.js";
 import { missingOf, pickBlank, filled, spokenMissing, MISSING_SHARE } from "./missing.js";
 import { coinsSvg, pileOf, coinOf } from "./coins.js";
@@ -890,6 +890,16 @@ function menu() {
     start(null, true);
   };
 }
+// Double-tapping a stratum on the start screen enters it: the first tap picks it (and redraws the
+// card), a second tap on the same stratum soon after is Enter.
+let lastWingTap = null;
+document.addEventListener("click", (e) => {
+  const w = e.target.closest && e.target.closest("label.wing");
+  if (!w || !G.onMenu || w.classList.contains("locked") || e.target.closest("button")) { lastWingTap = null; return; }
+  const id = w.querySelector("input[name=wing]").value, now = performance.now();
+  if (lastWingTap && lastWingTap.id === id && now - lastWingTap.t < 450) { lastWingTap = null; $("go").click(); return; }
+  lastWingTap = { id, t: now };
+}, true);
 // "Pick your hero!": speech can only start in a tap, so it waits for the first tap on the start
 // screen (not one on a hero, which says that hero's name instead).
 document.addEventListener("pointerdown", (e) => {
@@ -1096,13 +1106,11 @@ function wireCaptain() {
     Object.assign(team, next);
     saveTeam();
     // The hero's name line in the quip voice (moments.js nameLine: "Captain Twodini, reporting
-    // for duty!" the first time they're picked, then their deck), what they do, and (on the start
-    // screen, the first few times) what to tap next.
+    // for duty!" the first time they're picked, then their deck). Nothing after it: the user found
+    // "Your twos hit harder." and "Tap Enter to go in!" too much on top of it.
     const mo = { quip: nameLine(MS, team.captain) };
     store.player(PID).set("moments", MS);
     say("h", quipLine(mo.quip), true);
-    say("p", heroPower(HEROES[team.captain]));
-    if (G.onMenu && once("enter", 3)) say("p", PHRASE.goIn);
     captainUI(); whoUI();
     if ($("warn")) $("warn").textContent = "";
     pickOpen = false; redraw();

@@ -1,7 +1,7 @@
 // Every line the game says is in the audio plan, and app.js only says lines from js/lines.js.
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { spokenLines, PHRASE, monsterName, monsterCleared, monsterWon, heroCursed, heroPower, heroRescue, heroAlmost, heroHelps, traitLine, TRAIT_LINE, BARK } from "../js/lines.js";
+import { spokenLines, PHRASE, monsterName, monsterCleared, monsterWon, heroCursed, heroRescue, heroAlmost, heroHelps, traitLine, TRAIT_LINE, BARK } from "../js/lines.js";
 import { facts, spokenProblem, spokenFact } from "../js/problems.js";
 import { MON, allLooks } from "../js/monsters.js";
 import { HEROES } from "../js/heroes.js";
@@ -30,13 +30,11 @@ assert.ok(!Object.values(PHRASE).some((t) => /[×÷<>=□]/.test(t)), "spoken te
 // Instructions for a pre-reader: every phrase and hero line is short (about 12 words at most).
 const words = (t) => t.split(/\s+/).length;
 for (const t of Object.values(PHRASE)) assert.ok(words(t) <= 12, `too long to say to a kindergartner: ${t}`);
-for (const h of HEROES) for (const t of [heroCursed(h), heroPower(h)]) { assert.ok(ids.has("p:" + t), t); assert.ok(words(t) <= 12, t); }
+for (const h of HEROES) for (const t of [heroCursed(h)]) { assert.ok(ids.has("p:" + t), t); assert.ok(words(t) <= 12, t); }
 assert.ok(ids.has("p:Oh no! Toodini was cursed! Pick a new hero."), "hero names are said as SAY_AS spells them");
-assert.equal(heroPower(HEROES[6]), "Your sixes hit harder.");
-assert.equal(heroPower(HEROES[0]), "Your zeros hit harder.");
 // Per-hero lines go in the "names" sprite with the names they follow.
 const names = spokenLines().filter((l) => l.sprite === "names").map((l) => l.text);
-assert.ok(names.includes(heroPower(HEROES[2])) && names.includes(heroCursed(HEROES[2])));
+assert.ok(names.includes(heroCursed(HEROES[2])));
 assert.ok(spokenLines().every((l) => l.group), "every line has a listen-check group");
 
 // Traits, rescues and barks (DESIGN.md §3, §6.6): every trait has a short line, recorded.
@@ -102,13 +100,13 @@ assert.ok(app0.includes('say("h", quipLine(mo.quip), true)'), "a quip is said in
 // what the hero does, as before.
 {
   const pick = app0.slice(app0.indexOf("function wireCaptain"), app0.indexOf("function wirePlayers"));
-  assert.ok(/nameLine\(MS, team\.captain\)[\s\S]*say\("h", quipLine\(mo\.quip\), true\);\s*say\("p", heroPower\(HEROES\[team\.captain\]\)\);/.test(pick), "a pick says a captain line, then the hero's power");
+  assert.ok(/nameLine\(MS, team\.captain\)[\s\S]*say\("h", quipLine\(mo\.quip\), true\);/.test(pick) && !/heroPower|PHRASE\.goIn/.test(pick), "a pick says a captain line, and nothing after it");
   assert.ok(!pick.includes("heroName("), "the captain line replaces the spoken name");
 }
 
 // app.js says only lines from lines.js: every say() takes a PHRASE, a lines.js helper, or a problem.
 const app = readFileSync(new URL("../js/app.js", import.meta.url), "utf8");
-const HELPERS = ["heroName", "heroJoins", "heroCursed", "heroPower", "heroRescue", "heroAlmost", "heroHelps", "traitLine"].join("|");
+const HELPERS = ["heroName", "heroJoins", "heroCursed", "heroRescue", "heroAlmost", "heroHelps", "traitLine"].join("|");
 for (const [call] of app.matchAll(/say\([^)]*\)/g)) {
   assert.match(call, new RegExp(String.raw`say\("(p|m|q|h)", (quipLine\(mo\.quip\)|PHRASE\.\w+|BARK\.\w+|BARK\[\w+\]|monsterName\(m\)|monsterCleared\(m\)|monsterWon\(m\)|(${HELPERS})\((HEROES\[[\w.]+\]|\w+)\)|wingCleared\(\w+(\(\))?\)|wingOpened\(\w+\)|depthLine\(G\.depth\)|reversedLine\(\w+\)|howToWriteLine\(\w+\)|spokenProblem\(G\.cur\)|spokenFact\(said\)|spokenMissing\(G\.cur\))`), `${call} says a line that isn't in js/lines.js`);
 }

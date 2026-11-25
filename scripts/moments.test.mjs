@@ -255,19 +255,18 @@ assert.ok(decide(st(), freshRun(), hit({ spell: "good" }), yes), "a spell's good
 // Captain name lines, on picking a captain (app.js wireCaptain: nameLine), not in fights.
 {
   assert.deepEqual(captainNames(2), ["Captain Twodini, reporting for duty!", "Captain Twodini, at your service!", "Captain Twodini leads the charge!", "Make way for Captain Twodini!"]);
-  // The first time a hero is ever picked: "reporting for duty", whatever the roll.
+  // The very first captain a player picks: "reporting for duty", whatever the roll.
   const s = freshState(), r = seeded(21);
   assert.equal(nameLine(s, 4, r), "Captain Sir Fourtress, reporting for duty!");
   assert.deepEqual(s.named, [4]);
-  // Then the deck (key "name4"): each line once per deck, never twice running (the first deck
-  // doesn't open with "reporting for duty", just heard).
-  const got = [];
-  for (let i = 0; i < 4 * 5; i++) got.push(nameLine(s, 4, r));
-  for (let k = 0; k < 5; k++) assert.deepEqual(got.slice(k * 4, k * 4 + 4).sort(), captainNames(4).slice().sort(), `name deck ${k}`);
-  for (let i = 1; i < got.length; i++) assert.notEqual(got[i], got[i - 1], "no name line twice running");
-  assert.equal(nameLine(s, 9, r), "Captain Nine-ja, reporting for duty!", "a hero picked for the first time");
-  assert.ok(captainNames(9).includes(nameLine(s, 9, r)));
-  assert.deepEqual(freshState(JSON.parse(JSON.stringify(s))).named, [4, 9], "saved");
+  // Then the four styles rotate across all picks, whichever hero (key "style"): each style once
+  // per deck, never the same style twice running, so tapping through heroes varies.
+  const styleOf = (q, d) => captainNames(d).indexOf(q), got = [];
+  for (let i = 0; i < 4 * 5; i++) { const d = i % 10; got.push(styleOf(nameLine(s, d, r), d)); }
+  for (let k = 0; k < 5; k++) assert.deepEqual(got.slice(k * 4, k * 4 + 4).sort(), [0, 1, 2, 3], `style deck ${k}`);
+  for (let i = 1; i < got.length; i++) assert.notEqual(got[i], got[i - 1], "no style twice running");
+  assert.notEqual(got[0], 0, "the style just heard (reporting for duty) doesn't open the first deck");
+  assert.deepEqual(freshState(JSON.parse(JSON.stringify(s))).named.slice(0, 2), [4, 0], "saved");
   assert.deepEqual([freshState({ decks: {} }).named, freshState({ decks: {} }).captains], [[], []], "an older saved state");
   assert.deepEqual(s.captains, [], "picking isn't a fight's captain moment");
   // Fights never say a name line.

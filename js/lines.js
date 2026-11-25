@@ -20,7 +20,6 @@ export var PHRASE = {
   hitHow: "Tap your answer, then tap Hit!",
   pickHero: "Pick your hero!",
   heroFirst: "Tap a hero first!",
-  goIn: "Tap Enter to go in!",
   cmpHow: "Tap the sign whose mouth opens to the greater side!",
   cmpSame: "Both sides the same? Tap equal!",
   spellHow: "Draw your answer with your finger, then tap Cast!",
@@ -69,7 +68,6 @@ export function heroJoins(h) { return sayAs(h.n + " joins your team!"); }
 // Losing all your hearts curses the hero who led the run: "Oh no! Twodini was cursed! Pick a new hero."
 export function heroCursed(h) { return sayAs("Oh no! " + h.n + " was cursed! Pick a new hero."); }
 // What a hero does, said after their name when picked: "Your twos hit harder."
-export function heroPower(h) { return "Your " + (h.d === 6 ? "sixes" : spoken(h.d) + "s") + " hit harder."; }
 // "a two", "an eight".
 function aDigit(d) { return (d === 8 ? "an " : "a ") + spoken(d); }
 // The rescue floor, after "Cursed Twodini!": "Beat the curse to set Twodini free!"
@@ -145,7 +143,6 @@ export function spokenLines() {
     add("m", monsterName(cursedMonster(h.d)), N, S);
     add("p", heroJoins(h), N, S);
     add("p", heroCursed(h), N, S);
-    add("p", heroPower(h), N, S);
     add("p", heroRescue(h), N, S);
     add("p", heroAlmost(h), N, S);
     add("p", heroHelps(h), N, S);
