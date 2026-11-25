@@ -353,7 +353,9 @@ function newProblem() {
   const spellTurn = !due && !m.blank && canSpell() && (SPELLS_ALWAYS || Math.random() < SPELL_SHARE);
   const spell = spellTurn ? spellKey(bk, recs, { recent: G.recent, avoidAns, op }) : null;
   const probe = !due && !spell && f.on && f.cool <= 0 ? probeKey(bk, recs, null, G.recent, avoidAns, f.leap) : null;
-  const key = spell || probe || choose(bk, recs, { now: Date.now(), recent: G.recent, retry: due ? due.key : null, op, like: prefers(m), depth: G.depth, avoidAns });
+  const key = spell || probe || choose(bk, recs, { now: Date.now(), recent: G.recent, retry: due ? due.key : null, op, like: prefers(m), depth: G.depth, avoidAns,
+    // At depth 1, about a third of problems lean to answers with the captain's digit (CAPTAIN_BIAS).
+    digit: team.captain, digitShare: G.depth === 1 ? CAPTAIN_BIAS : 0 });
   // Charge (Minustaur): every 4th problem on the floor, a miss costs 2 hearts.
   G.charged = charged(m, G.onFloor++);
   $("charge").hidden = !G.charged;
@@ -1247,6 +1249,8 @@ function press(k) {
 // a run of fluent sums, and kept from run to run while the game is open.
 const flows = {};
 function flowOf(bk) { return (flows[PID + ":" + bk] ||= { fluent: 0, cool: 0, hist: [], on: false, leap: 1 }); }
+// At depth 1, the share of problems that prefer an answer with the captain's digit (learn.js choose).
+const CAPTAIN_BIAS = 0.35;
 const SPELL_SHARE = 1 / 6, SPELLS_ALWAYS = new URLSearchParams(location.search).has("spells");
 const canSpell = () => SPELLS_ALWAYS || matchMedia("(any-pointer: coarse)").matches;
 const spellsOf = () => Object.assign({ templates: {}, reversed: {}, cast: 0 }, store.player(PID).get("spells", {}));

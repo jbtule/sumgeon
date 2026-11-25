@@ -113,3 +113,13 @@ assert.ok(monsterHP(MON[3], "apprentice", {}) < monsterHP(MON[3], "apprentice", 
   assert.ok(pool("sprout").some((f) => f.op === "+" && f.ans === 10 && f.level <= 2), "3 + 7 is still allowed after 17 − 7");
 }
 console.log(`✓ learn (Sprout ${pool("sprout").length} facts, Apprentice ${pool("apprentice").length})`);
+
+// The captain's digit at depth 1 (app.js CAPTAIN_BIAS): answers with it come up more often, and
+// not at all differently with no share.
+{
+  let seed = 1; const rnd = () => ((seed = (seed * 1103515245 + 12345) % 2147483648) / 2147483648);
+  const share = (o) => { let n = 0; for (let i = 0; i < 3000; i++) if (String(factOf(choose("sprout", {}, { now: 0, rnd, recent: [], ...o })).ans).includes("3")) n++; return n / 3000; };
+  const plain = share({}), biased = share({ digit: 3, digitShare: 0.35 }), off = share({ digit: 3, digitShare: 0 });
+  assert.ok(biased > plain + 0.15, `the captain's digit comes up more (${plain.toFixed(2)} → ${biased.toFixed(2)})`);
+  assert.ok(Math.abs(off - plain) < 0.05, "no share, no bias");
+}
