@@ -84,7 +84,7 @@ A math-practice dungeon crawler. The player fights anthropomorphic monsters buil
 - **Missing-number problems** (`js/missing.js`): a fact with one number hidden, like `3 + □ = 7`. The answer and the damage are the hidden number. The □ shows as a glowing "?" that fills as you type (the answer box hides), and the hint is the inverse fact's (3 + □ = 7 is 7 − 3). They use the fact's own record. Quizard asks only these; other monsters ask 15% of review facts (box 3+) this way. Spoken as "three plus what is seven", recorded for every fact.
 
 ## Wings, monsters and heroes
-Runs happen in Wings (`js/wings.js`, DESIGN.md §4). Each Wing asks one band's facts and has a monster pool, a rescue floor (floor 3) and a boss:
+Runs happen in Wings (`js/wings.js`, DESIGN.md §4), called **strata** (one **stratum**) wherever the game shows the word; the code keeps "wing". Each Wing asks one band's facts and has a monster pool, a rescue floor (floor 3) and a boss:
 
 | Wing | Band | Floors | Boss |
 |---|---|---|---|
@@ -99,6 +99,8 @@ Runs happen in Wings (`js/wings.js`, DESIGN.md §4). Each Wing asks one band's f
   - The room darkens (`--murk`, 8% per depth up to 48%).
   - Shown as "Depth 2 · Floor 1 / 6" and on the Wing map, and said as "Depth two!" (recorded to 20).
   - It keeps runs from feeling the same while the next Wing waits on mastery.
+- **The depth map** (`wingsHTML`, `.strata`): the start screen shows the strata as rock layers under a grassy surface, each in its own texture, with the deepest depth on the right; tap one to pick it.
+- **Walls**: each stratum has a tiling wall (inline SVG in `styles.css`: `--wall-cellar` bricks, `--wall-hall` marble tiles, `--wall-tower` big stone blocks), behind the monster in a fight (`data-stratum` on `.game`, set by `newRun`) and on its map layer. The Tables Tower is a tower that goes down.
 - A Wing opens when the Wing it comes `after` has its boss beaten and 60% of its facts learned: the Cellar opens both the Hall and the Tower. The band a player starts in (`st.start`) opens every Wing at that grade or below (`GRADE` in `wings.js`), so starting in Apprentice opens all three.
 - Per player, progress is saved under `wings`: `{ [wingId]: { boss: wins, best: floors, stars: [best stars per floor] } }`.
 - **Stars** (`floorStars` in `wings.js`, DESIGN.md §6.1): each floor awards ★ cleared, ★ no hearts lost on it, ★ a streak of 5 on it (hinted answers don't build streaks). The floor-cleared and win cards show them, and the Wing map shows each Wing's total.

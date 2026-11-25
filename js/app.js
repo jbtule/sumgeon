@@ -212,6 +212,7 @@ const hintFact = () => G.cur.inverse || G.cur;
 // A fresh run through the current Wing: its floors, with this player's rescue floor.
 // depth: how deep into this Wing (wings.js); the deepest reached when not given.
 function newRun(depth) {
+  document.querySelector(".game").dataset.stratum = wing().id;
   G.depth = depth || deepest(wing(), progress); G.floors = runFloors(wing(), team, null, G.depth);
   // The room darkens as you go deeper: 8% per depth, up to 48% at depth 7.
   document.querySelector(".game").style.setProperty("--murk", Math.min(0.48, 0.08 * (G.depth - 1)).toFixed(2));
@@ -612,17 +613,20 @@ function levelLine() {
   const L = openLevel(st.band, recs);
   return `Level ${L + 1} of ${band().levels.length}: ${band().levels[L].name}`;
 }
-// The Wing map: each Wing with its band, open or locked (and what opens it).
+// The depth map: the strata (wings.js WINGS) as rock layers under the surface, each in its own
+// texture, open or locked (and what opens it), with the deepest depth reached on the side.
 function wingsHTML() {
   const open = openWings(progress, recs, st.start);
   return WINGS.map((w) => {
     const b = BANDS[w.band], isOpen = open.includes(w.id), here = w.band === st.band, p = progress[w.id] || {};
     let note;
     const ws = wingStars(w, progress);
-    if (isOpen) note = (p.boss ? `Cleared ${p.boss}×` : p.best ? `Best: ${p.best} of ${w.floors.length + 1} floors` : "Not tried yet") + (deepest(w, progress) > 1 ? ` · Depth ${deepest(w, progress)}` : "") + (ws.got ? ` · ★ ${ws.got} of ${ws.max}` : "");
+    if (isOpen) note = (p.boss ? `Cleared ${p.boss}×` : p.best ? `Best: ${p.best} of ${w.floors.length + 1} floors` : "Not tried yet") + (ws.got ? ` · ★ ${ws.got} of ${ws.max}` : "");
     else { const t = toOpen(w, progress, recs); note = `🔒 Beat ${t.prev.boss}${t.boss ? " ✓" : ""} and learn ${Math.round(t.need * 100)}% of the ${t.prev.name.replace(/^The /, "")} (now ${Math.round(t.share * 100)}%)`; }
-    return `<label class="wing${here ? " here" : ""}${isOpen ? "" : " locked"}"><input type="radio" name="wing" value="${w.id}" ${here ? "checked" : ""} ${isOpen ? "" : "disabled"}>
-      <span><b>${w.name}</b><small>${b.label} · ${b.grades}</small><em>${note}</em>${here ? `<em class="level" id="levelLine">${levelLine()}</em>` : ""}</span></label>`;
+    const d = deepest(w, progress);
+    return `<label class="wing ${w.id}${here ? " here" : ""}${isOpen ? "" : " locked"}"><input type="radio" name="wing" value="${w.id}" ${here ? "checked" : ""} ${isOpen ? "" : "disabled"}>
+      <span><b>${w.name}</b><small>${b.label} · ${b.grades}</small><em>${note}</em>${here ? `<em class="level" id="levelLine">${levelLine()}</em>` : ""}
+      ${isOpen ? `<i class="depth" aria-label="Deepest: depth ${d}">▼<b>${d}</b></i>` : ""}</span></label>`;
   }).join("");
 }
 // The start screen, top to bottom: the title (with ⚙ Settings), your hero, the Wings, and
@@ -634,7 +638,7 @@ function menu() {
   <p class="tag"><strong>Your answer is your attack.</strong> Get it right and your digits fly at the monster.</p>
   ${list.length > 1 ? `<p class="playing">Playing as <b>${esc(displayName(list, PID))}</b> <button class="link" type="button" id="switchPlayer">Switch</button></p>` : ""}
   ${captainHTML()}
-  <div class="grp"><span>Pick a Wing</span><div class="wings">${wingsHTML()}</div></div>
+  <div class="grp"><span>Pick a stratum</span><div class="wings strata"><div class="surface" aria-hidden="true"></div>${wingsHTML()}</div></div>
   <div class="btns"><p class="warn" id="warn" role="status"></p><button class="big" id="go">Enter the dungeon</button></div>`);
   const card = $("card");
   // A different Wing is a fresh dungeon: its own facts and hearts.
@@ -738,7 +742,7 @@ function helpPage() {
     <li><strong>New facts</strong> show their hint by themselves. While a fact is being learned, 💡 shows it on a tap. Once it's learned, the hint goes away.</li>
     <li><strong>After a miss</strong>, the worked example stays up until "Got it", and that fact comes back 2–4 problems later.</li>
     <li><strong>A hinted answer</strong> still hits the monster, but doesn't count toward learning the fact or building a streak.</li>
-    <li><strong>Wings open by mastery</strong>, not grade: beat a Wing's boss and learn 60% of its facts to open the next.</li>
+    <li><strong>Strata open by mastery</strong>, not grade: beat a stratum's boss and learn 60% of its facts to open the ones below. Each win also opens a deeper, tougher depth of the same stratum.</li>
   </ul>
   <h3 class="strats-title">The strategies</h3>
   <div class="strats">${cards}</div>
