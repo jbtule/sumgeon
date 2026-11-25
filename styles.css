@@ -295,7 +295,11 @@ h1 b{color:var(--coral);font-weight:400}
 /* Coin problems (Trollar): the coins stand in for the numbers, and the answer is in cents */
 .prob svg.coins{height:1.2em;width:auto;max-width:min(60vw,440px);vertical-align:middle;overflow:visible}
 .prob svg.coins.one{height:2em}
+/* Find the coin: the pile, and under it "quarters = ?" */
+.game.find .prob{display:flex;flex-direction:column;align-items:center;gap:2px}
+.game.find .prob svg.coins{max-width:min(64vw,440px)}
 .prob .find{white-space:nowrap;font-size:.6em}
+.prob .find .blank{font-size:1.4em}
 .game.cents .ans::after{content:"¢";margin-left:2px;font-size:.7em;opacity:.75}
 
 /* Comparisons (Chompers): < = > keys fill the number pad's space, three rows tall, so nothing moves */

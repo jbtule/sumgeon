@@ -217,12 +217,15 @@ function ansUI() {
 function probUI() {
   const p = G.cur, box = $("prob");
   if (p.blank || p.sym || p.op === "=") box.innerHTML = esc(p.q).replace("□", '<span class="blank" id="blank">?</span>');
-  else if (p.op === "¢" && p.find) box.innerHTML = coinsSvg(p.pile) + ` <span class="find">${coinOf(p.find).names} =</span>`;
+  // "How many quarters?": the pile, then "quarters = ?" with a □ that fills as you type, as a
+  // missing number does, under the pile (styles.css .game.find), so it fits a phone.
+  else if (p.op === "¢" && p.find) box.innerHTML = coinsSvg(p.pile) + `<span class="find">${coinOf(p.find).names} = <span class="blank" id="blank">?</span></span>`;
   else if (p.op === "¢") box.innerHTML = coinsSvg(p.pile) + " =";
   else box.textContent = p.q + " =";
-  document.querySelector(".game").classList.toggle("missing", !!p.blank || !!p.sym || p.op === "=");
+  document.querySelector(".game").classList.toggle("missing", !!p.blank || !!p.sym || p.op === "=" || !!p.find);
   padUI(p.spell ? "spell" : p.sym ? "cmp" : "num");
   document.querySelector(".game").classList.toggle("cents", p.op === "¢" && !p.find);
+  document.querySelector(".game").classList.toggle("find", !!p.find);
 }
 // The facts a monster asks: its own strand (Trollar's coins) or the player's band.
 const strandOf = (m) => m.strand || st.band;
