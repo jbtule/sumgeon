@@ -418,6 +418,20 @@ body{transition:background-color .4s;--hint-empty:var(--edge);--hint-line:var(--
 .switch-row:focus-within{outline:3px solid var(--gold);outline-offset:-3px}
 label.switch-row:focus-within{outline-offset:-3px}
 @media(prefers-reduced-motion:reduce){.switch-row i,.switch-row i::after{transition:none}}
+/* Settings' tabs: a segmented row, each tab an icon over a short word (the main player can't read yet). */
+.tabs{display:flex;gap:4px;padding:4px;background:var(--dark);border:2px solid var(--line);border-radius:16px}
+.tabs [role=tab]{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;min-height:56px;padding:6px 4px;border:0;border-radius:12px;background:none;color:var(--muted);font:800 14px Nunito,sans-serif;cursor:pointer}
+.tabs [role=tab] span{font-size:22px;line-height:1.1}
+.tabs [role=tab][aria-selected=true]{background:var(--btn2);color:var(--ink);box-shadow:inset 0 0 0 2px var(--gold)}
+.tabs [role=tab]:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+.tabpanel{display:grid;gap:14px;align-content:start}
+.tabpanel[hidden]{display:none}
+.tabpanel:focus-visible{outline:3px solid var(--gold);outline-offset:4px;border-radius:12px}
+.credits{display:grid;gap:8px;padding:12px 14px;background:var(--dark);border:2px solid var(--line);border-radius:16px}
+.credits p,.credits li{color:var(--muted);font-size:14px;line-height:1.45}
+.credits b{color:var(--ink)}
+.credits ul{margin:0;padding-left:18px;display:grid;gap:6px}
+.credits a{color:var(--gold)}
 @media (max-width: 759px) {
   .ov.page{background:var(--bg);padding:0;place-items:stretch;overscroll-behavior:contain}
   .card.page{display:flex;flex-direction:column;width:100%;min-height:100%;border:0;border-radius:0;gap:16px;
