@@ -19,6 +19,9 @@ for (const f of fs) { assert.ok(ids.has("q:" + spokenProblem(f))); assert.ok(ids
 assert.ok(ids.has("q:seven plus eight is fifteen"));
 assert.ok(ids.has("q:three plus what is seven") && ids.has("q:what times four is twenty"), "missing-number problems are recorded");
 assert.ok(!PHRASE.intro.includes("×"), "spoken text has no symbols the voice would misread");
+// Names are said the way the puns need: Twodini as "Toodini" (too-DEE-nee), Jr. as "Junior".
+assert.ok(ids.has("m:Toodini!") && ids.has("m:Trollar Junior!") && ids.has("m:Mister Moneybags!"));
+assert.ok(![...ids].some((id) => /Twodini|Jr\.|Mr\./.test(id)), "no line says Twodini, Jr. or Mr. as written");
 
 // Keys are stable and unique.
 const plan = planClips();
