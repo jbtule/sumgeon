@@ -36,7 +36,7 @@ export const QUIPS = {
 // ends with a boss, so its finishing lines are a deck of their own (key "final"), like a hero's.
 export const FINALS = ["That's your final answer!", "And that's the sum of it!", "Divided and conquered!", "Subtracted to zero!",
   "Boss solved!", "Equals: victory!", "Proof complete!", "Zero hit points. Math wins!", "Game, set, math!",
-  "Problem solved!", "Check your answer: correct!", "That's the bottom line!"];
+  "Problem solved!", "Check your answer: correct!", "That's the bottom line for you!"];
 export const FINAL = FINALS[0], CRIT = "Critical math!";
 // Team-ups: a moment by chance on an answer with two different team heroes' digits is, half the
 // time (TEAMUP), both heroes at once. Their lines are a deck of their own (key "team"), and an
