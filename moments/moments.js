@@ -11,8 +11,8 @@ import { HEROES } from "../js/heroes.js";
 import { MON, svg } from "../js/monsters.js";
 import { QUIPS, FINALS, CRIT, TEAM_LINES, TEAM_NUMBERS, CAPTAIN_LINES, captainNames, simulate } from "../js/moments.js";
 import { playMoment, PHASES } from "../js/slowmo.js";
-import { quipLine } from "../js/lines.js";
-import { say, stopSpeech, speaking } from "../js/speech.js";
+import { quipLine, monsterCleared } from "../js/lines.js";
+import { say, stopSpeech, speaking, cutWith } from "../js/speech.js";
 import * as sfx from "../js/sfx.js";
 
 const $ = (id) => document.getElementById(id);
@@ -118,7 +118,7 @@ async function play() {
   try {
     await playMoment({
       hero: d, partner: p, color: null, quip, speed: opts.speed, reduced: opts.reduced, gate,
-      speak: () => { if (speaking()) sfx.scratch(); return say("h", quipLine(quip), true); },
+      speak: () => speaking() ? cutWith(sfx.scratch, sfx.SCRATCH_AT, sfx.SCRATCH, "h", quipLine(quip)) : say("h", quipLine(quip), true),
       from: $("ans"), to: $("mon"), room: $("stage"),
       onPhase: (p) => { $("phase").textContent = `${PHASES.indexOf(p) + 1}. ${p}`; }
     });
@@ -139,7 +139,12 @@ async function play() {
 // first one, and the moment's first sound comes a beat later, outside it, so the effects stayed
 // silent (the quip, an audio element, still played). A tick inside the tap wakes the effects.
 const wake = () => sfx.tick();
-$("play").onclick = () => { wake(); play(); };
+// "Talking over": the voice starts a line just before the moment, so the quip has to cut it off
+// with the record scratch (sfx.SCRATCH_AT; try ?scratch=<ms> to move it).
+let talkOver = false;
+document.querySelectorAll("[data-talk]").forEach((b) => (b.onclick = () => { talkOver = b.dataset.talk === "1"; pressed("[data-talk]", b); }));
+const talk = () => { if (talkOver) say("p", monsterCleared(MON[0])); };
+$("play").onclick = () => { wake(); talk(); play(); };
 $("next").onclick = () => { wake(); if (nextGate) nextGate(); };
 // The sound effects' state, for checking on a device: the audio context, effects played, errors.
 setInterval(() => { const a = sfx.status(); $("sound").textContent = `Sound effects: ${a.state || "not started"} · ${a.played} played${a.error ? " · " + a.error : ""}`; }, 500);

@@ -15,7 +15,7 @@ import { traitOf, charged, prefers, hitBy, atHalf } from "./traits.js";
 import { roster, mastery, meet, beat } from "./bestiary.js";
 import { HEROES, CHALK, heroSvg, freePick, pickHero, curseCaptain, crackCurse, CURSE_HITS, resetTeam } from "./heroes.js";
 import * as sfx from "./sfx.js";
-import { say, stopSpeech, setVoice, speaking } from "./speech.js";
+import { say, stopSpeech, setVoice, speaking, cutWith } from "./speech.js";
 import { freshState as freshMoments, freshRun, decide as decideMoment, joined, heardOf, nameLine } from "./moments.js";
 import { playMoment } from "./slowmo.js";
 
@@ -470,7 +470,7 @@ function heroMoment(mo, typed, crit) {
   const from = $("blank") && $("blank").offsetParent ? $("blank") : $("ans");
   const colorOf = (d) => (d === team.captain ? team.color : null);
   return playMoment({ hero: mo.hero, partner: mo.partner, color: colorOf(mo.hero), partnerColor: mo.partner != null ? colorOf(mo.partner) : null, quip: mo.quip,
-    speak: () => { if (speaking()) sfx.scratch(); return say("h", quipLine(mo.quip), true); }, from, to: $("mon"), room: document.querySelector(".game"),
+    speak: () => speaking() ? cutWith(sfx.scratch, sfx.SCRATCH_AT, sfx.SCRATCH, "h", quipLine(mo.quip)) : say("h", quipLine(mo.quip), true), from, to: $("mon"), room: document.querySelector(".game"),
     reduced: reduced(), onSnap: () => { if (rest) fly(rest, crit); } });
 }
 // Chalk sparks bursting from the monster on impact.

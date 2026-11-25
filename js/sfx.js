@@ -217,7 +217,13 @@ export function slam(big) {
   });
 }
 
-// A record scratch: a Hero Moment cutting off the voice mid-line (app.js, the moments page).
+// How long after the voice is told to stop the record scratch starts (seconds), so it lands as
+// the voice actually falls silent (speech.js cutWith). ?scratch=<ms> tries another value.
+var scratchQ = (typeof location !== "undefined") && new URLSearchParams(location.search).get("scratch");
+export var SCRATCH_AT = scratchQ != null && scratchQ !== "" && !isNaN(+scratchQ) ? +scratchQ / 1000 : 0.12;
+// A record scratch: a Hero Moment cutting off the voice mid-line (app.js, the moments page). It
+// lasts about SCRATCH seconds.
+export var SCRATCH = 0.24;
 export function scratch() {
   play(function (t) {
     [[0, 900, 2600, 0.09], [0.09, 2600, 700, 0.11], [0.2, 800, 2200, 0.07]].forEach(function (s) {
