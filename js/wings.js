@@ -114,10 +114,11 @@ export function wingStars(wing, progress) {
 // The descent (js/descent.js): tapping "Enter the dungeon" drops the camera from the grass down
 // through the strata to the chosen one and depth, then "Now entering the Sumgeon!" slams in.
 // Times in ms. A later stratum or a deeper start falls further and takes a little longer, up to
-// maxFall, so the whole thing is at most about 2.8 s. "Go deeper" falls one depth inside its
+// maxFall. After landing it holds long enough to read the title (hold); a tap goes on at once.
+// The whole thing is at most about 4.3 s. "Go deeper" falls one depth inside its
 // stratum; reduced motion is a quick fade with the title.
-export const DESCENT = { lead: 250, fall: 950, perLayer: 250, perDepth: 100, maxFall: 1500, hold: 700, fade: 350,
-  deeperLead: 150, deeperFall: 800, deeperHold: 550, quickIn: 150, quickHold: 300, quickFade: 150 };
+export const DESCENT = { lead: 250, fall: 950, perLayer: 250, perDepth: 100, maxFall: 1500, hold: 2200, fade: 350,
+  deeperLead: 150, deeperFall: 800, deeperHold: 1500, quickIn: 150, quickHold: 300, quickFade: 150 };
 // mode: "enter" (from the start screen), "deeper" (Go deeper) or "reduced". Returns which Wings'
 // layers to draw (indexes into WINGS), whether the surface is on top, the depth the camera starts
 // at (0: the surface), and when each part happens: the fall starts at `lead` and lands at `land`,
