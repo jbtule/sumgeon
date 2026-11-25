@@ -40,7 +40,14 @@ function array(rows, cols, split) {
     const x = 9 + c * 14 + (split && c >= split ? gx : 0), y = 9 + r * 14;
     s += `<circle cx="${x}" cy="${y}" r="5" fill="${split && c >= split ? C.b : C.a}"/>`;
   }
-  return svg(w, h, s, `${rows} rows of ${cols}`);
+  return svg(w, h, s, `${rows} ${rows === 1 ? "row" : "rows"} of ${cols}`);
+}
+
+// A double: two equal rows of n, with a gap after 5, so the two 5s make 10.
+function doubleRows(n) {
+  let s = "";
+  for (let r = 0; r < 2; r++) for (let c = 0; c < n; c++) s += `<circle cx="${9 + c * 14 + (c >= 5 ? 8 : 0)}" cy="${9 + r * 14}" r="5" fill="${r ? C.b : C.a}"/>`;
+  return svg(n * 14 + (n > 5 ? 8 : 0) + 4, 32, s, `two rows of ${n}`);
 }
 
 // A double (two rows of n) and one more dot.
@@ -51,13 +58,16 @@ function nearDouble(n) {
   return svg((n + 1) * 14 + 4, 32, s, `${n} and ${n}, and 1 more`);
 }
 
-// An open number line from a to b, hopping to `via` first (count up through 10).
+// An open number line from a to b, hopping to `via` first: counting up through 10 when b > a,
+// or counting back to 10 (or to a ten) when b < a.
 function hops(a, b, via) {
-  const stops = [a, ...[].concat(via || []).filter((v) => v > a && v < b), b];
-  // Hops are spaced by size, but a short hop still gets room for its labels.
-  const W = 260, min = (b - a) / 5, gaps = stops.slice(1).map((n, i) => Math.max(n - stops[i], stops.length > 2 ? min : 0));
-  const total = gaps.reduce((t, g) => t + g, 0), pos = { [a]: 14 };
-  stops.slice(1).forEach((n, i) => { pos[n] = pos[stops[i]] + gaps[i] / total * (W - 28); });
+  const back = b < a, lo = Math.min(a, b), hi = Math.max(a, b);
+  const stops = [a, ...[].concat(via || []).filter((v) => v > lo && v < hi), b];
+  // Laid out smallest to biggest; hops are spaced by size, but a short hop still gets room for its labels.
+  const line = back ? stops.slice().reverse() : stops;
+  const W = 260, min = (hi - lo) / 5, gaps = line.slice(1).map((n, i) => Math.max(n - line[i], line.length > 2 ? min : 0));
+  const total = gaps.reduce((t, g) => t + g, 0), pos = { [line[0]]: 14 };
+  line.slice(1).forEach((n, i) => { pos[n] = pos[line[i]] + gaps[i] / total * (W - 28); });
   const x = (n) => pos[n];
   let s = `<line x1="8" y1="44" x2="${W - 8}" y2="44" stroke="${C.line}" stroke-width="3" stroke-linecap="round"/>`;
   stops.forEach((n, i) => {
@@ -65,10 +75,12 @@ function hops(a, b, via) {
     if (i) {
       const p = stops[i - 1], mid = (x(p) + x(n)) / 2;
       const col = i % 2 ? C.a : C.b;
-      s += `<path d="M${x(p)} 38 Q${mid} 6 ${x(n)} 38" fill="none" stroke="${col}" stroke-width="3"/><text x="${mid}" y="16" text-anchor="middle" fill="${col}" font-size="13" font-weight="900">+${n - p}</text>`;
+      // An arrowhead where the hop lands, so counting back reads right to left.
+      const dir = n > p ? -1 : 1;
+      s += `<path d="M${x(p)} 38 Q${mid} 6 ${x(n)} 38" fill="none" stroke="${col}" stroke-width="3"/><path d="M${x(n) + dir * 7} 28 L${x(n)} 38 L${x(n) + dir * 9} 35" fill="none" stroke="${col}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><text x="${mid}" y="16" text-anchor="middle" fill="${col}" font-size="13" font-weight="900">${back ? "−" : "+"}${Math.abs(n - p)}</text>`;
     }
   });
-  return svg(W, 72, s, `count up from ${a} to ${b}`);
+  return svg(W, 72, s, `count ${back ? "back" : "up"} from ${a} to ${b}`);
 }
 
 // Coins (DESIGN.md §5.3), with the K guide's words for each coin ("A dime is small and silver").
@@ -99,8 +111,8 @@ function coinHint(f, worked) {
 }
 
 // Base-ten blocks: a rod for each ten and a little square for each one. crossFrom: rods from this
-// index on are crossed out (taking away tens). Returns { s, w }.
-function blocks(n, x0, color, crossFrom) {
+// index on are crossed out (taking away tens), and ones from crossOnes on. Returns { s, w }.
+function blocks(n, x0, color, crossFrom, crossOnes) {
   let s = "", x = x0;
   const tens = Math.floor(n / 10), ones = n % 10;
   for (let i = 0; i < tens; i++, x += 11) {
@@ -109,11 +121,17 @@ function blocks(n, x0, color, crossFrom) {
     if (crossFrom != null && i >= crossFrom) s += `<path d="M${x} 8L${x + 8} 50M${x + 8} 8L${x} 50" stroke="${C.ink}" stroke-width="2" stroke-linecap="round"/>`;
   }
   if (ones) x += 2;
-  for (let i = 0; i < ones; i++) s += `<rect x="${x + (i % 2) * 10}" y="${44 - Math.floor(i / 2) * 10}" width="8" height="8" rx="1.5" fill="${color}"/>`;
+  for (let i = 0; i < ones; i++) {
+    const ox = x + (i % 2) * 10, oy = 44 - Math.floor(i / 2) * 10;
+    s += `<rect x="${ox}" y="${oy}" width="8" height="8" rx="1.5" fill="${color}"/>`;
+    if (crossOnes != null && i >= crossOnes) s += `<path d="M${ox - 1} ${oy - 1}L${ox + 9} ${oy + 9}M${ox + 9} ${oy - 1}L${ox - 1} ${oy + 9}" stroke="${C.ink}" stroke-width="2" stroke-linecap="round"/>`;
+  }
   if (ones) x += ones > 1 ? 20 : 10;
   return { s, w: x - x0 };
 }
-// Two-digit + and − (2nd grade): tens and ones for adding, counting up for subtracting.
+// Two-digit + and − (2nd grade): tens and ones for adding. For subtracting: take away the tens
+// and ones when the ones are enough (69 − 26), back to a ten when taking a one-digit number
+// crosses it (52 − 7), and counting up when both numbers have tens and it crosses one (52 − 28).
 function twoDigitHint(f, worked) {
   const { op, x, y, ans } = f, end = worked ? ans : "?";
   const tens = (n) => n - (n % 10), ones = (n) => n % 10, T = (n) => n / 10 + (n === 10 ? " ten" : " tens");
@@ -123,6 +141,12 @@ function twoDigitHint(f, worked) {
     const grownups = "Tens and ones (place value): kids add the tens, add the ones, then put them together. Ten ones make a new ten, which is all regrouping (carrying) is.";
     if (!ones(x) && !ones(y)) return { model, say: `${T(x)} + ${T(y)}. ${x} + ${y} = ${end}`, grownups };
     const t = tens(x) + tens(y), o = ones(x) + ones(y);
+    // Only one number has ones: 30 + 5 is 3 tens and 5 ones, and 40 + 23 adds just the tens.
+    if (!ones(x) || !ones(y)) {
+      const tensOnly = !ones(x) ? x : y, other = tensOnly === x ? y : x;
+      if (!tens(other)) return { model, say: `${T(tensOnly)} and ${other} ones. ${tensOnly} + ${other} = ${end}`, grownups };
+      return { model, say: `Add the tens: ${tens(x)} + ${tens(y)} = ${t}. ${t} + ${o} = ${end}`, grownups };
+    }
     if (!tens(x) || !tens(y)) return { model, say: `Add the ones: ${ones(x)} + ${ones(y)} = ${o}. ${t} + ${o} = ${end}`, grownups };
     return { model, say: `Tens and ones: ${tens(x)} + ${tens(y)} = ${t}, ${ones(x)} + ${ones(y)} = ${o}. ${t} + ${o} = ${end}`, grownups };
   }
@@ -132,12 +156,30 @@ function twoDigitHint(f, worked) {
       say: `${T(x)} take away ${T(y)}. ${x} − ${y} = ${end}`,
       grownups: "Taking away tens: 70 − 30 is 7 tens take away 3 tens, so it's just 7 − 3 with a zero." };
   }
+  // The ones are enough: take away the tens, then the ones, from the blocks.
+  if (ones(x) >= ones(y)) {
+    const a = blocks(x, 4, C.a, (tens(x) - tens(y)) / 10, ones(x) - ones(y));
+    const model = svg(a.w + 8, 58, a.s, `${x} in tens and ones, take away ${y}`);
+    const grownups = "Take away tens and ones: when there are enough ones, kids cross out the tens and ones being taken away, so 69 − 26 is 60 − 20 = 40 and 9 − 6 = 3.";
+    const t = tens(x) - tens(y), o = ones(x) - ones(y);
+    if (!t) return { model, say: `Both have ${T(tens(x))}, so take them away. ${ones(x)} − ${ones(y)} = ${end}`, grownups };
+    if (!tens(y)) return { model, say: `${x} is ${T(tens(x))} and ${ones(x)} ones. Take away ${y} ones: ${ones(x)} − ${y} = ${o}. ${t} + ${o} = ${end}`, grownups };
+    if (!ones(y)) return { model, say: `Take away ${T(y)}: ${tens(x)} − ${y} = ${t}. ${t} + ${o} = ${end}`, grownups };
+    return { model, say: `Take away the tens, then the ones: ${tens(x)} − ${tens(y)} = ${t}, ${ones(x)} − ${ones(y)} = ${o}. ${t} + ${o} = ${end}`, grownups };
+  }
+  // A one-digit number that crosses a ten: back to the ten, then the rest (52 − 7: 52 − 2 = 50, then 5 more).
+  if (y < 10) {
+    const grownups = "Back to a ten: taking a small number away, kids count back on an open number line to the ten first, then the rest. 52 − 7 is 52 − 2 = 50, then 50 − 5.";
+    if (!ones(x)) return { model: hops(x, ans, x - 10), say: `${x} is ${x - 10} and 10. Take ${y} from the 10: 10 − ${y} = ${10 - y}. ${x - 10} + ${10 - y} = ${end}`, grownups };
+    const rest = y - ones(x);
+    return { model: hops(x, ans, tens(x)), say: `Back to ${tens(x)}, then ${rest} more: ${x} − ${ones(x)} = ${tens(x)}. ${tens(x)} − ${rest} = ${end}`, grownups };
+  }
   // Count up from y: to the next ten, then by tens, then the rest.
   const up = Math.ceil(y / 10) * 10, down = tens(x), stops = [y, up, down, x].filter((v, i, a) => a.indexOf(v) === i && v >= y && v <= x);
   const jumps = stops.slice(1).map((v, i) => v - stops[i]);
   return { model: hops(y, x, stops.slice(1, -1)),
     say: `Think addition: count up from ${y} to ${x}. ${jumps.join(" + ")} = ${end}`,
-    grownups: "Think addition on an open number line: kids count up from the smaller number, hopping to the next ten, then by tens, then the rest. It's how 2nd grade subtracts without borrowing." };
+    grownups: "Think addition on an open number line: when it crosses a ten (52 − 28), kids count up from the smaller number, hopping to the next ten, then by tens, then the rest." };
 }
 
 // The Balance Hall (K–2nd). Comparing: line the dots up (to 10, and sums), or tens then ones (to
@@ -202,6 +244,12 @@ export function hintFor(f, worked) {
         say: `10 and some more: ${big} is 10 + ${ones}. 10 + ${ones} + ${small} = ${end(ans)}`,
         grownups: "Teen numbers as 10 and some more: 13 + 4 is 10 + 3 + 4, so only the ones change." };
     }
+    if (x === y) {
+      const extra = x - 5;
+      return { model: doubleRows(x),
+        say: `Doubles: two rows of ${x}. 5 + 5 = 10, and ${extra} + ${extra} = ${extra * 2}. 10 + ${extra * 2} = ${end(ans)}`,
+        grownups: "Doubles: kids learn doubles (8 + 8) as facts of their own, seen as two equal rows. Each row is 5 and some more, so the two 5s make 10. Doubles plus one and × 2 build on them." };
+    }
     if (big - small === 1 && small >= 3) {
       return { model: nearDouble(small),
         say: `Doubles plus one: ${small} + ${small} + 1 = ${end(ans)}`,
@@ -218,16 +266,53 @@ export function hintFor(f, worked) {
         say: `Take away ${y}. How many are left? ${x} − ${y} = ${end(ans)}`,
         grownups: "Draw and cross out: kids draw the dots, cross out the ones taken away, and count what's left." };
     }
+    // A teen number is 10 and some more (20 is 10 and 10). Which strategy depends on the numbers:
+    // take away from the ones when they're enough (15 − 3), take away the 10 (14 − 10), count
+    // back to 10 when taking a little crosses it (13 − 4), and think addition when the numbers
+    // are close, so the answer is no bigger than what's taken away (12 − 8, 17 − 15).
+    const more = x - 10, frames = (crossOnes, crossTen) => svg(FRAME_W * 2 + 10, FRAME_H,
+      tenFrame(0, 0, fill(10, C.a), crossTen) + tenFrame(FRAME_W + 10, 0, fill(more, C.a), crossOnes), `${x} is 10 and ${more}, take away ${y}`);
+    const teenWhy = "10 and some more, taking away: a teen number is a full ten-frame and some more. When there are enough ones (15 − 3), kids take away from the ones and the 10 stays; 14 − 10 takes away the full ten.";
+    if (y <= more) {
+      if (y === more) return { model: frames(0), say: `${x} is 10 and ${more}. Take away the ${more}. ${x} − ${y} = ${end(ans)}`, grownups: teenWhy };
+      return { model: frames(more - y), say: `${x} is 10 and ${more}. Take away ${y} from the ${more}: ${more} − ${y} = ${more - y}. 10 + ${more - y} = ${end(ans)}`, grownups: teenWhy };
+    }
+    if (y === 10) return { model: frames(null, 0), say: `${x} is 10 and ${more}. Take away the 10. ${x} − ${y} = ${end(ans)}`, grownups: teenWhy };
+    if (ans > y) {
+      return { model: hops(x, ans, 10),
+        say: `Count back to 10, then the rest: ${x} − ${more} = 10. 10 − ${y - more} = ${end(ans)}`,
+        grownups: "Count back through 10: taking a small number away, kids hop back on a number line to 10 first, then the rest. 13 − 4 is back 3 to 10, then back 1 more. When the numbers are close (12 − 8), counting up is quicker, so the hint thinks addition instead." };
+    }
     return { model: hops(y, x, 10),
       say: `Think addition: ${y} + ? = ${x}. Count up${y < 10 ? " through 10" : ""}: ${x} − ${y} = ${end(ans)}`,
-      grownups: `Think addition: kids find how far it is from ${y} up to ${x}, often hopping to 10 first.` };
+      grownups: `Think addition: when the numbers are close, kids find how far it is from ${y} up to ${x}, often hopping to 10 first. Taking a small number away (13 − 4), they count back instead.` };
   }
   if (op === "×") {
     const rows = Math.min(x, y), cols = Math.max(x, y);
+    // × 10 is groups of ten: 7 × 10 is 7 tens (base-ten rods), not a break apart at 5.
+    if (x === 10 || y === 10) {
+      const n = x === 10 ? y : x, rods = blocks(n * 10, 4, C.a);
+      return { model: svg(rods.w + 8, 58, rods.s, `${n} tens`),
+        say: `Count by tens: ${n} ${n === 1 ? "ten" : "tens"}${worked ? " is " + ans : ""}. ${x} × ${y} = ${end(ans)}`,
+        grownups: "Tens: × 10 makes groups of ten, so 7 × 10 is 7 tens, 70, the same as the base-ten rods. It's place value, not \"add a zero\"." };
+    }
+    // × 11 and × 12 break apart at 10: 12 × 6 is 6 × 10 + 6 × 2.
+    if (cols > 10) {
+      const extra = cols - 10;
+      return { model: array(rows, cols, 10),
+        say: `Break apart: ${rows} × 10 + ${rows} × ${extra} = ${rows * 10} + ${rows * extra} = ${end(ans)}`,
+        grownups: `Break apart at 10: × 11 is × 10 and one more group, and × 12 is × 10 and × 2, so ${rows} × ${cols} is ${rows} × 10 + ${rows} × ${extra}.` };
+    }
     if (cols === 9 && rows >= 3) {
       return { model: array(rows, 10, 9),
         say: `${rows} × 9 is ${rows} × 10, minus one group of ${rows}: ${rows * 10} − ${rows} = ${end(ans)}`,
         grownups: "Nines as tens minus one: 9 × 7 is 10 × 7 = 70, take away one 7. (The standards teach this, not the finger trick.)" };
+    }
+    // × 2 is a double: 8 × 2 is 8 + 8.
+    if (rows === 2) {
+      return { model: array(2, cols, 0),
+        say: `Doubles: 2 × ${cols} is ${cols} + ${cols} = ${end(ans)}`,
+        grownups: "Doubles: × 2 is two equal rows, so 2 × 8 is the double 8 + 8, a fact kids already know from adding." };
     }
     // Doubling: ×4 is double ×2, and ×8 is double ×4. The array is split down the middle. Small ×4
     // facts (× 3 and × 4) stay as plain arrays, the first model for ×.
@@ -260,16 +345,24 @@ export const STRATEGIES = [
   { title: "Draw and cross out", grade: "K", f: { op: "-", x: 9, y: 4 } },
   { title: "10 and some more", grade: "K–1st", f: { op: "+", x: 10, y: 4 } },
   { title: "Make 10", grade: "1st", f: { op: "+", x: 8, y: 5 } },
+  { title: "Doubles", grade: "1st", f: { op: "+", x: 8, y: 8 } },
   { title: "Doubles plus one", grade: "1st", f: { op: "+", x: 6, y: 7 } },
+  { title: "Take away from 10 and some more", grade: "1st", f: { op: "-", x: 15, y: 3 } },
+  { title: "Count back through 10", grade: "1st", f: { op: "-", x: 13, y: 4 } },
   { title: "Think addition", grade: "1st", f: { op: "-", x: 12, y: 8 } },
   { title: "Arrays", grade: "2nd–3rd", f: { op: "×", x: 3, y: 4 } },
+  { title: "Times 2 as doubles", grade: "2nd–3rd", f: { op: "×", x: 8, y: 2 } },
+  { title: "Times 10 as tens", grade: "3rd", f: { op: "×", x: 7, y: 10 } },
   { title: "Doubling", grade: "3rd", f: { op: "×", x: 4, y: 7 } },
   { title: "Break apart", grade: "3rd", f: { op: "×", x: 6, y: 7 } },
   { title: "Nines as tens", grade: "3rd", f: { op: "×", x: 9, y: 7 } },
+  { title: "Elevens and twelves", grade: "3rd–4th", f: { op: "×", x: 12, y: 6 } },
   { title: "Naming coins", grade: "K", f: findFact("q", { q: 2, d: 1, n: 1, p: 0 }) },
   { title: "What each coin is worth", grade: "K", f: coinFact({ q: 0, d: 1, n: 0, p: 0 }, true) },
   { title: "Counting coins", grade: "1st", f: coinFact({ q: 0, d: 1, n: 1, p: 2 }) },
   { title: "Tens and ones", grade: "2nd", f: { op: "+", x: 38, y: 25 } },
+  { title: "Take away tens and ones", grade: "2nd", f: { op: "-", x: 69, y: 26 } },
+  { title: "Back to a ten", grade: "2nd", f: { op: "-", x: 52, y: 7 } },
   { title: "Count up by tens", grade: "2nd", f: { op: "-", x: 52, y: 28 } },
   { title: "Compare", grade: "K–1st", f: { op: "○", l: "3 + 4", r: "8", sym: "<", ans: 8, q: "3 + 4 □ 8" } },
   { title: "Balance", grade: "1st", f: { op: "=", l: "3 + 4", r: "□ + 5", ans: 2, q: "3 + 4 = □ + 5" } },
