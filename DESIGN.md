@@ -66,6 +66,7 @@ Each monster gets one simple trait that changes *how* you do math, never anythin
 - **Divvy**: ✂️ *Split*. At half HP it splits into two half-size Divvies.
 - **Starbot**: ⭐ *Stripes*. It asks the ×5 and ×10 tables more often.
 - **Make-Ten Golem**: 🔟 *Ten Smash*. Answers of 10 or more hit double.
+- **Quizard**: ❓ *Mystery*. Every problem hides a number (3 + □ = 7); the hidden number is the damage. Its body is a big question mark in a wizard hat.
 - **Sigma Rex**: 👑 *Second wind*. At half HP it armors up like Timesaur.
 - **Cursed digits** (Sevenstein, Octoloop and the other eight; §6.6): 🍀 *Lucky Number*. Answers containing its digit deal double damage.
 
@@ -106,7 +107,7 @@ Every Wing also has one **rescue floor** holding a cursed digit (§6.6). The pro
 - **% Gremlin**: two little circle-headed gremlins on a seesaw. It asks "10% of 50" and similar.
 - **π Pirate**: one leg on each side of the π bar and an eyepatch. For Master it asks circle facts, and otherwise it does decimal arithmetic.
 - **Halfling (½)**: its body is literally split in two. When hit, it shows the damage as a filling fraction bar.
-- **Quizard (?)**: a wizard whose hat curls into a question mark. *Mystery*: the missing number moves around (3 + □ = 7).
+- **Quizard (?)**: a question mark in a wizard hat, holding a wand. *Mystery*: the missing number moves around (3 + □ = 7).
 - **Shoutandcomma (!)**: a mummy whose tall wrapped body is the !, with the dot as its feet. The name is a pun on Tutankhamun. *Count on*: problems that count on from the bigger number (8 + 3).
 - **Slimelipsis (…)**: three little slimes in a row. *What comes next*: counting sequences that follow the band: by 1s and 10s and backward from 10 in K, by 5s in grade 1, by 2s in grade 2 (2, 4, 6, □).
 - **Trollar ($)**: a bridge troll with a $ on his belly who wants coins to let you pass. *Pocket change*: follows the band: name the coin (K), then know each coin's value (grade 1). Adding mixed bills and coins with $ and ¢ waits for Apprentice (grade 2).
