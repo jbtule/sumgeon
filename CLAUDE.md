@@ -73,6 +73,7 @@ A math-practice dungeon crawler. The player fights anthropomorphic monsters buil
 - Problems come from the learning engine (`learn.js`, DESIGN.md §5), not at random:
   - Each player has a record per fact (`facts`): box 0–4, times seen and right, average answer time, last seen.
   - A right, unhinted answer moves a fact up a box (two when fast, from box 1). A miss sends it to box 0. A hinted answer changes nothing.
+  - **Placement:** a fact seen for the first time and answered right, fast (under the band's `fluentMs`) and unhinted is already known and goes straight to box 3 (learned), so a fluent player isn't held back.
   - Each problem is about 60% learning facts (box 0–2, box 0 favored), 25% review facts that are due (box 3 after 10 minutes, box 4 after a day), and 15% new facts from the newest open level. The monster's operation is preferred 70% of the time. The last 3 facts don't repeat.
   - A missed fact comes back 2–4 problems later.
 - Bands (`BANDS`) replace the prototype's operations and Easy/Medium/Hard:
@@ -80,7 +81,7 @@ A math-practice dungeon crawler. The player fights anthropomorphic monsters buil
   - **Apprentice** (2nd–3rd, 5 hearts): within 20 → ×2, 5, 10 → ÷ → ×3, 4 → ÷ → ×6–9 → ÷ → ×÷ 11, 12.
   - A level opens when 70% of the level before is learned (box 3+). Strands (coins, two-digit) open theirs at 50% (`unlock`), since they're asked one floor a run. Every banded fact is one of the 633 recorded facts, so every problem has the recorded voice.
 - Hints (`hints.js`, DESIGN.md §5.3) follow how classrooms teach now: ten-frames, 10 and some more, make 10, doubles plus one, draw and cross out, think addition on a number line, arrays, doubling (×4 as double ×2, ×8 as double ×4), break apart, ×9 as ×10 minus a group, think multiplication.
-  - A new fact shows its hint by itself. A fact being learned gets a 💡 button. A fact in review gets none.
+  - A new fact shows its hint by itself after 3.5 s (`NEW_HINT_MS`), with 💡 there at once, so a player who knows it can answer first and get the credit. A fact being learned gets a 💡 button. A fact in review gets none.
   - After a miss, the voice says "Oops!" then the right answer ("Oops! Seven plus eight is fifteen."), and the worked example opens as a card over the game: "Oops!", the fact with its answer, the drawing and the worked line, until "Got it" or Enter. The message under the monster says "Oops!" too.
   - Hints in play show only the drawing and its words. The explanation for grown-ups (`grownups` in `hintFor`) lives on ⚙ Settings → **How the hints work**: how the game teaches, then one card per strategy (`STRATEGIES` in `hints.js`) with the game's drawing.
 - Wrong answer or timeout: the monster lunges, lose 1 of 5 hearts, and the correct answer is shown and said.

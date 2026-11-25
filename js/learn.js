@@ -113,13 +113,18 @@ export function helpFor(rec) {
 }
 
 // After an answer. ok: right; ms: time taken; hinted: a hint was open.
+// Placement: a fact seen for the first time and answered right, fast and without a hint is one
+// the player already knows, so it goes straight to learned (box 3). A fluent player isn't held
+// back by facts they know; facts they don't still get the whole climb.
 export function record(rec, { ok, ms, hinted, now, fluentMs }) {
+  const first = !rec || !rec.n;
   const r = Object.assign({ b: 0, n: 0, c: 0, ms: 0, t: 0 }, rec);
   r.n++; r.t = now;
   if (!ok) { r.b = 0; return r; }
   r.c++;
   if (hinted) return r;
   r.ms = r.ms ? Math.round(r.ms * 0.7 + ms * 0.3) : Math.round(ms);
+  if (first && ms < fluentMs) { r.b = 3; return r; }
   r.b = Math.min(BOX_MAX, r.b + (r.b >= 1 && ms < fluentMs ? 2 : 1));
   return r;
 }

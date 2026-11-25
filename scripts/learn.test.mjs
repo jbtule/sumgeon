@@ -26,8 +26,11 @@ assert.ok(pool("sprout").every((p) => p.op === "+" || p.op === "-"), "Sprout is 
 
 // Records.
 const fast = { ok: true, ms: 1500, hinted: false, now: 1, fluentMs: 3000 };
-let r = record(undefined, fast);
-assert.deepEqual([r.b, r.n, r.c], [1, 1, 1], "a first right answer is box 1");
+// Placement: a new fact answered right, fast and unhinted is already known.
+assert.equal(record(undefined, fast).b, 3, "a new fact answered fast is learned at once");
+assert.equal(record(undefined, { ...fast, hinted: true }).b, 0, "but not with a hint");
+let r = record(undefined, { ...fast, ms: 5000 });
+assert.deepEqual([r.b, r.n, r.c], [1, 1, 1], "a slow first right answer is box 1");
 r = record(r, fast);
 assert.equal(r.b, 3, "fast from box 1 on moves two boxes");
 r = record(r, { ...fast, ms: 5000 });

@@ -405,9 +405,15 @@ function burst(crit) {
    A new fact shows its model by itself; a fact being learned gets a 💡 button; a fact in review
    gets nothing. After a miss, the worked example stays up until "Got it". A hinted answer still
    hits, but doesn't build the streak or count toward mastery. */
+// A new fact's hint waits a moment (NEW_HINT_MS), so a player who already knows it can answer
+// first and get the credit (placement, learn.js record); until then 💡 offers it.
+const NEW_HINT_MS = 3500;
+let hintTimer = null;
 function showHelp(mode) {
-  $("hintBtn").hidden = mode !== "button";
-  if (mode === "show") openHint(); else $("hint").hidden = true;
+  clearTimeout(hintTimer);
+  $("hintBtn").hidden = mode === "none";
+  $("hint").hidden = true;
+  if (mode === "show") { const cur = G.cur; hintTimer = setTimeout(() => { if (G.cur === cur && !G.busy && !G.hinted) openHint(); }, NEW_HINT_MS); }
 }
 function openHint() {
   const h = hintFor(hintFact(), false), box = $("hint");
@@ -700,7 +706,7 @@ function depthTrack(w, d) {
   if (last > 8) { first = last - 6; rows.push(`<li class="done fold"><i></i>Depths 1–${first - 1} cleared</li>`); }
   for (let n = first; n <= last; n++) {
     const sc = depthScore(w, n), score = sc.got ? ` <small>★ ${sc.got} of ${sc.max}</small>` : "";
-    rows.push(n < d ? `<li class="done"><i></i>Depth ${n}${score}</li>` : n === d ? `<li class="you"><i></i>Depth ${n}${score} <em>${d === 1 && !(progress[w.id] || {}).best ? "start here" : "you are here"}</em></li>` : `<li><i></i>Depth ${n}</li>`);
+    rows.push(n < d ? `<li class="done"><i></i>Depth ${n}${score}</li>` : n === d ? `<li class="here"><i></i>Depth ${n}${score} <em>${d === 1 && !(progress[w.id] || {}).best ? "start here" : "you are here"}</em></li>` : `<li><i></i>Depth ${n}</li>`);
   }
   return `<ol class="shaft" aria-label="Deepest: depth ${d}">${rows.join("")}</ol>`;
 }
