@@ -43,6 +43,15 @@ for (const sh of SHAPES_FOR_TESTS) for (let k = 0; k < 10; k++) for (const back 
 assert.ok(right / total >= 0.98, `messy shapes read right: ${right}/${total}`);
 assert.equal(confidentlyWrong, 0, "a messy shape is never confidently read as another digit");
 
+// Real drawings that were misread. A 4 with a high crossbar and a long stem (traced from a phone,
+// in pixels, two strokes) read as a 9; and a 9 with a small head and long tail must stay a 9.
+const dense = (st) => st.map((pts) => pts.flatMap((p, i) => i ? Array.from({ length: 12 }, (_, k) => [pts[i - 1][0] + (p[0] - pts[i - 1][0]) * (k + 1) / 12, pts[i - 1][1] + (p[1] - pts[i - 1][1]) * (k + 1) / 12]) : [p]));
+const tall4 = read(dense([[[315, 580], [275, 602], [272, 700], [290, 855], [585, 855], [690, 820]], [[555, 565], [545, 630], [600, 1000], [645, 1265]]]));
+assert.ok(tall4.digit === 4 && tall4.clear, `a high-bar 4 reads as a clear 4 (got ${tall4.digit})`);
+const ring = (cx, cy, r) => Array.from({ length: 21 }, (_, i) => [cx + r * Math.cos(i * Math.PI / 10), cy + r * Math.sin(i * Math.PI / 10)]);
+const small9 = read(dense([ring(50, 22, 17).concat([[67, 22], [68, 95]])]));
+assert.ok(small9.digit === 9 && small9.clear, `a small-headed 9 reads as a clear 9 (got ${small9.digit})`);
+
 // A scribble isn't clear, and nothing drawn reads as nothing.
 const scribble = [Array.from({ length: 40 }, (_, i) => [50 + 40 * Math.sin(i * 1.7), 50 + 40 * Math.cos(i * 2.3)])];
 assert.equal(read(scribble).clear, false, "a scribble isn't read clearly");

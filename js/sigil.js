@@ -38,6 +38,10 @@ const SHAPES = [
   [3, "flat top", [join(line([24, 8], [74, 8], [46, 40]), arc(48, 68, 28, 24, -100, 155))]],
   [4, "open", [line([28, 5], [24, 58], [82, 58]), line([66, 14], [66, 95])]],
   [4, "closed", [line([64, 5], [18, 62], [86, 62]), line([64, 5], [64, 95])]],
+  // A high crossbar and a long stem below it, the way many people write 4 (it read as a 9:
+  // a head on top and a long tail). Open and closed.
+  [4, "open, high bar", [line([28, 4], [24, 40], [84, 38]), line([60, 2], [66, 98])]],
+  [4, "closed, high bar", [line([60, 3], [20, 40], [84, 40]), line([60, 3], [62, 98])]],
   [5, "one stroke", [join(line([74, 8], [30, 8], [28, 46]), arc(48, 67, 27, 25, -125, 150))]],
   [5, "big belly", [join(line([72, 6], [32, 6], [30, 40]), arc(46, 64, 30, 30, -115, 155))]],
   [5, "hat after", [join(line([30, 8], [28, 46]), arc(48, 67, 27, 25, -125, 150)), line([30, 8], [74, 8])]],
@@ -47,6 +51,8 @@ const SHAPES = [
   [8, "figure eight", [join(arc(50, 28, 20, 20, 90, -270, 20), arc(50, 72, 24, 22, -90, 270, 22))]],
   [8, "two circles", [arc(50, 28, 20, 20, 0, 360, 20), arc(50, 72, 24, 22, 0, 360, 22)]],
   [9, "straight", [join(arc(48, 30, 24, 22, 0, 360, 20), line([72, 30], [70, 95]))]],
+  // A small head and a long tail: the 9 that a high-bar 4 would otherwise take.
+  [9, "small head", [join(arc(48, 20, 20, 17, 0, 360, 20), line([68, 20], [68, 97]))]],
   [9, "curly", [join(arc(48, 30, 24, 22, 0, 360, 20), line([72, 30], [72, 70], [62, 90], [45, 95], [30, 88]))]]
 ];
 // Digits whose mirror image is a different shape: the mirror means it's written backwards.
