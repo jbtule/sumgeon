@@ -5,7 +5,7 @@ import { pool } from "../js/learn.js";
 import { WINGS, cursedMonster } from "../js/wings.js";
 
 const r = roster();
-assert.deepEqual(r.map((x) => x.m.n), ["Plusquito", "Minustaur", "Quizard", "Trollar", "Make-Ten Golem", "Timesaur", "Divvy", "Starbot", "Sigma Rex"]);
+assert.deepEqual(r.map((x) => x.m.n), ["Plusquito", "Minustaur", "Quizard", "Trollar", "Make-Ten Golem", "Timesaur", "Divvy", "Starbot", "Hashbrown", "Sigma Rex"]);
 assert.ok(r.every((x) => x.m && x.wing));
 
 const plus = r[0], recs = {};

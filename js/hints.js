@@ -53,14 +53,19 @@ function nearDouble(n) {
 
 // An open number line from a to b, hopping to `via` first (count up through 10).
 function hops(a, b, via) {
-  const stops = via && via > a && via < b ? [a, via, b] : [a, b];
-  const W = 260, x = (n) => 14 + (n - a) / (b - a) * (W - 28);
+  const stops = [a, ...[].concat(via || []).filter((v) => v > a && v < b), b];
+  // Hops are spaced by size, but a short hop still gets room for its labels.
+  const W = 260, min = (b - a) / 5, gaps = stops.slice(1).map((n, i) => Math.max(n - stops[i], stops.length > 2 ? min : 0));
+  const total = gaps.reduce((t, g) => t + g, 0), pos = { [a]: 14 };
+  stops.slice(1).forEach((n, i) => { pos[n] = pos[stops[i]] + gaps[i] / total * (W - 28); });
+  const x = (n) => pos[n];
   let s = `<line x1="8" y1="44" x2="${W - 8}" y2="44" stroke="${C.line}" stroke-width="3" stroke-linecap="round"/>`;
   stops.forEach((n, i) => {
     s += `<line x1="${x(n)}" y1="38" x2="${x(n)}" y2="50" stroke="${C.ink}" stroke-width="2.5"/><text x="${x(n)}" y="66" text-anchor="middle" fill="${C.ink}" font-size="14" font-weight="800">${n}</text>`;
     if (i) {
       const p = stops[i - 1], mid = (x(p) + x(n)) / 2;
-      s += `<path d="M${x(p)} 38 Q${mid} 6 ${x(n)} 38" fill="none" stroke="${i === 1 ? C.a : C.b}" stroke-width="3"/><text x="${mid}" y="16" text-anchor="middle" fill="${i === 1 ? C.a : C.b}" font-size="13" font-weight="900">+${n - p}</text>`;
+      const col = i % 2 ? C.a : C.b;
+      s += `<path d="M${x(p)} 38 Q${mid} 6 ${x(n)} 38" fill="none" stroke="${col}" stroke-width="3"/><text x="${mid}" y="16" text-anchor="middle" fill="${col}" font-size="13" font-weight="900">+${n - p}</text>`;
     }
   });
   return svg(W, 72, s, `count up from ${a} to ${b}`);
@@ -83,8 +88,51 @@ function coinHint(f, worked) {
   return { model: coinsSvg(f.coins, true), say, grownups };
 }
 
+// Base-ten blocks: a rod for each ten and a little square for each one. crossFrom: rods from this
+// index on are crossed out (taking away tens). Returns { s, w }.
+function blocks(n, x0, color, crossFrom) {
+  let s = "", x = x0;
+  const tens = Math.floor(n / 10), ones = n % 10;
+  for (let i = 0; i < tens; i++, x += 11) {
+    s += `<rect x="${x}" y="4" width="8" height="50" rx="1.5" fill="${color}"/>`;
+    for (let k = 1; k < 10; k++) s += `<line x1="${x}" y1="${4 + k * 5}" x2="${x + 8}" y2="${4 + k * 5}" stroke="var(--dark)" stroke-width="1"/>`;
+    if (crossFrom != null && i >= crossFrom) s += `<path d="M${x} 8L${x + 8} 50M${x + 8} 8L${x} 50" stroke="${C.ink}" stroke-width="2" stroke-linecap="round"/>`;
+  }
+  if (ones) x += 2;
+  for (let i = 0; i < ones; i++) s += `<rect x="${x + (i % 2) * 10}" y="${44 - Math.floor(i / 2) * 10}" width="8" height="8" rx="1.5" fill="${color}"/>`;
+  if (ones) x += ones > 1 ? 20 : 10;
+  return { s, w: x - x0 };
+}
+// Two-digit + and − (2nd grade): tens and ones for adding, counting up for subtracting.
+function twoDigitHint(f, worked) {
+  const { op, x, y, ans } = f, end = worked ? ans : "?";
+  const tens = (n) => n - (n % 10), ones = (n) => n % 10, T = (n) => n / 10 + (n === 10 ? " ten" : " tens");
+  if (op === "+") {
+    const a = blocks(x, 4, C.a), b = blocks(y, 4 + a.w + 14, C.b);
+    const model = svg(a.w + b.w + 22, 58, a.s + b.s, `${x} and ${y} in tens and ones`);
+    const grownups = "Tens and ones (place value): kids add the tens, add the ones, then put them together. Ten ones make a new ten, which is all regrouping (carrying) is.";
+    if (!ones(x) && !ones(y)) return { model, say: `${T(x)} + ${T(y)}. ${x} + ${y} = ${end}`, grownups };
+    const t = tens(x) + tens(y), o = ones(x) + ones(y);
+    if (!tens(x) || !tens(y)) return { model, say: `Add the ones: ${ones(x)} + ${ones(y)} = ${o}. ${t} + ${o} = ${end}`, grownups };
+    return { model, say: `Tens and ones: ${tens(x)} + ${tens(y)} = ${t}, ${ones(x)} + ${ones(y)} = ${o}. ${t} + ${o} = ${end}`, grownups };
+  }
+  if (!ones(x) && !ones(y)) {
+    const a = blocks(x, 4, C.a, (x - y) / 10);
+    return { model: svg(a.w + 8, 58, a.s, `${x / 10} tens, take away ${y / 10}`),
+      say: `${T(x)} take away ${T(y)}. ${x} − ${y} = ${end}`,
+      grownups: "Taking away tens: 70 − 30 is 7 tens take away 3 tens, so it's just 7 − 3 with a zero." };
+  }
+  // Count up from y: to the next ten, then by tens, then the rest.
+  const up = Math.ceil(y / 10) * 10, down = tens(x), stops = [y, up, down, x].filter((v, i, a) => a.indexOf(v) === i && v >= y && v <= x);
+  const jumps = stops.slice(1).map((v, i) => v - stops[i]);
+  return { model: hops(y, x, stops.slice(1, -1)),
+    say: `Think addition: count up from ${y} to ${x}. ${jumps.join(" + ")} = ${end}`,
+    grownups: "Think addition on an open number line: kids count up from the smaller number, hopping to the next ten, then by tens, then the rest. It's how 2nd grade subtracts without borrowing." };
+}
+
 export function hintFor(f, worked) {
   if (f.op === "¢") return coinHint(f, worked);
+  if ((f.op === "+" && f.ans > 20) || (f.op === "-" && f.x > 20)) return twoDigitHint(f, worked);
   const { op, x, y, ans } = f, end = (t) => (worked ? t : "?");
   if (op === "+") {
     const big = Math.max(x, y), small = Math.min(x, y);
@@ -169,5 +217,7 @@ export const STRATEGIES = [
   { title: "Break apart", grade: "3rd", f: { op: "×", x: 6, y: 7 } },
   { title: "Nines as tens", grade: "3rd", f: { op: "×", x: 9, y: 7 } },
   { title: "Counting coins", grade: "K–1st", f: coinFact({ q: 0, d: 1, n: 1, p: 2 }) },
+  { title: "Tens and ones", grade: "2nd", f: { op: "+", x: 38, y: 25 } },
+  { title: "Count up by tens", grade: "2nd", f: { op: "-", x: 52, y: 28 } },
   { title: "Think multiplication", grade: "3rd", f: { op: "÷", x: 32, y: 8 } }
 ].map((s) => Object.assign(s, { f: Object.assign({ ans: { "+": s.f.x + s.f.y, "-": s.f.x - s.f.y, "×": s.f.x * s.f.y, "÷": s.f.x / s.f.y }[s.f.op] }, s.f) }));
