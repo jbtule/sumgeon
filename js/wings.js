@@ -1,7 +1,7 @@
 // The Wings of the Sumgeon (DESIGN.md §4): each Wing is a run of floors drawn from its monster
 // pool, with a rescue floor and a boss, and asks one band's facts. Mastery opens the next Wing.
 // No DOM: runs in Node for the tests.
-import { MON } from "./monsters.js";
+import { MON, LOOKS, lookOf } from "./monsters.js";
 import { HEROES } from "./heroes.js";
 import { pool, learned } from "./learn.js";
 
@@ -48,12 +48,20 @@ export function runFloors(wing, team, rnd, depth) {
     const options = wing.pool.length > 1 ? wing.pool.filter((n) => n !== last) : wing.pool;
     return mon((last = options[Math.floor(r() * options.length)]));
   };
-  return wing.floors.map((f) => {
+  return wing.floors.map((f, i) => {
     if (f === "rescue") { const d = nextRescue(team); last = null; return d == null ? pick() : cursedMonster(d); }
-    if (f === "pool" || (depth || 1) > 1) return pick();
+    if (f === "pool" || (depth || 1) > 1) return dressed(pick(), wing, depth, i);
     last = f;
     return mon(f);
   }).concat([mon(wing.boss)]);
+}
+// Below depth 1, each floor's monster wears one of its looks (monsters.js LOOKS), the same one
+// every time you come back to that floor of that depth: a hash of the Wing, depth and floor.
+function dressed(m, wing, depth, floor) {
+  if ((depth || 1) < 2 || !LOOKS[m.n]) return m;
+  let h = 2166136261;
+  for (const ch of wing.id + ":" + depth + ":" + floor) h = Math.imul(h ^ ch.charCodeAt(0), 16777619) >>> 0;
+  return lookOf(m, h % (LOOKS[m.n].length + 1));
 }
 
 // Depth: beating a Wing's boss opens its next depth, and "Go deeper" goes there. Each depth is

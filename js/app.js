@@ -1,6 +1,6 @@
 // Everything on screen: the game loop, the menu and players, and the attack animations.
 // Problems, monsters, saving, sound and speech live in their own modules.
-import { MON, svg } from "./monsters.js";
+import { MON, svg, LOOKS, lookOf } from "./monsters.js";
 import { spokenProblem, spokenFact } from "./problems.js";
 import { BANDS, choose, factOf, record as recordAnswer, helpFor, openLevel, monsterHP } from "./learn.js";
 import { hintFor, STRATEGIES } from "./hints.js";
@@ -253,6 +253,7 @@ function loadMonster(i, quiet) {
   el.className = "mon";
   el.innerHTML = monsterArt(m);
   $("mName").textContent = m.n;
+  $("mName").classList.toggle("long", m.n.length > 13); // a long look name (Professor Minustaur) shrinks to fit
   // The trait badge, and what it does under the monster as it arrives.
   const t = traitOf(m), badge = $("trait");
   badge.hidden = !t;
@@ -752,7 +753,7 @@ function bookPage() {
       ? `<section class="beast${gold ? " gold" : ""}"><div class="beast-art">${ring(share)}${svg(m)}</div>
           <b>${esc(m.n)}</b>${m.boss ? '<small class="boss-tag">Boss</small>' : ""}
           ${t ? `<span class="trait">${t.icon} ${esc(t.name)}</span><small>${esc(t.text)}</small>` : "<small>No tricks: a good first fight</small>"}
-          <small>Beaten ${s.beaten || 0}× · Learned ${Math.round(share * 100)}%</small></section>`
+          <small>Beaten ${s.beaten || 0}× · Learned ${Math.round(share * 100)}%</small>${looksRow(m)}</section>`
       : `<section class="beast unmet"><div class="beast-art silhouette">${svg(m)}</div><b>???</b><small>Not met yet</small></section>`;
   }
   beasts += "</div>";
@@ -770,6 +771,14 @@ function bookPage() {
   <div class="btns"><button class="big" id="bookBack">Back</button></div>`);
   // Back to the pause screen mid-run, or to the start screen.
   $("bookBack").onclick = () => G.paused ? pause() : menu();
+}
+// A monster's looks (monsters.js LOOKS) on its card: the ones met, and silhouettes for the rest.
+function looksRow(m) {
+  if (!LOOKS[m.n]) return "";
+  const all = [0, 1, 2, 3, 4].map((i) => lookOf(m, i)), found = all.filter((l) => seen[l.n]).length;
+  return `<div class="looks" aria-label="${found} of ${all.length} looks found">${all.map((l) => seen[l.n]
+    ? `<span title="${esc(l.n)}">${svg(l)}</span>` : `<span class="silhouette" title="Not met yet">${svg(l)}</span>`).join("")}</div>
+    <small>Looks found: ${found} of ${all.length}</small>`;
 }
 // "How the hints work": how Sumgeon teaches, and each strategy with the game's own drawing and
 // a plain explanation, for grown-ups who learned math another way (DESIGN.md §5.3).

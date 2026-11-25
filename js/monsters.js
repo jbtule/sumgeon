@@ -41,4 +41,73 @@ export const MON=[
  {n:'Starbot',op:'×',c:'#9fb6c9',hits:4,quip:'powers down with a sparkly fizzle.',
   d:c=>`${foot(78,182,16)}${foot(122,182,16)}<path d="M70 168 V178 M130 168 V178" stroke="${DK}" stroke-width="10" stroke-linecap="round"/>`+line(`<path d="M44 108 L22 132 M156 108 L178 132"/>`,c,12)+solid(`<rect x="50" y="86" width="100" height="84" rx="16"/>`,c)+line(`<path d="M100 8 V72 M72 24 L128 56 M128 24 L72 56"/>`,'#ffc93c',16)+`<rect x="66" y="100" width="68" height="44" rx="10" fill="#0c171c"/><circle cx="86" cy="118" r="7" fill="#45d6e6"/><circle cx="114" cy="118" r="7" fill="#45d6e6"/><path d="M88 132 Q100 139 112 132" stroke="#45d6e6" stroke-width="3" fill="none" stroke-linecap="round"/><circle cx="100" cy="160" r="4" fill="#ff5a4e"/>`}
 ];
-export const svg=(m,cls='')=>`<svg viewBox="-10 -10 220 220" class="${cls}" role="img" aria-label="${m.n}">${defs}${m.d(m.c)}</svg>`;
+
+/* ---------- looks: the same monster with different extras ----------
+   Each regular monster has four more looks with alliterative names (Minustaur's Mom, Mighty
+   Minustaur). A look is the same drawing plus accessories placed on its face and head, so kids
+   always know which symbol it is. Bosses and cursed digits have none. */
+
+// Where each monster's features are, in its 200 × 200 drawing: eyes [x, y, r], the mouth, the top
+// of its head (and whether it already wears a hat), its neck, the ground, and the eyelid color.
+const ANCHOR = {
+  Plusquito: { eyes: [[91, 92, 8], [110, 92, 8]], mouth: [100, 106], top: [100, 36], neck: [100, 128], ground: 184 },
+  Minustaur: { eyes: [[82, 101, 9], [118, 101, 9]], mouth: [100, 116], top: [100, 84], neck: [100, 128], ground: 180 },
+  Quizard: { eyes: [[88, 30, 8], [112, 30, 8]], mouth: [100, 44], top: [100, -4], hat: true, neck: [100, 62], ground: 204 },
+  Trollar: { eyes: [[88, 28, 8], [112, 28, 8]], mouth: [100, 41], top: [100, 14], neck: [100, 54], ground: 202 },
+  Chompers: { eyes: [[76, 70, 8]], mouth: [150, 100], top: [74, 56], neck: [58, 112], ground: 178 },
+  "Equal Twins": { eyes: [[86, 68, 8], [110, 68, 8]], mouth: [98, 82], top: [100, 50], neck: [100, 100], ground: 182 },
+  Timesaur: { eyes: [[89, 93, 9], [112, 93, 9]], mouth: [100, 108], top: [100, 76], neck: [100, 124], ground: 174 },
+  Divvy: { eyes: [[89, 50, 8], [111, 50, 8]], mouth: [100, 66], top: [100, 22], neck: [100, 88], ground: 192 },
+  Starbot: { eyes: [[86, 118, 7], [114, 118, 7]], mouth: [100, 134], top: [100, 86], neck: [100, 152], ground: 188, lid: DK },
+  Haberhasher: { eyes: [[88, 66, 7], [112, 66, 7]], mouth: [100, 78], top: [104, -22], hat: true, neck: [100, 100], ground: 194 }
+};
+const st = `stroke="${DK}" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"`;
+// Each accessory: (anchor, color) → SVG drawn over the monster.
+const KIT = {
+  crown: (a) => `<path d="M${a.top[0] - 22} ${a.top[1] + 2} l-4 -24 l13 11 l13 -18 l13 18 l13 -11 l-4 24 z" fill="#ffc93c" ${st}/><circle cx="${a.top[0]}" cy="${a.top[1] - 8}" r="3" fill="#ff5a4e"/>`,
+  bow: (a) => { const x = a.top[0] - 20, y = a.top[1] + 4; return `<path d="M${x} ${y} l-14 -9 l0 18 z M${x} ${y} l14 -9 l0 18 z" fill="#ff7ac8" ${st}/><circle cx="${x}" cy="${y}" r="4.5" fill="#ff7ac8" ${st}/>`; },
+  lashes: (a) => a.eyes.map(([x, y, r]) => `<path d="M${x - r * .7} ${y - r * .9} l-4 -5 M${x} ${y - r - 1} l0 -6 M${x + r * .7} ${y - r * .9} l4 -5" ${st}/>`).join(""),
+  blush: (a) => a.eyes.map(([x, y, r], i) => `<ellipse cx="${x + (i ? 1 : -1) * (r + 3)}" cy="${y + r + 4}" rx="6" ry="3.5" fill="#ff7ac8" opacity=".75"/>`).join(""),
+  mustache: (a) => { const [x, y] = a.mouth; return `<path d="M${x} ${y - 3} q-8 -6 -16 -1 q-6 4 -10 -2 q2 10 14 8 q8 -1 12 -5 q4 4 12 5 q12 2 14 -8 q-4 6 -10 2 q-8 -5 -16 1 z" fill="#f3efe4" ${st}/>`; },
+  glasses: (a) => a.eyes.map(([x, y, r]) => `<circle cx="${x}" cy="${y}" r="${r + 4}" fill="#ffffff22" ${st}/>`).join("") + (a.eyes.length > 1 ? `<path d="M${a.eyes[0][0] + a.eyes[0][2] + 4} ${a.eyes[0][1]} L${a.eyes[1][0] - a.eyes[1][2] - 4} ${a.eyes[1][1]}" ${st}/>` : ""),
+  monocle: (a) => { const [x, y, r] = a.eyes[a.eyes.length - 1]; return `<circle cx="${x}" cy="${y}" r="${r + 4}" fill="#ffffff22" stroke="#ffc93c" stroke-width="3"/><path d="M${x + r + 3} ${y + 2} q6 14 -2 26" stroke="#ffc93c" stroke-width="2" fill="none"/>`; },
+  sunglasses: (a) => a.eyes.map(([x, y, r]) => `<rect x="${x - r - 4}" y="${y - r + 1}" width="${2 * r + 8}" height="${2 * r - 2}" rx="5" fill="${DK}"/><path d="M${x - r} ${y - r + 5} l5 0" stroke="#ffffff66" stroke-width="2"/>`).join("") + (a.eyes.length > 1 ? `<path d="M${a.eyes[0][0] + a.eyes[0][2] + 4} ${a.eyes[0][1] - 2} L${a.eyes[1][0] - a.eyes[1][2] - 4} ${a.eyes[1][1] - 2}" stroke="${DK}" stroke-width="3"/>` : ""),
+  eyepatch: (a) => { const [x, y, r] = a.eyes[0]; return `<path d="M${x - r - 14} ${y - r - 8} L${x + r + 30} ${y - r - 6}" stroke="${DK}" stroke-width="2.5"/><ellipse cx="${x}" cy="${y}" rx="${r + 3}" ry="${r + 2}" fill="${DK}"/>`; },
+  bandana: (a) => { const [x, y] = a.top; return `<path d="M${x - 26} ${y + 6} Q${x} ${y - 16} ${x + 26} ${y + 6} Z" fill="#ff5a4e" ${st}/><path d="M${x + 24} ${y + 4} l12 6 l-4 -10 z" fill="#ff5a4e" ${st}/><circle cx="${x - 6}" cy="${y - 2}" r="2" fill="#fff"/><circle cx="${x + 6}" cy="${y - 1}" r="2" fill="#fff"/>`; },
+  tophat: (a) => { const [x, y] = a.top; return `<rect x="${x - 15}" y="${y - 30}" width="30" height="30" rx="3" fill="${DK}" ${st}/><rect x="${x - 15}" y="${y - 9}" width="30" height="5" fill="#ff5a4e"/><ellipse cx="${x}" cy="${y}" rx="24" ry="5" fill="${DK}" ${st}/>`; },
+  nightcap: (a) => { const [x, y] = a.top; return `<path d="M${x - 22} ${y + 4} Q${x - 6} ${y - 34} ${x + 26} ${y - 22} Q${x + 10} ${y - 10} ${x + 20} ${y + 4} Z" fill="#8ab4ff" ${st}/><circle cx="${x + 28}" cy="${y - 22}" r="6" fill="#f3efe4" ${st}/>`; },
+  headband: (a) => { const y = Math.min(...a.eyes.map((e) => e[1] - e[2])) - 7, x0 = Math.min(...a.eyes.map((e) => e[0])) - 22, x1 = Math.max(...a.eyes.map((e) => e[0])) + 22; return `<path d="M${x0} ${y} L${x1} ${y}" stroke="${DK}" stroke-width="10" stroke-linecap="round"/><path d="M${x0} ${y} L${x1} ${y}" stroke="#ff5a4e" stroke-width="6" stroke-linecap="round"/><path d="M${x1} ${y} l10 8 M${x1} ${y} l12 -2" stroke="#ff5a4e" stroke-width="4" stroke-linecap="round"/>`; },
+  lids: (a, c) => a.eyes.map(([x, y, r]) => `<path d="M${x - r - 1} ${y} A${r + 1} ${r + 1} 0 0 1 ${x + r + 1} ${y} Z" fill="${a.lid || c}" stroke="${DK}" stroke-width="3"/>`).join("") + `<path d="M${a.eyes[a.eyes.length - 1][0] + 16} ${a.eyes[0][1] - 22} h8 l-8 8 h8" stroke="#f3efe4" stroke-width="2.5" fill="none" stroke-linejoin="round"/>`,
+  spiral: (a) => a.eyes.map(([x, y, r]) => `<circle cx="${x}" cy="${y}" r="${r}" fill="#fff" stroke="${DK}" stroke-width="3"/><path d="M${x} ${y} m0 -1 a1.5 1.5 0 1 1 -1.5 1.5 a3.5 3.5 0 1 1 3.5 3.5 a5.5 5.5 0 1 1 -5.5 -5.5" stroke="${DK}" stroke-width="1.6" fill="none"/>`).join(""),
+  sparkles: (a) => [[-34, 6, 1], [36, -4, .8], [24, 26, .6]].map(([dx, dy, k]) => { const x = a.top[0] + dx, y = a.top[1] + dy; return `<path d="M${x} ${y - 9 * k} L${x + 2.5 * k} ${y - 2.5 * k} L${x + 9 * k} ${y} L${x + 2.5 * k} ${y + 2.5 * k} L${x} ${y + 9 * k} L${x - 2.5 * k} ${y + 2.5 * k} L${x - 9 * k} ${y} L${x - 2.5 * k} ${y - 2.5 * k} Z" fill="#ffc93c"/>`; }).join(""),
+  scarf: (a) => { const [x, y] = a.neck; return `<path d="M${x - 24} ${y - 4} Q${x} ${y + 8} ${x + 24} ${y - 4} L${x + 24} ${y + 4} Q${x} ${y + 16} ${x - 24} ${y + 4} Z" fill="#45d6e6" ${st}/><path d="M${x + 12} ${y + 6} l4 22 l10 -2 l-4 -20" fill="#45d6e6" ${st}/>`; },
+  bowtie: (a) => { const [x, y] = a.neck; return `<path d="M${x} ${y} l-14 -8 l0 16 z M${x} ${y} l14 -8 l0 16 z" fill="#ff5a4e" ${st}/><circle cx="${x}" cy="${y}" r="4" fill="#ff5a4e" ${st}/>`; },
+  medal: (a) => { const [x, y] = a.neck; return `<path d="M${x - 8} ${y - 12} L${x} ${y + 2} L${x + 8} ${y - 12}" stroke="#ff5a4e" stroke-width="5" fill="none"/><circle cx="${x}" cy="${y + 8}" r="8" fill="#ffc93c" ${st}/>`; }
+};
+// The looks: [name, accessories]. "mini" draws the monster smaller. Names are anything fun.
+export const LOOKS = {
+  Plusquito: [["Captain Plunderquito", ["bandana", "eyepatch"]], ["Sir Plusington", ["tophat", "monocle"]], ["Plusquito Jr.", ["mini"]], ["Coach Plusquito", ["headband", "sunglasses"]]],
+  Minustaur: [["Minustaur's Mom", ["bow", "lashes", "blush"]], ["King Minus", ["crown"]], ["Baby Minustaur", ["mini"]], ["Professor Minustaur", ["mustache", "glasses"]]],
+  Quizard: [["The Quizard Queen", ["lashes", "blush", "sparkles"]], ["Quizard of Cool", ["sunglasses"]], ["Snoozard", ["lids"]], ["Professor Quizzle", ["monocle", "mustache"]]],
+  Trollar: [["Trollar Jr.", ["mini"]], ["Mr. Moneybags", ["tophat", "monocle"]], ["Bridge Bandit", ["headband", "eyepatch"]], ["Snoozy Trollar", ["nightcap", "lids"]]],
+  Chompers: [["King of the Swamp", ["crown", "medal"]], ["Chompette", ["bow", "blush"]], ["Frostbite", ["scarf", "nightcap"]], ["Shades", ["sunglasses"]]],
+  "Equal Twins": [["The Fancy Pair", ["bowtie", "monocle"]], ["Party Twins", ["sparkles", "blush"]], ["The Nap Twins", ["lids"]], ["Dizzy Twins", ["spiral"]]],
+  Timesaur: [["Timesaur Tot", ["mini"]], ["The Ringmaster", ["tophat"]], ["Karate Kross", ["headband"]], ["Snoozasaur", ["nightcap", "lids"]]],
+  Divvy: [["Lord Divington", ["tophat", "bowtie"]], ["Dizzy Divvy", ["spiral"]], ["Captain Split", ["bandana", "eyepatch"]], ["Divvy Belle", ["bow", "lashes"]]],
+  Starbot: [["Glitterbot", ["sparkles"]], ["Low Battery", ["lids"]], ["Super Starbot", ["scarf", "medal"]], ["Turbo Starbot", ["headband"]]],
+  Haberhasher: [["Jolly Hasher", ["blush", "sparkles"]], ["DJ Hashtag", ["sunglasses"]], ["Sir Hashalot", ["monocle", "mustache"]], ["Snoozehash", ["lids"]]]
+};
+// A monster in look i (0 is itself): the same monster, renamed, with its base name kept for its
+// trait and kind of math.
+export function lookOf(m, i) {
+  const l = i && (LOOKS[m.n] || [])[i - 1];
+  return l ? Object.assign({}, m, { n: l[0], base: m.n, look: l[1] }) : m;
+}
+export const allLooks = () => MON.flatMap((m) => (LOOKS[m.n] || []).map((_, i) => lookOf(m, i + 1)));
+function dress(m) {
+  const a = ANCHOR[m.base], art = m.d(m.c), extras = m.look.filter((k) => KIT[k]).map((k) => KIT[k](a, m.c)).join("");
+  if (!m.look.includes("mini")) return art + extras;
+  // Smaller, standing on the same ground.
+  return `<g transform="translate(100 ${a.ground}) scale(.72) translate(-100 ${-a.ground})">${art}${extras}</g>`;
+}
+export const svg=(m,cls='')=>`<svg viewBox="-10 -10 220 220" class="${cls}" role="img" aria-label="${m.n}">${defs}${m.look ? dress(m) : m.d(m.c)}</svg>`;
