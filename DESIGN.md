@@ -165,7 +165,7 @@ The game should **teach first, then fade the help out** as a fact gets learned, 
 | Make 10 | Ten-frame with the empty spaces glowing | K.RA.A.4 |
 | Teen numbers | "10 and some more": a full ten-frame plus extras, 10 + 4 = 14 | K.NBT.A |
 | Add within 20 | **Make 10**: 8 + 5 → 8 + 2 + 3. **Doubles plus one**: 6 + 7 = 6 + 6 + 1 | 1.RA.B.1 (properties as strategies) |
-| Subtract within 20 | By the numbers: **10 and some more** when the ones are enough (15 − 3: 15 is 10 and 5, 5 − 3 = 2); **count back through 10** when taking a little crosses ten (13 − 4: back 3 to 10, then 1 more); **think addition** when the numbers are close: 12 − 8 → "8 + ? = 12", counting up on a number line | 1.RA.B.2 (unknown addend) |
+| Subtract within 20 | By the numbers: **10 and some more** when the ones are enough (15 − 3: 15 is 10 and 5, 5 − 3 = 2); **count back through 10** when taking a little crosses ten (13 − 4: back 3 to 10, then 1 more); **doubles** for a double (16 − 8: 8 + 8 = 16); **think addition** when the numbers are close: 12 − 8 → "8 + ? = 12", counting up on a number line | 1.RA.B.2 (unknown addend) |
 | Missing number | A number bond or balance with the □ glowing | 1.RA.A.4 |
 | Count by 1s and 10s, then 5s, then 2s | Hops on a number line or hundred chart | K.NS.A.1, 1.NS.A.4, 2.RA.B.1 |
 | Coins | Find a coin in a mixed pile, heads and tails ("How many quarters?"); one coin, "How many cents?", with the guide's words ("A dime is small and silver"); then coin pictures with their values ("A nickel is worth five cents"), then counted biggest first | K.GM.B.5 (names), 1.GM.C.9 (values), 2.GM.D.12 (combinations with $ and ¢) |

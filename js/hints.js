@@ -268,8 +268,9 @@ export function hintFor(f, worked) {
     }
     // A teen number is 10 and some more (20 is 10 and 10). Which strategy depends on the numbers:
     // take away from the ones when they're enough (15 − 3), take away the 10 (14 − 10), count
-    // back to 10 when taking a little crosses it (13 − 4), and think addition when the numbers
-    // are close, so the answer is no bigger than what's taken away (12 − 8, 17 − 15).
+    // back to 10 when taking a little crosses it (13 − 4), doubles for a double (16 − 8), and
+    // think addition when the numbers are close, so the answer is smaller than what's taken away
+    // (12 − 8, 17 − 15). The school's curriculum guides (Missouri) name all four.
     const more = x - 10, frames = (crossOnes, crossTen) => svg(FRAME_W * 2 + 10, FRAME_H,
       tenFrame(0, 0, fill(10, C.a), crossTen) + tenFrame(FRAME_W + 10, 0, fill(more, C.a), crossOnes), `${x} is 10 and ${more}, take away ${y}`);
     const teenWhy = "10 and some more, taking away: a teen number is a full ten-frame and some more. When there are enough ones (15 − 3), kids take away from the ones and the 10 stays; 14 − 10 takes away the full ten.";
@@ -278,6 +279,12 @@ export function hintFor(f, worked) {
       return { model: frames(more - y), say: `${x} is 10 and ${more}. Take away ${y} from the ${more}: ${more} − ${y} = ${more - y}. 10 + ${more - y} = ${end(ans)}`, grownups: teenWhy };
     }
     if (y === 10) return { model: frames(null, 0), say: `${x} is 10 and ${more}. Take away the 10. ${x} − ${y} = ${end(ans)}`, grownups: teenWhy };
+    // A double: 16 − 8 is half of 16, since 8 + 8 = 16.
+    if (ans === y) {
+      return { model: doubleRows(y),
+        say: `Doubles: ${y} + ${y} = ${x}, so ${x} − ${y} = ${end(ans)}`,
+        grownups: "Doubles to subtract: kids use what they know about addition. 8 + 8 = 16, so 16 − 8 takes away one row and leaves the other 8." };
+    }
     if (ans > y) {
       return { model: hops(x, ans, 10),
         say: `Count back to 10, then the rest: ${x} − ${more} = 10. 10 − ${y - more} = ${end(ans)}`,
@@ -301,7 +308,7 @@ export function hintFor(f, worked) {
       const extra = cols - 10;
       return { model: array(rows, cols, 10),
         say: `Break apart: ${rows} × 10 + ${rows} × ${extra} = ${rows * 10} + ${rows * extra} = ${end(ans)}`,
-        grownups: `Break apart at 10: × 11 is × 10 and one more group, and × 12 is × 10 and × 2, so ${rows} × ${cols} is ${rows} × 10 + ${rows} × ${extra}.` };
+        grownups: `Break apart at 10 (the distributive property): the rectangle splits into a ${rows} × 10 and a ${rows} × ${extra}. × 11 is × 10 and one more group, and × 12 is × 10 and × 2.` };
     }
     if (cols === 9 && rows >= 3) {
       return { model: array(rows, 10, 9),
@@ -326,7 +333,7 @@ export function hintFor(f, worked) {
     if (rows >= 6 && cols > 5) {
       return { model: array(rows, cols, 5),
         say: `Break apart: ${rows} × 5 + ${rows} × ${cols - 5} = ${rows * 5} + ${rows * (cols - 5)} = ${end(ans)}`,
-        grownups: `Break apart (the distributive property): ${rows} × ${cols} splits into facts kids know, ${rows} × 5 and ${rows} × ${cols - 5}.` };
+        grownups: `Break apart (the distributive property): the array is a rectangle, split into two smaller ones kids know, ${rows} × 5 and ${rows} × ${cols - 5}. Add the two areas.` };
     }
     return { model: array(rows, cols, 0),
       say: `${rows} rows of ${cols}. ${x} × ${y} = ${end(ans)}`,
@@ -349,6 +356,7 @@ export const STRATEGIES = [
   { title: "Doubles plus one", grade: "1st", f: { op: "+", x: 6, y: 7 } },
   { title: "Take away from 10 and some more", grade: "1st", f: { op: "-", x: 15, y: 3 } },
   { title: "Count back through 10", grade: "1st", f: { op: "-", x: 13, y: 4 } },
+  { title: "Doubles to subtract", grade: "1st", f: { op: "-", x: 16, y: 8 } },
   { title: "Think addition", grade: "1st", f: { op: "-", x: 12, y: 8 } },
   { title: "Arrays", grade: "2nd–3rd", f: { op: "×", x: 3, y: 4 } },
   { title: "Times 2 as doubles", grade: "2nd–3rd", f: { op: "×", x: 8, y: 2 } },

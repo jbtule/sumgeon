@@ -49,6 +49,7 @@ assert.match(h("-", 14, 4).say, /^14 is 10 and 4\. Take away the 4\./, "1n − n
 assert.match(h("-", 14, 10).say, /^14 is 10 and 4\. Take away the 10\./);
 assert.match(h("-", 20, 1).say, /^20 is 10 and 10\. Take away 1 from the 10/, "20 − 1 doesn't count up");
 assert.match(h("-", 13, 4).say, /^Count back to 10, then the rest: 13 − 3 = 10\. 10 − 1 = \?$/, "taking a little across 10 counts back");
+assert.match(h("-", 16, 8).say, /^Doubles: 8 \+ 8 = 16, so 16 − 8 = \?$/, "doubles subtract too");
 assert.match(h("-", 13, 9).say, /^Think addition: 9 \+ \? = 13/, "close numbers count up");
 assert.match(h("-", 69, 6).say, /^69 is 6 tens and 9 ones\. Take away 6 ones: 9 − 6 = 3\. 60 \+ 3 = \?$/, "two-digit minus one-digit takes away the ones");
 assert.match(h("-", 52, 7).say, /^Back to 50, then 5 more: 52 − 2 = 50\. 50 − 5 = \?$/, "crossing a ten goes back to it");
@@ -92,7 +93,7 @@ const opening = { "Ten-frame": /^Put together/, "Draw and cross out": /^Take awa
   "Doubles plus one": /^Doubles plus one/, "Think addition": /^Think addition/, "Arrays": /rows of/, "Compare": /^3 \+ 4 is 7\. Line them up/, "Balance": /^Both sides are the same\. 3 \+ 4 = 7, so □ \+ 5 = 7\. 7 − 5 = /, "Doubling": /^Double it/, "Break apart": /^Break apart/,
   "Nines as tens": /minus one group/, "Naming coins": /^A quarter is big and silver\. Quarters = 2$/, "What each coin is worth": /^A dime is small and silver\. It's worth 10¢\./, "Counting coins": /^Count on from the biggest coin/, "Tens and ones": /^Tens and ones: 30 \+ 20 = 50, 8 \+ 5 = 13\. 50 \+ 13 = 63$/, "Count up by tens": /^Think addition: count up from 28 to 52\. 2 \+ 20 \+ 2 = 24$/,
   "Doubles": /^Doubles: two rows of 8\. 5 \+ 5 = 10, and 3 \+ 3 = 6\. 10 \+ 6 = 16$/, "Take away from 10 and some more": /^15 is 10 and 5\. Take away 3 from the 5: 5 − 3 = 2\. 10 \+ 2 = 12$/,
-  "Count back through 10": /^Count back to 10, then the rest: 13 − 3 = 10\. 10 − 1 = 9$/, "Times 2 as doubles": /^Doubles: 2 × 8 is 8 \+ 8 = 16$/,
+  "Doubles to subtract": /^Doubles: 8 \+ 8 = 16, so 16 − 8 = 8$/, "Count back through 10": /^Count back to 10, then the rest: 13 − 3 = 10\. 10 − 1 = 9$/, "Times 2 as doubles": /^Doubles: 2 × 8 is 8 \+ 8 = 16$/,
   "Times 10 as tens": /^Count by tens: 7 tens is 70\. 7 × 10 = 70$/, "Elevens and twelves": /^Break apart: 6 × 10 \+ 6 × 2 = 60 \+ 12 = 72$/,
   "Take away tens and ones": /^Take away the tens, then the ones: 60 − 20 = 40, 9 − 6 = 3\. 40 \+ 3 = 43$/, "Back to a ten": /^Back to 50, then 5 more: 52 − 2 = 50\. 50 − 5 = 45$/, "Think multiplication": /^Think multiplication/ };
 assert.equal(STRATEGIES.length, Object.keys(opening).length);
