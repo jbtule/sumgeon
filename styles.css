@@ -7,6 +7,10 @@
 *{box-sizing:border-box;min-width:0}
 body{margin:0;background:var(--bg);color:var(--ink);font:600 16px/1.5 Nunito,system-ui,sans-serif;overflow-x:clip;min-height:100vh}
 button{font:inherit;color:inherit;cursor:pointer}
+/* No accidental zoom: fast taps on the number pad were double-tap zooming on iPhone, and a stray
+   pinch zoomed the whole game. app.js stops the pinch (Safari ignores maximum-scale for it). */
+html{touch-action:manipulation;-webkit-text-size-adjust:100%;text-size-adjust:100%}
+button,label,input{touch-action:manipulation}
 button:focus-visible,label:focus-within{outline:3px solid var(--gold);outline-offset:2px}
 .top{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px max(4vw,14px,env(safe-area-inset-right,0px)) 12px max(4vw,14px,env(safe-area-inset-left,0px));padding-top:max(12px,env(safe-area-inset-top,0px))}
 h1{font:400 clamp(24px,5vw,34px)/1.05 Bungee,sans-serif;margin:0;color:var(--gold);letter-spacing:.5px}

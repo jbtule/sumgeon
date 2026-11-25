@@ -29,6 +29,7 @@ A math-practice dungeon crawler. The player fights anthropomorphic monsters buil
   - Test layout fixes on the real iPhone before merging: serve the branch locally and run `tailscale serve --bg <port>` (tailnet only), then turn it off with `tailscale serve --https=443 off`. Emulators don't have Safari's collapsing toolbars.
 - iPad and desktop (760px and wider) use two columns with the same split: the left column is the monster's box (nameplate across the top, the monster, messages as a pill under it); the right column is your side (an open hint, then the problem and answer as one line, then the number pad, with your hero and hearts under it). The nameplate is pinned to the top of the monster's box, so an open hint doesn't move the monster. As on phones, `.arena` and `.panel` are `display: contents`; their boxes are `.game::before` and `::after`.
 - Check layout changes at iPhone SE, iPhone 14, iPad (both orientations) and desktop sizes.
+- No accidental zoom: `touch-action: manipulation` stops double-tap zoom (fast taps still register), and `app.js` stops pinches (`gesturestart`, two-finger `touchmove`), since Safari ignores `maximum-scale` for them.
 - Fonts: Bungee (titles, numbers) and Nunito (body), from Google Fonts.
 - Palette: chalkboard slate `#12242b`, panel `#1a313a`, chalk `#f3efe4`, coral `#ff5a4e`, gold `#ffc93c`, outline `#0c171c`.
 

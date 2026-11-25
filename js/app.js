@@ -796,6 +796,13 @@ function start() {
   newProblem();
 }
 
+/* ---------- no accidental zoom ----------
+   Safari zooms on a pinch even with maximum-scale=1, so pinches are stopped here. Double-tap zoom
+   is off through touch-action: manipulation in styles.css, which keeps fast taps (1, 1 for 11)
+   working. Kids tap fast and rest a second finger on the screen. */
+document.addEventListener("gesturestart", (e) => e.preventDefault());
+document.addEventListener("touchmove", (e) => { if (e.touches.length > 1) e.preventDefault(); }, { passive: false });
+
 /* ---------- input ---------- */
 function press(k) {
   if (G.next && k === "go") return nextAfterMiss();
