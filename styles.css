@@ -72,7 +72,14 @@ h1 b{color:var(--coral);font-weight:400}
 .btns .warn{flex:1 0 100%;margin:0;min-height:0;text-align:center}
 /* A won run's buttons: Go deeper across the top, Menu and Play again under it. */
 .btns.deeper{flex-wrap:wrap}
-.btns.deeper #deeper{flex:1 0 100%;order:-1}
+.btns.deeper #deeper,.btns.deeper #nextStratum{flex:1 0 100%;order:-1}
+.btns.deeper #nextStratum{order:-2}
+/* A newly opened stratum, announced on the end card. */
+.unlocked{display:grid;gap:2px;text-align:center;padding:12px 14px;border-radius:16px;background:#ffc93c22;border:2px solid var(--gold);box-shadow:0 0 18px #ffc93c55;animation:unlockpop .6s ease-out}
+.unlocked b{font:400 20px Bungee,sans-serif;color:var(--gold)}
+.unlocked span{font-weight:800}
+@keyframes unlockpop{0%{transform:scale(.8);opacity:0}70%{transform:scale(1.05);opacity:1}100%{transform:none}}
+@media(prefers-reduced-motion:reduce){.unlocked{animation:none}}
 .card.page .btns.deeper{flex-wrap:wrap}
 .btns .warn:empty{display:none}
 .big{min-height:52px;padding:0 22px;border-radius:16px;border:0;background:var(--coral);color:#fff;font:400 18px Bungee,sans-serif;box-shadow:0 4px 0 var(--dark)}

@@ -644,8 +644,10 @@ function end(win) {
   const stars = win ? earnStars() : "";
   if (win) { beat(seen, G.floors[G.floor], Date.now()); store.player(PID).set("bestiary", seen); }
   const f = record(), acc = G.tries ? Math.round(G.solved / G.tries * 100) : 0, m = G.floors[G.floor];
-  const opened = WINGS.find((x) => !before.includes(x.id) && openWings(progress, recs, st.start).includes(x.id));
-  if (win) { sfx.victory(); say("p", wingCleared(w)); if (opened) say("p", wingOpened(opened)); } else say("p", monsterWon(m));
+  // Strata this run opened (the Cellar can open the Hall and the Tower at once), easiest first.
+  const openedAll = WINGS.filter((x) => !before.includes(x.id) && openWings(progress, recs, st.start).includes(x.id)), opened = openedAll[0];
+  if (win) { sfx.victory(); say("p", wingCleared(w)); } else say("p", monsterWon(m));
+  if (opened) { say("p", PHRASE.unlocked); openedAll.forEach((x) => say("p", wingOpened(x))); }
   // Losing all your hearts curses the hero who led the run (heroes.js curseCaptain): rescue them
   // again on a rescue floor, and pick someone else to lead.
   const fallen = !win && hasCaptain() ? HEROES[team.captain] : null;
@@ -656,7 +658,7 @@ function end(win) {
   const depth = G.depth;
   if (win) { progress[w.id].depth = Math.max(deepest(w, progress), depth + 1); store.player(PID).set("wings", progress); }
   const deeper = win;
-  const left = !win ? "" : opened ? `<p><strong>${opened.name} is open!</strong></p>` : nextWingHint();
+  const left = opened ? `<div class="unlocked" role="status"><b>🔓 New stratum unlocked!</b><span>${openedAll.map((x) => esc(x.name)).join(" and ")} ${openedAll.length > 1 ? "are" : "is"} open.</span></div>` : win ? nextWingHint() : "";
   pickOpen = false;
   show(`<h2>${win ? wingCleared(w) : `${m.n} won this round`}</h2>
   ${win || fallen ? "" : `<div class="cardmon">${monsterArt(m)}</div>`}
@@ -667,7 +669,7 @@ function end(win) {
   <div class="stats"><div><b>${f}</b><small>floors cleared</small></div><div><b>${G.solved}</b><small>solved</small></div><div><b>${acc}%</b><small>accuracy</small></div></div>
   <p>Best run: <strong>${progress[w.id].best} of ${G.floors.length} floors</strong></p>
   ${captainHTML("Next run")}
-  <div class="btns${deeper ? " deeper" : ""}"><p class="warn" id="warn" role="status"></p><button class="big alt" id="set">Menu</button><button class="big${deeper ? " alt" : ""}" id="again">${win ? "Play again" : "Try again"}</button>${deeper ? `<button class="big" id="deeper">Go deeper</button>` : ""}</div>`);
+  <div class="btns${deeper || opened ? " deeper" : ""}"><p class="warn" id="warn" role="status"></p><button class="big alt" id="set">Menu</button><button class="big${deeper || opened ? " alt" : ""}" id="again">${win ? "Play again" : "Try again"}</button>${deeper ? `<button class="big${opened ? " alt" : ""}" id="deeper">Go deeper</button>` : ""}${opened ? `<button class="big" id="nextStratum">Enter ${esc(opened.name.replace(/^The /, "the "))}</button>` : ""}</div>`);
   wireCaptain();
   const ready = () => {
     if (hasCaptain()) return true;
@@ -676,6 +678,8 @@ function end(win) {
   };
   $("again").onclick = () => { if (ready()) start(depth); };
   if (deeper) $("deeper").onclick = () => { if (ready()) start(depth + 1); };
+  // A newly opened stratum, from its first depth.
+  if (opened) $("nextStratum").onclick = () => { if (!ready()) return; st.band = opened.band; saveSettings(); start(1); };
   $("set").onclick = () => openMenu();
 }
 // A card over the game. It opens at the top, and its main button gets focus (Enter presses it)
