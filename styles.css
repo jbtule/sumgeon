@@ -411,6 +411,7 @@ body{transition:background-color .4s;--hint-empty:var(--edge);--hint-line:var(--
 .pause-btns .danger[data-sure="1"]{background:#ff8a7f;color:var(--dark)}
 /* Settings: lists of rows, like a phone's own settings */
 .players{background:var(--dark);border:2px solid var(--line);border-radius:16px;padding:6px;gap:6px}
+.add-player{margin-top:8px;min-height:44px;width:100%}
 .players .prow{flex-wrap:nowrap;gap:6px}
 .players .prow input{flex:1 1 auto;width:0;min-height:44px;background:var(--panel);border-color:var(--line)}
 .players .prow.me input{border-color:var(--gold)}

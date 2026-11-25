@@ -853,8 +853,9 @@ function playersHTML() {
     ${me ? `<div class="pgrades"><span>Grade</span>${gradesHTML(true)}</div>` : ""}
   </li>`;
   }).join("");
-  return `<ul class="players">${rows}
-  <li class="prow"><input type="text" id="newName" maxlength="24" placeholder="New player (name optional)" aria-label="New player's name (optional)"><button class="small" type="button" id="addPlayer">+ Add</button></li></ul>`;
+  // "+ Add player" adds a row at once, named "Player 3" until someone types a name in it.
+  return `<ul class="players">${rows}</ul>
+  <button class="small add-player" type="button" id="addPlayer">+ Add player</button>`;
 }
 // The grade buttons, K to 5: big on the start screen's question, a compact row (mini) in
 // Settings → Players. A pre-reader can read them: they're K and digits.
@@ -1237,9 +1238,13 @@ function wirePlayers() {
     };
   });
   wireGrades(refreshPlayers);
-  const add = () => { const id = store.addProfile($("newName").value); switchTo(id); };
-  $("addPlayer").onclick = add;
-  $("newName").onkeydown = (e) => { if (e.key === "Enter") add(); };
+  // A new row, ready to name (optional), without switching to it: tap its Play to play as them.
+  $("addPlayer").onclick = () => {
+    const id = store.addProfile("");
+    refreshPlayers();
+    const input = $("players").querySelector(`.prow[data-id="${CSS.escape(id)}"] input`);
+    if (input) input.focus({ preventScroll: false });
+  };
 }
 function refreshPlayers() { $("players").innerHTML = playersHTML(); wirePlayers(); whoUI(); }
 // Another player's turn: their own settings, best run and a fresh dungeon.
