@@ -41,7 +41,7 @@ A math-practice dungeon crawler. The player fights anthropomorphic monsters buil
 - Settings (`band`, `sfx`, `voice`) are per player and save as they change in the menu. `ops` and `diff` are the prototype's, kept only so a player who practiced × or ÷ starts in Apprentice.
 
 ## Sound and voice
-- `sfx.js` synthesizes every effect with Web Audio. The context is created on the first tap and woken on later taps, for iOS.
+- `sfx.js` synthesizes every effect with Web Audio. The context is created on the first tap (with a moment of silence played inside it) and woken from any state but "running" on every tap, click or key, for iOS and for macOS Safari, which can leave it "interrupted". Open the game with `?audio` to see the context's state, errors and a Test sound button.
 - `speech.js` `say(kind, text)` plays a recorded clip from `audio.json` when there is one, or falls back to the device voice.
   - Kinds: `p` phrase, `m` monster line, `n` number, `q` problem.
   - Every line the game says lives in `js/lines.js` (`PHRASE`, monster lines, and `facts()` from `problems.js`: sums and differences within 20, the 2–12 tables and their division facts, each as the problem and as "… is …"). `app.js` only says lines from there; `scripts/lines.test.mjs` fails on any other `say()`.
