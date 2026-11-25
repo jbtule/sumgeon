@@ -102,14 +102,16 @@ export function heroSvg(h, opts) {
 }
 export const heroOf = (d) => HEROES[d];
 
-// Picking a captain. With no hero on the team (a new player, or one whose only hero was cursed),
-// any of the ten can start; otherwise only heroes on the team can lead.
-export function freePick(team) {
-  return team.rescued.length === 0;
+// Picking a captain. Any of the ten can start when nobody is on the team (a new player, or one
+// whose only hero was cursed), or when the dungeon has no progress yet (fresh: nothing played,
+// say after a reset) and the team is just your own hero, who you can then swap. Otherwise only
+// heroes on the team can lead.
+export function freePick(team, fresh) {
+  return team.rescued.length === 0 || (!!fresh && team.rescued.every((d) => d === team.captain) && !Object.keys(team.cracks || {}).length);
 }
 // The team after picking digit d, or null when d can't be picked.
-export function pickHero(team, d) {
-  if (freePick(team)) return Object.assign({}, team, { captain: d, rescued: [d] });
+export function pickHero(team, d, fresh) {
+  if (freePick(team, fresh)) return Object.assign({}, team, { captain: d, rescued: [d] });
   if (!team.rescued.includes(d)) return null;
   return Object.assign({}, team, { captain: d });
 }

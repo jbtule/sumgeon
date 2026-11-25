@@ -144,6 +144,8 @@ function loadPlayer() {
 }
 function saveTeam() { store.player(PID).set("heroes", team); }
 const hasCaptain = () => team.captain != null;
+// The dungeon has no progress yet (nothing played in any stratum): any hero can start.
+const fresh = () => !Object.keys(progress || {}).length;
 // A digit fights as its hero once it has joined: the captain, or a rescued digit.
 const onTeam = (d) => d === team.captain || team.rescued.includes(d);
 const heroArt = (d, cls) => heroSvg(HEROES[d], { color: d === team.captain ? team.color : null, cls });
@@ -639,7 +641,7 @@ function end(win) {
   wireCaptain();
   const ready = () => {
     if (hasCaptain()) return true;
-    $("warn").textContent = freePick(team) ? "Pick your hero first." : "Pick who leads first."; $("captain").scrollIntoView({ block: "center", behavior: "smooth" });
+    $("warn").textContent = freePick(team, fresh()) ? "Pick your hero first." : "Pick who leads first."; $("captain").scrollIntoView({ block: "center", behavior: "smooth" });
     return false;
   };
   $("again").onclick = () => { if (ready()) start(depth); };
@@ -769,7 +771,7 @@ function menu() {
   $("openSettings").onclick = () => settings();
   if ($("switchPlayer")) $("switchPlayer").onclick = () => settings();
   $("go").onclick = () => {
-    if (!hasCaptain()) { $("warn").textContent = freePick(team) ? "Pick your hero first." : "Pick who leads first."; $("captain").scrollIntoView({ block: "center", behavior: "smooth" }); return; }
+    if (!hasCaptain()) { $("warn").textContent = freePick(team, fresh()) ? "Pick your hero first." : "Pick who leads first."; $("captain").scrollIntoView({ block: "center", behavior: "smooth" }); return; }
     start(null, true);
   };
 }
@@ -901,7 +903,7 @@ function captainHTML(label) {
         <div class="cap-text"><b>${esc(h.n)}</b><small>Power hits on ${h.d}s</small></div>
         <button class="small" type="button" id="changeHero">Change</button></div></div>`;
   }
-  const any = freePick(team);
+  const any = freePick(team, fresh());
   const heroes = HEROES.map((h) => {
     const can = any || onTeam(h.d), on = h.d === team.captain;
     return `<button type="button" class="hpick${on ? " on" : ""}" data-d="${h.d}" ${can ? "" : "disabled"} aria-pressed="${on}" aria-label="${can ? h.n : "Cursed, not rescued yet"}">
@@ -918,7 +920,7 @@ function wireCaptain() {
   const redraw = () => { const n = $("captain"); n.outerHTML = captainHTML(custom); wireCaptain(); };
   if ($("changeHero")) $("changeHero").onclick = () => { pickOpen = true; redraw(); };
   box.querySelectorAll(".hpick:not([disabled])").forEach((b) => b.onclick = () => {
-    const next = pickHero(team, Number(b.dataset.d));
+    const next = pickHero(team, Number(b.dataset.d), fresh());
     if (!next) return;
     Object.assign(team, next);
     saveTeam();
