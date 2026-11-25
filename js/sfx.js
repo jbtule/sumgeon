@@ -14,6 +14,10 @@ function unlock() {
   try {
     var AC = window.AudioContext || window.webkitAudioContext;
     if (!AC) { lastError = "no Web Audio"; return; }
+    // iOS mutes Web Audio when the phone is on silent (the ring switch or Action button), and
+    // the voice plays on this context too, so the game went quiet with the phone on silent.
+    // "playback" plays like a video does (Safari 16.4+); the volume keys still set how loud.
+    try { if (navigator.audioSession) navigator.audioSession.type = "playback"; } catch (e) { /* older Safari */ }
     ctx = new AC();
     if (ctx.state !== "running") ctx.resume().catch(function (e) { lastError = "resume: " + e.message; });
     // A moment of silence, played inside the gesture: Safari starts the context's output on it.

@@ -77,7 +77,7 @@ if (new URLSearchParams(location.search).has("audio")) {
   box.append(out, test); document.body.append(box);
   const show = () => {
     const s = sfx.status();
-    out.textContent = [`context   ${s.state}`, `rate      ${s.rate}`, `sfx on    ${s.on}`, `played    ${s.played}`, `gestures  ${s.gestures}`, `error     ${s.error || "none"}`,
+    out.textContent = [`context   ${s.state}`, `rate      ${s.rate}`, `sfx on    ${s.on}`, `played    ${s.played}`, `gestures  ${s.gestures}`, `session   ${(navigator.audioSession || {}).type || "n/a"}`, `error     ${s.error || "none"}`,
       `browser   ${navigator.userAgent.replace(/.*(Version\/[\d.]+).*(Safari)\/[\d.]+.*/, "$2 $1").slice(0, 40)}`].join("\n");
   };
   show(); setInterval(show, 1000);
