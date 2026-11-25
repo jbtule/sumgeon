@@ -166,10 +166,13 @@ export function frontier(bandKey, recs) {
   return t.length;
 }
 // A probe: a fact not seen yet from the tier above the frontier, or null when there's none.
-export function probeKey(bandKey, recs, rnd, recent) {
+export function probeKey(bandKey, recs, rnd, recent, avoidAns) {
   const t = tiers(bandKey), i = frontier(bandKey, recs) + 1;
   if (i >= t.length) return null;
-  const fresh = t[i].filter((k) => (!recs[k] || !recs[k].n) && !(recent || []).includes(k));
+  const ansOf = (k) => { const f = pool(bandKey).find((x) => x.key === k) || {}; return f.op + " " + f.ans; };
+  let fresh = t[i].filter((k) => (!recs[k] || !recs[k].n) && !(recent || []).includes(k));
+  const varied = fresh.filter((k) => !(avoidAns || []).includes(ansOf(k)));
+  if (varied.length) fresh = varied;
   return fresh.length ? fresh[Math.floor((rnd || Math.random)() * fresh.length)] : null;
 }
 // Counts every fact in the tiers below `upto` as known (box 3, placed). Returns how many.
@@ -195,6 +198,11 @@ export function choose(bandKey, recs, opts) {
   const L = openLevel(bandKey, recs);
   let open = pool(bandKey).filter((f) => f.level <= L && !recent.includes(f.key));
   if (!open.length) open = pool(bandKey).filter((f) => f.level <= L);
+  // Not the same kind of problem with the same answer as the last couple (opts.avoidAns, as
+  // "op ans" like "- 10"), when there's anything else: the teen subtraction facts (17 − 7,
+  // 15 − 5, 12 − 2) all equal 10 and came up in a row. A different kind (3 + 7) is fine.
+  const varied = open.filter((f) => !(opts.avoidAns || []).includes(f.op + " " + f.ans));
+  if (varied.length) open = varied;
   if (opts.op) {
     const mine = open.filter((f) => f.op === opts.op);
     if (mine.length && rnd() < 0.7) open = mine;
