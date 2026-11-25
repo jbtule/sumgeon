@@ -526,8 +526,10 @@ label.switch-row:focus-within{outline-offset:-3px}
   /* The right column is split .68 / .32 between the problem and the answer box, so the
      monster's column keeps its width. */
   .game{grid-template-columns:minmax(0,1.1fr) minmax(0,.68fr) minmax(0,.32fr);column-gap:14px;row-gap:12px;
-    grid-template-rows:auto auto auto auto minmax(0,1fr);
-    grid-template-areas:"stage hint hint" "stage prob ans" "stage pad pad" "stage you you" "stage . ."}
+    grid-template-rows:minmax(0,1fr) auto auto auto auto;
+    /* Tall enough that the room above the problem can take a hint without the pad moving. */
+    min-height:max(560px,calc(var(--app-h,100dvh) - 150px));
+    grid-template-areas:"stage . ." "stage hint hint" "stage prob ans" "stage pad pad" "stage you you"}
   .arena,.panel{display:contents}
   .game::before,.game::after{content:"";grid-row:1/-1;border-radius:22px;border:2px solid var(--line)}
   .game::before{grid-column:1;background:linear-gradient(rgb(5 9 11 / var(--murk,0)),rgb(5 9 11 / var(--murk,0))),radial-gradient(ellipse 58% 46% at 50% 76%,#ffe9b838 0,#ffe9b814 42%,#0000 70%),radial-gradient(ellipse 95% 90% at 50% 55%,#0000 40%,#05090bc0 100%),var(--wall)}
@@ -551,7 +553,9 @@ label.switch-row:focus-within{outline-offset:-3px}
   .prob{font-size:clamp(34px,4.6vw,56px)}
   .probrow .icon-btn{order:-1}
   .ans{grid-area:ans;align-self:center;justify-self:start;z-index:1;width:calc(100% - 16px);max-width:170px;margin:0 16px 0 0}
-  .game:has(.hint[hidden]) .probrow,.game:has(.hint[hidden]) .ans{margin-top:16px}
+  /* The right column sits at the bottom of its box, as on phones: a hint opening (a new fact's
+     opens after a moment) grows into the space above, so the problem and the pad never move
+     under a click. */
   .pad{grid-area:pad}
   /* Your hero and hearts sit under the number pad, on your side. */
   .you{grid-area:you;margin-bottom:16px}
