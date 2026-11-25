@@ -63,14 +63,18 @@ var OP_WORDS = { "+": "plus", "-": "minus", "×": "times", "÷": "divided by" };
 function spokenSide(side) { return side.split(" + ").map(function (t) { return t === "□" ? "what" : spoken(Number(t)); }).join(" plus "); }
 var CMP_WORDS = { "<": "is less than", ">": "is greater than", "=": "is equal to" };
 
+// The voice reads "pennies" as "PEN-iz", close to "penne's"; spelled "penny's" it says
+// "PEN-eez" (checked with Kokoro's phonemizer). Only the spoken coin lines use it.
+function sayPennies(t) { return t.replace(/\bpennies\b/g, "penny's"); }
+
 // "seven plus eight"; for coins, "two dimes and three pennies. How many cents?", "How many
 // dimes?" (find the coin) or "How many cents?" (one coin: the voice doesn't name it).
 export function spokenProblem(p) {
   if (p.op === "○") return "Compare " + spokenSide(p.l) + " and " + spokenSide(p.r) + ".";
   if (p.op === "=") return spokenSide(p.l) + " equals " + spokenSide(p.r);
-  if (p.op === "¢" && p.find) return "How many " + coinOf(p.find).names + "?";
+  if (p.op === "¢" && p.find) return sayPennies("How many " + coinOf(p.find).names + "?");
   if (p.op === "¢" && isValue(p)) return "How many cents?";
-  if (p.op === "¢") return coinWords(p.coins) + ". How many cents?";
+  if (p.op === "¢") return sayPennies(coinWords(p.coins) + ". How many cents?");
   return spoken(p.x) + " " + OP_WORDS[p.op] + " " + spoken(p.y);
 }
 // "seven plus eight is fifteen" (said after a miss, with the right answer); for coins, "two dimes
@@ -79,9 +83,9 @@ export function spokenProblem(p) {
 export function spokenFact(p) {
   if (p.op === "○") return spokenSide(p.l) + " " + CMP_WORDS[p.sym] + " " + spokenSide(p.r);
   if (p.op === "=") return spokenSide(p.l.replace("□", p.ans)) + " equals " + spokenSide(p.r.replace("□", p.ans));
-  if (p.op === "¢" && p.find) return (p.ans === 1 ? "There is one " + coinOf(p.find).name : "There are " + spoken(p.ans) + " " + coinOf(p.find).names) + ".";
+  if (p.op === "¢" && p.find) return sayPennies((p.ans === 1 ? "There is one " + coinOf(p.find).name : "There are " + spoken(p.ans) + " " + coinOf(p.find).names) + ".");
   if (p.op === "¢" && isValue(p)) return coinLine(coinOf(Object.keys(p.coins).find(function (k) { return p.coins[k]; })));
-  if (p.op === "¢") return coinWords(p.coins) + (coinCount(p.coins) > 1 ? " make " : " is ") + spoken(p.ans) + (p.ans === 1 ? " cent" : " cents");
+  if (p.op === "¢") return sayPennies(coinWords(p.coins) + (coinCount(p.coins) > 1 ? " make " : " is ") + spoken(p.ans) + (p.ans === 1 ? " cent" : " cents"));
   return spokenProblem(p) + " is " + spoken(p.ans);
 }
 // "This is a dime. A dime is small and silver. It's worth ten cents."

@@ -49,8 +49,8 @@ assert.ok(!/undefined|NaN/.test(backs) && (backs.match(/<g /g) || []).length ===
 assert.equal((coinsSvg(pile, { ring: "q" }).match(/#ffc93c/g) || []).length, 2);
 assert.match(coinsSvg(pile), /aria-label="two quarters, one dime and one nickel"/);
 assert.equal(coinWords({ q: 0, d: 2, n: 0, p: 3 }), "two dimes and three pennies");
-assert.equal(spokenProblem(dimeNickel3), "one dime, one nickel and three pennies. How many cents?");
-assert.equal(spokenFact(dimeNickel3), "one dime, one nickel and three pennies make eighteen cents");
+assert.equal(spokenProblem(dimeNickel3), "one dime, one nickel and three penny's. How many cents?", "spoken as penny's: PEN-eez, not penne's");
+assert.equal(spokenFact(dimeNickel3), "one dime, one nickel and three penny's make eighteen cents");
 // Hints: values before, the count-on after.
 assert.equal(hintFor(dimeNickel3, false).say, "Count on from the biggest coin: 10 + 5 + 1 + 1 + 1 = ?");
 assert.equal(hintFor(dimeNickel3, true).say, "Count on from the biggest coin: 10, 15, 16, 17, 18. 10 + 5 + 1 + 1 + 1 = 18");
