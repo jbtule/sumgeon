@@ -177,6 +177,17 @@ h1 b{color:var(--coral);font-weight:400}
 .hpick.on{border-color:var(--gold);background:#ffc93c1f}
 .hpick.on small{color:var(--gold)}
 .hpick[disabled]{opacity:.55;cursor:default}
+/* The grade: big K–5 buttons on the start screen's question, a compact row in Settings → Players */
+.grades{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+@media (min-width: 760px){.grades{grid-template-columns:repeat(6,minmax(0,1fr))}}
+.gpick{display:grid;justify-items:center;align-content:center;gap:0;min-height:88px;padding:6px 2px;border-radius:16px;border:3px solid var(--edge);background:var(--btn);color:var(--ink);cursor:pointer}
+.gpick b{font:400 40px/1 Bungee,sans-serif}
+.gpick small{font-size:12px;font-weight:900;color:var(--muted);margin-top:4px}
+.gpick.on{border-color:var(--gold);background:#ffc93c1f;color:var(--gold)}
+.gpick:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+.grades.mini{grid-template-columns:repeat(6,minmax(0,1fr));gap:6px;flex:1}
+.grades.mini .gpick{min-height:44px;border-width:2px;border-radius:12px}
+.grades.mini .gpick b{font-size:18px}
 .swatches{display:flex;gap:8px;overflow-x:auto;padding:4px 3px;scrollbar-width:none}
 .swatch{flex:none;width:38px;height:38px;border-radius:50%;border:3px solid var(--dark);background:var(--sw);box-shadow:0 0 0 2px var(--edge)}
 .swatch.on{box-shadow:0 0 0 3px var(--ink)}
@@ -213,6 +224,7 @@ h1 b{color:var(--coral);font-weight:400}
 .beast.gold{border-color:var(--gold);box-shadow:0 0 0 2px #ffc93c55,0 0 18px #ffc93c44}
 .beast.gold .beast-art > svg:not(.ring){filter:drop-shadow(0 0 0 var(--gold)) drop-shadow(0 0 4px var(--gold))}
 .boss-tag,.cap-tag{color:var(--gold)!important;font-weight:900}
+.hero-card .quips{font-weight:800}.hero-card .quips.all{color:var(--gold)}
 .looks{display:flex;gap:2px;justify-content:center;margin-top:4px}
 .looks span{width:26px;height:26px}
 .looks svg{width:100%;height:100%;overflow:visible}
@@ -321,9 +333,9 @@ h1 b{color:var(--coral);font-weight:400}
    map. --wall is set by data-stratum on .game, and on each map layer. */
 :root{--wall-plain:repeating-linear-gradient(0deg,#16292f 0 38px,#13252b 38px 40px);--wall-cellar:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='36' height='36'%3E%3Crect width='36' height='36' fill='%233a2620'/%3E%3Cg fill='%2321140f'%3E%3Crect width='36' height='2.5'/%3E%3Crect y='18' width='36' height='2.5'/%3E%3Crect width='2.5' height='18'/%3E%3Crect x='18' y='18' width='2.5' height='18'/%3E%3C/g%3E%3Cg fill='%23ffffff0d'%3E%3Crect x='3' y='3' width='14' height='3'/%3E%3Crect x='21' y='21' width='14' height='3'/%3E%3C/g%3E%3C/svg%3E");--wall-hall:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='44' height='44'%3E%3Crect width='44' height='44' fill='%232a3346'/%3E%3Crect width='22' height='22' fill='%23323d54'/%3E%3Crect x='22' y='22' width='22' height='22' fill='%23323d54'/%3E%3Cpath d='M0 0H44M0 22H44M0 0V44M22 0V44' stroke='%231b2231' stroke-width='1.5'/%3E%3Cpath d='M4 30 Q12 26 16 34 T20 40' stroke='%23ffffff14' stroke-width='1.2' fill='none'/%3E%3Cpath d='M26 6 Q32 12 40 8' stroke='%23ffffff14' stroke-width='1.2' fill='none'/%3E%3C/svg%3E");--wall-tower:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='40'%3E%3Crect width='56' height='40' fill='%232c3a40'/%3E%3Cg fill='%2318232a'%3E%3Crect width='56' height='3'/%3E%3Crect y='20' width='56' height='3'/%3E%3Crect width='3' height='20'/%3E%3Crect x='28' y='20' width='3' height='20'/%3E%3C/g%3E%3Cg fill='%23ffffff0a'%3E%3Crect x='6' y='6' width='18' height='2'/%3E%3Crect x='34' y='26' width='16' height='2'/%3E%3C/g%3E%3Ccircle cx='44' cy='11' r='1.5' fill='%23ffffff12'/%3E%3Ccircle cx='14' cy='31' r='1.2' fill='%23ffffff12'/%3E%3C/svg%3E")}
 .game{--wall:var(--wall-plain)}
-body[data-stratum="cellar"] .game,.wing.cellar{--wall:var(--wall-cellar)}
-body[data-stratum="hall"] .game,.wing.hall{--wall:var(--wall-hall)}
-body[data-stratum="tower"] .game,.wing.tower{--wall:var(--wall-tower)}
+body[data-stratum="cellar"] .game,.wing.cellar,.d-layer.cellar{--wall:var(--wall-cellar)}
+body[data-stratum="hall"] .game,.wing.hall,.d-layer.hall{--wall:var(--wall-hall)}
+body[data-stratum="tower"] .game,.wing.tower,.d-layer.tower{--wall:var(--wall-tower)}
 
 /* The dive (diveUI): this stratum's depths down the side of the monster's box. It scrolls, with
    the line drawn per row so it runs the whole way, and fades at the ends. */
@@ -352,9 +364,9 @@ body[data-stratum="tower"] .game,.wing.tower{--wall:var(--wall-tower)}
 
 /* Each stratum's colors, to go with its wall: panels, borders, background and keys change;
    gold and coral stay the accents. Set by data-stratum on <body> (app.js newRun). */
-body[data-stratum="cellar"]{--bg:#1c1411;--panel:#2a1e19;--line:#4a3328;--btn:#3b2a22;--btn2:#4a362c;--edge:#5d4536;--muted:#c9b4a6;--dark:#120c0a}
-body[data-stratum="hall"]{--bg:#141a28;--panel:#1d2537;--line:#33405c;--btn:#2a3550;--btn2:#34415f;--edge:#46557a;--muted:#b0bcd6;--dark:#0d111b}
-body[data-stratum="tower"]{--bg:#151c1e;--panel:#20292c;--line:#36454a;--btn:#2c393d;--btn2:#364549;--edge:#4a5b60;--muted:#b3c0c2;--dark:#0d1213}
+body[data-stratum="cellar"],.descent.cellar,.d-layer.cellar,.title-scene{--bg:#1c1411;--panel:#2a1e19;--line:#4a3328;--btn:#3b2a22;--btn2:#4a362c;--edge:#5d4536;--muted:#c9b4a6;--dark:#120c0a}
+body[data-stratum="hall"],.descent.hall,.d-layer.hall{--bg:#141a28;--panel:#1d2537;--line:#33405c;--btn:#2a3550;--btn2:#34415f;--edge:#46557a;--muted:#b0bcd6;--dark:#0d111b}
+body[data-stratum="tower"],.descent.tower,.d-layer.tower{--bg:#151c1e;--panel:#20292c;--line:#36454a;--btn:#2c393d;--btn2:#364549;--edge:#4a5b60;--muted:#b3c0c2;--dark:#0d1213}
 body{transition:background-color .4s;--hint-empty:var(--edge);--hint-line:var(--edge)}
 
 /* Spell casting: the drawing pad takes the number pad's place, the same height, glowing. */
@@ -392,15 +404,42 @@ body{transition:background-color .4s;--hint-empty:var(--edge);--hint-line:var(--
 .pause{flex:none;width:40px;height:40px;margin-left:10px}
 .flame[hidden]+.pause{margin-left:auto}
 .pause svg{width:18px;height:18px}
+/* On iPad and desktop ⏸ sits in the header, beside the floor (app.js moves it there). */
+.top .pause{margin-left:4px}
 .pause-btns{display:grid;gap:8px;width:100%}
 .pause-btns .small{min-height:48px}
 .pause-btns .danger[data-sure="1"]{background:#ff8a7f;color:var(--dark)}
 /* Settings: lists of rows, like a phone's own settings */
 .players{background:var(--dark);border:2px solid var(--line);border-radius:16px;padding:6px;gap:6px}
+.add-player{margin-top:8px;min-height:44px;width:100%}
+.pcards{display:grid;gap:8px;margin:0;padding:0;list-style:none}
+.pcard{border:2px solid var(--line);border-radius:16px;background:var(--dark);overflow:hidden}
+.pcard.me{border-color:var(--gold)}
+.phead{display:flex;align-items:center;gap:6px;padding:6px}
+.pmain{flex:1;display:flex;align-items:center;gap:12px;min-height:56px;padding:4px 8px;border:0;border-radius:12px;background:none;color:inherit;font:inherit;text-align:left;cursor:pointer}
+.pmain:hover{background:var(--panel)}
+.pcard.me .pmain{cursor:default}
+.pav{width:44px;height:44px;flex:none;display:grid;place-items:center}
+.pav svg{width:44px;height:44px}
+.pnone{width:40px;height:40px;border-radius:50%;border:2px dashed var(--edge);display:grid;place-items:center;color:var(--muted);font-weight:900}
+.pname{display:grid;flex:1;min-width:0}
+.pname b{font-size:17px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pname small{color:var(--muted);font-size:13px}
+.pnow{color:var(--gold);font-weight:900;font-size:20px}
+.pedit{flex:none;width:44px;height:44px}
+.pedit.done{width:auto;padding:0 14px;font:900 15px Nunito,sans-serif}
+.pform{display:grid;gap:10px;padding:4px 12px 12px}
+.pform label{display:grid;gap:4px;font-weight:800;color:var(--muted);font-size:13px}
+.pform input{min-height:44px;border-radius:12px;border:2px solid var(--edge);background:var(--panel);color:var(--ink);padding:0 12px;font:800 16px Nunito,sans-serif}
+.pnote{margin:0;color:var(--muted);font-size:13px}
 .players .prow{flex-wrap:nowrap;gap:6px}
 .players .prow input{flex:1 1 auto;width:0;min-height:44px;background:var(--panel);border-color:var(--line)}
 .players .prow.me input{border-color:var(--gold)}
 .players .now{padding:0 10px;font-size:13px;white-space:nowrap}
+.players .prow.me{flex-wrap:wrap}
+.players .pgrade{font-size:13px;font-weight:900;color:var(--muted);white-space:nowrap}
+.pgrades{flex:1 0 100%;display:flex;align-items:center;gap:8px}
+.pgrades>span{font:400 12px Bungee,sans-serif;color:var(--muted)}
 .players .small{flex:none;white-space:nowrap;padding:0 12px}
 .players .danger[data-sure="1"]{background:#ff8a7f;color:var(--dark)}
 .list{display:grid;background:var(--dark);border:2px solid var(--line);border-radius:16px;overflow:hidden}
@@ -583,8 +622,15 @@ label.switch-row:focus-within{outline-offset:-3px}
   .msg{grid-area:stage;align-self:end;justify-self:center;z-index:2;min-height:0;margin-bottom:20px;padding:4px 14px;border-radius:999px;background:#0c171cb0}
   .msg:empty{display:none}
   .hint,.pad,.you{margin-inline:16px;z-index:1}
-  /* The hint first, then the problem and answer as one line: 3 + 1 = [ ]. */
-  .hint{grid-area:hint;margin-top:16px}
+  /* The hint first, then the problem and answer as one line: 3 + 1 = [ ]. The hint is taken out
+     of the layout (positioned in the room above the problem), so however tall it is, opening it
+     never moves the problem or the pad: on a short window a tall hint used to grow the game and
+     push the pad down. Its drawing shrinks to fit the room. */
+  .game{position:relative}
+  .hint{position:absolute;grid-column:2/-1;grid-row:1/3;left:16px;right:16px;bottom:0;max-height:calc(100% - 16px);margin:0;
+    grid-template-rows:minmax(0,1fr) auto;overflow:hidden}
+  .hint .model{min-height:0;display:flex;justify-content:center}
+  .hint .model svg{max-height:100%;width:auto;max-width:100%}
   .probrow{grid-area:prob;justify-self:end;z-index:1;margin-left:16px;gap:8px}
   .prob{font-size:clamp(34px,4.6vw,56px)}
   .probrow .icon-btn{order:-1}
@@ -596,3 +642,86 @@ label.switch-row:focus-within{outline-offset:-3px}
   /* Your hero and hearts sit under the number pad, on your side. */
   .you{grid-area:you;margin-bottom:16px}
 }
+
+/* The descent (js/descent.js, DESIGN.md §8.3): tapping Enter, the start card falls away and the
+   camera drops past the grass and down through the strata to the chosen depth, then "Now entering
+   the Sumgeon!" slams in. Each layer takes its stratum's wall and palette (above); .descent has
+   the chosen stratum's, for the title. */
+.ov.leaving{pointer-events:none;background:transparent;transition:background .3s}
+.ov.leaving .card{animation:cardfall .45s cubic-bezier(.5,0,.9,.4) forwards}
+@keyframes cardfall{to{transform:translateY(110vh) rotate(7deg);opacity:.6}}
+.descent{position:fixed;left:0;top:0;width:100%;height:var(--app-h,100vh);z-index:8;overflow:hidden;background:var(--dark);transition:opacity .35s;touch-action:none;user-select:none;-webkit-user-select:none}
+.descent.out{opacity:0}
+.descent.quick{animation:dfade .15s ease-out}
+@keyframes dfade{from{opacity:0}}
+.d-stack{position:absolute;left:0;top:0;width:100%;will-change:transform}
+.d-surface{position:relative;overflow:hidden}
+.d-sky{position:relative;background:radial-gradient(1.5px 1.5px at 18% 22%,#f3efe4cc 50%,#0000),radial-gradient(1.5px 1.5px at 72% 14%,#f3efe4aa 50%,#0000),radial-gradient(1px 1px at 44% 36%,#f3efe499 50%,#0000),radial-gradient(1.5px 1.5px at 86% 44%,#f3efe488 50%,#0000),radial-gradient(1px 1px at 8% 56%,#f3efe477 50%,#0000),linear-gradient(#0b161b,#1b3640 70%,#2f5560)}
+/* The surface's parts are placed in px by descent.js surfaceHTML: a few stars that twinkle, the
+   hill (a mound of the grass) with the arched door on top, and the team by the door, bobbing.
+   The idle runs off the page clock (--t0), so the start scene and the descent's copy are in step. */
+.d-star{position:absolute;border-radius:50%;background:#f3efe4;box-shadow:0 0 6px #f3efe4aa;opacity:.8;animation:twinkle 3.2s ease-in-out infinite;animation-delay:calc(var(--t0,0ms) - var(--d,0s))}
+@keyframes twinkle{0%,100%{opacity:.85;transform:scale(1)}50%{opacity:.25;transform:scale(.6)}}
+.d-hill{position:absolute;border-radius:50% 50% 0 0/100% 100% 0 0;background:linear-gradient(#6cbd58,#5fae4e);border:3px solid #0c171c;border-bottom:0}
+.d-door{position:absolute;border-radius:999px 999px 0 0;background:radial-gradient(ellipse 60% 40% at 50% 100%,#ffc93c30,#0000 70%),#05090b;border:5px solid #6b5a4a;border-bottom:0;box-shadow:0 0 0 3px #0c171c,inset 0 6px 0 #0c171c;z-index:2}
+.d-door::before{content:"";position:absolute;left:50%;top:-14%;width:42%;aspect-ratio:1;translate:-50% 0;border-radius:6px;background:#8a7560;border:3px solid #0c171c;box-shadow:inset 0 -3px 0 #6b5a4a}
+.d-door::after{content:"Σ";position:absolute;left:50%;top:-14%;width:42%;translate:-50% 0;aspect-ratio:1;display:grid;place-items:center;font:400 calc(var(--dh,96px)*.17)/1 Bungee,sans-serif;color:#0c171c}
+.d-hero{position:absolute;display:block;animation:bob 2.6s ease-in-out infinite;animation-delay:calc(var(--t0,0ms) - var(--d,0s))}
+.d-hero svg{display:block;width:100%;height:auto;overflow:visible;filter:drop-shadow(0 3px 0 #0c171c80)}
+@keyframes bob{0%,100%{translate:0 0}50%{translate:0 -3px}}
+.d-grass{background:linear-gradient(#5fae4e,#3f7d38 16px,#2b4a2a 36px,#3a2a20 52px,#2a1d17 70%);border-top:3px solid #0c171c}
+.d-layer{position:relative;background:linear-gradient(#0c171c50,#0c171c90),var(--wall);border-top:6px solid var(--dark);box-shadow:inset 0 10px 18px #0008}
+.d-name{position:absolute;left:0;right:0;top:40%;text-align:center;font:400 clamp(20px,6vw,34px) Bungee,sans-serif;color:var(--muted);opacity:.55;text-shadow:0 2px 0 var(--dark)}
+.d-layer.chosen .d-name{opacity:.8}
+.d-shaft{position:absolute;left:50%;width:4px;margin-left:-2px;background:linear-gradient(#f3efe455 70%,#f3efe400)}
+.d-marks{list-style:none;margin:0;padding:0}
+.d-marks li{position:absolute;left:50%;width:0;height:0}
+.d-marks i{position:absolute;left:-10px;top:-10px;width:20px;height:20px;border-radius:50%;border:2px solid #f3efe466;background:var(--dark)}
+.d-marks span{position:absolute;left:20px;top:-.7em;white-space:nowrap;font:400 clamp(13px,3.4vw,16px) Bungee,sans-serif;color:#f3efe499;text-shadow:0 1px 2px #000}
+.d-marks li.done i{background:var(--gold);border-color:var(--gold)}
+.d-marks li.done span{color:var(--ink)}
+.d-marks li.here i{left:-15px;top:-15px;width:30px;height:30px;background:var(--coral);border:3px solid #fff;box-shadow:0 0 18px #ff5a4ecc}
+.d-marks li.here span{color:#fff;font-size:clamp(16px,4.4vw,22px);left:26px}
+.descent.landed li.here i{animation:dping .7s ease-out}
+@keyframes dping{0%{box-shadow:0 0 0 0 #ff5a4eee}100%{box-shadow:0 0 0 26px #ff5a4e00}}
+.d-streaks{position:absolute;inset:0;pointer-events:none;opacity:0;transition:opacity .25s;background:repeating-linear-gradient(90deg,#0000 0 37px,#f3efe40f 37px 39px,#0000 39px 83px,#f3efe40a 83px 84px)}
+.descent.falling .d-streaks{opacity:1}
+.descent.landed .d-stack{animation:dland .32s ease-out}
+@keyframes dland{30%{translate:0 7px}60%{translate:0 -3px}}
+.d-title{position:absolute;left:16px;right:16px;top:46%;display:grid;justify-items:center;gap:10px;text-align:center;pointer-events:none}
+.d-title::before{content:"";position:absolute;inset:-40px -16px;z-index:-1;background:radial-gradient(ellipse 62% 58% at 50% 50%,#05090bee 0,#05090bb0 50%,#05090b00 100%);opacity:0;transition:opacity .3s}
+.d-title h2{margin:0;display:grid;justify-items:center;gap:2px;opacity:0}
+.d-now{font:400 clamp(18px,5.4vw,32px)/1.1 Bungee,sans-serif;color:var(--ink);text-shadow:0 3px 0 var(--dark)}
+.d-logo{font:400 clamp(40px,13vw,84px)/1 Bungee,sans-serif;color:var(--gold);text-shadow:0 4px 0 var(--dark),0 0 28px #000;text-wrap:balance}
+.d-logo b{color:var(--coral);font-weight:400}
+.d-title p{margin:0;padding:4px 14px;border-radius:999px;background:var(--panel);border:2px solid var(--edge);font:400 clamp(14px,3.8vw,18px) Bungee,sans-serif;color:var(--ink);opacity:0;transform:translateY(8px);transition:opacity .25s,transform .25s}
+.descent.titled .d-title::before{opacity:1}
+.descent.titled .d-title h2{opacity:1;animation:dslam .42s cubic-bezier(.2,1.4,.4,1)}
+@keyframes dslam{0%{transform:scale(2.6);opacity:0}55%{transform:scale(.94);opacity:1}100%{transform:scale(1)}}
+.descent.landed .d-title p{opacity:1;transform:none}
+.descent.quick .d-title h2{animation:none}
+@media (min-width: 760px){.d-title{top:50%}}
+@media(prefers-reduced-motion:reduce){.ov.leaving .card{animation:none;opacity:0}.descent.titled .d-title h2,.descent.landed .d-stack,.descent.landed li.here i{animation:none}}
+
+/* The start scene (app.js drawScene, DESIGN.md §8.3): on the start screen the fight is hidden and
+   the descent's surface shows behind the card, in the Cellar's palette: the night sky, the hill
+   with the Sumgeon's door, and your team by it. The card's top is see-through: the title sits in
+   the sky, its scene-gap is a window onto the door and the team, and the rest of the card is a
+   sheet starting at --sheet (set by drawScene), so the team stands on a strip of grass just
+   above it. Tapping Enter, the card falls away and the descent starts from this same frame. */
+.title-scene{position:fixed;left:0;top:0;width:100%;height:var(--app-h,100vh);z-index:8;overflow:hidden;background:var(--dark);pointer-events:none}
+.title-scene[hidden]{display:none}
+body.on-scene>.top,body.on-scene>.who,body.on-scene>.game,body.on-scene>.badges{visibility:hidden}
+.ov.scene{background:transparent}
+.card.scene{position:relative;isolation:isolate;background:transparent;border-color:transparent}
+.card.scene::before{content:"";position:absolute;left:0;right:0;bottom:0;top:var(--sheet,0px);z-index:-1;background:var(--panel);border:2px solid var(--line);border-radius:24px;box-shadow:0 -8px 28px #05090b99}
+.card.scene .logo{text-shadow:0 3px 0 #05090b,0 0 24px #05090b}
+.scene-gap{height:clamp(170px,calc(var(--app-h,100vh)*.24),280px)}
+@media (min-width: 760px){.ov.scene{place-items:start center}}
+@media (max-width: 759px){
+  .ov.page.scene{background:transparent}
+  .card.page.scene::before{border-width:2px 0 0;border-radius:22px 22px 0 0}
+  .scene-gap{height:auto;flex:1 0 auto;min-height:clamp(120px,calc(var(--app-h,100vh)*.22),200px);max-height:calc(var(--app-h,100vh)*.42);margin-block:-4px}
+}
+@media (max-width: 759px) and (max-height: 700px){.scene-gap{min-height:clamp(96px,calc(var(--app-h,100vh)*.18),130px)}}
+@media(prefers-reduced-motion:reduce){.d-star,.d-hero{animation:none}}

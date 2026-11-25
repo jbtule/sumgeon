@@ -32,7 +32,7 @@ The age range is 5–14 (kindergarten to 8th grade), which is too wide for one d
 The current Easy, Medium and Hard settings become difficulty levels *inside* a band. The operation checkboxes become a "custom practice" option for parents and teachers (§9).
 
 **Plan (2026-11-25): one band per grade, K through 5th.** The four bands above were drawn by age. A review against the Missouri Learning Standards and the curriculum guides of the players' school found that this mixes grades: Apprentice made a 3rd grader clear sums within 20 before multiplication, the Sprout Wing asked 2nd-grade coin counting, and 2nd grade's two-digit math hid in the Tables Tower. So Sprout, Balance and Apprentice become a band per grade, K, 1st, 2nd and 3rd, and Adept becomes 4th and 5th. Each grade's band is one stratum (§4), with its levels in the order the school teaches them. **The game tops out at 6th grade:** one stretch stratum of 6th-grade math (§4.1) replaces Master, and the 7th–8th grade strata are dropped.
-- A new player picks their **grade** (K–5) instead of a band. It opens every stratum up to that grade, as the band does now.
+- A new player picks their **grade** (K–5) instead of a band. It opens every stratum up to that grade, as the band does now. **Built (2026-11-25):** the kid picks it on the start screen ("What grade are you in?", K and 1–5) and can change it in Settings → Players. Until the strata are rebuilt by grade, it maps onto today's: K and 1st → the Counting Cellar, 2nd → also the Balance Hall, 3rd–5th → all three.
 - What each grade asks follows the guides, limited to what works as a quick typed answer (§4). Shapes, angles, graphs, the coordinate plane, measurement conversions, prime or composite (a yes/no) and word problems are left out of fights.
 - The guides' own models and words decide how the hints teach (§5.3); the standards decide what each grade covers.
 
@@ -267,9 +267,10 @@ Inventory holds 3 items. This adds a small strategic layer without making math o
 | 9 | **Nine-ja** | Ninja | Vanishes, then strikes from behind |
 
 **Your captain is your avatar.** When a player is set up, they pick a **starter** digit and a **chalk color**. The starter is free from the start, and the other nine are waiting to be rescued. Losing all your hearts curses the hero who led the run: they leave the team until rescued again, and you pick someone else on the team to lead, or any of the ten if nobody is left. The captain appears in "Playing as…", in the player list and in the arena, replacing the generic Apprentice character from the earlier draft. You can switch captains to any rescued hero at any time. Two siblings can both pick High Five, and their chalk colors tell them apart.
+- **Picking a captain** (the start screen, the end card's "who leads next", a free pick) the hero says a name line in the quip voice (§8.4) in place of their plain name: "Captain Twodini, reporting for duty!", "…at your service!", "Captain Twodini leads the charge!" or "Make way for Captain Twodini!". The style rotates across all picks, whichever hero, so tapping through the heroes varies; the very first captain a player picks reports for duty. Nothing is said after it.
 
 **The mechanic: your answer summons its digits.** On a correct answer, the digits of the answer burst out of the answer box and attack together. 56 sends the 5 and the 6, and 55 sends two High Fives, who high-five each other first.
-- **Rescued digits** appear as their hero and add **+10% damage each** (up to +30%), with their own move.
+- **Rescued digits** appear as their hero, with their own move. Their bonus comes only in a Hero Moment (§8.4): **+25% for each rescued hero in it** (a team-up can have two). Until 2026-11-25 they added 10% to every answer with their digit, which nobody noticed.
 - **Digits not yet rescued** fly as plain chalk numerals. Seeing a bare "3" fly every time is the pull to go rescue Threasure Hunter.
 - **Captain's digit in the answer means a power hit (+50%)**, with a bigger animation. This stacks with crits. It's luck, not strategy, but it gets kids noticing the digits inside a number.
 - Party bonuses make a player stronger as they rescue more. That is intended progress, and the cap keeps it modest. Monster HP (§5.5) does not scale with the party.
@@ -348,11 +349,14 @@ Hitting a monster should feel good. Today there is a shake and a damage pop. The
 ### 8.3 Juice checklist
 - Streak meter: a chalk flame next to the hearts that grows at 3, 5 and 10.
 - Boss intro: the floor darkens, the boss name slams in, and there's a one-line taunt.
+- **The start scene** (built): the start screen isn't a card over the fight. Behind it is the surface: a night sky, a grassy hill with the Sumgeon's arched door, your captain by the door in your chalk color and your rescued team around them. The card's title sits in the sky and its content is a sheet below the hill, so the door and team stay in view.
+- **The descent** (built: `js/descent.js`): tapping Enter the dungeon, the start card falls away and, from that same scene, the camera drops past the grass and down through the strata (the depth map's layers, each in its own wall and colors) to the chosen stratum and depth, about 2 s (longer the deeper you start, at most 2.8 s), over a falling rumble and wind. "Now entering the Sumgeon!" slams in as the voice says it, and on landing a whoomp, the stratum's name and "Depth N", then the room fades in. Any tap or key skips it. Go deeper gets a short fall of one depth; reduced motion gets a quick fade with the title.
+- **A stratum cleared** should be something really, really big (to design). For now it plays the same fanfare as a floor cleared.
 - Monster idle personality: each monster gets a slightly different idle motion. Octoloop sways, Timesaur rotates a few degrees and Divvy's dots orbit.
 - Haptics: `navigator.vibrate(15)` on hits and `(40)` on misses where supported, and respect a settings toggle.
 - `prefers-reduced-motion` keeps working: no shake, projectiles replaced by fades, no particles.
 
-### 8.4 Hero Moments (plan, 2026-11-25)
+### 8.4 Hero Moments (built 2026-11-25: js/moments.js, js/slowmo.js, moments/)
 Now and then, a hero in your answer gets a slow-motion close-up and a quip before it strikes. It's a surprise, so it has to stay rare and never repeat itself.
 
 **When it happens.** Only on a right, unhinted answer that contains the digit of a hero on your team (the captain or a rescued hero), and never in a player's first fight.
@@ -360,7 +364,7 @@ Now and then, a hero in your answer gets a slow-motion close-up and a quip befor
 - **A rest after each:** none in the next 6 problems, and at most 2 per floor.
 - **A different hero next time,** when the answer has more than one hero's digit.
 - **Always on two occasions:** a rescued hero's first answer after joining the team (their debut), and the blow that finishes a boss.
-- **Damage is unchanged.** It's a show, not a balance lever.
+- **Damage:** each rescued hero in a moment adds +25% (§6.6); that's where rescued heroes' bonus now lives. The captain's power hit is unchanged.
 
 **The animation** (about 2 s, like a video editor's jog shuttle):
 1. **Wind-down:** the hit starts at normal speed, then time drags to a quarter speed, and the room dims a little.
@@ -374,7 +378,8 @@ With reduced motion: no zoom or speed ramp, just the hero, the quip and the hit.
 - a tape slowdown: a sweep that drops in pitch through a closing filter;
 - a slow double heartbeat under the freeze;
 - a reverse-cymbal swell into the snap;
-- a whip-whoosh, then a bigger impact.
+- a whip-whoosh, then a bigger impact;
+- and each hero's own sound for their move (§6.6), at the hit: a punch's pow for Zeroic, a pillow fwump for Onesie, a sparkle and a pop from Twodini's hat, a lantern shimmer, a shield clang, a hand-clap smack, a glint's ding, a stomp's boom, a sizzle and a plate clink, a smoke poof and a slash. A team-up plays both heroes' sounds.
 
 **The voice.** Quips are a new kind of line, said in a second Kokoro voice, **`af_bella`**, as Sound Box does for its quips. A different voice means a quip is never taken for an instruction. They're recorded by CI, with their own group on the listen check.
 
@@ -389,23 +394,38 @@ With reduced motion: no zoom or speed ramp, just the hero, the quip and the hit.
 - **Sevenstein (7):** "It's alive! And it's prime!" · "Lucky seven stomp!" · "Six, seven!"
 - **Chef Eight (8):** "Bon appe-eight!" · "Two cubed, served hot!" · "Order up: one sizzling eight!"
 - **Nine-ja (9):** "Nine lives, zero mercy!" · "Three threes, one strike!" · "Now you see nine…"
-- **For the big moments:** "Final answer!" on a boss's finishing blow, and "Critical math!" during a crit streak.
+- **For the big moments:** "That's your final answer!" on a boss's finishing blow, and "Critical math!" on a moment that lands on the hit that turns crits on.
 
 Respellings for the voice go in `SAY_AS` as usual (Twodini is "Toodini"; check "Bon appe-eight", "Nine-ja" and "Sixlock" on the listen check).
+
+**Team-ups** (built 2026-11-25). Two heroes at once, for two-digit answers.
+- **When:** a moment that fires by chance, on an answer with two different team heroes' digits (the captain or rescued), is a team-up half the time instead of a solo moment. It adds no moments: the rarity rules are unchanged. Doubles (33) have one hero, so they stay solo; so do debuts and boss finishes. With three or more digits, two different team heroes are picked.
+- **Who's where:** the tens hero on the left, the ones hero on the right, in the answer's digit order.
+- **The show:** both heroes swell in side by side under one speech bubble. At the snap they whip out to opposite sides and in again, crossing at the monster, with a second whoosh a beat after the first, and land together with one bigger slam and a bigger shake. With reduced motion: both heroes, the bubble and the hit. Each hero is a little smaller than in a solo close-up, so both fit an iPhone SE side by side.
+- **Lines** (in the quip voice, their own group on the listen check). No per-pair lines.
+  - From their own shuffled deck (key "team"): "Team-up!" · "Tens and ones, together!" · "Two digits, one strike!" · "Place value power!" · "The sum of us!" · "Better together!" · "Teamwork makes the dream work!"
+  - An answer that is exactly one of these numbers says its own line instead: 10 "Perfect ten!" · 12 "A dozen, done!" · 13 "A baker's dozen! Chef Eight would approve!" · 25 "Five squared! High five… times five!" · 36 "Six squared! Elementary!" · 49 "Seven squared! Sevenstein's not even here!" · 64 "Eight squared! Somebody tell Chef Eight!" · 67 "Six, seven!" (Sixlock and Sevenstein; the same line and clip as Sevenstein's quip) · 81 "Nine squared! Nine-ja must be hiding!" ("Nine-ja" is said "Nine-jah" through `SAY_AS`; the "…" reads as a pause as written)
+  - A team-up on the hit that turns crits on says "Critical math!", unless its number has a line.
 
 **Collecting.** The Heroes half of Monsters & Heroes shows each hero's quips heard ("Quips: 3 of 5"), a small reason to try different captains.
 
 **Reviewing them** (built with the feature). A grown-up page, `moments/` at `/sumgeon/moments/`, built like the listen check and the spell check: `noindex`, not linked from the game, and stamped with the deployed commit.
-- **Pick and play:** pick a hero, a quip and a monster (in any stratum's colors and wall), then play the whole moment exactly as the game runs it: the same code, sounds and voice clip.
+- **Pick and play:** pick a hero, a quip and a monster (in any stratum's colors and wall), then play the whole moment exactly as the game runs it: the same code, sounds and voice clip. **Team-up with** picks a second hero (or None), and the quip menu has the team-up lines; a number's line brings its own pair. A Captain group has the hero's name lines and the shared captain lines.
 - **Controls:**
-  - **Replay** and **Play all.** Play all runs every hero's quips one after another, like the listen check.
+  - **Replay** and **Play all.** Play all runs every hero's quips one after another, like the listen check, then the team-ups: each general line with a sample pair, and each number's line with its own digits; then the captain lines: the five shared ones with sample heroes, and each hero's four name lines.
   - **Step through the frames** (wind-down, close-up, freeze, snap, hit).
   - **Speed:** ½× or 1×.
   - **Reduced motion:** a toggle to see that version.
 - **Flags:** **⚑ Something's wrong** flags a moment (the quip's wording, the voice, the timing, the art) with tags and a note. Like the listen check, unflagged ones count as fine, and **Report** copies the flags or opens a GitHub issue.
-- **Rarity:** a simulator plays a few hundred runs of answers and shows how often moments come (per floor and per run), and how often each hero and quip comes up, so the 8% + 4% rule can be tuned by feel.
+- **Rarity:** a simulator plays a few hundred runs of answers and shows how often moments come (per floor and per run), and how often each hero and quip comes up, so the 8% + 4% rule can be tuned by feel. It also counts the team-ups, the captain lines and captains' first moments.
 
-In the game, `?moments` makes every qualifying hit a moment, for testing.
+**Captain lines** (built 2026-11-25). The hero leading the run gets lines of their own, in the quip voice, with their own group ("Captain lines") on the listen check.
+- **In a fight, shared lines only, no names:** a solo moment by chance for the captain is, half the time, one of "Captain's orders!" · "Leading digit, leading the charge!" · "The captain always counts!" · "First in line, first to strike!" · "Power hit, captain style!" (a shuffled deck of their own), and the hero's own quip otherwise. Team-ups, boss finishes, debuts and "Critical math!" keep their own lines.
+- **A captain's first moment:** a captain's first qualifying hit with their digit, once past the first fight, is always a moment, with one of the shared lines. Once per captain, so picking a new captain brings a new one. A rescued hero's debut (and a boss finish) comes first on the same hit, and it counts toward the rest and the per-floor cap like a debut.
+- **On picking a captain, the name lines** (§6.6): "Captain <name>, reporting for duty!" (the very first captain a player picks), "Captain <name>, at your service!", "Captain <name> leads the charge!", "Make way for Captain <name>!", the style rotating across all picks. The name goes through `SAY_AS` ("Captain Toodini", "Captain Nine-jah").
+- Damage is unchanged: the captain's power hit stays as it was.
+
+In the game, `?moments` makes every qualifying hit a moment, for testing, and `?teamup` does too, with every one that can be a team-up a team-up.
 
 ---
 

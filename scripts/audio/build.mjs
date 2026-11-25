@@ -1,6 +1,6 @@
-// Builds the recorded voice (Kokoro "af_heart") for every line in js/lines.js, patterned on
-// sound-box-crosswords' scripts/audio/build.mjs, and lays out the Cloudflare Pages project
-// sumgeon-audio:
+// Builds the recorded voice (Kokoro "af_heart", and "af_bella" for the heroes' quips: VOICE_FOR)
+// for every line in js/lines.js, patterned on sound-box-crosswords' scripts/audio/build.mjs, and
+// lays out the Cloudflare Pages project sumgeon-audio:
 //   ASSET_BASE=https://sumgeon.asset-data.stream/ node scripts/audio/build.mjs
 //
 // Writes:
@@ -33,19 +33,25 @@ export const VOICE = "af_heart";
 // The speed each kind is said at, and how. "text" says the line as one recording, picked by
 // ear over stitching numbers together (the Nov 2026 listen test: every whole clip passed,
 // most stitched ones sounded choppy).
-export const SPEED = { p: 0.95, m: 0.95, q: 0.95 };
+export const SPEED = { p: 0.95, m: 0.95, q: 0.95, h: 0.95 };
+// h = a hero's quip (Hero Moments): said in its own voice, as Sound Box does for its quips, so a
+// quip is never taken for an instruction.
+export const VOICE_FOR = { h: "af_bella" };
+export const voiceOf = (kind) => VOICE_FOR[kind] ?? VOICE;
 export const METHOD = "text-v1";
 const ENCODING = "mp3-64k";
 
 const root = fileURLToPath(new URL("../..", import.meta.url));
 
+// The voice is part of the key, so a clip in another voice is another clip (every af_heart
+// line keeps its key).
 export function keyFor(kind, text) {
-  return createHash("sha256").update(JSON.stringify([MODEL, VOICE, ENCODING, METHOD, SPEED[kind], kind, text])).digest("hex").slice(0, 20);
+  return createHash("sha256").update(JSON.stringify([MODEL, voiceOf(kind), ENCODING, METHOD, SPEED[kind], kind, text])).digest("hex").slice(0, 20);
 }
 
 // { id: "kind:text", key, kind, text, voice, speed, sprite } for every line.
 export function planClips() {
-  return spokenLines().map(({ kind, text, sprite }) => ({ id: kind + ":" + text, key: keyFor(kind, text), kind, text, voice: VOICE, speed: SPEED[kind], sprite }));
+  return spokenLines().map(({ kind, text, sprite }) => ({ id: kind + ":" + text, key: keyFor(kind, text), kind, text, voice: voiceOf(kind), speed: SPEED[kind], sprite }));
 }
 
 // Audio sprites: { name, key, clips } for each group of lines marked with a `sprite`. The key

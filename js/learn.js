@@ -226,6 +226,20 @@ export function choose(bandKey, recs, opts) {
     const liked = open.filter((f) => opts.like(f.key));
     if (liked.length && rnd() < 0.7) open = liked;
   }
+  // The captain's digit (opts.digit), now and then (opts.digitShare): answers with it, when there
+  // are any, so the hero's power hits (and their first Hero Moment) come early at depth 1. It only
+  // narrows which facts are open; the learning, review and new shares below are unchanged.
+  if (opts.digit != null && opts.digitShare && rnd() < opts.digitShare) {
+    const mine = open.filter((f) => String(f.ans).includes(String(opts.digit)));
+    if (mine.length) open = mine;
+  }
+  // Or the other way (opts.avoidDigitShare): answers without it, when there are any. The first
+  // fight uses this, since it has no Hero Moments: the captain's digit is saved for the fight
+  // after, where its first answer is the captain's first moment.
+  if (opts.digit != null && opts.avoidDigitShare && rnd() < opts.avoidDigitShare) {
+    const other = open.filter((f) => !String(f.ans).includes(String(opts.digit)));
+    if (other.length) open = other;
+  }
   const fresh = open.filter((f) => !recs[f.key] || !recs[f.key].n);
   const learning = open.filter((f) => recs[f.key] && recs[f.key].n && recs[f.key].b <= 2);
   const due = open.filter((f) => { const r = recs[f.key]; return r && r.b >= 3 && now - r.t >= DUE_MS[r.b]; });

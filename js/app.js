@@ -5,8 +5,8 @@ import { spokenProblem, spokenFact } from "./problems.js";
 import { BANDS, choose, factOf, record as recordAnswer, helpFor, openLevel, monsterHP, probeKey, tierOf, skipTo, SKIP_PROBES, SKIP_WINDOW, MAX_LEAP, fluentTime, spellKey } from "./learn.js";
 import { hintFor, STRATEGIES } from "./hints.js";
 import { openStore, displayName } from "./store.js";
-import { PHRASE, monsterName, monsterCleared, monsterWon, heroName, heroJoins, heroCursed, heroPower, heroRescue, heroAlmost, heroHelps, traitLine, BARK, wingCleared, wingOpened, depthLine, DEPTH_MAX_SPOKEN, reversedLine, howToWriteLine } from "./lines.js";
-import { WINGS, wingOf, runFloors, openWings, toOpen, floorStars, wingStars, depthScale, depthHP, deepest, MAP_DEPTHS } from "./wings.js";
+import { PHRASE, monsterName, monsterCleared, monsterWon, heroJoins, heroCursed, heroRescue, heroAlmost, heroHelps, traitLine, BARK, wingCleared, wingOpened, depthLine, DEPTH_MAX_SPOKEN, reversedLine, howToWriteLine, quipLine } from "./lines.js";
+import { WINGS, wingOf, runFloors, openWings, toOpen, floorStars, wingStars, depthScale, depthHP, deepest, MAP_DEPTHS, GRADES, gradeLabel, gradeName, withGrade } from "./wings.js";
 import { missingOf, pickBlank, filled, spokenMissing, MISSING_SHARE } from "./missing.js";
 import { coinsSvg, pileOf, coinOf } from "./coins.js";
 import { read as readSigil, judge as judgeSigil } from "./sigil.js";
@@ -15,7 +15,10 @@ import { traitOf, charged, prefers, hitBy, atHalf } from "./traits.js";
 import { roster, mastery, meet, beat } from "./bestiary.js";
 import { HEROES, CHALK, heroSvg, freePick, pickHero, curseCaptain, crackCurse, CURSE_HITS, resetTeam } from "./heroes.js";
 import * as sfx from "./sfx.js";
-import { say, stopSpeech, setVoice } from "./speech.js";
+import { say, stopSpeech, setVoice, speaking, cutOff } from "./speech.js";
+import { freshState as freshMoments, freshRun, decide as decideMoment, joined, heardOf, nameLine } from "./moments.js";
+import { playMoment } from "./slowmo.js";
+import { playDescent, descending, surfaceHTML } from "./descent.js";
 
 const $ = (id) => document.getElementById(id);
 const reduced = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -137,6 +140,7 @@ function loadPlayer() {
   team = Object.assign({ captain: null, color: CHALK[0], rescued: [] }, store.player(PID).get("heroes", {}));
   progress = store.player(PID).get("wings", {}) || {};
   seen = store.player(PID).get("bestiary", {}) || {};
+  MS = freshMoments(store.player(PID).get("moments", null));
   // A captain picked before heroes could change stays on the team.
   if (team.captain != null && !team.rescued.includes(team.captain)) { team.rescued.push(team.captain); saveTeam(); }
   // The band a player started in opens its Wing from the start (DESIGN.md §4).
@@ -328,9 +332,10 @@ function loadMonster(i, quiet) {
   meet(seen, m, Date.now()); store.player(PID).set("bestiary", seen);
   sfx.appear(m.boss);
   if (m.boss) say("p", PHRASE.boss);
-  say("m", monsterName(m));
-  // The rescue floor says who you're freeing; a trait says what it does, the first times you meet it.
-  if (m.cursed != null) say("p", heroRescue(HEROES[m.cursed]));
+  // A cursed hero (the rescue floor) is announced with the quips' light echo (CURSED_FX), then who
+  // you're freeing; a trait says what it does, the first times you meet it.
+  say("m", monsterName(m), false, null, m.cursed != null ? CURSED_FX : undefined);
+  if (m.cursed != null) say("p", heroRescue(HEROES[m.cursed]), false, null, CURSED_FX);
   if (t && once("trait:" + t.name, 2)) say("p", traitLine(m));
 }
 // The next problem, chosen by the learning engine (learn.js): a missed fact when it's due back,
@@ -350,11 +355,14 @@ function newProblem() {
   const spellTurn = !due && !m.blank && canSpell() && (SPELLS_ALWAYS || Math.random() < SPELL_SHARE);
   const spell = spellTurn ? spellKey(bk, recs, { recent: G.recent, avoidAns, op }) : null;
   const probe = !due && !spell && f.on && f.cool <= 0 ? probeKey(bk, recs, null, G.recent, avoidAns, f.leap) : null;
-  const key = spell || probe || choose(bk, recs, { now: Date.now(), recent: G.recent, retry: due ? due.key : null, op, like: prefers(m), depth: G.depth, avoidAns });
+  const key = spell || probe || choose(bk, recs, { now: Date.now(), recent: G.recent, retry: due ? due.key : null, op, like: prefers(m), depth: G.depth, avoidAns,
+    // The captain's digit: held back in the first fight, then about a third of problems lean to it
+    // until the captain's first moment has happened (captainLean).
+    digit: team.captain, digitShare: captainLean() ? CAPTAIN_BIAS : 0, avoidDigitShare: firstFight() ? CAPTAIN_HOLD : 0 });
   // Charge (Minustaur): every 4th problem on the floor, a miss costs 2 hearts.
   G.charged = charged(m, G.onFloor++);
   $("charge").hidden = !G.charged;
-  if (G.charged) say("p", PHRASE.charged, false, () => G.charged && !G.busy);
+  if (G.charged) { sfx.charge(); say("p", PHRASE.charged, false, () => G.charged && !G.busy); }
   G.cur = factOf(key);
   G.cur.probe = !!probe;
   G.recentAns = [G.cur.op + " " + G.cur.ans].concat(G.recentAns || []).slice(0, 2);
@@ -434,13 +442,45 @@ function fly(text, crit) {
   })));
 }
 
-// Hero bonuses: each rescued hero summoned adds 10% (up to 30%); the captain's digit in the
-// answer is a power hit, +50%. The captain counts for the power hit, not the 10%.
+// The captain's digit in the answer is a power hit, +50% (rescued heroes: momentBoost, below).
 function heroBonus(typed) {
-  const digits = [...typed].map(Number);
-  const helpers = Math.min(3, digits.filter((d) => d !== team.captain && team.rescued.includes(d)).length);
-  const power = hasCaptain() && digits.includes(team.captain);
-  return { mult: (1 + helpers * 0.1) * (power ? 1.5 : 1), power, helpers };
+  const power = hasCaptain() && [...typed].map(Number).includes(team.captain);
+  return { mult: power ? 1.5 : 1, power };
+}
+// Rescued heroes hit harder only in a Hero Moment (settled 2026-11-25; they used to add 10% to
+// every answer with their digit, which nobody noticed): +25% for each rescued hero in the moment
+// (a team-up can have two). The captain's power hit is separate and unchanged.
+const MOMENT_BOOST = 0.25;
+function momentBoost(mo) {
+  if (!mo) return 0;
+  return [mo.hero, mo.partner].filter((d) => d != null && d !== team.captain && team.rescued.includes(d)).length;
+}
+/* ---------- Hero Moments (DESIGN.md §8.4) ----------
+   Now and then a hero in a right answer gets a slow-motion close-up and a quip before it strikes
+   (when: moments.js decide; the show: slowmo.js). Never in a player's first fight; always on a
+   freed hero's debut and on the blow that finishes a boss. ?moments makes every qualifying hit
+   one, for testing; ?teamup does too, and makes every one with two heroes' digits a team-up.
+   Input waits until it's over (G.busy stays set through the hit). */
+const TEAMUP_ALWAYS = new URLSearchParams(location.search).has("teamup"), MOMENTS_ALWAYS = TEAMUP_ALWAYS || new URLSearchParams(location.search).has("moments");
+let MS = freshMoments(), MR = freshRun();
+function momentFor(typed, critStart, bossFinish) {
+  const sp = G.cur.spell ? (G.cur.reversed ? "backwards" : G.cur.howTo ? "show" : "good") : null;
+  const first = firstFight(); // nothing beaten yet: the first fight
+  const mo = decideMoment(MS, MR, { typed, team, hinted: G.hinted, spell: sp, first, floor: G.floor, n: G.tries, bossFinish, critStart, always: MOMENTS_ALWAYS, teamup: TEAMUP_ALWAYS });
+  if (mo) store.player(PID).set("moments", MS);
+  return mo;
+}
+// Plays it: the hero (or a team-up's two) takes the slow-motion turn, and the answer's other
+// digits fly at the snap. Resolves at the hit.
+function heroMoment(mo, typed, crit) {
+  let rest = typed.replace(String(mo.hero), "");
+  if (mo.partner != null) rest = rest.replace(String(mo.partner), "");
+  const from = $("blank") && $("blank").offsetParent ? $("blank") : $("ans");
+  const colorOf = (d) => (d === team.captain ? team.color : null);
+  return playMoment({ hero: mo.hero, partner: mo.partner, color: colorOf(mo.hero), partnerColor: mo.partner != null ? colorOf(mo.partner) : null, quip: mo.quip,
+    before: () => speaking() ? cutOff(sfx.scratch, sfx.SCRATCH_AT, sfx.SCRATCH) : null,
+    speak: () => say("h", quipLine(mo.quip), true), from, to: $("mon"), room: document.querySelector(".game"),
+    reduced: reduced(), onSnap: () => { if (rest) fly(rest, crit); } });
 }
 // Chalk sparks bursting from the monster on impact.
 function burst(crit) {
@@ -470,7 +510,9 @@ function showHelp(mode) {
   clearTimeout(hintTimer);
   $("hintBtn").hidden = mode === "none";
   $("hint").hidden = true;
-  if (mode === "show") { const cur = G.cur; hintTimer = setTimeout(() => { if (G.cur === cur && !G.busy && !G.hinted) openHint(); }, NEW_HINT_MS); }
+  // Not if they've started typing (or drawing a spell): they aren't stuck, and the hint opening
+  // would move things under their fingers.
+  if (mode === "show") { const cur = G.cur; hintTimer = setTimeout(() => { if (G.cur === cur && !G.busy && !G.hinted && G.input === "" && !(typeof strokes !== "undefined" && strokes.length)) openHint(); }, NEW_HINT_MS); }
 }
 function openHint() {
   const h = hintFor(hintFact(), false), box = $("hint");
@@ -535,20 +577,26 @@ function submit() {
     // The monster's trait: Lucky Number, Ten Smash, Armor (traits.js).
     const trait = hitBy(m, G.cur.ans, typed, G.halved);
     // A spell drawn backwards fizzles at half damage.
-    const dmg = Math.max(1, Math.round(G.cur.ans * (crit ? 2 : 1) * trait.mult * bonus.mult * (G.cur.reversed ? 0.5 : 1)));
+    let dmg = Math.max(1, Math.round(G.cur.ans * (crit ? 2 : 1) * trait.mult * bonus.mult * (G.cur.reversed ? 0.5 : 1)));
     const level = learnFrom(true);
     G.input = ""; ansUI();
     $("hint").hidden = true; $("hintBtn").hidden = true;
     sfx.launch(G.streak);
     const critsNow = G.streak === 3 && !G.hinted;
     if (critsNow) say("p", PHRASE.crits);
-    fly(typed, crit).then(() => {
-      sfx.impact(crit); burst(crit);
+    // Now and then a Hero Moment: a slow-motion close-up and a quip before the hit (moments.js).
+    // A rescued hero in it adds MOMENT_BOOST (momentBoost).
+    const mo = momentFor(typed, critsNow, !!m.boss && G.hp - dmg <= 0), boost = momentBoost(mo);
+    if (boost) dmg = Math.round(dmg * (1 + MOMENT_BOOST * boost));
+    const momentName = mo ? HEROES[mo.hero].n + (mo.partner != null ? " & " + HEROES[mo.partner].n : "") : "";
+    (mo ? heroMoment(mo, typed, crit) : fly(typed, crit)).then(() => {
+      if (!mo) sfx.impact(crit); // a moment lands with its own, bigger impact and shake
+      burst(crit);
       G.hp -= dmg;
-      pop((bonus.power ? "Power! " : crit ? "Crit! " : "") + "−" + dmg, crit || bonus.power);
+      pop((boost ? "Hero! " : bonus.power ? "Power! " : crit ? "Crit! " : "") + "−" + dmg, crit || bonus.power || !!boost);
       restartAnim($("mon"), "hit");
-      if (crit) restartAnim($("arena"), "shake");
-      setMsg(G.cur.reversed ? `Your ${G.cur.ans} is facing backwards. It faces this way → Half damage: ${dmg}` : G.cur.howTo ? `Here's how to write it. Hit for ${dmg}!` : level ? level : trait.note ? `${trait.note}: ${dmg}!` : bonus.power ? `${HEROES[team.captain].n} power hit for ${dmg}!` : crit ? `Critical hit for ${dmg}!` : `Hit for ${dmg}!`, "good");
+      if (crit && !mo) restartAnim($("arena"), "shake");
+      setMsg(G.cur.reversed ? `Your ${G.cur.ans} is facing backwards. It faces this way → Half damage: ${dmg}` : G.cur.howTo ? `Here's how to write it. Hit for ${dmg}!` : level ? level : trait.note ? `${trait.note}: ${dmg}!` : boost ? `${momentName} hero hit for ${dmg}!` : bonus.power ? `${HEROES[team.captain].n} power hit for ${dmg}!` : crit ? `Critical hit for ${dmg}!` : `Hit for ${dmg}!`, "good");
       hpUI(); streakUI();
       // Half HP: Divvy splits in two, Sigma Rex armors up (traits.js).
       const half = !G.halved && G.hp > 0 && G.hp <= G.max / 2 ? atHalf(m) : null;
@@ -581,7 +629,7 @@ function miss(why) {
   learnFrom(false);
   // after counts down at each new problem, so 3–5 means 2–4 other problems in between.
   G.retry = G.retry.filter((r) => r.key !== G.cur.key).concat([{ key: G.cur.key, after: 3 + Math.floor(Math.random() * 3) }]);
-  sfx.miss();
+  if (cost > 1) sfx.thunder(); else sfx.miss(); // a charged miss is a thunder strike
   restartAnim($("mon"), "lunge");
   streakUI();
   setMsg(`${why} ${shownFact(G.cur, G.cur.ans)}${cost > 1 ? " ⚡ −2 hearts" : ""}`, "bad");
@@ -637,7 +685,7 @@ function cleared() {
   const healed = G.hearts < band().hearts;
   if (healed) G.hearts++;
   record();
-  sfx.cleared();
+  sfx.victory(); // a floor cleared gets the fanfare (the user liked it better than the jingle)
   const nx = G.floors[G.floor + 1];
   const next = `<div class="cardmon">${monsterArt(nx)}</div>
   <p>Next down the stairs: <strong>${nx.n}</strong>${nx.boss ? ", the boss" : ""}.${healed ? " You found a heart (+1)." : ""}</p>`;
@@ -657,6 +705,7 @@ function cleared() {
     // A rescue: the last crack breaks the curse and the hero joins the team.
     const h = HEROES[m.cursed];
     Object.assign(team, crackCurse(team, m.cursed).team); saveTeam();
+    joined(MS, h.d); store.player(PID).set("moments", MS); // their first answer on the team is a Hero Moment
     say("p", heroJoins(h));
     say("p", heroHelps(h));
     show(`<h2>${h.n} is free!</h2>
@@ -688,6 +737,7 @@ function end(win) {
   // Losing all your hearts curses the hero who led the run (heroes.js curseCaptain): rescue them
   // again on a rescue floor, and pick someone else to lead.
   const fallen = !win && hasCaptain() ? HEROES[team.captain] : null;
+  // A stratum cleared: the fanfare for now; it's meant to get something really big (DESIGN.md §8.3).
   if (win) { sfx.victory(); say("p", wingCleared(w)); } else say("p", monsterWon(m));
   if (fallen) say("p", heroCursed(fallen));
   if (opened) { say("p", PHRASE.unlocked); openedAll.forEach((x) => say("p", wingOpened(x))); }
@@ -720,7 +770,7 @@ function end(win) {
     return false;
   };
   $("again").onclick = () => { if (ready()) start(depth); };
-  if (deeper) $("deeper").onclick = () => { if (ready()) start(depth + 1); };
+  if (deeper) $("deeper").onclick = () => { if (ready()) descend(depth + 1, "deeper"); };
   // A newly opened stratum, from its first depth.
   if (opened) $("nextStratum").onclick = () => { if (!ready()) return; st.band = opened.band; saveSettings(); start(1); };
   $("set").onclick = () => openMenu();
@@ -772,6 +822,15 @@ function resume() {
   G.t0 += performance.now() - p.at;
 }
 $("pauseBtn").onclick = pause;
+// Where ⏸ sits: on phones at the right of the hero-and-hearts row (under the thumb); on iPad and
+// desktop (760px and wider) at the top right, beside the floor in the header, where pause
+// usually is. The same button moves, so its wiring and focus stay.
+{
+  const wide = matchMedia("(min-width: 760px)"), btn = $("pauseBtn");
+  const place = () => { if (wide.matches) document.querySelector(".top .tools").appendChild(btn); else document.querySelector(".you").appendChild(btn); };
+  place();
+  wide.addEventListener ? wide.addEventListener("change", place) : wide.addListener(place);
+}
 
 /* ---------- the menu: players and settings ---------- */
 function openMenu() {
@@ -782,15 +841,56 @@ function openMenu() {
 function chip(type, name, value, checked, label, id) {
   return `<label class="chip"><input type="${type}" name="${name}" value="${value}"${id ? ` id="${id}"` : ""} ${checked ? "checked" : ""}><span>${label}</span></label>`;
 }
+// Settings → Players: one card per player, with their hero, name and grade. Tap a card to play
+// as them (the one playing has a gold outline and a ✓). ✎ opens a card to rename it, set the
+// grade (the current player's; another player is asked theirs when they first play), or remove it
+// (a second tap confirms; never the one playing). "+ Add player" adds a card and opens it.
+let editId = null;
 function playersHTML() {
   const list = store.profiles();
-  const rows = list.map((p, i) => `<li class="prow${p.id === PID ? " me" : ""}" data-id="${esc(p.id)}">
-    <input type="text" maxlength="24" value="${esc(p.name)}" placeholder="Player ${i + 1}" aria-label="Player ${i + 1}'s name (optional)">
-    ${p.id === PID ? '<span class="now">Playing</span>' : '<button class="small" type="button" data-act="play">Play</button>'}
-    ${store.canRemove(p.id) ? '<button class="small danger" type="button" data-act="remove" aria-label="Remove">✕</button>' : ""}
-  </li>`).join("");
-  return `<ul class="players">${rows}
-  <li class="prow"><input type="text" id="newName" maxlength="24" placeholder="New player (name optional)" aria-label="New player's name (optional)"><button class="small" type="button" id="addPlayer">+ Add</button></li></ul>`;
+  const cards = list.map((p, i) => {
+    const me = p.id === PID, open = editId === p.id;
+    const g = me ? st.grade : store.settings(p.id).grade;
+    const h = me ? team : (store.player(p.id).get("heroes", null) || {});
+    const hero = h.captain != null ? heroSvg(HEROES[h.captain], { color: h.color || null }) : '<span class="pnone" aria-hidden="true">?</span>';
+    const name = esc(displayName(list, p.id));
+    return `<li class="pcard${me ? " me" : ""}${open ? " open" : ""}" data-id="${esc(p.id)}">
+      <div class="phead">
+        <button class="pmain" type="button" data-act="play" ${me ? 'aria-current="true"' : ""} aria-label="${me ? `${name}, playing now` : `Play as ${name}`}">
+          <span class="pav">${hero}</span>
+          <span class="pname"><b>${name}</b><small>${g != null ? gradeName(g) : "Grade not picked yet"}</small></span>
+          ${me ? '<span class="pnow" aria-hidden="true">✓</span>' : ""}
+        </button>
+        <button class="icon-btn pedit${open ? " done" : ""}" type="button" data-act="edit" aria-expanded="${open}" aria-label="${open ? "Done editing" : "Edit"} ${name}">${open ? "Done" : "✎"}</button>
+      </div>
+      ${open ? `<div class="pform">
+        <label>Name <input type="text" maxlength="24" value="${esc(p.name)}" placeholder="Player ${i + 1}" aria-label="Name (optional)"></label>
+        ${me ? `<div class="pgrades"><span>Grade</span>${gradesHTML(true)}</div>` : `<p class="pnote">${g != null ? gradeName(g) + ". To change it, play as them." : "They'll be asked their grade when they first play."}</p>`}
+        ${store.canRemove(p.id) ? '<button class="small danger" type="button" data-act="remove">Remove player</button>' : ""}
+      </div>` : ""}
+    </li>`;
+  }).join("");
+  return `<ul class="pcards">${cards}</ul>
+  <button class="small add-player" type="button" id="addPlayer">+ Add player</button>`;
+}
+// The grade buttons, K to 5: big on the start screen's question, a compact row (mini) in
+// Settings → Players. A pre-reader can read them: they're K and digits.
+function gradesHTML(mini) {
+  return `<div class="grades${mini ? " mini" : ""}" role="group" aria-label="Grade">${GRADES.map((g) => {
+    const on = g === st.grade;
+    return `<button type="button" class="gpick${on ? " on" : ""}" data-g="${g}" aria-pressed="${on}" aria-label="${gradeName(g)}"><b>${gradeLabel(g)}</b>${mini ? "" : `<small>${g ? "grade" : "kinder"}</small>`}</button>`;
+  }).join("")}</div>`;
+}
+// A grade picked (or changed): its strata open from the start. Only settings change; progress
+// and what's been learned stay (wings.js withGrade).
+function setGrade(g) {
+  const was = st.band;
+  st = withGrade(st, g, { first: st.grade == null, fresh: fresh(), progress, recs });
+  saveSettings();
+  if (st.band !== was) { G.running = false; newRun(); loadMonster(0, true); }
+}
+function wireGrades(after) {
+  $("card").querySelectorAll(".gpick").forEach((b) => b.onclick = () => { setGrade(Number(b.dataset.g)); after(); });
 }
 // "Level 2 of 4: Within 10", from the player's own fact records.
 function levelLine() {
@@ -832,15 +932,29 @@ function wingsHTML() {
 function menu() {
   G.onMenu = true;
   // With no hero yet, the first tap here asks for one out loud (below), once per player a visit.
-  if (!hasCaptain() && G.askedFor !== PID) G.askHero = true;
+  if ((!hasCaptain() || st.grade == null) && G.askedFor !== PID) G.askHero = true;
   if (updateReady && !G.running) { reloadForUpdate(); return; } // a new version is waiting
   const list = store.profiles();
-  show(`<div class="cardhead logo-head"><h2 class="logo">Sum<b>geon</b></h2><button class="icon-btn" id="openSettings" type="button" aria-label="Settings">${GEAR}</button></div>
-  <p class="tag"><strong>Your answer is your attack.</strong> Get it right and your digits fly at the monster.</p>
-  ${list.length > 1 ? `<p class="playing">Playing as <b>${esc(displayName(list, PID))}</b> <button class="link" type="button" id="switchPlayer">Switch</button></p>` : ""}
+  // The scene-gap is the window onto the start scene (drawScene): the door and your team show
+  // there, between the title and the rest of the card.
+  const head = `<div class="cardhead logo-head"><h2 class="logo">Sum<b>geon</b></h2><button class="icon-btn" id="openSettings" type="button" aria-label="Settings">${GEAR}</button></div>
+  <div class="scene-gap" aria-hidden="true"></div>
+  ${st.grade == null ? "" : `<p class="tag"><strong>Your answer is your attack.</strong> Get it right and your digits fly at the monster.</p>`}
+  ${list.length > 1 ? `<p class="playing">Playing as <b>${esc(displayName(list, PID))}</b> <button class="link" type="button" id="switchPlayer">Switch</button></p>` : ""}`;
+  // A player with no grade yet is asked once, first (the kid picks: an older grade opens more strata).
+  if (st.grade == null) {
+    show(`${head}<div class="grp" id="gradeAsk"><span>What grade are you in?</span>${gradesHTML()}</div>`, "page scene");
+    drawScene();
+    wireGrades(() => { if (!hasCaptain()) { G.askHero = false; G.askedFor = PID; say("p", PHRASE.pickHero, true); } menu(); });
+    $("openSettings").onclick = () => settings();
+    if ($("switchPlayer")) $("switchPlayer").onclick = () => settings();
+    return;
+  }
+  show(`${head}
   ${captainHTML()}
   <div class="grp"><span>Pick a stratum</span><div class="wings strata"><div class="surface" aria-hidden="true"></div>${wingsHTML()}</div></div>
-  <div class="btns"><p class="warn" id="warn" role="status"></p><button class="big" id="go">Enter the dungeon</button></div>`);
+  <div class="btns"><p class="warn" id="warn" role="status"></p><button class="big" id="go">Enter the dungeon</button></div>`, "page scene");
+  drawScene();
   const card = $("card");
   // A different Wing is a fresh dungeon: its own facts and hearts.
   card.querySelectorAll("input[name=wing]").forEach((i) => i.onchange = () => {
@@ -853,15 +967,65 @@ function menu() {
   if ($("switchPlayer")) $("switchPlayer").onclick = () => settings();
   $("go").onclick = () => {
     if (!hasCaptain()) { $("warn").textContent = freePick(team, fresh()) ? "Pick your hero first." : "Pick who leads first."; $("captain").scrollIntoView({ block: "center", behavior: "smooth" }); say("p", PHRASE.heroFirst, true); return; }
-    start(null, true);
+    descend(null, "enter");
   };
 }
-// "Pick your hero!": speech can only start in a tap, so it waits for the first tap on the start
-// screen (not one on a hero, which says that hero's name instead).
+// The start scene (DESIGN.md §8.3): while the start screen is up, the fight is hidden and the
+// surface (descent.js surfaceHTML) shows behind the card: the night sky, the hill with the
+// Sumgeon's door, your captain by it in your chalk color and the rest of your team around them
+// (with nobody picked, just the door). The card's scene-gap is its window: the horizon sits
+// just above where the card's sheet starts (--sheet), so the team stands on a strip of grass.
+// Settings, the book and help opened from here keep it behind them. Entering, the descent starts
+// from this same surface (sceneNow), and start() takes it away.
+let sceneHz = null;
+function sceneHeroes() {
+  const art = (d, role, o) => ({ svg: heroSvg(HEROES[d], o || {}), role });
+  const rest = team.rescued.filter((d) => d !== team.captain).sort((a, b) => a - b).map((d) => art(d, "team"));
+  if (hasCaptain()) return [art(team.captain, "cap", { color: team.color }), ...rest];
+  return rest; // with nobody picked, just the door
+}
+function drawScene() {
+  const sc = $("scene"), card = $("card"), gap = card.querySelector(".scene-gap");
+  document.body.classList.add("on-scene"); sc.hidden = false;
+  const H = sc.clientHeight || innerHeight, W = sc.clientWidth || innerWidth;
+  if (gap) {
+    let next = gap.nextElementSibling;
+    while (next && !next.offsetParent) next = next.nextElementSibling; // the tagline is hidden on short phones
+    const sheet = (next ? next.offsetTop : gap.offsetTop + gap.offsetHeight) - 14;
+    card.style.setProperty("--sheet", sheet + "px");
+    sceneHz = card.getBoundingClientRect().top + $("ov").scrollTop + sheet - 16;
+  }
+  sc.innerHTML = surfaceHTML({ W, H, hz: sceneHz || H * 0.4, heroes: sceneHeroes() });
+}
+const sceneOn = () => !$("scene").hidden;
+const sceneNow = () => (sceneOn() ? { hz: sceneHz, heroes: sceneHeroes() } : null);
+function hideScene() { $("scene").hidden = true; $("scene").innerHTML = ""; document.body.classList.remove("on-scene"); }
+let sceneFrame = 0;
+const redrawScene = () => { if (!sceneOn() || descending()) return; cancelAnimationFrame(sceneFrame); sceneFrame = requestAnimationFrame(drawScene); };
+addEventListener("resize", redrawScene);
+if (window.visualViewport) window.visualViewport.addEventListener("resize", redrawScene);
+// Double-tapping a stratum on the start screen enters it: the first tap picks it (and redraws the
+// card), a second tap on the same stratum soon after is Enter.
+let lastWingTap = null;
+document.addEventListener("click", (e) => {
+  const w = e.target.closest && e.target.closest("label.wing");
+  // A tap on the label also fires a click on its radio input right after: that's the same tap,
+  // not a second one (counting it entered the old stratum on a single tap).
+  if (e.target.tagName === "INPUT") return;
+  if (!w || !G.onMenu || w.classList.contains("locked") || e.target.closest("button")) { lastWingTap = null; return; }
+  const id = w.querySelector("input[name=wing]").value, now = performance.now();
+  if (lastWingTap && lastWingTap.id === id && now - lastWingTap.t < 450) { lastWingTap = null; $("go").click(); return; }
+  lastWingTap = { id, t: now };
+}, true);
+// "What grade are you in?" (with no grade yet), then "Pick your hero!": speech can only start in a
+// tap, so it waits for the first tap on the start screen (not one on a grade or a hero, which say
+// their own thing).
 document.addEventListener("pointerdown", (e) => {
   if (!G.askHero) return;
   G.askHero = false; G.askedFor = PID;
-  if (G.onMenu && !hasCaptain() && !$("ov").hidden && !e.target.closest(".hpick")) say("p", PHRASE.pickHero);
+  if (!G.onMenu || $("ov").hidden || e.target.closest(".hpick, .gpick")) return;
+  if (st.grade == null) say("p", PHRASE.pickGrade);
+  else if (!hasCaptain()) say("p", PHRASE.pickHero);
 }, true);
 
 // Settings, in tabs: Players (names optional), Game (chalk color, sounds as on/off switches) and
@@ -968,7 +1132,7 @@ function bookPage() {
   beasts += "</div>";
   const heroes = HEROES.map((h) => onTeam(h.d)
     ? `<section class="hero-card${h.d === team.captain ? " captain-card" : ""}">${heroSvg(h, { color: h.d === team.captain ? team.color : null })}
-        <b>${esc(h.n)}</b><small>${esc(h.cls)}</small><small>${esc(h.move)}</small>${h.d === team.captain ? '<small class="cap-tag">Your hero</small>' : ""}</section>`
+        <b>${esc(h.n)}</b><small>${esc(h.cls)}</small><small>${esc(h.move)}</small>${quipsHeard(h.d)}${h.d === team.captain ? '<small class="cap-tag">Your hero</small>' : ""}</section>`
     : `<section class="hero-card unmet">${heroSvg(h, { cursed: true, cracks: cracksOf(h.d) })}<b>???</b><small>${cracksOf(h.d) ? `Curse cracked ${cracksOf(h.d)} of ${CURSE_HITS}` : "Still cursed"}</small></section>`).join("");
   const freed = HEROES.filter((h) => onTeam(h.d)).length, met = roster().filter((x) => seen[x.m.n]).length;
   show(`<div class="cardhead"><h2>Monsters &amp; Heroes</h2></div>
@@ -980,6 +1144,11 @@ function bookPage() {
   <div class="btns"><button class="big" id="bookBack">Back</button></div>`);
   // Back to the pause screen mid-run, or to the start screen.
   $("bookBack").onclick = () => G.paused ? pause() : menu();
+}
+// A hero's quips heard in Hero Moments (moments.js), "Quips: 1 of 3", gold when all are.
+function quipsHeard(d) {
+  const q = heardOf(MS, d);
+  return `<small class="quips${q.heard === q.of ? " all" : ""}">Quips: ${q.heard} of ${q.of}</small>`;
 }
 // A monster's looks (monsters.js LOOKS) on its card: the ones met, and silhouettes for the rest.
 function looksRow(m) {
@@ -1056,11 +1225,14 @@ function wireCaptain() {
     if (!next) return;
     Object.assign(team, next);
     saveTeam();
-    // The name, what they do, and (on the start screen, the first few times) what to tap next.
-    say("m", heroName(HEROES[team.captain]), true);
-    say("p", heroPower(HEROES[team.captain]));
-    if (G.onMenu && once("enter", 3)) say("p", PHRASE.goIn);
+    // The hero's name line in the quip voice (moments.js nameLine: "Captain Twodini, reporting
+    // for duty!" the first time they're picked, then their deck). Nothing after it: the user found
+    // "Your twos hit harder." and "Tap Enter to go in!" too much on top of it.
+    const mo = { quip: nameLine(MS, team.captain) };
+    store.player(PID).set("moments", MS);
+    say("h", quipLine(mo.quip), true, null, PICK_FX);
     captainUI(); whoUI();
+    if (sceneOn()) drawScene(); // the new captain by the door
     if ($("warn")) $("warn").textContent = "";
     pickOpen = false; redraw();
   });
@@ -1068,22 +1240,32 @@ function wireCaptain() {
 
 function wirePlayers() {
   const box = $("players");
-  box.querySelectorAll(".players .prow").forEach((row) => {
-    const id = row.dataset.id;
-    row.querySelector("input").onchange = (e) => { store.rename(id, e.target.value); whoUI(); };
-    const play = row.querySelector("[data-act=play]");
-    if (play) play.onclick = () => switchTo(id);
-    const rm = row.querySelector("[data-act=remove]");
+  box.querySelectorAll(".pcard").forEach((card) => {
+    const id = card.dataset.id;
+    card.querySelector("[data-act=play]").onclick = () => { if (id !== PID) { editId = null; switchTo(id); } };
+    card.querySelector("[data-act=edit]").onclick = () => { editId = editId === id ? null : id; refreshPlayers(); };
+    const input = card.querySelector(".pform input");
+    if (input) {
+      input.onchange = (e) => { store.rename(id, e.target.value); whoUI(); };
+      input.onkeydown = (e) => { if (e.key === "Enter") { store.rename(id, e.target.value); editId = null; refreshPlayers(); } };
+    }
+    const rm = card.querySelector("[data-act=remove]");
     // A second tap confirms, as in Sound Box. From this device only.
     if (rm) rm.onclick = () => {
-      if (rm.dataset.sure !== "1") { rm.dataset.sure = "1"; rm.textContent = "Remove?"; return; }
-      store.removeProfile(id);
+      if (rm.dataset.sure !== "1") { rm.dataset.sure = "1"; rm.textContent = "Tap again to remove"; return; }
+      store.removeProfile(id); editId = null;
       refreshPlayers();
     };
   });
-  const add = () => { const id = store.addProfile($("newName").value); switchTo(id); };
-  $("addPlayer").onclick = add;
-  $("newName").onkeydown = (e) => { if (e.key === "Enter") add(); };
+  wireGrades(refreshPlayers);
+  // A new card, opened to name it (optional), without switching to it.
+  $("addPlayer").onclick = () => {
+    const id = store.addProfile("");
+    editId = id;
+    refreshPlayers();
+    const input = $("players").querySelector(`.pcard[data-id="${CSS.escape(id)}"] input`);
+    if (input) input.focus();
+  };
 }
 function refreshPlayers() { $("players").innerHTML = playersHTML(); wirePlayers(); whoUI(); }
 // Another player's turn: their own settings, best run and a fresh dungeon.
@@ -1103,19 +1285,49 @@ function nextWingHint() {
   const t = toOpen(next[0], progress, recs);
   return `<p>To open <strong>${next.map((x) => x.name).join("</strong> and <strong>")}</strong>, learn ${Math.round(t.need * 100)}% of the facts here. You're at ${Math.round(t.share * 100)}%.</p>`;
 }
-// enter: from the start screen's "Enter the dungeon", which says so first.
-function start(depth, enter) {
+// The descent (descent.js): "Enter the dungeon" (mode "enter") and "Go deeper" ("deeper") first
+// drop down through the strata to the depth, then start the run, exactly as without it. The
+// opening lines start on the tap (speech has to start in a tap on iOS), so start() doesn't say
+// them again. The start card falls away as it begins.
+// How long the room shows empty after the descent before the first monster arrives.
+const AFTER_DESCENT_MS = 1300;
+function descend(depth, mode) {
+  if (descending()) return;
+  const d = depth || deepest(wing(), progress), enter = mode === "enter";
+  G.onMenu = false; // no update reload, no stratum double-tap, mid-descent
+  stopSpeech(); openingLines(enter, d);
+  const ov = $("ov");
+  ov.classList.add("leaving");
+  const fell = setTimeout(() => { ov.classList.remove("leaving"); hide(); }, reduced() ? 0 : 450);
+  playDescent({ wing: wing(), depth: d, mode, reduced: reduced(), scene: enter ? sceneNow() : null, title: enter ? PHRASE.enter : `Depth ${d}`, sub: enter ? `${wing().name} · Depth ${d}` : wing().name },
+    () => { clearTimeout(fell); ov.classList.remove("leaving"); start(d, enter, true, reduced() ? 300 : AFTER_DESCENT_MS); });
+}
+// What's said as a run begins: "Now entering the Sumgeon!" (from the start screen), then the depth.
+function openingLines(enter, d) {
+  if (enter) say("p", PHRASE.enter, false, null, ENTER_FX);
+  if (d > 1 && d <= DEPTH_MAX_SPOKEN) say("p", depthLine(d), false, null, ENTER_FX); // "Depth two!" echoes like the entrance
+}
+// enter: from the start screen's "Enter the dungeon", which says so first. voiced: the descent
+// already said the opening lines.
+// pause (ms): after the descent, the room shows empty for a moment before the first monster
+// arrives (AFTER_DESCENT_MS), so the landing and the monster don't run together.
+function start(depth, enter, voiced, pause) {
   G.onMenu = false;
-  hide();
+  hide(); hideScene();
   newRun(depth);
   Object.assign(G, { hearts: band().hearts, streak: 0, solved: 0, tries: 0, running: true, retry: [], recent: [], next: false, paused: null, runStars: 0 });
-  stopSpeech();
-  if (enter) say("p", PHRASE.enter);
-  if (G.depth > 1 && G.depth <= DEPTH_MAX_SPOKEN) say("p", depthLine(G.depth));
-  loadMonster(0);
-  // The player's first fight: how to attack, before the first problem is read (until they answer).
-  if (once("hit")) say("p", PHRASE.hitHow, false, () => !G.tries && G.running);
-  newProblem();
+  MR = freshRun();
+  if (!voiced) { stopSpeech(); openingLines(enter, G.depth); }
+  const go = () => {
+    if (!G.running) return;
+    loadMonster(0);
+    // The player's first fight: how to attack, before the first problem is read (until they answer).
+    if (once("hit")) say("p", PHRASE.hitHow, false, () => !G.tries && G.running);
+    newProblem();
+  };
+  if (!pause) return go();
+  G.busy = true; $("mon").innerHTML = ""; $("prob").innerHTML = "";
+  setTimeout(go, pause);
 }
 
 /* ---------- update checking ----------
@@ -1195,6 +1407,20 @@ function press(k) {
 // a run of fluent sums, and kept from run to run while the game is open.
 const flows = {};
 function flowOf(bk) { return (flows[PID + ":" + bk] ||= { fluent: 0, cool: 0, hist: [], on: false, leap: 1 }); }
+// How lines sound (speech.js say's fx): "Now entering the Sumgeon!" echoes like a cavern; the
+// captain line on picking a hero is the quip's boost without its echo.
+const ENTER_FX = { gain: 1.3, echo: 0.45, delay: 0.2 }, PICK_FX = { gain: 1.5, echo: 0 };
+// A cursed hero's arrival on the rescue floor: the quips' light echo, at normal volume.
+const CURSED_FX = { gain: 1, echo: 0.1 };
+// The share of problems that prefer an answer with the captain's digit until its first moment (learn.js choose).
+const CAPTAIN_BIAS = 0.35;
+// In the first fight (nothing beaten yet, so no Hero Moments), the share that avoid it instead,
+// so the captain's first answer, and its first moment, come in the fight after.
+const CAPTAIN_HOLD = 0.85;
+const firstFight = () => !Object.values(seen).some((s) => s.beaten > 0);
+// The lean toward the captain's digit lasts until that captain's first Hero Moment (moments.js
+// saves it in captains), at any depth; a new captain gets it again.
+const captainLean = () => hasCaptain() && !firstFight() && !(MS.captains || []).includes(team.captain);
 const SPELL_SHARE = 1 / 6, SPELLS_ALWAYS = new URLSearchParams(location.search).has("spells");
 const canSpell = () => SPELLS_ALWAYS || matchMedia("(any-pointer: coarse)").matches;
 const spellsOf = () => Object.assign({ templates: {}, reversed: {}, cast: 0 }, store.player(PID).get("spells", {}));

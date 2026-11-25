@@ -5,7 +5,9 @@ import { audioContext } from "./sfx.js";
 // device voice: lines without a clip, local dev, or a clip that fails to load. On iOS speech
 // only works after a tap; everything fails quietly.
 //
-// Kinds: "p" phrase (UI and instructions), "m" monster or hero line, "n" number, "q" problem.
+// Kinds: "p" phrase (UI and instructions), "m" monster or hero line, "n" number, "q" problem,
+// "h" a hero's quip (Hero Moments), recorded in a second voice (af_bella). With the device voice,
+// a quip is said a little higher, so it still doesn't sound like an instruction.
 
 var synth = window.speechSynthesis, voice = null, on = true;
 
@@ -40,13 +42,13 @@ if (synth) { pickVoice(); try { synth.addEventListener("voiceschanged", pickVoic
 
 // Device voice. Resolves when speech ends, or after a timeout scaled to the text, since
 // onend doesn't always fire.
-function speak(text, rate) {
+function speak(text, rate, pitch) {
   return new Promise(function (resolve) {
     if (!synth) { setTimeout(resolve, 300); return; }
     try {
       var u = new SpeechSynthesisUtterance(text);
       if (voice) u.voice = voice;
-      u.lang = "en-US"; u.rate = rate || 0.95;
+      u.lang = "en-US"; u.rate = rate || 0.95; u.pitch = pitch || 1;
       var t = setTimeout(resolve, 1500 + text.length * 120);
       u.onend = function () { clearTimeout(t); resolve(); };
       u.onerror = function () { clearTimeout(t); resolve(); };
@@ -64,9 +66,9 @@ var clips = {}, clipBase = "", player = null, finishClip = null;
 var sprites = [], spriteOf = {}, source = null;
 // The sound effects' Web Audio context (sfx.js), shared: one context is what Safari handles well.
 function ac() { return audioContext(); }
-var queue = Promise.resolve(), epoch = 0;
+var queue = Promise.resolve(), epoch = 0, pending = 0;
 // The device-voice rate each kind is spoken at.
-var RATE = { p: 0.95, m: 0.95, n: 0.95, q: 0.85 };
+var RATE = { p: 0.95, m: 0.95, n: 0.95, q: 0.85, h: 1 }, PITCH = { h: 1.3 };
 
 (function loadClips() {
   try {
@@ -125,12 +127,57 @@ function playSprite(hit) {
       var src = c.createBufferSource(), done = false;
       src.buffer = hit.s.buf;
       src.connect(c.destination);
-      function end() { if (done) return; done = true; if (source === src) { source = null; finishClip = null; } resolve(true); }
+      // A safety net, as playClip has: if Safari pauses the context mid-line (say, while an
+      // <audio> clip starts), onended never comes and every line queued after this one would
+      // wait forever. So the line counts as done a moment after its length either way.
+      var t = setTimeout(function () { end(); }, (hit.len + 1.5) * 1000);
+      function end() { if (done) return; done = true; clearTimeout(t); if (source === src) { source = null; finishClip = null; } resolve(true); }
       src.onended = end;
       source = src; finishClip = function () { try { src.stop(); } catch (e) {} end(); };
       src.start(0, hit.start, hit.len);
     } catch (e) { resolve(false); }
   });
+}
+
+// A Hero Moment's quip (kind "h"), played through Web Audio with a hero's treatment: louder
+// (HERO_GAIN, then a limiter, past what an <audio> element can do: iOS caps it at full volume),
+// and a short arena echo, so it rings out over the moment's sounds. Resolves true when it
+// ends, false if it can't (the caller then uses the plain clip). ?herogain=<n> tries another
+// gain, ?heroecho=<0..1> another echo level.
+var heroQ = (typeof location !== "undefined") ? new URLSearchParams(location.search) : null;
+var HERO_GAIN = heroQ && heroQ.get("herogain") ? +heroQ.get("herogain") : 1.5;
+var HERO_ECHO = heroQ && heroQ.get("heroecho") ? +heroQ.get("heroecho") : 0.1;
+var heroBufs = {};
+// fx (optional): { gain, echo, delay } instead of the quip's defaults: say()'s fifth argument.
+function playHero(url, fx) {
+  fx = fx || {};
+  var G = fx.gain != null ? fx.gain : HERO_GAIN, E = fx.echo != null ? fx.echo : HERO_ECHO, D = fx.delay || 0.13;
+  var c = ac();
+  if (!c) return Promise.resolve(false);
+  var my = epoch;
+  var load = heroBufs[url] || (heroBufs[url] = fetch(url).then(function (r) { if (!r.ok) throw new Error(r.status); return r.arrayBuffer(); })
+    .then(function (b) { return new Promise(function (ok, no) { c.decodeAudioData(b, ok, no); }); }));
+  return load.then(function (buf) {
+    if (my !== epoch) return true;
+    return new Promise(function (resolve) {
+      if (c.state !== "running") c.resume();
+      var src = c.createBufferSource(), gain = c.createGain(), lim = c.createDynamicsCompressor();
+      var delay = c.createDelay(1), fb = c.createGain(), wet = c.createGain(), tone = c.createBiquadFilter(), done = false;
+      src.buffer = buf;
+      gain.gain.value = G;
+      lim.threshold.value = -10; lim.knee.value = 6; lim.ratio.value = 12; lim.attack.value = 0.003; lim.release.value = 0.15;
+      delay.delayTime.value = D; fb.gain.value = 0.32; wet.gain.value = E;
+      tone.type = "lowpass"; tone.frequency.value = 3500;
+      src.connect(gain); gain.connect(lim);
+      gain.connect(delay); delay.connect(tone); tone.connect(fb); fb.connect(delay); tone.connect(wet); wet.connect(lim);
+      lim.connect(c.destination);
+      var t = setTimeout(function () { end(); }, (buf.duration + 1.5) * 1000);
+      function end() { if (done) return; done = true; clearTimeout(t); if (source === src) { source = null; finishClip = null; } setTimeout(function () { try { lim.disconnect(); } catch (e) {} }, 900); resolve(true); }
+      src.onended = end;
+      source = src; finishClip = function () { try { src.stop(); } catch (e) {} end(); };
+      src.start();
+    });
+  }).catch(function () { delete heroBufs[url]; return false; });
 }
 
 // Resolves true when the clip ends, false if it fails (the caller then uses the device voice).
@@ -158,27 +205,58 @@ function playClip(url) {
 // `live`, if given, is asked when the item's turn comes: false skips it, so a line about a
 // problem that's already been answered doesn't pile up behind the others.
 // Returns a promise for when this item is done. Does nothing with the voice switched off.
-export function say(kind, text, cancel, live) {
+// fx, if given ({ gain, echo, delay }), plays the clip with that treatment (playHero), whatever
+// its kind: "Now entering the Sumgeon!" echoes like a cavern.
+export function say(kind, text, cancel, live, fx) {
   if (!on) return Promise.resolve();
   if (cancel) stopSpeech();
   var my = epoch;
+  pending++;
+  var done = function () { if (my === epoch) pending = Math.max(0, pending - 1); };
   queue = queue.then(function () {
     if (my !== epoch || (live && !live())) return;
     var key = clips[kind + ":" + text], hit = spriteOf[kind + ":" + text];
-    if (!key) return speak(text, RATE[kind]);
+    if (!key) return speak(text, RATE[kind], PITCH[kind]);
+    if (fx && ac()) return playHero(clipBase + key + ".mp3", fx).then(function (ok) {
+      if (!ok && my === epoch) return playClip(clipBase + key + ".mp3");
+    });
     if (hit && hit.s.buf && ac()) return playSprite(hit).then(function (ok) {
       if (!ok && my === epoch) return playClip(clipBase + key + ".mp3");
     });
+    if (kind === "h" && ac()) return playHero(clipBase + key + ".mp3", fx).then(function (ok) {
+      if (!ok && my === epoch) return playClip(clipBase + key + ".mp3").then(function (ok2) {
+        if (!ok2 && my === epoch) return speak(text, RATE[kind], PITCH[kind]);
+      });
+    });
     return playClip(clipBase + key + ".mp3").then(function (ok) {
-      if (!ok && my === epoch) return speak(text, RATE[kind]);
+      if (!ok && my === epoch) return speak(text, RATE[kind], PITCH[kind]);
     });
   });
+  queue = queue.then(done, done);
   return queue;
+}
+
+// Whether the voice is saying something, or has lines waiting: a Hero Moment that has to cut it
+// off plays a record scratch (sfx.scratch).
+export function speaking() {
+  try { if (synth && synth.speaking) return true; } catch (e) { /* no speech */ }
+  return pending > 0;
+}
+
+// Cuts off whatever is being said with a sound (a Hero Moment's record scratch, before the
+// moment starts). The voice is told to stop now, but an <audio> clip keeps sounding for a moment
+// after it's paused (longer on a phone than a Web Audio sound takes to start), so the sound
+// starts playAt seconds later, to land as the voice falls silent. Resolves afterS seconds after
+// that, when the sound is over.
+export function cutOff(play, playAt, afterS) {
+  stopSpeech();
+  return new Promise(function (r) { setTimeout(r, playAt * 1000); })
+    .then(function () { play(); return new Promise(function (r) { setTimeout(r, afterS * 1000); }); });
 }
 
 // Stops the clip or speech in progress and drops anything queued.
 export function stopSpeech() {
-  epoch++;
+  epoch++; pending = 0;
   queue = Promise.resolve();
   if (finishClip) finishClip(true);
   if (player) { try { player.pause(); } catch (e) {} }

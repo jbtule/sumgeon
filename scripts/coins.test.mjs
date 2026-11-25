@@ -24,6 +24,12 @@ assert.deepEqual(factOf("¢t0,1,0,0"), dimeBack);
 assert.equal(spokenProblem(dimeBack), "How many cents?");
 assert.equal(spokenFact(dimeBack), "This is a dime. A dime is small and silver. It's worth ten cents.");
 assert.equal(spokenFact(coinFact({ q: 0, d: 0, n: 0, p: 1 })), "This is a penny. A penny is small and brown. It's worth one cent.");
+// Finding a coin always means telling it apart: the answer's count differs from the other coins'
+// (one dime among twos, or two or three dimes among ones), never all ones.
+for (const f of coinFacts().filter((f) => f.find)) {
+  const others = Object.keys(f.coins).filter((k) => k !== f.find && f.coins[k]);
+  assert.ok(others.every((k) => f.coins[k] !== f.ans), `${f.key}: the asked coin's count stands apart`);
+}
 // The pile: a single coin shows the side asked; a pile to find coins in is shuffled, sides mixed.
 let r = 0; const rnd = () => ((r = (r * 9301 + 49297) % 233280) / 233280);
 assert.deepEqual(pileOf(dimeBack, rnd), [{ k: "d", tails: true }]);
@@ -49,8 +55,8 @@ assert.ok(!/undefined|NaN/.test(backs) && (backs.match(/<g /g) || []).length ===
 assert.equal((coinsSvg(pile, { ring: "q" }).match(/#ffc93c/g) || []).length, 2);
 assert.match(coinsSvg(pile), /aria-label="two quarters, one dime and one nickel"/);
 assert.equal(coinWords({ q: 0, d: 2, n: 0, p: 3 }), "two dimes and three pennies");
-assert.equal(spokenProblem(dimeNickel3), "one dime, one nickel and three pennies. How many cents?");
-assert.equal(spokenFact(dimeNickel3), "one dime, one nickel and three pennies make eighteen cents");
+assert.equal(spokenProblem(dimeNickel3), "one dime, one nickel and three penny's. How many cents?", "spoken as penny's: PEN-eez, not penne's");
+assert.equal(spokenFact(dimeNickel3), "one dime, one nickel and three penny's make eighteen cents");
 // Hints: values before, the count-on after.
 assert.equal(hintFor(dimeNickel3, false).say, "Count on from the biggest coin: 10 + 5 + 1 + 1 + 1 = ?");
 assert.equal(hintFor(dimeNickel3, true).say, "Count on from the biggest coin: 10, 15, 16, 17, 18. 10 + 5 + 1 + 1 + 1 = 18");

@@ -1,13 +1,17 @@
 // Every line the game says is in the audio plan, and app.js only says lines from js/lines.js.
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { spokenLines, PHRASE, monsterName, monsterCleared, monsterWon, heroCursed, heroPower, heroRescue, heroAlmost, heroHelps, traitLine, TRAIT_LINE, BARK } from "../js/lines.js";
+import { spokenLines, PHRASE, monsterName, monsterCleared, monsterWon, heroCursed, heroRescue, heroAlmost, heroHelps, traitLine, TRAIT_LINE, BARK } from "../js/lines.js";
 import { facts, spokenProblem, spokenFact } from "../js/problems.js";
 import { MON, allLooks } from "../js/monsters.js";
 import { HEROES } from "../js/heroes.js";
 import { TRAITS, traitOf } from "../js/traits.js";
 import { cursedMonster } from "../js/wings.js";
-import { planClips } from "./audio/build.mjs";
+import { planClips, keyFor } from "./audio/build.mjs";
+import { GROUPS, quipLine } from "../js/lines.js";
+import { QUIPS, FINAL, FINALS, CRIT, TEAM_LINES, TEAM_NUMBERS, CAPTAIN_LINES, captainNames } from "../js/moments.js";
+import { createHash } from "node:crypto";
+const app0 = readFileSync(new URL("../js/app.js", import.meta.url), "utf8");
 
 const ids = new Set(spokenLines().map((l) => l.kind + ":" + l.text));
 for (const t of Object.values(PHRASE)) assert.ok(ids.has("p:" + t), t);
@@ -26,13 +30,11 @@ assert.ok(!Object.values(PHRASE).some((t) => /[×÷<>=□]/.test(t)), "spoken te
 // Instructions for a pre-reader: every phrase and hero line is short (about 12 words at most).
 const words = (t) => t.split(/\s+/).length;
 for (const t of Object.values(PHRASE)) assert.ok(words(t) <= 12, `too long to say to a kindergartner: ${t}`);
-for (const h of HEROES) for (const t of [heroCursed(h), heroPower(h)]) { assert.ok(ids.has("p:" + t), t); assert.ok(words(t) <= 12, t); }
+for (const h of HEROES) for (const t of [heroCursed(h)]) { assert.ok(ids.has("p:" + t), t); assert.ok(words(t) <= 12, t); }
 assert.ok(ids.has("p:Oh no! Toodini was cursed! Pick a new hero."), "hero names are said as SAY_AS spells them");
-assert.equal(heroPower(HEROES[6]), "Your sixes hit harder.");
-assert.equal(heroPower(HEROES[0]), "Your zeros hit harder.");
 // Per-hero lines go in the "names" sprite with the names they follow.
 const names = spokenLines().filter((l) => l.sprite === "names").map((l) => l.text);
-assert.ok(names.includes(heroPower(HEROES[2])) && names.includes(heroCursed(HEROES[2])));
+assert.ok(names.includes(heroCursed(HEROES[2])));
 assert.ok(spokenLines().every((l) => l.group), "every line has a listen-check group");
 
 // Traits, rescues and barks (DESIGN.md §3, §6.6): every trait has a short line, recorded.
@@ -56,15 +58,57 @@ assert.ok(ids.has("p:Sevenstein comes unbolted. Six... seven! Gone."));
 // After a spell that was right but hard to read, for every digit (an eight).
 assert.ok(ids.has("p:Here's how to write a four.") && ids.has("p:Here's how to write an eight.") && ids.has("p:Here's how to write a zero."));
 
+// Hero Moments' quips (moments.js): every one recorded as kind "h" in the quip voice, in its own
+// listen-check group, with "That's your final answer!" and "Critical math!".
+for (const d of Object.keys(QUIPS)) for (const q of QUIPS[d]) assert.ok(ids.has("h:" + quipLine(q)), q);
+assert.ok(ids.has("h:" + FINAL) && ids.has("h:" + CRIT) && ids.has("h:That's your final answer!") && ids.has("h:Critical math!"));
+assert.ok(FINALS.length >= 10 && FINALS.every((q) => ids.has("h:" + quipLine(q))), "every boss-finish line is recorded");
+assert.ok(ids.has("h:Six... seven!"), "Sevenstein's quip gets its pauses");
+// Team-ups: every general line and every number's line, recorded as kind "h" (so in af_bella),
+// in their own group.
+const teamLines = TEAM_LINES.concat(Object.values(TEAM_NUMBERS));
+assert.equal(teamLines.length, 16);
+for (const q of teamLines) assert.ok(ids.has("h:" + quipLine(q)), `team-up line recorded: ${q}`);
+assert.ok(GROUPS.includes("Team-ups") && spokenLines().filter((l) => l.group === "Team-ups").every((l) => l.kind === "h"));
+// A team line that's also a hero's quip (67's "Six, seven!") is one line, one clip, in Hero quips.
+const heroQuips = new Set(Object.values(QUIPS).flat().map(quipLine));
+assert.ok(heroQuips.has(quipLine(TEAM_NUMBERS[67])) && spokenLines().filter((l) => l.text === "Six... seven!" && l.kind === "h").length === 1);
+// Captain lines (said on picking a captain): the five shared ones and each hero's four name
+// lines, in Bella, in their own group. "Follow the leader!" was cut.
+const captainLines = CAPTAIN_LINES.concat(HEROES.flatMap((h) => captainNames(h.d)));
+assert.deepEqual([CAPTAIN_LINES.length, captainLines.length], [5, 45]);
+for (const q of captainLines) assert.ok(ids.has("h:" + quipLine(q)), `captain line recorded: ${q}`);
+assert.ok(ids.has("h:Captain Toodini, reporting for duty!") && ids.has("h:Make way for Captain Nine-jah!"), "captain names through SAY_AS");
+assert.ok(![...ids].some((id) => /Follow the leader/i.test(id)), "no \"Follow the leader!\"");
+const capSaid = new Set(captainLines.map(quipLine));
+assert.ok(GROUPS.includes("Captain lines") && spokenLines().filter((l) => l.group === "Captain lines").every((l) => l.kind === "h" && capSaid.has(l.text)));
+assert.ok(GROUPS.includes("Hero quips") && spokenLines().filter((l) => l.kind === "h" && !capSaid.has(l.text)).every((l) => l.group === (teamLines.map(quipLine).includes(l.text) && !heroQuips.has(l.text) ? "Team-ups" : "Hero quips")));
+for (const l of spokenLines().filter((l) => l.kind === "h")) assert.ok(words(l.text) <= 8, `a quip is quick: ${l.text}`);
+
 // Keys are stable and unique.
 const plan = planClips();
 assert.equal(new Set(plan.map((c) => c.key)).size, plan.length);
+// Quips are said in the second voice, and the voice is part of the key; every other line keeps
+// af_heart and the key it had before (so nothing already recorded is recorded again).
+assert.deepEqual([...new Set(plan.filter((c) => c.kind === "h").map((c) => c.voice))], ["af_bella"]);
+for (const q of teamLines.concat(captainLines)) assert.equal(plan.find((c) => c.id === "h:" + quipLine(q)).voice, "af_bella", `${q} is in Bella's voice`);
+assert.deepEqual([...new Set(plan.filter((c) => c.kind !== "h").map((c) => c.voice))], ["af_heart"]);
+assert.notEqual(keyFor("h", "Up top!"), keyFor("p", "Up top!"));
+assert.equal(keyFor("p", "Oops!"), createHash("sha256").update(JSON.stringify(["kokoro-v1.0", "af_heart", "mp3-64k", "text-v1", 0.95, "p", "Oops!"])).digest("hex").slice(0, 20), "af_heart keys are unchanged");
+assert.ok(app0.includes('say("h", quipLine(mo.quip), true)'), "a quip is said in the quip voice, cutting off whatever was being said");
+// Picking a captain says a name line (moments.js nameLine) in place of the plain name, then
+// what the hero does, as before.
+{
+  const pick = app0.slice(app0.indexOf("function wireCaptain"), app0.indexOf("function wirePlayers"));
+  assert.ok(/nameLine\(MS, team\.captain\)[\s\S]*say\("h", quipLine\(mo\.quip\), true(, null, PICK_FX)?\);/.test(pick) && !/heroPower|PHRASE\.goIn/.test(pick), "a pick says a captain line, and nothing after it");
+  assert.ok(!pick.includes("heroName("), "the captain line replaces the spoken name");
+}
 
 // app.js says only lines from lines.js: every say() takes a PHRASE, a lines.js helper, or a problem.
 const app = readFileSync(new URL("../js/app.js", import.meta.url), "utf8");
-const HELPERS = ["heroName", "heroJoins", "heroCursed", "heroPower", "heroRescue", "heroAlmost", "heroHelps", "traitLine"].join("|");
+const HELPERS = ["heroName", "heroJoins", "heroCursed", "heroRescue", "heroAlmost", "heroHelps", "traitLine"].join("|");
 for (const [call] of app.matchAll(/say\([^)]*\)/g)) {
-  assert.match(call, new RegExp(String.raw`say\("(p|m|q)", (PHRASE\.\w+|BARK\.\w+|BARK\[\w+\]|monsterName\(m\)|monsterCleared\(m\)|monsterWon\(m\)|(${HELPERS})\((HEROES\[[\w.]+\]|\w+)\)|wingCleared\(\w+(\(\))?\)|wingOpened\(\w+\)|depthLine\(G\.depth\)|reversedLine\(\w+\)|howToWriteLine\(\w+\)|spokenProblem\(G\.cur\)|spokenFact\(said\)|spokenMissing\(G\.cur\))`), `${call} says a line that isn't in js/lines.js`);
+  assert.match(call, new RegExp(String.raw`say\("(p|m|q|h)", (quipLine\(mo\.quip\)|PHRASE\.\w+|BARK\.\w+|BARK\[\w+\]|monsterName\(m\)|monsterCleared\(m\)|monsterWon\(m\)|(${HELPERS})\((HEROES\[[\w.]+\]|\w+)\)|wingCleared\(\w+(\(\))?\)|wingOpened\(\w+\)|depthLine\((G\.depth|d)\)|reversedLine\(\w+\)|howToWriteLine\(\w+\)|spokenProblem\(G\.cur\)|spokenFact\(said\)|spokenMissing\(G\.cur\))`), `${call} says a line that isn't in js/lines.js`);
 }
 // Every PHRASE is said somewhere (PHRASE.win is older: a win says wingCleared instead).
 for (const k of Object.keys(PHRASE).filter((k) => k !== "win")) assert.ok(app.includes("PHRASE." + k), `PHRASE.${k} is recorded but never said`);

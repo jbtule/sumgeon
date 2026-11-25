@@ -1,6 +1,7 @@
 // Every line the game says, in one place: app.js takes its words from here, and the audio
 // build (scripts/audio/build.mjs) records exactly these. No DOM, runs in Node.
-// Kinds: "p" phrase, "m" monster line, "q" problem (see speech.js).
+// Kinds: "p" phrase, "m" monster line, "q" problem, "h" a hero's quip, said in its own voice
+// (see speech.js).
 import { MON, allLooks } from "./monsters.js";
 import { HEROES } from "./heroes.js";
 import { WINGS, cursedMonster } from "./wings.js";
@@ -10,15 +11,16 @@ import { coinFacts } from "./coins.js";
 import { twoDigitFacts } from "./twodigit.js";
 import { balanceFacts } from "./balance.js";
 import { traitOf } from "./traits.js";
+import { QUIPS, FINALS, CRIT, TEAM_LINES, TEAM_NUMBERS, CAPTAIN_LINES, captainNames } from "./moments.js";
 
 export var PHRASE = {
   enter: "Now entering the Sumgeon!",
   // Instructions for a player who can't read yet (app.js says each where it's needed, and the
   // ones that explain only the first time or first few: app.js `once`). Short and kid-simple.
   hitHow: "Tap your answer, then tap Hit!",
+  pickGrade: "What grade are you in?",
   pickHero: "Pick your hero!",
   heroFirst: "Tap a hero first!",
-  goIn: "Tap Enter to go in!",
   cmpHow: "Tap the sign whose mouth opens to the greater side!",
   cmpSame: "Both sides the same? Tap equal!",
   spellHow: "Draw your answer with your finger, then tap Cast!",
@@ -49,11 +51,16 @@ export var PHRASE = {
 //   "Jr." and "Mr." are said in full, not letter by letter.
 //   "Plusington" (Kokoro: PLOOS-ington) is "Plussington"; "Chompette" (chum-PET) is
 //   "Chomp-ette"; "Nine-ja" (nine-ya) is "Nine-jah".
-//   Sevenstein's "Six, seven" gets pauses for its sing-song.
+//   Sevenstein's "Six, seven" gets pauses for its sing-song, in his monster line and his quip.
+//   The quips' other names and puns read right as written ("Bon appe-eight" is bahn uh-PEH-EIGHT,
+//   "Zeroic" zee-ROH-ic, "Abraca-double", "Four-ward"; checked with Kokoro's espeak phonemes).
 var SAY_AS = [[/\bTwodini\b/g, "Toodini"], [/\bJr\./g, "Junior"], [/\bMr\./g, "Mister"],
   [/\bPlusington\b/g, "Plussington"], [/\bChompette\b/g, "Chomp-ette"], [/\bNine-ja\b/g, "Nine-jah"],
-  [/Six, seven, gone\./g, "Six... seven! Gone."]];
+  [/Six, seven, gone\./g, "Six... seven! Gone."], [/^Six, seven!$/g, "Six... seven!"],
+  [/\bBon appe-eight!/g, "Bon appa-eight!"]];
 function sayAs(t) { return SAY_AS.reduce(function (s, r) { return s.replace(r[0], r[1]); }, t); }
+// A Hero Moment's quip (moments.js), as the voice says it.
+export function quipLine(q) { return sayAs(q); }
 export function monsterName(m) { return sayAs(m.n + "!"); }
 export function monsterCleared(m) { return sayAs(m.n + " " + m.quip); }
 export function monsterWon(m) { return sayAs(m.n + " won this round."); }
@@ -62,7 +69,6 @@ export function heroJoins(h) { return sayAs(h.n + " joins your team!"); }
 // Losing all your hearts curses the hero who led the run: "Oh no! Twodini was cursed! Pick a new hero."
 export function heroCursed(h) { return sayAs("Oh no! " + h.n + " was cursed! Pick a new hero."); }
 // What a hero does, said after their name when picked: "Your twos hit harder."
-export function heroPower(h) { return "Your " + (h.d === 6 ? "sixes" : spoken(h.d) + "s") + " hit harder."; }
 // "a two", "an eight".
 function aDigit(d) { return (d === 8 ? "an " : "a ") + spoken(d); }
 // The rescue floor, after "Cursed Twodini!": "Beat the curse to set Twodini free!"
@@ -119,7 +125,7 @@ export function depthLine(d) { return "Depth " + spoken(d) + "!"; }
 
 // [{ kind, text }], each once.
 // The groups the listen check (listen/) plays lines in.
-export var GROUPS = ["Phrases", "Monsters & heroes", "Add & subtract", "Times & divide", "Missing numbers", "Coins", "Two-digit", "Balance Hall"];
+export var GROUPS = ["Phrases", "Monsters & heroes", "Add & subtract", "Times & divide", "Missing numbers", "Coins", "Two-digit", "Balance Hall", "Hero quips", "Team-ups", "Captain lines"];
 
 // [{ kind, text, group, sprite? }], each once.
 export function spokenLines() {
@@ -138,7 +144,6 @@ export function spokenLines() {
     add("m", monsterName(cursedMonster(h.d)), N, S);
     add("p", heroJoins(h), N, S);
     add("p", heroCursed(h), N, S);
-    add("p", heroPower(h), N, S);
     add("p", heroRescue(h), N, S);
     add("p", heroAlmost(h), N, S);
     add("p", heroHelps(h), N, S);
@@ -171,6 +176,16 @@ export function spokenLines() {
   });
   // The Balance Hall: "Compare three plus four and eight.", "three plus four is less than eight".
   balanceFacts().forEach(function (f) { add("q", spokenProblem(f), "Balance Hall"); add("q", spokenFact(f), "Balance Hall"); });
+  // Hero Moments (moments.js): every hero's quips, and the two for the big moments.
+  Object.keys(QUIPS).forEach(function (d) { QUIPS[d].forEach(function (q) { add("h", quipLine(q), "Hero quips"); }); });
+  FINALS.forEach((q) => add("h", quipLine(q), "Hero quips"));
+  add("h", quipLine(CRIT), "Hero quips");
+  // Team-ups (two heroes at once): the general lines, and the lines for their own numbers.
+  TEAM_LINES.concat(Object.values(TEAM_NUMBERS)).forEach((q) => add("h", quipLine(q), "Team-ups"));
+  // Captain lines, in the quip voice: the shared ones (in fights, moments.js), then each
+  // hero's four name lines, said on picking a captain ("Captain Toodini, reporting for duty!").
+  CAPTAIN_LINES.forEach((q) => add("h", quipLine(q), "Captain lines"));
+  HEROES.forEach((h) => captainNames(h.d).forEach((q) => add("h", quipLine(q), "Captain lines")));
   var seen = {};
   return out.filter(function (l) { var k = l.kind + ":" + l.text; if (seen[k]) return false; seen[k] = true; return true; });
 }

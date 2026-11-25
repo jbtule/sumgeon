@@ -4,6 +4,7 @@
   "type": "module",
   "description": "A math-practice dungeon crawler: your answer is your attack.",
   "scripts": {
-    "check": "node scripts/check.mjs"
+    "check": "node scripts/check.mjs",
+    "dev": "node scripts/dev-server.mjs"
   }
 }
