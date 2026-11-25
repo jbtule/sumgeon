@@ -47,7 +47,9 @@ export function coinFacts() {
     const others = COINS.filter((o) => o !== t);
     for (let n = 1; n <= 3; n++) others.forEach((skip) => {
       const c = { q: 0, d: 0, n: 0, p: 0 };
-      c[t.k] = n; others.forEach((o) => { if (o !== skip) c[o.k] = 1; });
+      // One of the asked coin among one each of the others would make every count 1, which
+      // tests nothing; so when the answer is 1, the other two kinds come in twos.
+      c[t.k] = n; others.forEach((o) => { if (o !== skip) c[o.k] = n === 1 ? 2 : 1; });
       out.push(findFact(t.k, c));
     });
   });

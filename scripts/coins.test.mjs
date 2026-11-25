@@ -24,6 +24,12 @@ assert.deepEqual(factOf("¢t0,1,0,0"), dimeBack);
 assert.equal(spokenProblem(dimeBack), "How many cents?");
 assert.equal(spokenFact(dimeBack), "This is a dime. A dime is small and silver. It's worth ten cents.");
 assert.equal(spokenFact(coinFact({ q: 0, d: 0, n: 0, p: 1 })), "This is a penny. A penny is small and brown. It's worth one cent.");
+// Finding a coin always means telling it apart: the answer's count differs from the other coins'
+// (one dime among twos, or two or three dimes among ones), never all ones.
+for (const f of coinFacts().filter((f) => f.find)) {
+  const others = Object.keys(f.coins).filter((k) => k !== f.find && f.coins[k]);
+  assert.ok(others.every((k) => f.coins[k] !== f.ans), `${f.key}: the asked coin's count stands apart`);
+}
 // The pile: a single coin shows the side asked; a pile to find coins in is shuffled, sides mixed.
 let r = 0; const rnd = () => ((r = (r * 9301 + 49297) % 233280) / 233280);
 assert.deepEqual(pileOf(dimeBack, rnd), [{ k: "d", tails: true }]);
