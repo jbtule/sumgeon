@@ -65,29 +65,29 @@ const CENTI = { cx: 102, cy: 98, r: 60 };
 const rodAt = (i) => 194 - i * 23.6;
 
 export const NEW_MON=[
- {n:'Pipsqueak',op:'+',sym:'⚄',stratum:'cellar',c:'#ff9ecf',hits:3,
+ {n:'Pipsqueak',op:'+',sym:'⚄',stratum:'cellar',c:'#f6f3ea',hits:3,
   trait:{icon:'🎲',name:'Flash',text:'Shows dots for a moment: how many? (up to 5)'},
   quip:'rolls away with a tiny squeak.',
-  d:c=>{const pip=(x,y,rx=7,ry=7)=>`<ellipse cx="${x}" cy="${y}" rx="${rx}" ry="${ry}" fill="${DK}"/>`;
+  // A white die showing five. Two of its pips are eyes, each looking its own way.
+  d:c=>{const pip=(x,y,rx=7.5,ry=7.5)=>`<ellipse cx="${x}" cy="${y}" rx="${rx}" ry="${ry}" fill="${DK}"/>`;
+   const peek=(x,y,dx,dy)=>`<circle cx="${x}" cy="${y}" r="11" fill="#fff" stroke="${DK}" stroke-width="3.5"/><circle cx="${x+dx}" cy="${y+dy}" r="5.5" fill="${DK}"/><circle cx="${x+dx+1.5}" cy="${y+dy-2}" r="1.6" fill="#fff"/>`;
    return `${foot(74,182,13)}${foot(118,182,13)}<path d="M74 160 V176 M118 160 V176" stroke="${DK}" stroke-width="10" stroke-linecap="round"/>`
    +line(`<path d="M46 116 Q30 118 26 134 M164 104 Q180 108 184 124"/>`,c,9)
-   +`<path d="M162 146 q14 12 24 2 q6 -6 12 -2" ${ds} stroke-width="4"/>`+solid(`<circle cx="74" cy="38" r="12"/><circle cx="134" cy="38" r="12"/>`,c)+`<circle cx="74" cy="37" r="6" fill="#ffd3e8"/><circle cx="134" cy="37" r="6" fill="#ffd3e8"/>`
-   +solid(`<path d="M144 62 L166 40 V138 L144 160 Z"/>`,'#e07cb0')+solid(`<path d="M46 62 L68 40 H166 L144 62 Z"/>`,'#ffc8e3')
+   +`<path d="M162 146 q14 12 24 2 q6 -6 12 -2" ${ds} stroke-width="4"/>`+solid(`<circle cx="74" cy="38" r="12"/><circle cx="134" cy="38" r="12"/>`,c)+`<circle cx="74" cy="37" r="6" fill="#ffc6de"/><circle cx="134" cy="37" r="6" fill="#ffc6de"/>`
+   +solid(`<path d="M144 62 L166 40 V138 L144 160 Z"/>`,'#d9d3c4')+solid(`<path d="M46 62 L68 40 H166 L144 62 Z"/>`,'#ffffff')
    +solid(`<rect x="46" y="62" width="98" height="98" rx="16"/>`,c)
    +pip(106,51,8,4)+pip(151,76,3.5,7)+pip(159,122,3.5,7)
-   +pip(95,111)+pip(68,140)+pip(122,140)
-   +`${eye(68,82,11)}${eye(122,82,11)}<path d="M88 127 Q95 132 102 127" ${ds} stroke-width="3"/><ellipse cx="68" cy="100" rx="6" ry="3" fill="#ff6fae" opacity=".7"/><ellipse cx="122" cy="100" rx="6" ry="3" fill="#ff6fae" opacity=".7"/>`}},
+   +pip(124,82)+pip(95,111)+pip(66,140)
+   +peek(66,82,3.5,1)+peek(124,140,-3,-3)}},
  {n:'Triceraplus',op:'+',sym:'+ + +',stratum:'hall',c:'#ff9a4a',hits:3,
   trait:{icon:'🦕',name:'Three horns',text:'Adds three numbers: 4 + 3 + 6'},
   quip:'stomps off to find a bigger sum.',
   d:c=>{const plus=(x,y,h,w,r=w/2.4)=>`<rect x="${x-w/2}" y="${y-h}" width="${w}" height="${2*h}" rx="${r}"/><rect x="${x-h}" y="${y-w/2}" width="${2*h}" height="${w}" rx="${r}"/>`;
-   return `${foot(98,176,14)}${foot(162,176,14)}`
-   +solid(`<rect x="86" y="112" width="24" height="60" rx="10"/><rect x="150" y="112" width="24" height="60" rx="10"/>`,c)
-   +solid(plus(82,70,44,30,9),GOLD)
-   +solid(plus(130,108,48,36,12),c)
-   +solid(plus(56,100,34,26,8),c)
-   +solid(plus(20,62,12,10,2.5)+plus(50,40,12,10,2.5)+plus(80,18,12,10,2.5),CREAM)
-   +`${eye(58,96,9)}<circle cx="30" cy="94" r="2.5" fill="${DK}"/><path d="M28 104 Q38 110 48 104" ${ds} stroke-width="3"/>`}},
+   return `${foot(114,176,10)}${foot(136,176,10)}${foot(164,176,10)}${foot(190,176,10)}`
+   +line(`<path d="M108 100 Q124 116 150 118 Q174 120 182 116 Q198 110 202 92 M124 112 L114 172 M130 114 L136 172 M170 118 L164 172 M176 117 L190 172"/>`,c,9)
+   +solid(plus(70,90,52,42,14),c)
+   +solid(plus(32,52,13,11,3)+plus(70,22,13,11,3)+plus(108,52,13,11,3),CREAM)
+   +`${eye(58,86,10)}${eye(82,86,10)}<path d="M60 104 Q70 112 80 104" ${ds} stroke-width="3"/>`}},
  {n:'Doublet',op:'+',sym:'+ +',stratum:'hall',c:'#ffd84d',hits:3,
   trait:{icon:'👯',name:'Doubles',text:'Doubles and halves: 8 + 8 and 16 − 8'},
   quip:'take a bow together and skip away.',
@@ -133,7 +133,6 @@ export const NEW_MON=[
    +`<path d="M38 190 v-7 M48 192 v-7 M146 192 v-7 M156 190 v-7" ${ds} stroke-width="2.5"/>`
    +solid(`<path d="M36 96 l-28 52 l9 -1 l-1 10 l9 -6 l4 9 l8 -14 Z M158 96 l28 52 l-9 -1 l1 10 l-9 -6 l-4 9 l-8 -14 Z"/>`,c)
    +solid(`<path d="M${x0} ${y0} ${pts.join(' ')} Z"/>`,c)
-   +solid(`<ellipse cx="97" cy="90" rx="38" ry="30"/>`,'#c4d0ff')
    +`<path d="M68 72 Q78 64 90 68 M104 68 Q116 64 126 72" ${ds} stroke-width="5"/>${eye(84,86,9)}${eye(110,86,9)}<ellipse cx="97" cy="99" rx="7" ry="4.5" fill="${DK}"/><path d="M84 108 Q97 116 110 108" ${ds} stroke-width="3"/>`
    +`<path d="M58 134 q4 8 8 0 q4 8 8 0 M118 140 q4 8 8 0 q4 8 8 0 M86 150 q4 8 8 0 q4 8 8 0" ${ds} stroke-width="3" opacity=".35"/>`
    +line(`<path d="M156 12 Q156 -2 171 -2 Q186 -2 186 10 Q186 20 158 38 H190"/>`,'#a9bcff',10)
@@ -188,12 +187,12 @@ export const ANCHOR = {
   Haberhasher: { eyes: [[88, 66, 7], [112, 66, 7]], mouth: [100, 78], top: [104, -22], hat: true, neck: [100, 100], ground: 194 },
   // NEW_MON, ready for looks once they're in the game. Doublet's are its left twin's face, with
   // both twins' eyes; Slimelipsis's are its middle slime's.
-  Pipsqueak: { eyes: [[68, 82, 11], [122, 82, 11]], mouth: [95, 129], top: [104, 40], neck: [95, 150], ground: 188 },
-  Triceraplus: { eyes: [[58, 96, 9]], mouth: [38, 106], top: [60, 66], neck: [92, 116], ground: 182 },
+  Pipsqueak: { eyes: [[66, 82, 11], [124, 140, 11]], mouth: [95, 126], top: [104, 40], neck: [95, 150], ground: 188 },
+  Triceraplus: { eyes: [[58, 86, 10], [82, 86, 10]], mouth: [70, 107], top: [70, 38], neck: [70, 124], ground: 182 },
   Doublet: { eyes: [[50, 82, 8], [68, 82, 8], [132, 82, 8], [150, 82, 8]], mouth: [59, 98], top: [59, 36], neck: [59, 116], ground: 166 },
   "Tick-Tockus": { eyes: [[86, 94, 8], [114, 94, 8]], mouth: [100, 108], top: [100, 16], neck: [100, 134], ground: 190 },
   Slimelipsis: { eyes: [[90, 108, 8], [110, 108, 8]], mouth: [100, 123], top: [100, 88], neck: [100, 134], ground: 150 },
-  Squaresquatch: { eyes: [[84, 86, 9], [110, 86, 9]], mouth: [97, 110], top: [97, 44], neck: [97, 124], ground: 196 },
+  Squaresquatch: { eyes: [[84, 86, 9], [110, 86, 9]], mouth: [97, 110], top: [97, 40], neck: [97, 124], ground: 196 },
   "The Centipede": { eyes: [[34, 62, 9], [58, 62, 9]], mouth: [46, 82], top: [46, 12], hat: true, neck: [46, 92], ground: 200 },
   Halfling: { eyes: [[93, 50, 8], [111, 50, 8]], mouth: [102, 68], top: [102, 4], neck: [102, 82], ground: 196 }
 };
