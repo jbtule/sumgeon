@@ -405,22 +405,36 @@ The corner holds:
 
 ## 12. Milestones
 
-Each milestone should be playable and shippable on its own.
+Each milestone should be playable and shippable on its own. Revised 2026-11-25 for the grade strata (§4.1): the game goes K–5, with a 6th-grade stretch, and ends there.
 
-1. **M1 — Feel and foundations** ✅ (2026-11-23). Recorded clips: whole clips for every line in `js/lines.js` (about 1,290), on the `sumgeon-audio` Pages project.
-   Split into modules, the storage upgrade plus players (§15.1), Web Audio sound effects, the Start button, `say()` with recorded clips for UI phrases and monster names (§13), the projectile attack animation, monster counterattack on a miss, and a streak flame.
-2. **M2 — Learning engine** ✅ (2026-11-23). Sprout and Apprentice bands with mastery-opened levels (in place of a rolling-accuracy range), fact records, Leitner selection, the retry queue, fading hints with the classroom models, and "For grown-ups" notes. Adept and Master wait for the new answer keys (M5).
-   Fact records, Leitner selection, the retry queue, hints after repeated misses, adaptive range within a band, and content bands replacing raw Easy/Medium/Hard.
-3. **M3 — Wings and the Bestiary** ✅ (2026-11-24). The digit heroes (captain, summon attack, power hit, rescue floors with Lucky Number), the Counting Cellar and Tables Tower with mastery opening the Tower, the Make-Ten Golem and Starbot, monster traits, per-floor stars, and the Monsters & Heroes pages with mastery rings. The new Counting Cellar monsters (Quizard, Shoutandcomma, Slimelipsis, Trollar) need new problem types and come later.
-   Split the operator monsters into the Counting Cellar and the Tables Tower, add the digit heroes (captain pick, summon attack, rescue floors, Heroes page; §6.6), the Wing map, per-floor stars, the Bestiary with mastery rings, and monster traits.
-3½. **M3½ — Grade strata** (next; §4.1)
-   One stratum per grade, K–3 first: restructure with today's monsters, the Crystal Mines, then the new K–3 monsters and Tick-Tockus. The Fraction Forge and the Parenthesis Pyramid follow in M5.
-4. **M4 — Replay**
-   Achievements with spoken cards, the 🏆 sheet and share cards (§14), between-floor item choices, Endless Descent, Daily Dungeon, and captain cosmetics.
-5. **M5 — New math**
-   Extended input (−, ., R, fractions), the Fraction Forge, the Parenthesis Pyramid and Pirate Cavern (§4.1).
-6. **M6 — Grown-ups' corner and PWA**
-   Progress heat-maps, custom practice, export, offline install with saved voice clips, device linking and sync (§15.2–15.4), and the listen check.
+1. **M1 — Feel and foundations** ✅ (2026-11-23). Split into modules, the storage upgrade plus players (§15.1), Web Audio sound effects, the Start button, `say()` with whole recorded clips for every line in `js/lines.js` on the `sumgeon-audio` Pages project (§13), the projectile attack animation, the monster's counterattack on a miss, and the streak flame.
+2. **M2 — Learning engine** ✅ (2026-11-23). Bands with mastery-opened levels, fact records, Leitner selection, the retry queue, and fading hints with the classroom models.
+3. **M3 — Wings and the Bestiary** ✅ (2026-11-24). The digit heroes (captain, summon attack, power hit, rescue floors with Lucky Number), the Counting Cellar and the Tables Tower, the Make-Ten Golem and Starbot, monster traits, per-floor stars, and the Monsters & Heroes pages with mastery rings.
+4. **M4 — More math, depth and polish** ✅ (2026-11-25). Everything since M3, as the game met its players:
+   - **Math:** the Balance Hall (Chompers, the Equal Twins, The Unknown); missing numbers (Quizard); coins (Trollar) and two-digit ± (Haberhasher) as strands.
+   - **Learning:** placement and skipping ahead for fluent players; hints matched to the school's curriculum guides (§5.3).
+   - **Replay:** depth (go deeper, the depth map, the dive), looks for every monster, and a palette and wall per stratum.
+   - **Feel:** spell casting (draw the answer), boss roars, and spoken instructions for pre-readers.
+   - **Housekeeping:**
+     - Settings in tabs;
+     - the listen check and the spell check;
+     - audio sprites;
+     - update checking;
+     - the Home Screen icon;
+     - the social card.
+5. **M5 — Grade strata, K–3** (next; §4.1). One stratum per grade for the kids playing now:
+   - restructure into grade bands with today's monsters, the levels in the school's order, zero facts, make-10 partners, ×0 and ×1, × tens, and monsters moved;
+   - the Crystal Mines (wall, palette, the Centipede);
+   - the new K–3 monsters (Doublet, Slimelipsis, Squaresquatch, Halfling, Tick-Tockus, and the dot-flash and three-addend monsters);
+   - the 3rd-grade gaps: fractions, rounding, and area and perimeter.
+   
+   A spell reader that handles real handwriting, trained on recorded drawings from the spell check, belongs here too.
+6. **M6 — Grade strata, 4–6.** The new answer keys (−, ., R and the stacked fraction input) and fraction, decimal and percent answers hitting for their percent (§7.2), then:
+   - the Fraction Forge;
+   - the Parenthesis Pyramid (Shoutandcomma with *Unwrap*);
+   - Pirate Cavern (π Pirate).
+7. **M7 — Replay.** Achievements with spoken cards, the 🏆 sheet and share cards (§14), between-floor item choices, Endless Descent (the Endless Specter), Daily Dungeon, and captain cosmetics.
+8. **M8 — Grown-ups' corner and offline.** Progress heat-maps, custom practice, export, offline play with saved voice clips (the manifest and Home Screen icon are done), and device linking and sync (§15.2–15.4).
 
 ---
 

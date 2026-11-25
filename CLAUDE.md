@@ -208,7 +208,7 @@ Runs happen in Wings (`js/wings.js`, DESIGN.md §4), called **strata** (one **st
 - Settings and best floor are saved per player (see Players and saving).
 
 ## Design direction
-See `DESIGN.md` for the full design: audience (ages 5–14) and content bands, the learning engine, Wings, progression, math input, game feel, recorded voice, achievements, players and linking, and milestones M1–M6. Check new work against its pillars.
+See `DESIGN.md` for the full design: audience (ages 5–14) and content bands, the learning engine, Wings, progression, math input, game feel, recorded voice, achievements, players and linking, and milestones M1–M8 (M1–M4 done; M5, the K–3 grade strata, is next). Check new work against its pillars.
 
 Voice, achievements, players and linking copy the sibling project `../sound-box-crosswords` (see its `CLAUDE.md` and `js/speech.js`, `js/achievements.js`, `js/seal.js`, `js/merge.js`, `js/sync.js`, `sync/`). Read the matching code there before building any of these.
 
