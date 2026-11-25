@@ -53,6 +53,22 @@ const first = pool("sprout").filter((p) => p.level === 0);
 first.slice(0, Math.ceil(first.length * 0.7)).forEach((p) => (recs[p.key] = { b: 3, n: 3, c: 3, ms: 2000, t: 0 }));
 assert.equal(openLevel("sprout", recs), 1);
 
+// Apprentice: ± within 20 runs alongside, so × 2, 5 and 10 is open from the start, and the
+// × and ÷ levels after it still open in order at 70%.
+{
+  assert.equal(openLevel("apprentice", {}), 1);
+  const r = {}, times = pool("apprentice").filter((p) => p.level === 1);
+  times.slice(0, Math.ceil(times.length * 0.7) - 1).forEach((p) => (r[p.key] = { b: 3, n: 3, c: 3, ms: 2000, t: 0 }));
+  assert.equal(openLevel("apprentice", r), 1, "÷ waits for 70% of × 2, 5 and 10");
+  r[times[times.length - 1].key] = { b: 3, n: 3, c: 3, ms: 2000, t: 0 };
+  assert.equal(openLevel("apprentice", r), 2);
+  // A fresh player gets both: new ± facts and new × facts, about half each.
+  const s = (() => { let x = 3; return () => ((x = (x * 16807) % 2147483647) / 2147483647); })();
+  const lv = [0, 0];
+  for (let i = 0; i < 400; i++) { const k = choose("apprentice", {}, { now: 0, rnd: s }); lv[pool("apprentice").find((p) => p.key === k).level]++; }
+  assert.ok(lv[0] > 120 && lv[1] > 120, `± and × both come up: ${lv}`);
+}
+
 // Choosing: a fresh player only gets the first level; the retry comes back first.
 const seq = (() => { let s = 1; return () => ((s = (s * 16807) % 2147483647) / 2147483647); })();
 for (let i = 0; i < 200; i++) {
