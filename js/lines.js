@@ -14,7 +14,7 @@ export var PHRASE = {
   // The menu's intro, worded for speaking ("seven times eight", not "7 × 8").
   intro: "Seven glyph monsters guard seven floors. Your answer is your attack: solve seven times eight, and you hit for fifty-six. Three right in a row, and every hit is doubled. A wrong answer costs a heart, and you see the right one.",
   boss: "Boss floor!",
-  crits: "Crits on!",
+  crits: "Critical hits!",
   oops: "Oops!",
   win: "You cleared the Sumgeon!"
 };
