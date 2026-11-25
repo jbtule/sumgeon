@@ -18,7 +18,7 @@ import * as sfx from "./sfx.js";
 import { say, stopSpeech, setVoice, speaking, cutOff } from "./speech.js";
 import { freshState as freshMoments, freshRun, decide as decideMoment, joined, heardOf, nameLine } from "./moments.js";
 import { playMoment } from "./slowmo.js";
-import { playDescent, descending } from "./descent.js";
+import { playDescent, descending, surfaceHTML } from "./descent.js";
 
 const $ = (id) => document.getElementById(id);
 const reduced = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -918,12 +918,16 @@ function menu() {
   if ((!hasCaptain() || st.grade == null) && G.askedFor !== PID) G.askHero = true;
   if (updateReady && !G.running) { reloadForUpdate(); return; } // a new version is waiting
   const list = store.profiles();
+  // The scene-gap is the window onto the start scene (drawScene): the door and your team show
+  // there, between the title and the rest of the card.
   const head = `<div class="cardhead logo-head"><h2 class="logo">Sum<b>geon</b></h2><button class="icon-btn" id="openSettings" type="button" aria-label="Settings">${GEAR}</button></div>
+  <div class="scene-gap" aria-hidden="true"></div>
   ${st.grade == null ? "" : `<p class="tag"><strong>Your answer is your attack.</strong> Get it right and your digits fly at the monster.</p>`}
   ${list.length > 1 ? `<p class="playing">Playing as <b>${esc(displayName(list, PID))}</b> <button class="link" type="button" id="switchPlayer">Switch</button></p>` : ""}`;
   // A player with no grade yet is asked once, first (the kid picks: an older grade opens more strata).
   if (st.grade == null) {
-    show(`${head}<div class="grp" id="gradeAsk"><span>What grade are you in?</span>${gradesHTML()}</div>`);
+    show(`${head}<div class="grp" id="gradeAsk"><span>What grade are you in?</span>${gradesHTML()}</div>`, "page scene");
+    drawScene();
     wireGrades(() => { if (!hasCaptain()) { G.askHero = false; G.askedFor = PID; say("p", PHRASE.pickHero, true); } menu(); });
     $("openSettings").onclick = () => settings();
     if ($("switchPlayer")) $("switchPlayer").onclick = () => settings();
@@ -932,7 +936,8 @@ function menu() {
   show(`${head}
   ${captainHTML()}
   <div class="grp"><span>Pick a stratum</span><div class="wings strata"><div class="surface" aria-hidden="true"></div>${wingsHTML()}</div></div>
-  <div class="btns"><p class="warn" id="warn" role="status"></p><button class="big" id="go">Enter the dungeon</button></div>`);
+  <div class="btns"><p class="warn" id="warn" role="status"></p><button class="big" id="go">Enter the dungeon</button></div>`, "page scene");
+  drawScene();
   const card = $("card");
   // A different Wing is a fresh dungeon: its own facts and hearts.
   card.querySelectorAll("input[name=wing]").forEach((i) => i.onchange = () => {
@@ -948,6 +953,40 @@ function menu() {
     descend(null, "enter");
   };
 }
+// The start scene (DESIGN.md §8.3): while the start screen is up, the fight is hidden and the
+// surface (descent.js surfaceHTML) shows behind the card: the night sky, the hill with the
+// Sumgeon's door, your captain by it in your chalk color and the rest of your team around them
+// (with nobody picked, two dark silhouettes). The card's scene-gap is its window: the horizon sits
+// just above where the card's sheet starts (--sheet), so the team stands on a strip of grass.
+// Settings, the book and help opened from here keep it behind them. Entering, the descent starts
+// from this same surface (sceneNow), and start() takes it away.
+let sceneHz = null;
+function sceneHeroes() {
+  const art = (d, role, o) => ({ svg: heroSvg(HEROES[d], o || {}), role });
+  const rest = team.rescued.filter((d) => d !== team.captain).sort((a, b) => a - b).map((d) => art(d, "team"));
+  if (hasCaptain()) return [art(team.captain, "cap", { color: team.color }), ...rest];
+  return rest.length ? rest : [art(1, "ghost"), art(7, "ghost")];
+}
+function drawScene() {
+  const sc = $("scene"), card = $("card"), gap = card.querySelector(".scene-gap");
+  document.body.classList.add("on-scene"); sc.hidden = false;
+  const H = sc.clientHeight || innerHeight, W = sc.clientWidth || innerWidth;
+  if (gap) {
+    let next = gap.nextElementSibling;
+    while (next && !next.offsetParent) next = next.nextElementSibling; // the tagline is hidden on short phones
+    const sheet = (next ? next.offsetTop : gap.offsetTop + gap.offsetHeight) - 14;
+    card.style.setProperty("--sheet", sheet + "px");
+    sceneHz = card.getBoundingClientRect().top + $("ov").scrollTop + sheet - 16;
+  }
+  sc.innerHTML = surfaceHTML({ W, H, hz: sceneHz || H * 0.4, heroes: sceneHeroes() });
+}
+const sceneOn = () => !$("scene").hidden;
+const sceneNow = () => (sceneOn() ? { hz: sceneHz, heroes: sceneHeroes() } : null);
+function hideScene() { $("scene").hidden = true; $("scene").innerHTML = ""; document.body.classList.remove("on-scene"); }
+let sceneFrame = 0;
+const redrawScene = () => { if (!sceneOn() || descending()) return; cancelAnimationFrame(sceneFrame); sceneFrame = requestAnimationFrame(drawScene); };
+addEventListener("resize", redrawScene);
+if (window.visualViewport) window.visualViewport.addEventListener("resize", redrawScene);
 // Double-tapping a stratum on the start screen enters it: the first tap picks it (and redraws the
 // card), a second tap on the same stratum soon after is Enter.
 let lastWingTap = null;
@@ -1176,6 +1215,7 @@ function wireCaptain() {
     store.player(PID).set("moments", MS);
     say("h", quipLine(mo.quip), true, null, PICK_FX);
     captainUI(); whoUI();
+    if (sceneOn()) drawScene(); // the new captain by the door
     if ($("warn")) $("warn").textContent = "";
     pickOpen = false; redraw();
   });
@@ -1233,7 +1273,7 @@ function descend(depth, mode) {
   const ov = $("ov");
   ov.classList.add("leaving");
   const fell = setTimeout(() => { ov.classList.remove("leaving"); hide(); }, reduced() ? 0 : 450);
-  playDescent({ wing: wing(), depth: d, mode, reduced: reduced(), title: enter ? PHRASE.enter : `Depth ${d}`, sub: enter ? `${wing().name} · Depth ${d}` : wing().name },
+  playDescent({ wing: wing(), depth: d, mode, reduced: reduced(), scene: enter ? sceneNow() : null, title: enter ? PHRASE.enter : `Depth ${d}`, sub: enter ? `${wing().name} · Depth ${d}` : wing().name },
     () => { clearTimeout(fell); ov.classList.remove("leaving"); start(d, enter, true, reduced() ? 300 : AFTER_DESCENT_MS); });
 }
 // What's said as a run begins: "Now entering the Sumgeon!" (from the start screen), then the depth.
@@ -1247,7 +1287,7 @@ function openingLines(enter, d) {
 // arrives (AFTER_DESCENT_MS), so the landing and the monster don't run together.
 function start(depth, enter, voiced, pause) {
   G.onMenu = false;
-  hide();
+  hide(); hideScene();
   newRun(depth);
   Object.assign(G, { hearts: band().hearts, streak: 0, solved: 0, tries: 0, running: true, retry: [], recent: [], next: false, paused: null, runStars: 0 });
   MR = freshRun();

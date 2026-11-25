@@ -364,7 +364,7 @@ body[data-stratum="tower"] .game,.wing.tower,.d-layer.tower{--wall:var(--wall-to
 
 /* Each stratum's colors, to go with its wall: panels, borders, background and keys change;
    gold and coral stay the accents. Set by data-stratum on <body> (app.js newRun). */
-body[data-stratum="cellar"],.descent.cellar,.d-layer.cellar{--bg:#1c1411;--panel:#2a1e19;--line:#4a3328;--btn:#3b2a22;--btn2:#4a362c;--edge:#5d4536;--muted:#c9b4a6;--dark:#120c0a}
+body[data-stratum="cellar"],.descent.cellar,.d-layer.cellar,.title-scene{--bg:#1c1411;--panel:#2a1e19;--line:#4a3328;--btn:#3b2a22;--btn2:#4a362c;--edge:#5d4536;--muted:#c9b4a6;--dark:#120c0a}
 body[data-stratum="hall"],.descent.hall,.d-layer.hall{--bg:#141a28;--panel:#1d2537;--line:#33405c;--btn:#2a3550;--btn2:#34415f;--edge:#46557a;--muted:#b0bcd6;--dark:#0d111b}
 body[data-stratum="tower"],.descent.tower,.d-layer.tower{--bg:#151c1e;--panel:#20292c;--line:#36454a;--btn:#2c393d;--btn2:#364549;--edge:#4a5b60;--muted:#b3c0c2;--dark:#0d1213}
 body{transition:background-color .4s;--hint-empty:var(--edge);--hint-line:var(--edge)}
@@ -634,10 +634,22 @@ label.switch-row:focus-within{outline-offset:-3px}
 .descent.quick{animation:dfade .15s ease-out}
 @keyframes dfade{from{opacity:0}}
 .d-stack{position:absolute;left:0;top:0;width:100%;will-change:transform}
-.d-surface{position:relative}
+.d-surface{position:relative;overflow:hidden}
 .d-sky{position:relative;background:radial-gradient(1.5px 1.5px at 18% 22%,#f3efe4cc 50%,#0000),radial-gradient(1.5px 1.5px at 72% 14%,#f3efe4aa 50%,#0000),radial-gradient(1px 1px at 44% 36%,#f3efe499 50%,#0000),radial-gradient(1.5px 1.5px at 86% 44%,#f3efe488 50%,#0000),radial-gradient(1px 1px at 8% 56%,#f3efe477 50%,#0000),linear-gradient(#0b161b,#1b3640 70%,#2f5560)}
-.d-door{position:absolute;left:50%;bottom:0;width:clamp(64px,16vw,96px);aspect-ratio:3/4;transform:translateX(-50%);border-radius:999px 999px 0 0;background:#05090b;border:5px solid #6b5a4a;border-bottom:0;box-shadow:0 0 0 3px #0c171c}
-.d-grass{background:linear-gradient(#5fae4e,#3f7d38 14%,#2b4a2a 26%,#3a2a20 30%,#2a1d17);border-top:3px solid #0c171c}
+/* The surface's parts are placed in px by descent.js surfaceHTML: a few stars that twinkle, the
+   hill (a mound of the grass) with the arched door on top, and the team by the door, bobbing.
+   The idle runs off the page clock (--t0), so the start scene and the descent's copy are in step. */
+.d-star{position:absolute;border-radius:50%;background:#f3efe4;box-shadow:0 0 6px #f3efe4aa;opacity:.8;animation:twinkle 3.2s ease-in-out infinite;animation-delay:calc(var(--t0,0ms) - var(--d,0s))}
+@keyframes twinkle{0%,100%{opacity:.85;transform:scale(1)}50%{opacity:.25;transform:scale(.6)}}
+.d-hill{position:absolute;border-radius:50% 50% 0 0/100% 100% 0 0;background:linear-gradient(#6cbd58,#5fae4e);border:3px solid #0c171c;border-bottom:0}
+.d-door{position:absolute;border-radius:999px 999px 0 0;background:radial-gradient(ellipse 60% 40% at 50% 100%,#ffc93c30,#0000 70%),#05090b;border:5px solid #6b5a4a;border-bottom:0;box-shadow:0 0 0 3px #0c171c,inset 0 6px 0 #0c171c;z-index:2}
+.d-door::before{content:"";position:absolute;left:50%;top:-14%;width:42%;aspect-ratio:1;translate:-50% 0;border-radius:6px;background:#8a7560;border:3px solid #0c171c;box-shadow:inset 0 -3px 0 #6b5a4a}
+.d-door::after{content:"Σ";position:absolute;left:50%;top:-14%;width:42%;translate:-50% 0;aspect-ratio:1;display:grid;place-items:center;font:400 calc(var(--dh,96px)*.17)/1 Bungee,sans-serif;color:#0c171c}
+.d-hero{position:absolute;display:block;animation:bob 2.6s ease-in-out infinite;animation-delay:calc(var(--t0,0ms) - var(--d,0s))}
+.d-hero svg{display:block;width:100%;height:auto;overflow:visible;filter:drop-shadow(0 3px 0 #0c171c80)}
+.d-hero.ghost svg{filter:brightness(0) opacity(.55)}
+@keyframes bob{0%,100%{translate:0 0}50%{translate:0 -3px}}
+.d-grass{background:linear-gradient(#5fae4e,#3f7d38 16px,#2b4a2a 36px,#3a2a20 52px,#2a1d17 70%);border-top:3px solid #0c171c}
 .d-layer{position:relative;background:linear-gradient(#0c171c50,#0c171c90),var(--wall);border-top:6px solid var(--dark);box-shadow:inset 0 10px 18px #0008}
 .d-name{position:absolute;left:0;right:0;top:40%;text-align:center;font:400 clamp(20px,6vw,34px) Bungee,sans-serif;color:var(--muted);opacity:.55;text-shadow:0 2px 0 var(--dark)}
 .d-layer.chosen .d-name{opacity:.8}
@@ -670,3 +682,26 @@ label.switch-row:focus-within{outline-offset:-3px}
 .descent.quick .d-title h2{animation:none}
 @media (min-width: 760px){.d-title{top:50%}}
 @media(prefers-reduced-motion:reduce){.ov.leaving .card{animation:none;opacity:0}.descent.titled .d-title h2,.descent.landed .d-stack,.descent.landed li.here i{animation:none}}
+
+/* The start scene (app.js drawScene, DESIGN.md §8.3): on the start screen the fight is hidden and
+   the descent's surface shows behind the card, in the Cellar's palette: the night sky, the hill
+   with the Sumgeon's door, and your team by it. The card's top is see-through: the title sits in
+   the sky, its scene-gap is a window onto the door and the team, and the rest of the card is a
+   sheet starting at --sheet (set by drawScene), so the team stands on a strip of grass just
+   above it. Tapping Enter, the card falls away and the descent starts from this same frame. */
+.title-scene{position:fixed;left:0;top:0;width:100%;height:var(--app-h,100vh);z-index:8;overflow:hidden;background:var(--dark);pointer-events:none}
+.title-scene[hidden]{display:none}
+body.on-scene>.top,body.on-scene>.who,body.on-scene>.game,body.on-scene>.badges{visibility:hidden}
+.ov.scene{background:transparent}
+.card.scene{position:relative;isolation:isolate;background:transparent;border-color:transparent}
+.card.scene::before{content:"";position:absolute;left:0;right:0;bottom:0;top:var(--sheet,0px);z-index:-1;background:var(--panel);border:2px solid var(--line);border-radius:24px;box-shadow:0 -8px 28px #05090b99}
+.card.scene .logo{text-shadow:0 3px 0 #05090b,0 0 24px #05090b}
+.scene-gap{height:clamp(170px,calc(var(--app-h,100vh)*.24),280px)}
+@media (min-width: 760px){.ov.scene{place-items:start center}}
+@media (max-width: 759px){
+  .ov.page.scene{background:transparent}
+  .card.page.scene::before{border-width:2px 0 0;border-radius:22px 22px 0 0}
+  .scene-gap{height:auto;flex:1 0 auto;min-height:clamp(120px,calc(var(--app-h,100vh)*.22),200px);max-height:calc(var(--app-h,100vh)*.42);margin-block:-4px}
+}
+@media (max-width: 759px) and (max-height: 700px){.scene-gap{min-height:clamp(96px,calc(var(--app-h,100vh)*.18),130px)}}
+@media(prefers-reduced-motion:reduce){.d-star,.d-hero{animation:none}}
