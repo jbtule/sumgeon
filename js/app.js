@@ -213,14 +213,29 @@ const hintFact = () => G.cur.inverse || G.cur;
 // The dive, down the side of the monster's box: every depth of this stratum from the top, the
 // ones cleared filled in, this run's depth marked, and two still below. It scrolls, and opens
 // with this run's depth in the middle. Dots on phones; with numbers on wider screens.
+// A depth's score: the most stars earned in one run at it, of the most a run can earn.
+const depthScore = (w, n) => ({ got: ((progress[w.id] || {}).depthStars || {})[n] || 0, max: wingStars(w, progress).max });
 function diveUI() {
-  const d = G.depth, last = Math.max(MAP_DEPTHS, d + 2), rows = [];
-  for (let n = 1; n <= last; n++) rows.push(`<li class="${n < d ? "done" : n === d ? "now" : ""}"><i></i><span>${n}</span></li>`);
+  const d = G.depth, w = wing(), last = Math.max(MAP_DEPTHS, d + 2), rows = [];
+  for (let n = 1; n <= last; n++) {
+    const sc = depthScore(w, n), score = sc.got ? `<small>★${sc.got}</small>` : "";
+    rows.push(`<li class="${n < d ? "done" : n === d ? "now" : ""}" data-n="${n}" data-score="${sc.got}" data-max="${sc.max}"><i></i><span>${n}</span>${score}</li>`);
+  }
   const box = $("dive");
   box.innerHTML = rows.join("");
   box.setAttribute("aria-label", `Depth ${d} of your dive into ${wing().name}`);
   requestAnimationFrame(() => { const now = box.querySelector(".now"); if (now) box.scrollTop = now.offsetTop - box.clientHeight / 2 + now.offsetHeight / 2; });
 }
+// Tapping a depth on the dive (on phones, where the scores don't fit) shows its score in a bubble.
+$("dive").addEventListener("click", (e) => {
+  const li = e.target.closest("li"), tip = $("diveTip");
+  if (!li) return;
+  const n = +li.dataset.n, got = +li.dataset.score;
+  tip.textContent = got ? `Depth ${n}: ★ ${got} of ${li.dataset.max}` : n < G.depth ? `Depth ${n}: cleared` : n === G.depth ? `Depth ${n}: you're here` : `Depth ${n}: not yet`;
+  const r = li.getBoundingClientRect();
+  tip.style.left = Math.round(r.right + 6) + "px"; tip.style.top = Math.round(r.top + r.height / 2) + "px";
+  tip.hidden = false; clearTimeout(tip.t); tip.t = setTimeout(() => (tip.hidden = true), 1800);
+});
 // depth: how deep into this Wing (wings.js); the deepest reached when not given.
 function newRun(depth) {
   document.querySelector(".game").dataset.stratum = wing().id;
@@ -478,6 +493,10 @@ function earnStars() {
   const p = progress[wing().id] || (progress[wing().id] = { boss: 0, best: 0 });
   p.stars = p.stars || [];
   if (n > (p.stars[G.floor] || 0)) p.stars[G.floor] = n;
+  // This run's stars, and the best run at this depth (the dive's score for it).
+  G.runStars = (G.runStars || 0) + n;
+  p.depthStars = p.depthStars || {};
+  if (G.runStars > (p.depthStars[G.depth] || 0)) p.depthStars[G.depth] = G.runStars;
   store.player(PID).set("wings", progress);
   const labels = ["Cleared", "No hearts lost", `${STREAK_STAR} in a row`];
   return `<div class="stars" aria-label="${n} of 3 stars">${got.map((on, i) => `<span class="star${on ? " on" : ""}" style="--i:${i}"><b>★</b><small>${labels[i]}</small></span>`).join("")}</div>`;
@@ -633,7 +652,8 @@ function depthTrack(w, d) {
   let first = 1;
   if (last > 8) { first = last - 6; rows.push(`<li class="done fold"><i></i>Depths 1–${first - 1} cleared</li>`); }
   for (let n = first; n <= last; n++) {
-    rows.push(n < d ? `<li class="done"><i></i>Depth ${n}</li>` : n === d ? `<li class="you"><i></i>Depth ${n} <em>you are here</em></li>` : `<li><i></i>Depth ${n}</li>`);
+    const sc = depthScore(w, n), score = sc.got ? ` <small>★ ${sc.got} of ${sc.max}</small>` : "";
+    rows.push(n < d ? `<li class="done"><i></i>Depth ${n}${score}</li>` : n === d ? `<li class="you"><i></i>Depth ${n}${score} <em>you are here</em></li>` : `<li><i></i>Depth ${n}</li>`);
   }
   return `<ol class="shaft" aria-label="Deepest: depth ${d}">${rows.join("")}</ol>`;
 }
@@ -866,7 +886,7 @@ function start(depth) {
   hide();
   newRun(depth);
   if (G.depth > 1 && G.depth <= DEPTH_MAX_SPOKEN) say("p", depthLine(G.depth));
-  Object.assign(G, { hearts: band().hearts, streak: 0, solved: 0, tries: 0, running: true, retry: [], recent: [], next: false, paused: null });
+  Object.assign(G, { hearts: band().hearts, streak: 0, solved: 0, tries: 0, running: true, retry: [], recent: [], next: false, paused: null, runStars: 0 });
   stopSpeech();
   loadMonster(0);
   newProblem();

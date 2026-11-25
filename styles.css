@@ -318,9 +318,14 @@ h1 b{color:var(--coral);font-weight:400}
 .dive li.done span{color:var(--gold)}
 .dive li.now span{color:#fff}
 @keyframes divepulse{50%{box-shadow:0 0 16px #ff5a4e}}
+.dive small{position:relative;font:800 10px Nunito,sans-serif;color:var(--gold);display:none;white-space:nowrap}
+.dive li{cursor:pointer}
+.dive-tip{position:fixed;z-index:6;transform:translateY(-50%);padding:4px 10px;border-radius:999px;background:#0c171cee;border:1.5px solid var(--gold);color:var(--ink);font:800 13px Nunito,sans-serif;white-space:nowrap;pointer-events:none}
+.dive-tip[hidden]{display:none}
+.strata .shaft li small{font-size:11px;color:var(--gold);font-weight:800}
 @media(prefers-reduced-motion:reduce){.dive li.now i{animation:none}}
 @media (max-width: 759px){.dive{grid-area:stage;justify-self:start;align-self:stretch;margin:4px 0 10px 2px;width:28px}}
-@media (min-width: 760px){.dive{grid-area:stage;justify-self:start;align-self:stretch;margin:64px 0 20px 12px;width:52px}.dive span{display:block}}
+@media (min-width: 760px){.dive{grid-area:stage;justify-self:start;align-self:stretch;margin:64px 0 20px 12px;width:90px}.dive span,.dive small{display:block}.dive li{height:30px}.dive span{font-size:13px}.dive small{font-size:12px}}
 
 /* Screens other than the battle (show() in app.js). A "page" (the menu, Settings, the book, a
    run's end) fills a phone's screen, with its buttons docked full-width at the bottom; a "float"
