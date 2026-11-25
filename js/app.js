@@ -822,6 +822,15 @@ function resume() {
   G.t0 += performance.now() - p.at;
 }
 $("pauseBtn").onclick = pause;
+// Where ⏸ sits: on phones at the right of the hero-and-hearts row (under the thumb); on iPad and
+// desktop (760px and wider) at the top right, beside the floor in the header, where pause
+// usually is. The same button moves, so its wiring and focus stay.
+{
+  const wide = matchMedia("(min-width: 760px)"), btn = $("pauseBtn");
+  const place = () => { if (wide.matches) document.querySelector(".top .tools").appendChild(btn); else document.querySelector(".you").appendChild(btn); };
+  place();
+  wide.addEventListener ? wide.addEventListener("change", place) : wide.addListener(place);
+}
 
 /* ---------- the menu: players and settings ---------- */
 function openMenu() {

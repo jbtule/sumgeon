@@ -404,6 +404,8 @@ body{transition:background-color .4s;--hint-empty:var(--edge);--hint-line:var(--
 .pause{flex:none;width:40px;height:40px;margin-left:10px}
 .flame[hidden]+.pause{margin-left:auto}
 .pause svg{width:18px;height:18px}
+/* On iPad and desktop ⏸ sits in the header, beside the floor (app.js moves it there). */
+.top .pause{margin-left:4px}
 .pause-btns{display:grid;gap:8px;width:100%}
 .pause-btns .small{min-height:48px}
 .pause-btns .danger[data-sure="1"]{background:#ff8a7f;color:var(--dark)}
