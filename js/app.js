@@ -2,11 +2,11 @@
 // Problems, monsters, saving, sound and speech live in their own modules.
 import { MON, svg, LOOKS, lookOf } from "./monsters.js";
 import { spokenProblem, spokenFact } from "./problems.js";
-import { BANDS, choose, factOf, record as recordAnswer, helpFor, openLevel, monsterHP } from "./learn.js";
+import { BANDS, choose, factOf, record as recordAnswer, helpFor, openLevel, monsterHP, probeKey, tierOf, skipTo, SKIP_PROBES } from "./learn.js";
 import { hintFor, STRATEGIES } from "./hints.js";
 import { openStore, displayName } from "./store.js";
 import { PHRASE, monsterName, monsterCleared, monsterWon, heroName, heroJoins, wingCleared, wingOpened, depthLine, DEPTH_MAX_SPOKEN } from "./lines.js";
-import { WINGS, wingOf, runFloors, openWings, toOpen, floorStars, wingStars, STREAK_STAR, depthScale, depthHP, deepest, MAP_DEPTHS } from "./wings.js";
+import { WINGS, wingOf, runFloors, openWings, toOpen, floorStars, wingStars, depthScale, depthHP, deepest, MAP_DEPTHS } from "./wings.js";
 import { missingOf, pickBlank, filled, spokenMissing, MISSING_SHARE } from "./missing.js";
 import { coinsSvg } from "./coins.js";
 import { traitOf, charged, prefers, hitBy, atHalf } from "./traits.js";
@@ -110,7 +110,9 @@ const monsterArt = (m, cls) => (m.cursed != null ? heroSvg(HEROES[m.cursed], { c
 // time they load, keeping what they've learned, their hero and their settings.
 // After release, a bump would wipe kids' real progress, so it should stop changing then.
 //   2 (2026-11-25): breaking a curse takes three wins.
-const DUNGEON_VERSION = 2, DUNGEON_KEYS = ["wings", "bestiary", "best"];
+//   3 (2026-11-25): placement, skipping ahead and the "all fast" star. Also resets what's
+//      been learned (LEARNING_RESETS), since it changes how learning is counted.
+const DUNGEON_VERSION = 3, DUNGEON_KEYS = ["wings", "bestiary", "best"], LEARNING_RESETS = [3];
 function upgradeDungeon(id) {
   const p = store.player(id), had = p.get("dungeon", null);
   if (had === DUNGEON_VERSION) return;
@@ -118,6 +120,8 @@ function upgradeDungeon(id) {
   if (had !== null || p.get("wings", null) || p.get("bestiary", null)) {
     p.set("heroes", resetTeam(Object.assign({ captain: null, color: CHALK[0], rescued: [] }, p.get("heroes", {}))));
     DUNGEON_KEYS.forEach((k) => p.clear(k));
+    // Versions that change how learning counts reset it too, so everyone starts fresh.
+    if (LEARNING_RESETS.some((v) => v > (had || 1))) p.clear("facts");
   }
   p.set("dungeon", DUNGEON_VERSION);
 }
@@ -170,7 +174,7 @@ function whoUI() {
 /* ---------- the run ---------- */
 // retry: missed facts waiting to come back ({ key, after: problems to go }); recent: the last few
 // keys, so a fact doesn't repeat right away; hinted: a hint is open for this problem.
-let G = { floor: 0, hearts: 5, hp: 0, max: 0, streak: 0, solved: 0, tries: 0, cur: null, input: "", busy: true, running: false,
+let G = { flow: { fluent: 0, hits: 0, cool: 0, n: 0 }, floor: 0, hearts: 5, hp: 0, max: 0, streak: 0, solved: 0, tries: 0, cur: null, input: "", busy: true, running: false,
   retry: [], recent: [], hinted: false, t0: 0, next: false };
 
 function heartsUI(cracking) {
@@ -293,7 +297,7 @@ function loadMonster(i, quiet) {
   const t = traitOf(m), badge = $("trait");
   badge.hidden = !t;
   if (t) { badge.textContent = `${t.icon} ${t.name}`; badge.title = t.text; }
-  G.onFloor = 0; G.halved = false; G.floorLost = 0; G.floorStreak = 0;
+  G.onFloor = 0; G.halved = false; G.floorLost = 0; G.floorStreak = 0; G.floorSlow = false;
   if (!quiet) setMsg(t ? `${t.icon} ${t.name}: ${t.text}` : "Your answer is your attack.");
   $("floorLbl").textContent = (G.depth > 1 ? `Depth ${G.depth} · ` : "") + (m.boss ? "Boss floor" : m.cursed != null ? "Rescue floor" : `Floor ${i + 1} / ${G.floors.length}`);
   hpUI(); heartsUI(); streakUI();
@@ -311,11 +315,14 @@ function newProblem() {
   const due = G.retry.find((r) => r.after <= 0);
   if (due) G.retry.splice(G.retry.indexOf(due), 1);
   const m = G.floors[G.floor];
-  const key = choose(strandOf(m), recs, { now: Date.now(), recent: G.recent, retry: due ? due.key : null, op: m.op === "mix" || m.strand ? null : m.op, like: prefers(m), depth: G.depth });
+  // Skipping ahead: while you answer fluently, each problem is a probe from the next tier.
+  const f = G.flow, probe = !due && f.fluent >= 2 && f.cool <= 0 ? probeKey(strandOf(m), recs, null, G.recent) : null;
+  const key = probe || choose(strandOf(m), recs, { now: Date.now(), recent: G.recent, retry: due ? due.key : null, op: m.op === "mix" || m.strand ? null : m.op, like: prefers(m), depth: G.depth });
   // Charge (Minustaur): every 4th problem on the floor, a miss costs 2 hearts.
   G.charged = charged(m, G.onFloor++);
   $("charge").hidden = !G.charged;
   G.cur = factOf(key);
+  G.cur.probe = !!probe;
   // Quizard hides a number in every problem; other monsters sometimes do, for facts in review.
   const rec = recs[key];
   // (Not for a strand's facts: coins can't hide a number, and two-digit ones aren't recorded that way.)
@@ -436,12 +443,24 @@ function openWorked() {
 $("hintBtn").onclick = () => { if (!G.busy) openHint(); };
 
 // Saves the answer to the fact's record; says so when it opens a new level.
+// Returns what to say about it: a skip ahead, a new level, or nothing.
 function learnFrom(ok) {
-  const before = openLevel(st.band, recs), key = G.cur.key;
-  recs[key] = recordAnswer(recs[key], { ok, ms: performance.now() - G.t0, hinted: G.hinted, now: Date.now(), fluentMs: band().fluentMs });
+  const bk = strandOf(G.floors[G.floor]), b = BANDS[bk], key = G.cur.key, ms = performance.now() - G.t0;
+  const before = openLevel(bk, recs), fluent = ok && !G.hinted && ms < b.fluentMs, f = G.flow;
+  recs[key] = recordAnswer(recs[key], { ok, ms, hinted: G.hinted, now: Date.now(), fluentMs: b.fluentMs });
+  // Skipping ahead: SKIP_PROBES fluent probes in a row, and everything below the probe's tier is known.
+  let skipped = 0;
+  if (G.cur.probe) {
+    if (!fluent) { f.hits = 0; f.cool = 8; }
+    else if (++f.hits >= SKIP_PROBES) { skipped = skipTo(bk, recs, tierOf(bk, key), Date.now(), b.fluentMs); f.hits = 0; }
+  }
+  f.fluent = fluent ? f.fluent + 1 : 0;
+  if (!fluent) G.floorSlow = true; // the "all fast" star (wings.js floorStars)
+  f.cool--;
   store.player(PID).set("facts", recs);
-  const after = openLevel(st.band, recs);
-  return after > before ? band().levels[after].name : null;
+  if (skipped) { say("p", PHRASE.skip); return "Skipping ahead! You already know these."; }
+  const after = openLevel(bk, recs);
+  return after > before ? `New level: ${b.levels[after].name}!` : null;
 }
 
 function submit() {
@@ -469,7 +488,7 @@ function submit() {
       pop((bonus.power ? "Power! " : crit ? "Crit! " : "") + "−" + dmg, crit || bonus.power);
       restartAnim($("mon"), "hit");
       if (crit) restartAnim($("arena"), "shake");
-      setMsg(level ? `New level: ${level}!` : trait.note ? `${trait.note}: ${dmg}!` : bonus.power ? `${HEROES[team.captain].n} power hit for ${dmg}!` : crit ? `Critical hit for ${dmg}!` : `Hit for ${dmg}!`, "good");
+      setMsg(level ? level : trait.note ? `${trait.note}: ${dmg}!` : bonus.power ? `${HEROES[team.captain].n} power hit for ${dmg}!` : crit ? `Critical hit for ${dmg}!` : `Hit for ${dmg}!`, "good");
       hpUI(); streakUI();
       // Half HP: Divvy splits in two, Sigma Rex armors up (traits.js).
       const half = !G.halved && G.hp > 0 && G.hp <= G.max / 2 ? atHalf(m) : null;
@@ -531,7 +550,7 @@ function record() {
 }
 // This floor's stars (wings.js floorStars), saved as the floor's best, shown as a row.
 function earnStars() {
-  const got = floorStars(G.floorLost, G.floorStreak), n = got.filter(Boolean).length;
+  const got = floorStars(G.floorLost, !G.floorSlow), n = got.filter(Boolean).length;
   const p = progress[wing().id] || (progress[wing().id] = { boss: 0, best: 0 });
   p.stars = p.stars || [];
   if (n > (p.stars[G.floor] || 0)) p.stars[G.floor] = n;
@@ -540,7 +559,7 @@ function earnStars() {
   p.depthStars = p.depthStars || {};
   if (G.runStars > (p.depthStars[G.depth] || 0)) p.depthStars[G.depth] = G.runStars;
   store.player(PID).set("wings", progress);
-  const labels = ["Cleared", "No hearts lost", `${STREAK_STAR} in a row`];
+  const labels = ["Cleared", "No hearts lost", "All fast"];
   return `<div class="stars" aria-label="${n} of 3 stars">${got.map((on, i) => `<span class="star${on ? " on" : ""}" style="--i:${i}"><b>★</b><small>${labels[i]}</small></span>`).join("")}</div>`;
 }
 function cleared() {
@@ -947,7 +966,7 @@ function nextWingHint() {
 function start(depth, enter) {
   hide();
   newRun(depth);
-  Object.assign(G, { hearts: band().hearts, streak: 0, solved: 0, tries: 0, running: true, retry: [], recent: [], next: false, paused: null, runStars: 0 });
+  Object.assign(G, { hearts: band().hearts, streak: 0, solved: 0, tries: 0, running: true, retry: [], recent: [], next: false, paused: null, runStars: 0, flow: { fluent: 0, hits: 0, cool: 0, n: 0 } });
   stopSpeech();
   if (enter) say("p", PHRASE.enter);
   if (G.depth > 1 && G.depth <= DEPTH_MAX_SPOKEN) say("p", depthLine(G.depth));

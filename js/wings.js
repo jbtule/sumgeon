@@ -101,10 +101,10 @@ export function toOpen(wing, progress, recs) {
 // boss (the last of n floors).
 export function depthScale(i, n) { return n > 1 ? 0.8 + 0.5 * i / (n - 1) : 1; }
 
-// A floor's stars (DESIGN.md §6.1): ★ cleared, ★ no hearts lost on it, ★ a streak of 5 on it.
-// Returns [cleared, noHeartsLost, streakOf5].
-export const STREAK_STAR = 5;
-export function floorStars(lost, bestStreak) { return [true, lost === 0, bestStreak >= STREAK_STAR]; }
+// A floor's stars (DESIGN.md §6.1). Returns [cleared, noHeartsLost, allFast].
+// ★ cleared, ★ no hearts lost, ★ all fast: every answer on the floor right, quick (under the
+// band's fluent time) and without a hint. A short floor can earn all three.
+export function floorStars(lost, allFast) { return [true, lost === 0, !!allFast]; }
 // A Wing's stars so far, and the most it can have: { got, max }.
 export function wingStars(wing, progress) {
   const p = (progress[wing.id] || {}).stars || [];

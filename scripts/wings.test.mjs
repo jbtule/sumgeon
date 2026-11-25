@@ -66,8 +66,8 @@ console.log("✓ wings");
 
 // Stars.
 import { floorStars, wingStars } from "../js/wings.js";
-assert.deepEqual(floorStars(0, 5), [true, true, true]);
-assert.deepEqual(floorStars(2, 4), [true, false, false]);
+assert.deepEqual(floorStars(0, true), [true, true, true]);
+assert.deepEqual(floorStars(2, false), [true, false, false]);
 assert.deepEqual(wingStars(WINGS[0], { cellar: { stars: [3, 1, 2] } }), { got: 6, max: 18 });
 assert.deepEqual(wingStars(tower, {}), { got: 0, max: 21 });
 assert.deepEqual(wingStars(hall, {}), { got: 0, max: 18 });

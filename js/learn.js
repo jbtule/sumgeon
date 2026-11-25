@@ -129,6 +129,61 @@ export function record(rec, { ok, ms, hinted, now, fluentMs }) {
   return r;
 }
 
+/* ---------- skipping ahead (fluent players) ----------
+   Each band's facts, easiest first, are cut into tiers of about TIER facts that stay inside a
+   level. While a player answers fluently, app.js asks a probe from the tier above the first one
+   not yet learned; SKIP_PROBES fluent probes in a row count everything below the probe's tier as known
+   (skipTo). The levels go in teaching order, so fluency on a harder tier means the easier ones
+   are known. Skipped facts still come back as reviews, and a miss sends them back to learning. */
+export const TIER = 20;
+// Fluent probes in a row that skip ahead, tuned so a fluent player opens the next strata in about
+// five runs (three probes took three).
+export const SKIP_PROBES = 5;
+// How hard a fact is inside its level: its answer, and a bit more for crossing ten.
+function hardness(f) {
+  const [a, b] = String(f.key).slice(1).split(",").map((n) => parseInt(n, 10));
+  if (f.op === "+" && a < 10 && b < 10 && a + b > 10) return f.ans + 6;
+  if (f.op === "-" && a > 10 && b % 10 > a % 10) return a + 6;
+  if (f.op === "÷") return a;
+  return f.ans;
+}
+const tierCache = {};
+export function tiers(bandKey) {
+  if (tierCache[bandKey]) return tierCache[bandKey];
+  const p = pool(bandKey), out = [];
+  for (const L of [...new Set(p.map((f) => f.level))].sort((x, y) => x - y)) {
+    const fs = p.filter((f) => f.level === L).sort((x, y) => hardness(x) - hardness(y) || (x.key < y.key ? -1 : 1));
+    const n = Math.max(1, Math.round(fs.length / TIER));
+    for (let i = 0; i < n; i++) out.push(fs.slice(Math.floor(i * fs.length / n), Math.floor((i + 1) * fs.length / n)).map((f) => f.key));
+  }
+  return (tierCache[bandKey] = out);
+}
+export const tierOf = (bandKey, key) => tiers(bandKey).findIndex((t) => t.includes(key));
+// The first tier not yet mostly learned (UNLOCK of it).
+export function frontier(bandKey, recs) {
+  const t = tiers(bandKey);
+  for (let i = 0; i < t.length; i++) if (t[i].filter((k) => learned(recs[k])).length / t[i].length < UNLOCK) return i;
+  return t.length;
+}
+// A probe: a fact not seen yet from the tier above the frontier, or null when there's none.
+export function probeKey(bandKey, recs, rnd, recent) {
+  const t = tiers(bandKey), i = frontier(bandKey, recs) + 1;
+  if (i >= t.length) return null;
+  const fresh = t[i].filter((k) => (!recs[k] || !recs[k].n) && !(recent || []).includes(k));
+  return fresh.length ? fresh[Math.floor((rnd || Math.random)() * fresh.length)] : null;
+}
+// Counts every fact in the tiers below `upto` as known (box 3, placed). Returns how many.
+export function skipTo(bandKey, recs, upto, now, fluentMs) {
+  const t = tiers(bandKey);
+  let n = 0;
+  for (let i = 0; i < upto; i++) for (const k of t[i]) {
+    if (learned(recs[k])) continue;
+    recs[k] = { b: 3, n: 1, c: 1, ms: Math.round(fluentMs * 0.8), t: now, placed: 1 };
+    n++;
+  }
+  return n;
+}
+
 // The next fact's key. opts: { now, rnd, recent: [keys] (not again so soon), retry: key due now
 // or null, op: the monster's operation, preferred 70% of the time when it has facts here,
 // like: a test on a key for facts the monster asks more often (a trait), also 70% }.
