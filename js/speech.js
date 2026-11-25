@@ -148,7 +148,10 @@ var heroQ = (typeof location !== "undefined") ? new URLSearchParams(location.sea
 var HERO_GAIN = heroQ && heroQ.get("herogain") ? +heroQ.get("herogain") : 1.5;
 var HERO_ECHO = heroQ && heroQ.get("heroecho") ? +heroQ.get("heroecho") : 0.1;
 var heroBufs = {};
-function playHero(url) {
+// fx (optional): { gain, echo, delay } instead of the quip's defaults: say()'s fifth argument.
+function playHero(url, fx) {
+  fx = fx || {};
+  var G = fx.gain != null ? fx.gain : HERO_GAIN, E = fx.echo != null ? fx.echo : HERO_ECHO, D = fx.delay || 0.13;
   var c = ac();
   if (!c) return Promise.resolve(false);
   var my = epoch;
@@ -161,9 +164,9 @@ function playHero(url) {
       var src = c.createBufferSource(), gain = c.createGain(), lim = c.createDynamicsCompressor();
       var delay = c.createDelay(1), fb = c.createGain(), wet = c.createGain(), tone = c.createBiquadFilter(), done = false;
       src.buffer = buf;
-      gain.gain.value = HERO_GAIN;
+      gain.gain.value = G;
       lim.threshold.value = -10; lim.knee.value = 6; lim.ratio.value = 12; lim.attack.value = 0.003; lim.release.value = 0.15;
-      delay.delayTime.value = 0.13; fb.gain.value = 0.32; wet.gain.value = HERO_ECHO;
+      delay.delayTime.value = D; fb.gain.value = 0.32; wet.gain.value = E;
       tone.type = "lowpass"; tone.frequency.value = 3500;
       src.connect(gain); gain.connect(lim);
       gain.connect(delay); delay.connect(tone); tone.connect(fb); fb.connect(delay); tone.connect(wet); wet.connect(lim);
@@ -202,7 +205,9 @@ function playClip(url) {
 // `live`, if given, is asked when the item's turn comes: false skips it, so a line about a
 // problem that's already been answered doesn't pile up behind the others.
 // Returns a promise for when this item is done. Does nothing with the voice switched off.
-export function say(kind, text, cancel, live) {
+// fx, if given ({ gain, echo, delay }), plays the clip with that treatment (playHero), whatever
+// its kind: "Now entering the Sumgeon!" echoes like a cavern.
+export function say(kind, text, cancel, live, fx) {
   if (!on) return Promise.resolve();
   if (cancel) stopSpeech();
   var my = epoch;
@@ -212,10 +217,13 @@ export function say(kind, text, cancel, live) {
     if (my !== epoch || (live && !live())) return;
     var key = clips[kind + ":" + text], hit = spriteOf[kind + ":" + text];
     if (!key) return speak(text, RATE[kind], PITCH[kind]);
+    if (fx && ac()) return playHero(clipBase + key + ".mp3", fx).then(function (ok) {
+      if (!ok && my === epoch) return playClip(clipBase + key + ".mp3");
+    });
     if (hit && hit.s.buf && ac()) return playSprite(hit).then(function (ok) {
       if (!ok && my === epoch) return playClip(clipBase + key + ".mp3");
     });
-    if (kind === "h" && ac()) return playHero(clipBase + key + ".mp3").then(function (ok) {
+    if (kind === "h" && ac()) return playHero(clipBase + key + ".mp3", fx).then(function (ok) {
       if (!ok && my === epoch) return playClip(clipBase + key + ".mp3").then(function (ok2) {
         if (!ok2 && my === epoch) return speak(text, RATE[kind], PITCH[kind]);
       });

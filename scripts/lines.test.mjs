@@ -100,7 +100,7 @@ assert.ok(app0.includes('say("h", quipLine(mo.quip), true)'), "a quip is said in
 // what the hero does, as before.
 {
   const pick = app0.slice(app0.indexOf("function wireCaptain"), app0.indexOf("function wirePlayers"));
-  assert.ok(/nameLine\(MS, team\.captain\)[\s\S]*say\("h", quipLine\(mo\.quip\), true\);/.test(pick) && !/heroPower|PHRASE\.goIn/.test(pick), "a pick says a captain line, and nothing after it");
+  assert.ok(/nameLine\(MS, team\.captain\)[\s\S]*say\("h", quipLine\(mo\.quip\), true(, null, PICK_FX)?\);/.test(pick) && !/heroPower|PHRASE\.goIn/.test(pick), "a pick says a captain line, and nothing after it");
   assert.ok(!pick.includes("heroName("), "the captain line replaces the spoken name");
 }
 

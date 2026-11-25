@@ -1122,7 +1122,7 @@ function wireCaptain() {
     // "Your twos hit harder." and "Tap Enter to go in!" too much on top of it.
     const mo = { quip: nameLine(MS, team.captain) };
     store.player(PID).set("moments", MS);
-    say("h", quipLine(mo.quip), true);
+    say("h", quipLine(mo.quip), true, null, PICK_FX);
     captainUI(); whoUI();
     if ($("warn")) $("warn").textContent = "";
     pickOpen = false; redraw();
@@ -1174,7 +1174,7 @@ function start(depth, enter) {
   Object.assign(G, { hearts: band().hearts, streak: 0, solved: 0, tries: 0, running: true, retry: [], recent: [], next: false, paused: null, runStars: 0 });
   MR = freshRun();
   stopSpeech();
-  if (enter) say("p", PHRASE.enter);
+  if (enter) say("p", PHRASE.enter, false, null, ENTER_FX);
   if (G.depth > 1 && G.depth <= DEPTH_MAX_SPOKEN) say("p", depthLine(G.depth));
   loadMonster(0);
   // The player's first fight: how to attack, before the first problem is read (until they answer).
@@ -1259,6 +1259,9 @@ function press(k) {
 // a run of fluent sums, and kept from run to run while the game is open.
 const flows = {};
 function flowOf(bk) { return (flows[PID + ":" + bk] ||= { fluent: 0, cool: 0, hist: [], on: false, leap: 1 }); }
+// How lines sound (speech.js say's fx): "Now entering the Sumgeon!" echoes like a cavern; the
+// captain line on picking a hero is the quip's boost without its echo.
+const ENTER_FX = { gain: 1.3, echo: 0.45, delay: 0.2 }, PICK_FX = { gain: 1.5, echo: 0 };
 // The share of problems that prefer an answer with the captain's digit until its first moment (learn.js choose).
 const CAPTAIN_BIAS = 0.35;
 // In the first fight (nothing beaten yet, so no Hero Moments), the share that avoid it instead,
