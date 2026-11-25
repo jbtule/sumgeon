@@ -262,9 +262,26 @@ function newRun(depth) {
   // The room darkens as you go deeper: 8% per depth, up to 48% at depth 7.
   document.querySelector(".game").style.setProperty("--murk", Math.min(0.48, 0.08 * (G.depth - 1)).toFixed(2));
 }
+// Bosses roar every so often while you're working on a problem: a growl, and they rear up and
+// shake while the room flickers. Never during an attack, a card, a hint or the pause.
+let roarTimer = null;
+function roarSoon() {
+  clearTimeout(roarTimer);
+  const m = G.floors && G.floors[G.floor];
+  if (!m || !m.boss) return;
+  roarTimer = setTimeout(() => {
+    if (!G.running) return; // the run is over: no more roars until the next boss
+    if (!G.busy && !G.next && !G.paused && $("ov").hidden && G.hp > 0 && G.floors[G.floor] === m) {
+      sfx.roar();
+      if (!reduced()) { restartAnim($("mon"), "roar"); restartAnim($("arena"), "rumble"); setTimeout(() => { $("mon").classList.remove("roar"); $("arena").classList.remove("rumble"); }, 1300); }
+    }
+    roarSoon();
+  }, 9000 + Math.random() * 6000);
+}
 function loadMonster(i, quiet) {
   const m = G.floors[i];
   G.floor = i;
+  roarSoon();
   // Deeper floors are tougher: about 80% of the usual HP on floor 1, up to 130% for the boss.
   G.max = G.hp = Math.round(monsterHP(m, strandOf(m), recs) * depthScale(i, G.floors.length) * depthHP(G.depth));
   const el = $("mon");
