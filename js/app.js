@@ -11,7 +11,7 @@ import { missingOf, pickBlank, filled, spokenMissing, MISSING_SHARE } from "./mi
 import { coinsSvg } from "./coins.js";
 import { traitOf, charged, prefers, hitBy, atHalf } from "./traits.js";
 import { roster, mastery, meet, beat } from "./bestiary.js";
-import { HEROES, CHALK, heroSvg, freePick, pickHero, curseCaptain, crackCurse, CURSE_HITS } from "./heroes.js";
+import { HEROES, CHALK, heroSvg, freePick, pickHero, curseCaptain, crackCurse, CURSE_HITS, resetTeam } from "./heroes.js";
 import * as sfx from "./sfx.js";
 import { say, stopSpeech, setVoice } from "./speech.js";
 
@@ -105,8 +105,25 @@ const wing = () => wingFor(st.band);
 // A floor's art: a cursed digit is its hero, darkened (DESIGN.md §6.6).
 const cracksOf = (d) => (team.cracks || {})[d] || 0;
 const monsterArt = (m, cls) => (m.cursed != null ? heroSvg(HEROES[m.cursed], { cursed: true, cls, cracks: cracksOf(m.cursed) }) : svg(m, cls));
+// The dungeon's version, while we're before release. Bump it when a balance change (how fast heroes are freed, how strata
+// open) means saved runs should start over: each player's dungeon progress then resets the next
+// time they load, keeping what they've learned, their hero and their settings.
+// After release, a bump would wipe kids' real progress, so it should stop changing then.
+//   2 (2026-11-25): breaking a curse takes three wins.
+const DUNGEON_VERSION = 2, DUNGEON_KEYS = ["wings", "bestiary", "best"];
+function upgradeDungeon(id) {
+  const p = store.player(id), had = p.get("dungeon", null);
+  if (had === DUNGEON_VERSION) return;
+  // A brand-new player has nothing to reset.
+  if (had !== null || p.get("wings", null) || p.get("bestiary", null)) {
+    p.set("heroes", resetTeam(Object.assign({ captain: null, color: CHALK[0], rescued: [] }, p.get("heroes", {}))));
+    DUNGEON_KEYS.forEach((k) => p.clear(k));
+  }
+  p.set("dungeon", DUNGEON_VERSION);
+}
 function loadPlayer() {
   PID = store.active();
+  upgradeDungeon(PID);
   st = store.settings(PID);
   recs = store.player(PID).get("facts", {}) || {};
   team = Object.assign({ captain: null, color: CHALK[0], rescued: [] }, store.player(PID).get("heroes", {}));

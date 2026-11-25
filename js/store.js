@@ -13,7 +13,8 @@ export var DEVICE = "sumgeon:";
 export var STORAGE_VERSION = 2;
 // Every key saved per player. Add new ones here (the check fails on a key that isn't listed),
 // so Start over, removing a player and (later) sync can't miss one.
-export var OWN_KEYS = ["settings", "best", "facts", "heroes", "wings", "bestiary"];
+// "dungeon": the dungeon version the player's progress was made under (app.js DUNGEON_VERSION).
+export var OWN_KEYS = ["settings", "best", "facts", "heroes", "wings", "bestiary", "dungeon"];
 // band: "sprout" or "apprentice" (learn.js BANDS). ops and diff are the prototype's, kept only to
 // pick a band for a player who had them.
 export var DEFAULT_SETTINGS = { band: "sprout", ops: ["+", "-"], diff: "easy", timer: false, sfx: true, voice: true };
@@ -40,6 +41,7 @@ export function openStore(ls) {
     return {
       get: function (k, d) { return read(own(k), d); },
       set: function (k, v) { return write(own(k), v); },
+      clear: function (k) { drop(own(k)); },
       // Everything under the prefix, including keys from newer versions.
       wipe: function () {
         try {

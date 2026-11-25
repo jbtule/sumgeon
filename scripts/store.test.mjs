@@ -80,4 +80,11 @@ function fakeStorage(init) {
   s.upgrade();
   assert.deepEqual(s.settings("default"), DEFAULT_SETTINGS);
 }
+// clear() drops one of a player's keys.
+{
+  const ls = fakeStorage({}), st = openStore(ls), p = st.player("default");
+  p.set("wings", { cellar: { boss: 1 } }); p.clear("wings");
+  assert.equal(p.get("wings", null), null);
+  assert.throws(() => p.clear("nope"), /unlisted player key/);
+}
 console.log("✓ store");
