@@ -86,6 +86,9 @@ function bez(p0, c, p1, t) { const u = 1 - t; return { x: u * u * p0.x + 2 * u *
 // Resolves at the hit, then tidies up by itself.
 export async function playMoment(o) {
   style();
+  // First, if the voice is still talking, cut it off (o.before: the record scratch), so the
+  // scratch is heard on its own before the moment's own sounds start.
+  if (o.before) await o.before();
   if (o.partner != null) return playTeamUp(o);
   const k = 1 / (o.speed || 1), T = (ms) => ms * k, h = HEROES[o.hero], move = MOVES[o.hero];
   const room = o.room, phase = async (p) => { if (o.gate) await o.gate(p); if (o.onPhase) o.onPhase(p); };

@@ -230,12 +230,13 @@ export function scratch() {
       var n = ctx.createBufferSource(), f = ctx.createBiquadFilter(), g = ctx.createGain();
       n.buffer = noiseBuf;
       f.type = "bandpass"; f.Q.value = 6; f.frequency.setValueAtTime(s[1], t + s[0]); f.frequency.exponentialRampToValueAtTime(s[2], t + s[0] + s[3]);
-      g.gain.setValueAtTime(0.0001, t + s[0]); g.gain.linearRampToValueAtTime(0.5, t + s[0] + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, t + s[0] + s[3]);
+      g.gain.setValueAtTime(0.0001, t + s[0]); g.gain.linearRampToValueAtTime(1.1, t + s[0] + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, t + s[0] + s[3]);
       n.connect(f).connect(g).connect(out);
       n.start(t + s[0]); n.stop(t + s[0] + s[3] + 0.02);
     });
-    tone("sawtooth", 180, 520, t, 0.09, 0.06);
-    tone("sawtooth", 520, 140, t + 0.09, 0.11, 0.06);
+    tone("sawtooth", 180, 520, t, 0.09, 0.22);
+    tone("sawtooth", 520, 140, t + 0.09, 0.11, 0.22);
+    tone("square", 260, 90, t + 0.2, 0.08, 0.18); // the needle lifting off
   });
 }
 

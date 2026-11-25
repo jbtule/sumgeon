@@ -192,16 +192,15 @@ export function speaking() {
   return pending > 0;
 }
 
-// Says a line that cuts off whatever is being said, with a sound in between (a Hero Moment's
-// record scratch). The voice is told to stop now, but an <audio> clip keeps sounding for a
-// moment after it's paused (longer on a phone than a Web Audio sound takes to start), so the
-// sound starts playAt seconds later, to land as the voice falls silent. The line starts afterS
-// seconds after that. Resolves when the line ends.
-export function cutWith(play, playAt, afterS, kind, text) {
+// Cuts off whatever is being said with a sound (a Hero Moment's record scratch, before the
+// moment starts). The voice is told to stop now, but an <audio> clip keeps sounding for a moment
+// after it's paused (longer on a phone than a Web Audio sound takes to start), so the sound
+// starts playAt seconds later, to land as the voice falls silent. Resolves afterS seconds after
+// that, when the sound is over.
+export function cutOff(play, playAt, afterS) {
   stopSpeech();
   return new Promise(function (r) { setTimeout(r, playAt * 1000); })
-    .then(function () { play(); return new Promise(function (r) { setTimeout(r, afterS * 1000); }); })
-    .then(function () { return say(kind, text, true); });
+    .then(function () { play(); return new Promise(function (r) { setTimeout(r, afterS * 1000); }); });
 }
 
 // Stops the clip or speech in progress and drops anything queued.
