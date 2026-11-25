@@ -33,7 +33,8 @@ assert.deepEqual(pileOf(dimeNickel3).map((c) => c.k).join(""), "dnppp", "counted
 // Levels open in teaching order: find the coin, each coin's worth, then counting.
 const p = pool("coins");
 assert.equal(p.length, fs.length);
-assert.deepEqual(COIN_LEVELS.map((_, i) => p.filter((f) => f.level === i).length), [36, 8, 5, 9, 29, 47]);
+assert.deepEqual(COIN_LEVELS.map((_, i) => p.filter((f) => f.level === i).length), [36, 8, 9, 29, 47]);
+assert.ok(!fs.some((f) => !f.find && f.coins.p > 1 && f.coins.p === f.coins.p + f.coins.n + f.coins.d + f.coins.q), "no piles of only pennies");
 assert.equal(openLevel("coins", {}), 0);
 assert.match(choose("coins", {}, { now: 0, rnd: () => 0.5 }), /^¢\?[qdnp]:/, "a new player finds coins");
 // Half the finding learned opens "Each coin" (strands open at 50%, not 70%).

@@ -39,8 +39,8 @@ export function coinFactOf(key) {
 export const isValue = (f) => !f.find && count(f.coins) === 1;
 
 // Every coin fact, once. Find the coin: 1 to 3 of it with one each of two other kinds. Each coin
-// by itself, heads and tails. Then 2 to 6 pennies (few, so Trollar soon moves on to real coins),
-// then nickels, dimes and quarters with smaller coins.
+// by itself, heads and tails. Then nickels, dimes and quarters with smaller coins. (No piles of
+// only pennies: there the cents are just the number of coins, so it isn't counting money.)
 export function coinFacts() {
   const out = [], add = (q, d, n, p) => out.push(coinFact({ q, d, n, p }));
   COINS.forEach((t) => {
@@ -52,7 +52,6 @@ export function coinFacts() {
     });
   });
   COINS.slice().reverse().forEach((t) => { const c = { q: 0, d: 0, n: 0, p: 0 }; c[t.k] = 1; out.push(coinFact(c), coinFact(c, true)); });
-  for (let p = 2; p <= 6; p++) add(0, 0, 0, p);
   for (let n = 1; n <= 2; n++) for (let p = 0; p <= 4; p++) if (n + p > 1) add(0, 0, n, p);
   for (let d = 1; d <= 3; d++) for (let n = 0; n <= 1; n++) for (let p = 0; p <= 4; p++) if (d + n + p > 1) add(0, d, n, p);
   for (let q = 1; q <= 2; q++) for (let d = 0; d <= 2; d++) for (let n = 0; n <= 1; n++) for (let p = 0; p <= 3; p++) if (q + d + n + p > 1) add(q, d, n, p);
@@ -63,7 +62,6 @@ export function coinFacts() {
 export const COIN_LEVELS = [
   { name: "Find the coin", has: (f) => !!f.find },
   { name: "Each coin", has: isValue },
-  { name: "Pennies", has: (f) => count(f.coins) === f.coins.p },
   { name: "Nickels and pennies", has: (f) => !f.coins.q && !f.coins.d },
   { name: "Dimes", has: (f) => !f.coins.q },
   { name: "Quarters", has: () => true }
