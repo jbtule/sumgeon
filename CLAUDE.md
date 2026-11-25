@@ -146,7 +146,7 @@ Runs happen in Wings (`js/wings.js`, DESIGN.md §4), called **strata** (one **st
   - The start screen holds only the hero, the Wings, "Enter the dungeon" and a ⚙ Settings link. Settings (as in Sound Box) holds Players (names optional, "Player 2" when blank), chalk color and sounds.
   - A right answer's digits fly at the monster: team digits as their hero, the rest as chalk numbers.
   - The captain's digit in the answer is a power hit (+50%). Each rescued hero in the answer adds 10%, up to 30%.
-  - The rescue floor holds the lowest digit not yet free (never the captain), cursed. *Lucky Number*: answers with its digit hit double. Beating it frees the hero. Once all nine are free, it's a regular floor.
+  - The rescue floor holds the lowest digit not yet free (never the captain), cursed. **Breaking the curse takes 3 wins** (`CURSE_HITS`, `crackCurse` in `heroes.js`): the first two crack it ("The curse is cracking!", "1 of 3", with gold cracks on the cursed hero, saved as `heroes.cracks[digit]`), and the third frees the hero. The rescue floor keeps the same hero until then. A captain cursed by losing starts a fresh curse. *Lucky Number*: answers with its digit hit double. Beating it frees the hero. Once all nine are free, it's a regular floor.
 - Monsters and heroes are inline SVG drawn from simple shapes (no fonts), using the `solid()` and `line()` helpers. Each helper draws a dark outline, then a color fill, then a white sheen gradient.
 
 ## Settings
