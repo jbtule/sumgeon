@@ -139,6 +139,44 @@ function playSprite(hit) {
   });
 }
 
+// A Hero Moment's quip (kind "h"), played through Web Audio with a hero's treatment: louder
+// (HERO_GAIN, then a limiter, past what an <audio> element can do: iOS caps it at full volume),
+// and a short arena echo, so it rings out over the moment's sounds. Resolves true when it
+// ends, false if it can't (the caller then uses the plain clip). ?herogain=<n> tries another
+// gain, ?heroecho=<0..1> another echo level.
+var heroQ = (typeof location !== "undefined") ? new URLSearchParams(location.search) : null;
+var HERO_GAIN = heroQ && heroQ.get("herogain") ? +heroQ.get("herogain") : 2.2;
+var HERO_ECHO = heroQ && heroQ.get("heroecho") ? +heroQ.get("heroecho") : 0.28;
+var heroBufs = {};
+function playHero(url) {
+  var c = ac();
+  if (!c) return Promise.resolve(false);
+  var my = epoch;
+  var load = heroBufs[url] || (heroBufs[url] = fetch(url).then(function (r) { if (!r.ok) throw new Error(r.status); return r.arrayBuffer(); })
+    .then(function (b) { return new Promise(function (ok, no) { c.decodeAudioData(b, ok, no); }); }));
+  return load.then(function (buf) {
+    if (my !== epoch) return true;
+    return new Promise(function (resolve) {
+      if (c.state !== "running") c.resume();
+      var src = c.createBufferSource(), gain = c.createGain(), lim = c.createDynamicsCompressor();
+      var delay = c.createDelay(1), fb = c.createGain(), wet = c.createGain(), tone = c.createBiquadFilter(), done = false;
+      src.buffer = buf;
+      gain.gain.value = HERO_GAIN;
+      lim.threshold.value = -10; lim.knee.value = 6; lim.ratio.value = 12; lim.attack.value = 0.003; lim.release.value = 0.15;
+      delay.delayTime.value = 0.13; fb.gain.value = 0.32; wet.gain.value = HERO_ECHO;
+      tone.type = "lowpass"; tone.frequency.value = 3500;
+      src.connect(gain); gain.connect(lim);
+      gain.connect(delay); delay.connect(tone); tone.connect(fb); fb.connect(delay); tone.connect(wet); wet.connect(lim);
+      lim.connect(c.destination);
+      var t = setTimeout(function () { end(); }, (buf.duration + 1.5) * 1000);
+      function end() { if (done) return; done = true; clearTimeout(t); if (source === src) { source = null; finishClip = null; } setTimeout(function () { try { lim.disconnect(); } catch (e) {} }, 900); resolve(true); }
+      src.onended = end;
+      source = src; finishClip = function () { try { src.stop(); } catch (e) {} end(); };
+      src.start();
+    });
+  }).catch(function () { delete heroBufs[url]; return false; });
+}
+
 // Resolves true when the clip ends, false if it fails (the caller then uses the device voice).
 // Safari's <audio> asks for byte ranges, which the audio host's custom domain answers.
 function playClip(url) {
@@ -176,6 +214,11 @@ export function say(kind, text, cancel, live) {
     if (!key) return speak(text, RATE[kind], PITCH[kind]);
     if (hit && hit.s.buf && ac()) return playSprite(hit).then(function (ok) {
       if (!ok && my === epoch) return playClip(clipBase + key + ".mp3");
+    });
+    if (kind === "h" && ac()) return playHero(clipBase + key + ".mp3").then(function (ok) {
+      if (!ok && my === epoch) return playClip(clipBase + key + ".mp3").then(function (ok2) {
+        if (!ok2 && my === epoch) return speak(text, RATE[kind], PITCH[kind]);
+      });
     });
     return playClip(clipBase + key + ".mp3").then(function (ok) {
       if (!ok && my === epoch) return speak(text, RATE[kind], PITCH[kind]);
