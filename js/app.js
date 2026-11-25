@@ -1190,7 +1190,7 @@ function descend(depth, mode) {
 // What's said as a run begins: "Now entering the Sumgeon!" (from the start screen), then the depth.
 function openingLines(enter, d) {
   if (enter) say("p", PHRASE.enter, false, null, ENTER_FX);
-  if (d > 1 && d <= DEPTH_MAX_SPOKEN) say("p", depthLine(d));
+  if (d > 1 && d <= DEPTH_MAX_SPOKEN) say("p", depthLine(d), false, null, ENTER_FX); // "Depth two!" echoes like the entrance
 }
 // enter: from the start screen's "Enter the dungeon", which says so first. voiced: the descent
 // already said the opening lines.
