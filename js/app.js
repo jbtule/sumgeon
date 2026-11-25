@@ -332,9 +332,10 @@ function loadMonster(i, quiet) {
   meet(seen, m, Date.now()); store.player(PID).set("bestiary", seen);
   sfx.appear(m.boss);
   if (m.boss) say("p", PHRASE.boss);
-  say("m", monsterName(m));
-  // The rescue floor says who you're freeing; a trait says what it does, the first times you meet it.
-  if (m.cursed != null) say("p", heroRescue(HEROES[m.cursed]));
+  // A cursed hero (the rescue floor) is announced with the quips' light echo (CURSED_FX), then who
+  // you're freeing; a trait says what it does, the first times you meet it.
+  say("m", monsterName(m), false, null, m.cursed != null ? CURSED_FX : undefined);
+  if (m.cursed != null) say("p", heroRescue(HEROES[m.cursed]), false, null, CURSED_FX);
   if (t && once("trait:" + t.name, 2)) say("p", traitLine(m));
 }
 // The next problem, chosen by the learning engine (learn.js): a missed fact when it's due back,
@@ -1294,6 +1295,8 @@ function flowOf(bk) { return (flows[PID + ":" + bk] ||= { fluent: 0, cool: 0, hi
 // How lines sound (speech.js say's fx): "Now entering the Sumgeon!" echoes like a cavern; the
 // captain line on picking a hero is the quip's boost without its echo.
 const ENTER_FX = { gain: 1.3, echo: 0.45, delay: 0.2 }, PICK_FX = { gain: 1.5, echo: 0 };
+// A cursed hero's arrival on the rescue floor: the quips' light echo, at normal volume.
+const CURSED_FX = { gain: 1, echo: 0.1 };
 // The share of problems that prefer an answer with the captain's digit until its first moment (learn.js choose).
 const CAPTAIN_BIAS = 0.35;
 // In the first fight (nothing beaten yet, so no Hero Moments), the share that avoid it instead,
