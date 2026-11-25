@@ -270,8 +270,8 @@ h1 b{color:var(--coral);font-weight:400}
 .strata .shaft li.done{color:var(--ink)}
 .strata .shaft li.done i{background:var(--gold);border-color:var(--gold)}
 .strata .shaft li.done::before{background:var(--gold)}
-.strata .shaft li.you{color:#fff}
-.strata .shaft li.you i{width:19px;height:19px;margin-top:-9.5px;left:2px;background:var(--coral);border-color:#fff;box-shadow:0 0 10px #ff5a4eaa}
+.strata .shaft li.here{color:#fff}
+.strata .shaft li.here i{width:19px;height:19px;margin-top:-9.5px;left:2px;background:var(--coral);border-color:#fff;box-shadow:0 0 10px #ff5a4eaa}
 .strata .shaft li em{font-style:normal;font-size:11px;padding:1px 8px;border-radius:999px;background:var(--coral);color:#fff}
 .strata .shaft li.fold{font-size:12px}
 .cardmon.small{width:96px}
