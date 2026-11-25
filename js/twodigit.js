@@ -1,5 +1,6 @@
-// Two-digit addition and subtraction within 100 (2nd grade, 2.NBT): a strand like coins, asked by
-// Haberhasher in the Tables Tower. There are thousands of such problems, so each level is a fixed
+// Two-digit addition and subtraction: 1st grade's tens (the Balance Hall: 40 + 30, 10 more, 34 + 20)
+// and 2nd grade's within 100 and 10 or 100 more within 1000 (the Crystal Mines, Haberhasher; the
+// bands pick sets with twoLevel, learn.js BANDS). There are thousands of such problems, so each level is a fixed
 // sample of them; that keeps mastery (70% of a level learned) reachable, and every problem gets
 // a recorded voice. No DOM: runs in Node for the tests.
 
