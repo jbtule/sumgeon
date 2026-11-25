@@ -1,10 +1,12 @@
 // Every line the game says is in the audio plan, and app.js only says lines from js/lines.js.
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { spokenLines, PHRASE, monsterName, monsterCleared, monsterWon, heroCursed, heroPower } from "../js/lines.js";
+import { spokenLines, PHRASE, monsterName, monsterCleared, monsterWon, heroCursed, heroPower, heroRescue, heroAlmost, heroHelps, traitLine, TRAIT_LINE, BARK } from "../js/lines.js";
 import { facts, spokenProblem, spokenFact } from "../js/problems.js";
-import { MON } from "../js/monsters.js";
+import { MON, allLooks } from "../js/monsters.js";
 import { HEROES } from "../js/heroes.js";
+import { TRAITS, traitOf } from "../js/traits.js";
+import { cursedMonster } from "../js/wings.js";
 import { planClips } from "./audio/build.mjs";
 
 const ids = new Set(spokenLines().map((l) => l.kind + ":" + l.text));
@@ -32,6 +34,19 @@ assert.equal(heroPower(HEROES[0]), "Your zeros hit harder.");
 const names = spokenLines().filter((l) => l.sprite === "names").map((l) => l.text);
 assert.ok(names.includes(heroPower(HEROES[2])) && names.includes(heroCursed(HEROES[2])));
 assert.ok(spokenLines().every((l) => l.group), "every line has a listen-check group");
+
+// Traits, rescues and barks (DESIGN.md §3, §6.6): every trait has a short line, recorded.
+for (const k of Object.keys(TRAITS)) assert.ok(TRAITS[k].name in TRAIT_LINE, `no line for ${k}'s trait`);
+for (const m of MON.concat(allLooks())) {
+  const t = traitLine(m);
+  if (m.n === "Plusquito") assert.equal(t, null);
+  else if (traitOf(m)) { assert.ok(ids.has("p:" + t), t); assert.ok(words(t) <= 12, t); }
+}
+assert.equal(traitLine(cursedMonster(8)), "Answers with an eight hit double!");
+assert.equal(traitLine(cursedMonster(4)), "Answers with a four hit double!");
+for (const h of HEROES) for (const t of [heroRescue(h), heroAlmost(h), heroHelps(h), traitLine(cursedMonster(h.d))]) { assert.ok(ids.has("p:" + t), t); assert.ok(words(t) <= 12, t); }
+assert.ok(names.includes(heroHelps(HEROES[2])) && ids.has("p:Answers with a two bring Toodini in to help!"));
+for (const t of Object.values(BARK)) { assert.ok(ids.has("p:" + t), t); assert.ok(words(t) <= 3, `a bark is short: ${t}`); }
 // Names are said the way the puns need: Twodini as "Toodini" (too-DEE-nee), Jr. as "Junior".
 assert.ok(ids.has("m:Toodini!") && ids.has("m:Trollar Junior!") && ids.has("m:Mister Moneybags!"));
 assert.ok(![...ids].some((id) => /Twodini|Jr\.|Mr\./.test(id)), "no line says Twodini, Jr. or Mr. as written");
@@ -45,10 +60,11 @@ assert.equal(new Set(plan.map((c) => c.key)).size, plan.length);
 
 // app.js says only lines from lines.js: every say() takes a PHRASE, a lines.js helper, or a problem.
 const app = readFileSync(new URL("../js/app.js", import.meta.url), "utf8");
-const HELPERS = ["heroName", "heroJoins", "heroCursed", "heroPower"].join("|");
+const HELPERS = ["heroName", "heroJoins", "heroCursed", "heroPower", "heroRescue", "heroAlmost", "heroHelps", "traitLine"].join("|");
 for (const [call] of app.matchAll(/say\([^)]*\)/g)) {
-  assert.match(call, new RegExp(String.raw`say\("(p|m|q)", (PHRASE\.\w+|monsterName\(m\)|monsterCleared\(m\)|monsterWon\(m\)|(${HELPERS})\((HEROES\[[\w.]+\]|\w+)\)|wingCleared\(\w+(\(\))?\)|wingOpened\(\w+\)|depthLine\(G\.depth\)|reversedLine\(\w+\)|spokenProblem\(G\.cur\)|spokenFact\(said\)|spokenMissing\(G\.cur\))`), `${call} says a line that isn't in js/lines.js`);
+  assert.match(call, new RegExp(String.raw`say\("(p|m|q)", (PHRASE\.\w+|BARK\.\w+|BARK\[\w+\]|monsterName\(m\)|monsterCleared\(m\)|monsterWon\(m\)|(${HELPERS})\((HEROES\[[\w.]+\]|\w+)\)|wingCleared\(\w+(\(\))?\)|wingOpened\(\w+\)|depthLine\(G\.depth\)|reversedLine\(\w+\)|spokenProblem\(G\.cur\)|spokenFact\(said\)|spokenMissing\(G\.cur\))`), `${call} says a line that isn't in js/lines.js`);
 }
 // Every PHRASE is said somewhere (PHRASE.win is older: a win says wingCleared instead).
 for (const k of Object.keys(PHRASE).filter((k) => k !== "win")) assert.ok(app.includes("PHRASE." + k), `PHRASE.${k} is recorded but never said`);
+for (const k of Object.keys(BARK)) assert.ok(app.includes(`"${k}"`) || app.includes("BARK." + k), `BARK.${k} is recorded but never said`);
 console.log(`✓ lines (${plan.length} lines)`);

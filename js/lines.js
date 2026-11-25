@@ -9,6 +9,7 @@ import { missingOf, spokenMissing } from "./missing.js";
 import { coinFacts } from "./coins.js";
 import { twoDigitFacts } from "./twodigit.js";
 import { balanceFacts } from "./balance.js";
+import { traitOf } from "./traits.js";
 
 export var PHRASE = {
   enter: "Now entering the Sumgeon!",
@@ -26,6 +27,12 @@ export var PHRASE = {
   deeper: "Go deeper for tougher monsters, or play again!",
   paused: "Paused. Tap the big button to keep fighting.",
   exitSure: "Tap again to leave the dungeon.",
+  // Events: a charged problem (Minustaur), a miss on one, the curse's cracks, a floor cleared.
+  charged: "Lightning problem!",
+  chargedMiss: "Lightning! You lost two hearts.",
+  crackTwo: "Two more to go!",
+  heart: "You found a heart!",
+  nextBoss: "Next: the boss!",
   boss: "Boss floor!",
   crits: "Critical hits!",
   oops: "Oops!",
@@ -56,6 +63,47 @@ export function heroJoins(h) { return sayAs(h.n + " joins your team!"); }
 export function heroCursed(h) { return sayAs("Oh no! " + h.n + " was cursed! Pick a new hero."); }
 // What a hero does, said after their name when picked: "Your twos hit harder."
 export function heroPower(h) { return "Your " + (h.d === 6 ? "sixes" : spoken(h.d) + "s") + " hit harder."; }
+// "a two", "an eight".
+function aDigit(d) { return (d === 8 ? "an " : "a ") + spoken(d); }
+// The rescue floor, after "Cursed Twodini!": "Beat the curse to set Twodini free!"
+export function heroRescue(h) { return sayAs("Beat the curse to set " + h.n + " free!"); }
+// The curse's second crack (heroes.js CURSE_HITS is 3): "One more, and Twodini is free!"
+export function heroAlmost(h) { return sayAs("One more, and " + h.n + " is free!"); }
+// A hero freed: what they do now. "Answers with a two bring Twodini in to help!"
+export function heroHelps(h) { return sayAs("Answers with " + aDigit(h.d) + " bring " + h.n + " in to help!"); }
+
+// What each monster trait (traits.js) means, said after the monster's name the first times you
+// meet it. Cursed digits (Lucky Number) say their digit: "Answers with a four hit double!"
+export var TRAIT_LINE = {
+  "Charge": "Watch out for lightning! A miss costs two hearts.",
+  "Armor": "Armor! Answers under ten do half damage.",
+  "Split": "Halfway down, this monster splits in two!",
+  "Mystery": "Find the missing number!",
+  "Toll": "Count the coins to pay the toll!",
+  "Tens and ones": "Big numbers! Think tens and ones.",
+  "Big Bite": "The bigger number is your hit!",
+  "Balance": "Make both sides the same!",
+  "Shapeshift": "This boss switches between compare and balance!",
+  "Stripes": "Lots of fives and tens!",
+  "Ten Smash": "Ten or more smashes for double!",
+  "Second wind": "Halfway down, this boss puts on armor!"
+};
+export function luckyLine(d) { return "Answers with " + aDigit(d) + " hit double!"; }
+// The line for monster m's trait, or null (Plusquito has none).
+export function traitLine(m) {
+  var t = traitOf(m);
+  if (!t) return null;
+  return m.cursed != null ? luckyLine(m.cursed) : TRAIT_LINE[t.name];
+}
+// One short bark when a hit does something special (app.js says at most one per hit).
+export var BARK = {
+  level: "New level!",
+  power: "Power hit!",
+  double: "Double damage!",
+  half: "Half damage!",
+  split: "Split in two!",
+  second: "Second wind!"
+};
 export function wingCleared(w) { return "You cleared " + w.name + "!"; }
 export function wingOpened(w) { return w.name + " is open!"; }
 // A spell drawn backwards (sigil.js): "Your three is facing backwards. It faces this way." The
@@ -88,7 +136,13 @@ export function spokenLines() {
     add("p", heroJoins(h), N, S);
     add("p", heroCursed(h), N, S);
     add("p", heroPower(h), N, S);
+    add("p", heroRescue(h), N, S);
+    add("p", heroAlmost(h), N, S);
+    add("p", heroHelps(h), N, S);
+    add("p", luckyLine(h.d), "Phrases");
   });
+  Object.keys(TRAIT_LINE).forEach(function (k) { add("p", TRAIT_LINE[k], "Phrases"); });
+  Object.keys(BARK).forEach(function (k) { add("p", BARK[k], "Phrases"); });
   for (var d = 2; d <= DEPTH_MAX_SPOKEN; d++) add("p", depthLine(d), "Phrases");
   REVERSIBLE.forEach(function (n) { add("p", reversedLine(n), "Phrases"); });
   WINGS.forEach(function (w, i) {

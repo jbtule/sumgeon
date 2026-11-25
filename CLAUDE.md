@@ -79,6 +79,12 @@ A math-practice dungeon crawler. The player fights anthropomorphic monsters buil
   - Losing all your hearts: "X won this round.", then "Oh no! Twodini was cursed! Pick a new hero." (`heroCursed`, per hero, in the names sprite).
   - A win: "Go deeper for tougher monsters, or play again!" (first 3 wins, not when a new stratum opens, which makes its own offer).
   - Pause: "Paused. Tap the big button to keep fighting." (first 3 times); Exit's first tap: "Tap again to leave the dungeon."
+- **What traits and events mean**, said at the moment they happen:
+  - A monster's trait (`TRAIT_LINE`, `traitLine` in `lines.js`), after its name, the first 2 times you meet that trait: "Watch out for lightning! A miss costs two hearts.", "Armor! Answers under ten do half damage.", and so on; a cursed digit says its digit ("Answers with a four hit double!").
+  - Minustaur's charged problem: "Lightning problem!"; a miss on one: "Lightning! You lost two hearts."
+  - The rescue floor: "Cursed Twodini!", then "Beat the curse to set Twodini free!" (`heroRescue`). The curse cracking: "Two more to go!", then "One more, and Twodini is free!" (`heroAlmost`). Freed: "Twodini joins your team!", then "Answers with a two bring Twodini in to help!" (`heroHelps`). Per-hero lines are in the names sprite.
+  - Barks (`BARK`): at most one per hit, for what it did: "New level!" (always), or once a floor each "Split in two!", "Second wind!", "Double damage!", "Half damage!", "Power hit!". None on a hit that skipped ahead or was a backwards spell, and only the half-HP ones on the hit that says "Critical hits!".
+  - A floor cleared: "You found a heart!" when one comes back, and "Next: the boss!" before the boss.
 
 ## Core rules
 - Damage = the correct answer. Three correct in a row turns on crits (double damage) until a miss. A hinted answer still hits but doesn't build the streak.
