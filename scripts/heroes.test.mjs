@@ -43,4 +43,11 @@ assert.equal(r.team.cracks[0], undefined, "a broken curse leaves no cracks behin
 // A hero cursed again after losing starts a fresh curse.
 assert.equal(curseCaptain({ captain: 0, color: CHALK[0], rescued: [0], cracks: { 0: 2 } }).cracks[0], undefined);
 assert.ok(heroSvg(HEROES[2], { cursed: true, cracks: 2 }).includes("#fff6c8"), "cracks show on the cursed hero");
+// With no dungeon progress (fresh), a team of just your own hero can swap to any of the ten.
+const own = { captain: 5, color: CHALK[0], rescued: [5] };
+assert.ok(!freePick(own) && freePick(own, true));
+assert.deepEqual(pickHero(own, 2, true).rescued, [2]);
+assert.equal(pickHero(own, 2, false), null);
+assert.ok(!freePick({ ...own, rescued: [5, 0] }, true), "not once someone's been rescued");
+assert.ok(!freePick({ ...own, cracks: { 0: 1 } }, true), "or a curse has started cracking");
 console.log("✓ heroes");
