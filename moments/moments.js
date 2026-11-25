@@ -9,7 +9,7 @@
 // tags, note, t }.
 import { HEROES } from "../js/heroes.js";
 import { MON, svg } from "../js/monsters.js";
-import { QUIPS, FINAL, CRIT, simulate } from "../js/moments.js";
+import { QUIPS, FINALS, CRIT, simulate } from "../js/moments.js";
 import { playMoment, PHASES } from "../js/slowmo.js";
 import { quipLine } from "../js/lines.js";
 import { say, stopSpeech } from "../js/speech.js";
@@ -34,7 +34,7 @@ $("hero").innerHTML = HEROES.map((h) => `<option value="${h.d}">${h.d} · ${esc(
 $("monster").innerHTML = MON.map((m, i) => `<option value="${i}">${esc(m.n)}${m.boss ? " (boss)" : ""}</option>`).join("");
 function quipOptions() {
   const d = +$("hero").value;
-  $("quip").innerHTML = QUIPS[d].concat([FINAL, CRIT]).map((q) => `<option>${esc(q)}</option>`).join("");
+  $("quip").innerHTML = QUIPS[d].concat(FINALS, [CRIT]).map((q) => `<option>${esc(q)}</option>`).join("");
 }
 function scene() {
   const m = MON[+$("monster").value], s = $("stratum").value, d = +$("hero").value;

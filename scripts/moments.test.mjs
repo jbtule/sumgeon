@@ -1,7 +1,7 @@
 // Hero Moments (DESIGN.md §8.4): when they happen (moments.js decide), the quip decks, and the
 // rarity simulator landing near one moment every 2–3 floors with a typical team.
 import assert from "node:assert/strict";
-import { QUIPS, FINAL, CRIT, CHANCE, BUILD, REST, PER_FLOOR, freshState, freshRun, decide, drawQuip, heroesIn, heardOf, joined, simulate, seeded } from "../js/moments.js";
+import { QUIPS, FINAL, FINALS, CRIT, CHANCE, BUILD, REST, PER_FLOOR, freshState, freshRun, decide, drawQuip, heroesIn, heardOf, joined, simulate, seeded } from "../js/moments.js";
 import { HEROES } from "../js/heroes.js";
 import { OWN_KEYS } from "../js/store.js";
 
@@ -78,7 +78,8 @@ assert.ok(decide(freshState(), freshRun(), hit({ spell: "good" }), yes), "a spel
   assert.ok(QUIPS[0].includes(debut.quip));
   assert.equal(decide(s, r, hit({ typed: "10", n: 4 }), no), null, "a debut happens once");
   const boss = decide(s, r, hit({ typed: "23", n: 5, bossFinish: true }), no);
-  assert.deepEqual([boss.hero, boss.quip, boss.why], [5, FINAL, "boss"], "no hero in the answer: the captain finishes the boss");
+  assert.deepEqual([boss.hero, boss.why], [5, "boss"], "no hero in the answer: the captain finishes the boss");
+  assert.ok(FINALS.includes(boss.quip), "a boss finish says one of the finishing lines");
   assert.equal(decide(s, r, hit({ typed: "23", n: 6, bossFinish: true, hinted: true }), no), null, "but not a hinted one");
 }
 

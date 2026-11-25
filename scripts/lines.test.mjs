@@ -9,7 +9,7 @@ import { TRAITS, traitOf } from "../js/traits.js";
 import { cursedMonster } from "../js/wings.js";
 import { planClips, keyFor } from "./audio/build.mjs";
 import { GROUPS, quipLine } from "../js/lines.js";
-import { QUIPS, FINAL, CRIT } from "../js/moments.js";
+import { QUIPS, FINAL, FINALS, CRIT } from "../js/moments.js";
 import { createHash } from "node:crypto";
 const app0 = readFileSync(new URL("../js/app.js", import.meta.url), "utf8");
 
@@ -64,6 +64,7 @@ assert.ok(ids.has("p:Here's how to write a four.") && ids.has("p:Here's how to w
 // listen-check group, with "Final answer!" and "Critical math!".
 for (const d of Object.keys(QUIPS)) for (const q of QUIPS[d]) assert.ok(ids.has("h:" + quipLine(q)), q);
 assert.ok(ids.has("h:" + FINAL) && ids.has("h:" + CRIT) && ids.has("h:Final answer!") && ids.has("h:Critical math!"));
+assert.ok(FINALS.length >= 10 && FINALS.every((q) => ids.has("h:" + quipLine(q))), "every boss-finish line is recorded");
 assert.ok(ids.has("h:Six... seven!"), "Sevenstein's quip gets its pauses");
 assert.ok(GROUPS.includes("Hero quips") && spokenLines().filter((l) => l.kind === "h").every((l) => l.group === "Hero quips"));
 for (const l of spokenLines().filter((l) => l.kind === "h")) assert.ok(words(l.text) <= 8, `a quip is quick: ${l.text}`);

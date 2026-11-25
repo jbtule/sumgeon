@@ -29,8 +29,13 @@ export const QUIPS = {
   8: ["Bon appe-eight!", "Two cubed, served hot!", "Order up: one sizzling eight!"],
   9: ["Nine lives, zero mercy!", "Three threes, one strike!", "Now you see nine…"]
 };
-// The big moments: a boss's finishing blow, and a moment on the hit that turns crits on.
-export const FINAL = "Final answer!", CRIT = "Critical math!";
+// The big moments: a boss's finishing blow, and a moment on the hit that turns crits on. Every run
+// ends with a boss, so its finishing lines are a deck of their own (key "final"), like a hero's.
+export const FINALS = ["Final answer!", "And that's the sum of it!", "Divided and conquered!", "Subtracted to zero!",
+  "Boss solved!", "Equals: victory!", "Proof complete!", "Zero hit points. Math wins!", "Game, set, math!",
+  "Problem solved!", "Check your answer: correct!", "That's the bottom line!"];
+export const FINAL = FINALS[0], CRIT = "Critical math!";
+const listOf = (d) => (d === "final" ? FINALS : QUIPS[d]);
 
 export function freshState(saved) {
   const s = saved || {};
@@ -56,9 +61,9 @@ export function heardOf(state, d) {
 // just heard).
 export function drawQuip(state, d, rnd) {
   const r = rnd || Math.random;
-  let deck = (state.decks[d] || []).filter((q) => QUIPS[d].includes(q));
+  let deck = (state.decks[d] || []).filter((q) => listOf(d).includes(q));
   if (!deck.length) {
-    deck = QUIPS[d].slice();
+    deck = listOf(d).slice();
     for (let i = deck.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [deck[i], deck[j]] = [deck[j], deck[i]]; }
     const heard = state.heard[d] || [], last = heard[heard.length - 1];
     if (deck.length > 1 && deck[0] === last) deck.push(deck.shift());
@@ -97,7 +102,7 @@ export function decide(state, run, hit, rnd) {
   }
   state.debut = state.debut.filter((d) => d !== hero);
   let quip;
-  if (why === "boss") quip = FINAL;
+  if (why === "boss") quip = drawQuip(state, "final", r);
   else if (hit.critStart && why === "chance") quip = CRIT;
   else quip = drawQuip(state, hero, r);
   state.dry = 0; state.last = hero;

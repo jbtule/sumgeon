@@ -11,7 +11,7 @@ import { coinFacts } from "./coins.js";
 import { twoDigitFacts } from "./twodigit.js";
 import { balanceFacts } from "./balance.js";
 import { traitOf } from "./traits.js";
-import { QUIPS, FINAL, CRIT } from "./moments.js";
+import { QUIPS, FINALS, CRIT } from "./moments.js";
 
 export var PHRASE = {
   enter: "Now entering the Sumgeon!",
@@ -179,7 +179,7 @@ export function spokenLines() {
   balanceFacts().forEach(function (f) { add("q", spokenProblem(f), "Balance Hall"); add("q", spokenFact(f), "Balance Hall"); });
   // Hero Moments (moments.js): every hero's quips, and the two for the big moments.
   Object.keys(QUIPS).forEach(function (d) { QUIPS[d].forEach(function (q) { add("h", quipLine(q), "Hero quips"); }); });
-  add("h", quipLine(FINAL), "Hero quips");
+  FINALS.forEach((q) => add("h", quipLine(q), "Hero quips"));
   add("h", quipLine(CRIT), "Hero quips");
   var seen = {};
   return out.filter(function (l) { var k = l.kind + ":" + l.text; if (seen[k]) return false; seen[k] = true; return true; });
