@@ -10,7 +10,7 @@ let failed = false;
 function fail(msg) { console.error("✗ " + msg); failed = true; }
 
 // Syntax of every module and script.
-for (const dir of ["js", "scripts"]) {
+for (const dir of ["js", "scripts", "listen"]) {
   for (const f of readdirSync(join(root, dir)).filter((f) => /\.m?js$/.test(f))) {
     try { execFileSync(process.execPath, ["--check", join(root, dir, f)], { stdio: "pipe" }); }
     catch (e) { fail(`${dir}/${f}: ${e.stderr}`); }
@@ -34,6 +34,11 @@ for (const s of ['href="styles.css"', 'src="js/app.js"', '<span id="buildSha">de
 // catches a key spelled straight into localStorage).
 const app = readFileSync(join(root, "js", "app.js"), "utf8");
 if (/localStorage\.(setItem|getItem)\(/.test(app.replace(/window\.localStorage;[^\n]*/, ""))) fail("app.js should save through store.js, not localStorage directly");
+
+// The listen check spells out every recorded line: search engines skip it, and the game never
+// links to it.
+if (!readFileSync(join(root, "listen", "index.html"), "utf8").includes('<meta name="robots" content="noindex, nofollow">')) fail("listen/index.html should be noindex");
+if (/listen\//.test(html) || /listen\//.test(app)) fail("the game shouldn't link to the listen check");
 
 if (failed) process.exit(1);
 console.log("✓ check passed");

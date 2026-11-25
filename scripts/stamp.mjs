@@ -23,7 +23,7 @@ const v = "?v=" + short;
 const root = fileURLToPath(new URL("..", import.meta.url));
 const out = join(root, "_site");
 // Every file the site serves. New top-level site files go here.
-const SITE = ["index.html", "LICENSE.md", "styles.css", "js"];
+const SITE = ["index.html", "LICENSE.md", "styles.css", "js", "listen"];
 // Written by scripts/audio/build.mjs in the deploy; without it the game uses the device voice.
 const OPTIONAL = ["audio.json"];
 // Attributes in index.html that load a local file, e.g. 'src="js/app.js"'.

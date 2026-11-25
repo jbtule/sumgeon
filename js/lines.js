@@ -37,45 +37,50 @@ export var DEPTH_MAX_SPOKEN = 20;
 export function depthLine(d) { return "Depth " + spoken(d) + "!"; }
 
 // [{ kind, text }], each once.
+// The groups the listen check (listen/) plays lines in.
+export var GROUPS = ["Phrases", "Monsters & heroes", "Add & subtract", "Times & divide", "Missing numbers", "Coins", "Two-digit", "Balance Hall"];
+
+// [{ kind, text, group, sprite? }], each once.
 export function spokenLines() {
   var out = [];
-  Object.keys(PHRASE).forEach(function (k) { out.push({ kind: "p", text: PHRASE[k] }); });
+  function add(kind, text, group, sprite) { var l = { kind: kind, text: text, group: group }; if (sprite) l.sprite = sprite; out.push(l); }
+  Object.keys(PHRASE).forEach(function (k) { add("p", PHRASE[k], "Phrases"); });
   // The monster and hero lines also go in one audio sprite, "names" (scripts/audio/build.mjs).
-  var S = "names";
+  var S = "names", N = "Monsters & heroes";
   MON.concat(allLooks()).forEach(function (m) {
-    out.push({ kind: "m", text: monsterName(m), sprite: S });
-    if (!m.boss) out.push({ kind: "p", text: monsterCleared(m), sprite: S }); // beating the boss is the win, said as PHRASE.win
-    out.push({ kind: "p", text: monsterWon(m), sprite: S });
+    add("m", monsterName(m), N, S);
+    if (!m.boss) add("p", monsterCleared(m), N, S); // beating the boss is the win, said as PHRASE.win
+    add("p", monsterWon(m), N, S);
   });
   HEROES.forEach(function (h) {
-    out.push({ kind: "m", text: heroName(h), sprite: S });
-    out.push({ kind: "m", text: monsterName(cursedMonster(h.d)), sprite: S });
-    out.push({ kind: "p", text: heroJoins(h), sprite: S });
+    add("m", heroName(h), N, S);
+    add("m", monsterName(cursedMonster(h.d)), N, S);
+    add("p", heroJoins(h), N, S);
   });
-  for (var d = 2; d <= DEPTH_MAX_SPOKEN; d++) out.push({ kind: "p", text: depthLine(d) });
+  for (var d = 2; d <= DEPTH_MAX_SPOKEN; d++) add("p", depthLine(d), "Phrases");
   WINGS.forEach(function (w, i) {
-    out.push({ kind: "p", text: wingCleared(w) });
-    if (i) out.push({ kind: "p", text: wingOpened(w) });
+    add("p", wingCleared(w), "Phrases");
+    if (i) add("p", wingOpened(w), "Phrases");
   });
   facts().forEach(function (f) {
-    out.push({ kind: "q", text: spokenProblem(f) });
-    out.push({ kind: "q", text: spokenFact(f) });
+    var g = f.op === "+" || f.op === "-" ? "Add & subtract" : "Times & divide";
+    add("q", spokenProblem(f), g);
+    add("q", spokenFact(f), g);
     // Missing-number problems (Quizard): "three plus what is seven", hiding either number.
-    out.push({ kind: "q", text: spokenMissing(missingOf(f, "x")) });
-    out.push({ kind: "q", text: spokenMissing(missingOf(f, "y")) });
+    add("q", spokenMissing(missingOf(f, "x")), "Missing numbers");
+    add("q", spokenMissing(missingOf(f, "y")), "Missing numbers");
   });
-  // Coins (Trollar): "two dimes and three pennies. How many cents?", and the answer; and the
-  // two-digit problems (Haberhasher): "thirty-eight plus twenty-five", and "… is sixty-three".
-  var both = [];
+  // Coins (Trollar): "two dimes and three pennies. How many cents?", and the answer.
+  coinFacts().forEach(function (f) { add("q", spokenProblem(f), "Coins"); add("q", spokenFact(f), "Coins"); });
+  // The two-digit problems (Haberhasher): "thirty-eight plus twenty-five", and "… is sixty-three".
   twoDigitFacts().forEach(function (f) {
-    both.push(f);
-    if (f.op === "+" && f.x !== f.y) both.push({ op: "+", x: f.y, y: f.x, ans: f.ans }); // either order can come up
+    var fs = [f];
+    if (f.op === "+" && f.x !== f.y) fs.push({ op: "+", x: f.y, y: f.x, ans: f.ans }); // either order can come up
+    fs.forEach(function (g) { add("q", spokenProblem(g), "Two-digit"); add("q", spokenFact(g), "Two-digit"); });
   });
   // The Balance Hall: "Compare three plus four and eight.", "three plus four is less than eight".
-  coinFacts().concat(both, balanceFacts()).forEach(function (f) {
-    out.push({ kind: "q", text: spokenProblem(f) });
-    out.push({ kind: "q", text: spokenFact(f) });
-  });
+  balanceFacts().forEach(function (f) { add("q", spokenProblem(f), "Balance Hall"); add("q", spokenFact(f), "Balance Hall"); });
   var seen = {};
   return out.filter(function (l) { var k = l.kind + ":" + l.text; if (seen[k]) return false; seen[k] = true; return true; });
 }
+
