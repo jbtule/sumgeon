@@ -508,7 +508,9 @@ function showHelp(mode) {
   clearTimeout(hintTimer);
   $("hintBtn").hidden = mode === "none";
   $("hint").hidden = true;
-  if (mode === "show") { const cur = G.cur; hintTimer = setTimeout(() => { if (G.cur === cur && !G.busy && !G.hinted) openHint(); }, NEW_HINT_MS); }
+  // Not if they've started typing (or drawing a spell): they aren't stuck, and the hint opening
+  // would move things under their fingers.
+  if (mode === "show") { const cur = G.cur; hintTimer = setTimeout(() => { if (G.cur === cur && !G.busy && !G.hinted && G.input === "" && !(typeof strokes !== "undefined" && strokes.length)) openHint(); }, NEW_HINT_MS); }
 }
 function openHint() {
   const h = hintFor(hintFact(), false), box = $("hint");

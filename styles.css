@@ -584,8 +584,15 @@ label.switch-row:focus-within{outline-offset:-3px}
   .msg{grid-area:stage;align-self:end;justify-self:center;z-index:2;min-height:0;margin-bottom:20px;padding:4px 14px;border-radius:999px;background:#0c171cb0}
   .msg:empty{display:none}
   .hint,.pad,.you{margin-inline:16px;z-index:1}
-  /* The hint first, then the problem and answer as one line: 3 + 1 = [ ]. */
-  .hint{grid-area:hint;margin-top:16px}
+  /* The hint first, then the problem and answer as one line: 3 + 1 = [ ]. The hint is taken out
+     of the layout (positioned in the room above the problem), so however tall it is, opening it
+     never moves the problem or the pad: on a short window a tall hint used to grow the game and
+     push the pad down. Its drawing shrinks to fit the room. */
+  .game{position:relative}
+  .hint{position:absolute;grid-column:2/-1;grid-row:1/3;left:16px;right:16px;bottom:0;max-height:calc(100% - 16px);margin:0;
+    grid-template-rows:minmax(0,1fr) auto;overflow:hidden}
+  .hint .model{min-height:0;display:flex;justify-content:center}
+  .hint .model svg{max-height:100%;width:auto;max-width:100%}
   .probrow{grid-area:prob;justify-self:end;z-index:1;margin-left:16px;gap:8px}
   .prob{font-size:clamp(34px,4.6vw,56px)}
   .probrow .icon-btn{order:-1}
