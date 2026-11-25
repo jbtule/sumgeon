@@ -10,7 +10,7 @@ let failed = false;
 function fail(msg) { console.error("✗ " + msg); failed = true; }
 
 // Syntax of every module and script.
-for (const dir of ["js", "scripts", "listen"]) {
+for (const dir of ["js", "scripts", "listen", "spell"]) {
   for (const f of readdirSync(join(root, dir)).filter((f) => /\.m?js$/.test(f))) {
     try { execFileSync(process.execPath, ["--check", join(root, dir, f)], { stdio: "pipe" }); }
     catch (e) { fail(`${dir}/${f}: ${e.stderr}`); }
@@ -35,13 +35,16 @@ for (const s of ['href="styles.css"', 'src="js/app.js"', '<span id="buildSha">de
 const app = readFileSync(join(root, "js", "app.js"), "utf8");
 if (/localStorage\.(setItem|getItem)\(/.test(app.replace(/window\.localStorage;[^\n]*/, ""))) fail("app.js should save through store.js, not localStorage directly");
 
-// The listen check spells out every recorded line: search engines skip it, and the game never
-// links to it.
-const listenHtml = readFileSync(join(root, "listen", "index.html"), "utf8");
-if (!listenHtml.includes('<meta name="robots" content="noindex, nofollow">')) fail("listen/index.html should be noindex");
-if (!/<script type="importmap">[\s\S]*?<\/script>/.test(listenHtml)) fail("listen/index.html has no import map");
-for (const s of ['<span id="buildSha">dev</span>', 'src="listen.js"']) if (listenHtml.split(s).length !== 2) fail(`listen/index.html should have ${s} exactly once (stamp.mjs fills it in)`);
-if (/listen\//.test(html) || /listen\//.test(app)) fail("the game shouldn't link to the listen check");
+// The grown-up pages (the listen check spells out every recorded line; the spell check tries the
+// recognizer): search engines skip them, the game never links to them, and stamp.mjs can fill in
+// their badge, script and import map.
+for (const [dir, script] of [["listen", "listen.js"], ["spell", "spell.js"]]) {
+  const page = readFileSync(join(root, dir, "index.html"), "utf8");
+  if (!page.includes('<meta name="robots" content="noindex, nofollow">')) fail(`${dir}/index.html should be noindex`);
+  if (!/<script type="importmap">[\s\S]*?<\/script>/.test(page)) fail(`${dir}/index.html has no import map`);
+  for (const s of ['<span id="buildSha">dev</span>', `src="${script}"`]) if (page.split(s).length !== 2) fail(`${dir}/index.html should have ${s} exactly once (stamp.mjs fills it in)`);
+  if (new RegExp(dir + "/").test(html) || new RegExp(dir + "/").test(app)) fail(`the game shouldn't link to ${dir}/`);
+}
 
 if (failed) process.exit(1);
 console.log("✓ check passed");

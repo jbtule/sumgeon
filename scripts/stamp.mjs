@@ -23,7 +23,7 @@ const v = "?v=" + short;
 const root = fileURLToPath(new URL("..", import.meta.url));
 const out = join(root, "_site");
 // Every file the site serves. New top-level site files go here.
-const SITE = ["index.html", "LICENSE.md", "styles.css", "js", "listen"];
+const SITE = ["index.html", "LICENSE.md", "styles.css", "js", "listen", "spell"];
 // Written by scripts/audio/build.mjs in the deploy; without it the game uses the device voice.
 const OPTIONAL = ["audio.json"];
 // Attributes in index.html that load a local file, e.g. 'src="js/app.js"'.
@@ -57,17 +57,19 @@ writeFileSync(join(out, "index.html"), html);
 // What's deployed, for the game's update check (app.js checkUpdate).
 writeFileSync(join(out, "version.json"), JSON.stringify({ sha: short }));
 
-// The listen check: the same badge, its script stamped, and an import map that stamps the
-// game's modules it reads (js/lines.js and what it imports), as the game's page does.
-let listen = readFileSync(join(root, "listen", "index.html"), "utf8");
-const lmap = { imports: {} };
-for (const f of readdirSync(join(root, "js")).filter((f) => f.endsWith(".js"))) lmap.imports[`../js/${f}`] = `../js/${f}${v}`;
-const lmapMatch = listen.match(/<script type="importmap">([\s\S]*?)<\/script>/);
-if (!lmapMatch) throw new Error("stamp: no import map in listen/index.html");
-listen = listen.replace(lmapMatch[1], "\n" + JSON.stringify(lmap, null, 2) + "\n");
-for (const [from, to] of [['<span id="buildSha">dev</span>', `<span id="buildSha">${short}</span>`], ['src="listen.js"', `src="listen.js${v}"`]]) {
-  if (listen.split(from).length !== 2) throw new Error(`stamp: expected 1 match for ${JSON.stringify(from)} in listen/index.html`);
-  listen = listen.replace(from, to);
+// The grown-up pages (the listen check and the spell check): the same badge, their script
+// stamped, and an import map that stamps the game's modules they read, as the game's page does.
+for (const [dir, script] of [["listen", "listen.js"], ["spell", "spell.js"]]) {
+  let page = readFileSync(join(root, dir, "index.html"), "utf8");
+  const pmap = { imports: {} };
+  for (const f of readdirSync(join(root, "js")).filter((f) => f.endsWith(".js"))) pmap.imports[`../js/${f}`] = `../js/${f}${v}`;
+  const m = page.match(/<script type="importmap">([\s\S]*?)<\/script>/);
+  if (!m) throw new Error(`stamp: no import map in ${dir}/index.html`);
+  page = page.replace(m[1], "\n" + JSON.stringify(pmap, null, 2) + "\n");
+  for (const [from, to] of [['<span id="buildSha">dev</span>', `<span id="buildSha">${short}</span>`], [`src="${script}"`, `src="${script}${v}"`]]) {
+    if (page.split(from).length !== 2) throw new Error(`stamp: expected 1 match for ${JSON.stringify(from)} in ${dir}/index.html`);
+    page = page.replace(from, to);
+  }
+  writeFileSync(join(out, dir, "index.html"), page);
 }
-writeFileSync(join(out, "listen", "index.html"), listen);
 console.log(`✓ _site/ stamped with ${short}`);

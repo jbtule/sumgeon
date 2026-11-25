@@ -33,6 +33,6 @@ assert.equal(new Set(plan.map((c) => c.key)).size, plan.length);
 // app.js says only lines from lines.js: every say() takes a PHRASE, a lines.js helper, or a problem.
 const app = readFileSync(new URL("../js/app.js", import.meta.url), "utf8");
 for (const [call] of app.matchAll(/say\([^)]*\)/g)) {
-  assert.match(call, /say\("(p|m|q)", (PHRASE\.\w+|monsterName\(m\)|monsterCleared\(m\)|monsterWon\(m\)|heroName\(HEROES\[[\w.]+\]\)|heroName\(\w+\)|heroJoins\(\w+\)|wingCleared\(\w+(\(\))?\)|wingOpened\(\w+\)|depthLine\(G\.depth\)|spokenProblem\(G\.cur\)|spokenFact\(said\)|spokenMissing\(G\.cur\))/, `${call} says a line that isn't in js/lines.js`);
+  assert.match(call, /say\("(p|m|q)", (PHRASE\.\w+|monsterName\(m\)|monsterCleared\(m\)|monsterWon\(m\)|heroName\(HEROES\[[\w.]+\]\)|heroName\(\w+\)|heroJoins\(\w+\)|wingCleared\(\w+(\(\))?\)|wingOpened\(\w+\)|depthLine\(G\.depth\)|reversedLine\(\w+\)|spokenProblem\(G\.cur\)|spokenFact\(said\)|spokenMissing\(G\.cur\))/, `${call} says a line that isn't in js/lines.js`);
 }
 console.log(`✓ lines (${plan.length} lines)`);

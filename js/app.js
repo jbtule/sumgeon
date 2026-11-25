@@ -2,13 +2,14 @@
 // Problems, monsters, saving, sound and speech live in their own modules.
 import { MON, svg, LOOKS, lookOf } from "./monsters.js";
 import { spokenProblem, spokenFact } from "./problems.js";
-import { BANDS, choose, factOf, record as recordAnswer, helpFor, openLevel, monsterHP, probeKey, tierOf, skipTo, SKIP_PROBES, SKIP_WINDOW, fluentTime } from "./learn.js";
+import { BANDS, choose, factOf, record as recordAnswer, helpFor, openLevel, monsterHP, probeKey, tierOf, skipTo, SKIP_PROBES, SKIP_WINDOW, fluentTime, learned } from "./learn.js";
 import { hintFor, STRATEGIES } from "./hints.js";
 import { openStore, displayName } from "./store.js";
-import { PHRASE, monsterName, monsterCleared, monsterWon, heroName, heroJoins, wingCleared, wingOpened, depthLine, DEPTH_MAX_SPOKEN } from "./lines.js";
+import { PHRASE, monsterName, monsterCleared, monsterWon, heroName, heroJoins, wingCleared, wingOpened, depthLine, DEPTH_MAX_SPOKEN, reversedLine } from "./lines.js";
 import { WINGS, wingOf, runFloors, openWings, toOpen, floorStars, wingStars, depthScale, depthHP, deepest, MAP_DEPTHS } from "./wings.js";
 import { missingOf, pickBlank, filled, spokenMissing, MISSING_SHARE } from "./missing.js";
 import { coinsSvg } from "./coins.js";
+import { read as readSigil } from "./sigil.js";
 import { traitOf, charged, prefers, hitBy, atHalf } from "./traits.js";
 import { roster, mastery, meet, beat } from "./bestiary.js";
 import { HEROES, CHALK, heroSvg, freePick, pickHero, curseCaptain, crackCurse, CURSE_HITS, resetTeam } from "./heroes.js";
@@ -219,7 +220,7 @@ function probUI() {
   else if (p.op === "¢") box.innerHTML = coinsSvg(p.coins) + " =";
   else box.textContent = p.q + " =";
   document.querySelector(".game").classList.toggle("missing", !!p.blank || !!p.sym || p.op === "=");
-  padUI(!!p.sym);
+  padUI(p.spell ? "spell" : p.sym ? "cmp" : "num");
   document.querySelector(".game").classList.toggle("cents", p.op === "¢");
 }
 // The facts a monster asks: its own strand (Trollar's coins) or the player's band.
@@ -334,9 +335,15 @@ function newProblem() {
   const rec = recs[key];
   // (Not for a strand's facts: coins can't hide a number, and two-digit ones aren't recorded that way.)
   if (!m.strand && "+-×÷".includes(G.cur.op) && (m.blank || (rec && rec.b >= 3 && Math.random() < MISSING_SHARE))) G.cur = missingOf(G.cur, pickBlank());
+  // Spell casting: about 1 problem in 6 with a single-digit answer the player already knows is
+  // drawn as a sigil instead of typed (touch screens; ?spells for every one, for testing).
+  const digit = !G.cur.sym && Number.isInteger(G.cur.ans) && G.cur.ans >= 0 && G.cur.ans <= 9;
+  G.cur.spell = canSpell() && !probe && digit && (SPELLS_ALWAYS || (learned(rec) && Math.random() < SPELL_SHARE));
+  G.spellFails = 0;
   G.recent = [key].concat(G.recent).slice(0, 3);
   G.input = ""; G.busy = false; G.hinted = false; G.t0 = performance.now();
   probUI();
+  if (G.cur.spell) { setMsg("Cast a spell! Draw the answer.", "good"); say("p", PHRASE.spell); }
   ansUI();
   if ($("msg").classList.contains("bad")) setMsg("Your answer is your attack.");
   showHelp(helpFor(recs[key]));
@@ -450,8 +457,10 @@ function openWorked() {
 $("hintBtn").onclick = () => { if (!G.busy) openHint(); };
 
 // Saves the answer to the fact's record; says so when it opens a new level.
-// Returns what to say about it: a skip ahead, a new level, or nothing.
+// Returns what to say about it: a skip ahead, a new level, or nothing. A drawn answer (a spell)
+// is writing practice: it changes no record, timing, placement, skipping or the "all fast" star.
 function learnFrom(ok) {
+  if (G.cur.spell) return null;
   const bk = strandOf(G.floors[G.floor]), b = BANDS[bk], key = G.cur.key, ms = performance.now() - G.t0;
   // Fluent: right, unhinted and quick, with a second more for each extra digit to tap.
   const limit = fluentTime(b.fluentMs, G.cur.sym || G.cur.ans);
@@ -488,7 +497,8 @@ function submit() {
     const typed = G.cur.sym ? String(G.cur.ans) : G.input, crit = G.streak >= 3, bonus = heroBonus(typed), m = G.floors[G.floor];
     // The monster's trait: Lucky Number, Ten Smash, Armor (traits.js).
     const trait = hitBy(m, G.cur.ans, typed, G.halved);
-    const dmg = Math.max(1, Math.round(G.cur.ans * (crit ? 2 : 1) * trait.mult * bonus.mult));
+    // A spell drawn backwards fizzles at half damage.
+    const dmg = Math.max(1, Math.round(G.cur.ans * (crit ? 2 : 1) * trait.mult * bonus.mult * (G.cur.reversed ? 0.5 : 1)));
     const level = learnFrom(true);
     G.input = ""; ansUI();
     $("hint").hidden = true; $("hintBtn").hidden = true;
@@ -500,7 +510,7 @@ function submit() {
       pop((bonus.power ? "Power! " : crit ? "Crit! " : "") + "−" + dmg, crit || bonus.power);
       restartAnim($("mon"), "hit");
       if (crit) restartAnim($("arena"), "shake");
-      setMsg(level ? level : trait.note ? `${trait.note}: ${dmg}!` : bonus.power ? `${HEROES[team.captain].n} power hit for ${dmg}!` : crit ? `Critical hit for ${dmg}!` : `Hit for ${dmg}!`, "good");
+      setMsg(G.cur.reversed ? `Your ${G.cur.ans} is facing backwards. It faces this way → Half damage: ${dmg}` : level ? level : trait.note ? `${trait.note}: ${dmg}!` : bonus.power ? `${HEROES[team.captain].n} power hit for ${dmg}!` : crit ? `Critical hit for ${dmg}!` : `Hit for ${dmg}!`, "good");
       hpUI(); streakUI();
       // Half HP: Divvy splits in two, Sigma Rex armors up (traits.js).
       const half = !G.halved && G.hp > 0 && G.hp <= G.max / 2 ? atHalf(m) : null;
@@ -1036,6 +1046,11 @@ document.addEventListener("touchmove", (e) => { if (e.touches.length > 1) e.prev
 function press(k) {
   if (G.next && k === "go") return nextAfterMiss();
   if (G.busy) return;
+  if (G.cur && G.cur.spell) {
+    if (k === "go") return castSpell();
+    if (k === "clear" || k === "del") { sfx.tick(); sigilReset(); }
+    return; // digits wait for the number pad
+  }
   if (k === "go") return submit();
   const cmp = !!(G.cur && G.cur.sym), sym = "<=>".includes(k);
   if (k !== "del" && sym !== cmp) return; // digits for numbers, < = > for comparisons
@@ -1045,17 +1060,103 @@ function press(k) {
   else if (G.input.length < 4) G.input = (G.input === "0" ? "" : G.input) + k;
   ansUI();
 }
+/* ---------- spell casting ----------
+   Now and then the answer is drawn instead of typed (newProblem): the number pad becomes a
+   glowing drawing pad in the same space, and sigil.js reads the drawing.
+   - Read clearly and right: it hits. A clear read is saved as one of the player's own templates
+     (3 per digit), so it learns their handwriting.
+   - Right but backwards: half damage, the digit shown the right way round, and "Your 3 is facing
+     backwards." Each player's reversals are counted per digit (spells.reversed).
+   - Read clearly as another digit: a wrong answer, as on the pad.
+   - Can't read it: "Incantation failed!", no heart lost, try again; after two, the number pad.
+   Spells are only on touch screens (any-pointer: coarse): drawing with a mouse isn't writing. */
+const SPELL_SHARE = 1 / 6, SPELLS_ALWAYS = new URLSearchParams(location.search).has("spells");
+const canSpell = () => SPELLS_ALWAYS || matchMedia("(any-pointer: coarse)").matches;
+const spellsOf = () => Object.assign({ templates: {}, reversed: {}, cast: 0 }, store.player(PID).get("spells", {}));
+let strokes = [], drawing = null;
+function sigilSetup() {
+  const c = $("sigil");
+  sigilReset();
+  c.onpointerdown = (e) => { if (G.busy) return; e.preventDefault(); c.setPointerCapture(e.pointerId); drawing = [sigilPoint(e)]; strokes.push(drawing); paintSigil(); };
+  c.onpointermove = (e) => { if (!drawing) return; drawing.push(sigilPoint(e)); paintSigil(); };
+  c.onpointerup = c.onpointercancel = () => { drawing = null; };
+}
+function sigilPoint(e) { const r = $("sigil").getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; }
+function sigilReset() { strokes = []; drawing = null; paintSigil(); }
+// The strokes, glowing gold; extra draws more on top (the right way round, after a reversal).
+function paintSigil(extra) {
+  const c = $("sigil");
+  if (!c) return;
+  const r = c.getBoundingClientRect(), dpr = devicePixelRatio || 1;
+  if (c.width !== Math.round(r.width * dpr) || c.height !== Math.round(r.height * dpr)) { c.width = Math.round(r.width * dpr); c.height = Math.round(r.height * dpr); }
+  const g = c.getContext("2d");
+  g.setTransform(dpr, 0, 0, dpr, 0, 0);
+  g.clearRect(0, 0, r.width, r.height);
+  g.lineCap = g.lineJoin = "round"; g.lineWidth = 8; g.strokeStyle = "#fff1b8"; g.shadowColor = "#ffc93c"; g.shadowBlur = 16;
+  for (const s of strokes) {
+    g.beginPath();
+    s.forEach(([x, y], i) => (i ? g.lineTo(x, y) : g.moveTo(x, y)));
+    if (s.length === 1) g.lineTo(s[0][0] + 0.5, s[0][1]);
+    g.stroke();
+  }
+  if (extra) extra(g, r);
+}
+// After a reversal: the digit the right way round, glowing, with an arrow.
+function showRightWay(d) {
+  paintSigil((g, r) => {
+    g.shadowColor = "#7fdc8a"; g.shadowBlur = 20; g.fillStyle = "#e8ffe9";
+    g.font = `400 ${Math.round(r.height * 0.72)}px Bungee, sans-serif`; g.textAlign = "center"; g.textBaseline = "middle";
+    g.fillText(String(d), r.width * 0.72, r.height * 0.55);
+    g.font = `400 ${Math.round(r.height * 0.3)}px Bungee, sans-serif`; g.fillText("→", r.width * 0.9, r.height * 0.55);
+  });
+}
+function castSpell() {
+  if (G.busy || !strokes.length) return;
+  const sp = spellsOf(), mine = Object.entries(sp.templates).flatMap(([d, list]) => list.map((points) => ({ digit: Number(d), points })));
+  const r = readSigil(strokes, mine);
+  if (!r || !r.clear) {
+    G.spellFails++;
+    sfx.crack();
+    say("p", PHRASE.spellFail, true);
+    if (G.spellFails >= 2) { G.cur.spell = false; padUI("num"); setMsg("Incantation failed! Use the number pad.", "bad"); }
+    else { setMsg("Incantation failed! Try again.", "bad"); sigilReset(); }
+    return;
+  }
+  const d = r.digit;
+  if (d === G.cur.ans) {
+    sp.cast++;
+    if (r.reversed) {
+      G.cur.reversed = true;
+      sp.reversed[d] = (sp.reversed[d] || 0) + 1;
+      showRightWay(d);
+      say("p", reversedLine(d));
+    } else if (r.fit >= 0.5) {
+      // Their handwriting: keep their last 3 clear reads of each digit.
+      sp.templates[d] = (sp.templates[d] || []).concat([r.points.map((p) => ({ x: +p.x.toFixed(3), y: +p.y.toFixed(3), id: p.id }))]).slice(-3);
+    }
+    store.player(PID).set("spells", sp);
+  }
+  G.input = String(d); ansUI();
+  submit();
+}
+
 // The number pad, or for a comparison (Chompers) the < = > keys, filling the same space.
 const KEY_LABEL = { del: ["⌫", "Delete"], go: ["Hit!", "Attack"], "<": ["<", "Less than"], "=": ["=", "Equal to"], ">": [">", "Greater than"] };
-function padUI(cmp) {
-  const pad = $("pad"), mode = cmp ? "cmp" : "num";
-  if (pad.dataset.mode === mode) return;
-  pad.dataset.mode = mode; pad.classList.toggle("cmp", cmp);
+// mode: "num", "cmp" or "spell" (the drawing pad).
+function padUI(mode) {
+  const pad = $("pad"), cmp = mode === "cmp";
+  if (pad.dataset.mode === mode) { if (mode === "spell") sigilReset(); return; }
+  pad.dataset.mode = mode; pad.classList.toggle("cmp", cmp); pad.classList.toggle("spell", mode === "spell");
+  if (mode === "spell") {
+    pad.innerHTML = `<canvas id="sigil" class="sigil" aria-label="Draw the answer here"></canvas><button type="button" data-k="clear" class="del" aria-label="Clear the drawing">Clear</button><button type="button" data-k="go" class="go" aria-label="Cast the spell">Cast!</button>`;
+    sigilSetup();
+    return;
+  }
   const keys = cmp ? ["<", "=", ">", "del", "go"] : ["1", "2", "3", "4", "5", "6", "7", "8", "9", "del", "0", "go"];
   pad.innerHTML = keys.map((k) => { const [t, a] = KEY_LABEL[k] || [k, k];
     return `<button type="button" data-k="${k}" class="${k === "go" ? "go" : k === "del" ? "del" : "<=>".includes(k) ? "sym" : ""}" aria-label="${a}">${t}</button>`; }).join("");
 }
-padUI(false);
+padUI("num");
 $("pad").addEventListener("click", (e) => { const b = e.target.closest("button"); if (b) press(b.dataset.k); });
 document.addEventListener("keydown", (e) => {
   if (e.key === "Escape") { if (G.paused) { if ($("resume")) resume(); } else if ($("ov").hidden) pause(); return; }
