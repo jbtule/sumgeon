@@ -199,8 +199,9 @@ export function simulate(opts) {
         const hinted = r() < o.hinted;
         if (!hinted) streak++;
         const crit = streak >= 3, typed = String(ans), ds = [...typed].map(Number);
-        const helpers = Math.min(3, ds.filter((d) => d !== o.team.captain && o.team.rescued.includes(d)).length);
-        const dmg = Math.max(1, Math.round(ans * (crit ? 2 : 1) * (1 + helpers * 0.1) * (ds.includes(o.team.captain) ? 1.5 : 1)));
+        // The captain's power hit; rescued heroes add their bonus only in a moment (app.js), which
+        // is rare enough to leave out here.
+        const dmg = Math.max(1, Math.round(ans * (crit ? 2 : 1) * (ds.includes(o.team.captain) ? 1.5 : 1)));
         const mo = decide(state, run, { typed, team: o.team, hinted, spell: null, first: false, floor: i, n, bossFinish: !!m.boss && hp - dmg <= 0, critStart: streak === 3 && !hinted }, r);
         hp -= dmg;
         if (mo) {

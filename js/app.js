@@ -439,13 +439,18 @@ function fly(text, crit) {
   })));
 }
 
-// Hero bonuses: each rescued hero summoned adds 10% (up to 30%); the captain's digit in the
-// answer is a power hit, +50%. The captain counts for the power hit, not the 10%.
+// The captain's digit in the answer is a power hit, +50% (rescued heroes: momentBoost, below).
 function heroBonus(typed) {
-  const digits = [...typed].map(Number);
-  const helpers = Math.min(3, digits.filter((d) => d !== team.captain && team.rescued.includes(d)).length);
-  const power = hasCaptain() && digits.includes(team.captain);
-  return { mult: (1 + helpers * 0.1) * (power ? 1.5 : 1), power, helpers };
+  const power = hasCaptain() && [...typed].map(Number).includes(team.captain);
+  return { mult: power ? 1.5 : 1, power };
+}
+// Rescued heroes hit harder only in a Hero Moment (settled 2026-11-25; they used to add 10% to
+// every answer with their digit, which nobody noticed): +25% for each rescued hero in the moment
+// (a team-up can have two). The captain's power hit is separate and unchanged.
+const MOMENT_BOOST = 0.25;
+function momentBoost(mo) {
+  if (!mo) return 0;
+  return [mo.hero, mo.partner].filter((d) => d != null && d !== team.captain && team.rescued.includes(d)).length;
 }
 /* ---------- Hero Moments (DESIGN.md §8.4) ----------
    Now and then a hero in a right answer gets a slow-motion close-up and a quip before it strikes
@@ -567,7 +572,7 @@ function submit() {
     // The monster's trait: Lucky Number, Ten Smash, Armor (traits.js).
     const trait = hitBy(m, G.cur.ans, typed, G.halved);
     // A spell drawn backwards fizzles at half damage.
-    const dmg = Math.max(1, Math.round(G.cur.ans * (crit ? 2 : 1) * trait.mult * bonus.mult * (G.cur.reversed ? 0.5 : 1)));
+    let dmg = Math.max(1, Math.round(G.cur.ans * (crit ? 2 : 1) * trait.mult * bonus.mult * (G.cur.reversed ? 0.5 : 1)));
     const level = learnFrom(true);
     G.input = ""; ansUI();
     $("hint").hidden = true; $("hintBtn").hidden = true;
@@ -575,16 +580,18 @@ function submit() {
     const critsNow = G.streak === 3 && !G.hinted;
     if (critsNow) say("p", PHRASE.crits);
     // Now and then a Hero Moment: a slow-motion close-up and a quip before the hit (moments.js).
-    // The damage is the same.
-    const mo = momentFor(typed, critsNow, !!m.boss && G.hp - dmg <= 0);
+    // A rescued hero in it adds MOMENT_BOOST (momentBoost).
+    const mo = momentFor(typed, critsNow, !!m.boss && G.hp - dmg <= 0), boost = momentBoost(mo);
+    if (boost) dmg = Math.round(dmg * (1 + MOMENT_BOOST * boost));
+    const momentName = mo ? HEROES[mo.hero].n + (mo.partner != null ? " & " + HEROES[mo.partner].n : "") : "";
     (mo ? heroMoment(mo, typed, crit) : fly(typed, crit)).then(() => {
       if (!mo) sfx.impact(crit); // a moment lands with its own, bigger impact and shake
       burst(crit);
       G.hp -= dmg;
-      pop((bonus.power ? "Power! " : crit ? "Crit! " : "") + "−" + dmg, crit || bonus.power);
+      pop((boost ? "Hero! " : bonus.power ? "Power! " : crit ? "Crit! " : "") + "−" + dmg, crit || bonus.power || !!boost);
       restartAnim($("mon"), "hit");
       if (crit && !mo) restartAnim($("arena"), "shake");
-      setMsg(G.cur.reversed ? `Your ${G.cur.ans} is facing backwards. It faces this way → Half damage: ${dmg}` : G.cur.howTo ? `Here's how to write it. Hit for ${dmg}!` : level ? level : trait.note ? `${trait.note}: ${dmg}!` : bonus.power ? `${HEROES[team.captain].n} power hit for ${dmg}!` : crit ? `Critical hit for ${dmg}!` : `Hit for ${dmg}!`, "good");
+      setMsg(G.cur.reversed ? `Your ${G.cur.ans} is facing backwards. It faces this way → Half damage: ${dmg}` : G.cur.howTo ? `Here's how to write it. Hit for ${dmg}!` : level ? level : trait.note ? `${trait.note}: ${dmg}!` : boost ? `${momentName} hero hit for ${dmg}!` : bonus.power ? `${HEROES[team.captain].n} power hit for ${dmg}!` : crit ? `Critical hit for ${dmg}!` : `Hit for ${dmg}!`, "good");
       hpUI(); streakUI();
       // Half HP: Divvy splits in two, Sigma Rex armors up (traits.js).
       const half = !G.halved && G.hp > 0 && G.hp <= G.max / 2 ? atHalf(m) : null;
