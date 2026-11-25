@@ -11,7 +11,7 @@ const mon = (n) => MON.find((m) => m.n === n);
 // "pool" (any pool monster). The boss is always last.
 export const WINGS = [
   { id: "cellar", name: "The Counting Cellar", band: "sprout",
-    pool: ["Plusquito", "Minustaur", "Quizard"], floors: ["Plusquito", "Minustaur", "rescue", "Quizard", "pool"], boss: "Make-Ten Golem" },
+    pool: ["Plusquito", "Minustaur", "Quizard", "Trollar"], floors: ["Plusquito", "Minustaur", "rescue", "Quizard", "Trollar"], boss: "Make-Ten Golem" },
   { id: "tower", name: "The Tables Tower", band: "apprentice",
     pool: ["Timesaur", "Divvy", "Starbot"], floors: ["Timesaur", "Divvy", "rescue", "Starbot", "pool", "pool"], boss: "Sigma Rex" }
 ];
