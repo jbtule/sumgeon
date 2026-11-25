@@ -115,6 +115,11 @@ h1 b{color:var(--coral);font-weight:400}
 
 /* The monster hits back on a miss, and a heart breaks off */
 .mon.lunge{animation:lunge .45s ease-in-out}
+/* A boss's roar (roarSoon in app.js): it rears up and shakes, and the room flickers darker. */
+.mon.roar{animation:roar 1.2s ease-in-out}
+@keyframes roar{15%{transform:translateY(-10px) scale(1.12)}25%{transform:translateY(-10px) scale(1.12) rotate(-3deg)}35%{transform:translateY(-10px) scale(1.12) rotate(3deg)}45%{transform:translateY(-10px) scale(1.12) rotate(-3deg)}55%{transform:translateY(-8px) scale(1.1) rotate(2deg)}75%{transform:none}}
+.game:has(.arena.rumble)::before,.arena.rumble{animation:rumble 1.2s ease-in-out}
+@keyframes rumble{10%,50%{filter:brightness(.55)}20%{transform:translate(-3px,1px)}30%{transform:translate(3px,-1px)}40%{transform:translate(-2px,1px)}70%{filter:none;transform:none}}
 @keyframes lunge{35%{transform:translateY(26px) scale(1.14)}55%{transform:translateY(22px) scale(1.12) rotate(-3deg)}}
 .hearts .crack{display:inline-block;animation:crack .7s ease-in forwards}
 @keyframes crack{0%{transform:none}15%{transform:rotate(-14deg) scale(1.2)}30%{transform:rotate(10deg) scale(1.1);opacity:1}100%{transform:translateY(40px) rotate(40deg) scale(.6);opacity:0}}

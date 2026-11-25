@@ -120,6 +120,23 @@ export function appear(boss) {
   });
 }
 
+// A boss's roar, every so often during the fight: a low, wobbling growl over a rumble, with a
+// little snarl on top. Spooky, not frightening.
+export function roar() {
+  play(function (t) {
+    var o = ctx.createOscillator(), g = ctx.createGain(), f = ctx.createBiquadFilter(), lfo = ctx.createOscillator(), depth = ctx.createGain();
+    o.type = "sawtooth";
+    o.frequency.setValueAtTime(95, t); o.frequency.linearRampToValueAtTime(70, t + 0.35); o.frequency.exponentialRampToValueAtTime(48, t + 1.1);
+    lfo.frequency.value = 11; depth.gain.value = 0.45; lfo.connect(depth).connect(g.gain); // the growl's wobble
+    f.type = "lowpass"; f.frequency.setValueAtTime(900, t); f.frequency.exponentialRampToValueAtTime(260, t + 1.1);
+    g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(0.5, t + 0.12); g.gain.exponentialRampToValueAtTime(0.0001, t + 1.2);
+    o.connect(f).connect(g).connect(out);
+    o.start(t); lfo.start(t); o.stop(t + 1.25); lfo.stop(t + 1.25);
+    noise(t, 0.9, 0.22, "lowpass", 220);
+    noise(t + 0.05, 0.35, 0.1, "bandpass", 1400);
+  });
+}
+
 // A floor cleared: a rising mallet jingle.
 export function cleared() {
   play(function (t) { [72, 76, 79, 84].forEach(function (m, i) { mallet(m, t + i * 0.09, 0.3, 0.35); }); });
