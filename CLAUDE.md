@@ -14,6 +14,7 @@ A math-practice dungeon crawler. The player fights anthropomorphic monsters buil
   - `sfx.js`: Web Audio sound effects
   - `sigil.js`: reading a drawn digit for spells (a $P point-cloud recognizer and its templates)
   - `speech.js`: `say(kind, text)`
+  - `drawings.js` and `zip.js`: the spell check's recorded drawings and the zip they're shared in
   The modules other than `app.js`, `sfx.js` and `speech.js` have no DOM and run in Node.
 - Modules need http, so run it with any static server: `python3 -m http.server 8791`, then open http://localhost:8791. Opening `index.html` as a file won't work.
 - After editing, run `npm run check` (no install needed): it syntax-checks every module, runs `scripts/*.test.mjs`, checks the import map and stamped attributes, and checks saving goes through `store.js`. CI runs it too.
@@ -177,7 +178,14 @@ Runs happen in Wings (`js/wings.js`, DESIGN.md §4), called **strata** (one **st
     - Not clear: "Incantation failed!", no heart lost, try again. After two, the number pad comes back.
   - **Kept out of learning:** a spell changes no fact record, timing, placement, skipping or the "all fast" star.
   - **Saved** per player as `spells`: `{ templates, reversed: { digit: count }, cast }`.
-  - **The spell check** (`spell/`, at `/sumgeon/spell/`): a grown-up page, built like the listen check. Draw any digit and see the read, its fit and margin, and whether it's reversed, with or without a player's learned handwriting. It also shows each player's backwards counts by digit. `scripts/sigil.test.mjs` tests every template, its mirror, messy copies and a scribble.
+  - **The spell check** (`spell/`, at `/sumgeon/spell/`): a grown-up page, built like the listen check, in two modes.
+    - **Try it:** draw any digit and see the read, its fit and margin, and whether it's reversed, with or without a player's learned handwriting. It also shows each player's backwards counts by digit.
+    - **Record** (`#record`): collects real kids' handwriting to test the reader on. Pick who's drawing (the device's players, or "Someone else"), and it asks for 0 to 9 in order, one very big digit at a time, with big Redo, Skip and Next (saves it) buttons and a small "3 of 10". It says nothing and never shows the read, so a wrong guess can't put a kid off. After 9 it offers another round.
+    - **A recording** (`js/drawings.js` has the format): the digit asked, the strokes as `{ x, y, t }` (CSS px; `t` in ms since the drawing's first touch), the canvas size, device pixel ratio, pointer type, user agent, who, when, and what the reader made of it then (`read.builtin`, and `read.player` with the player's learned handwriting).
+    - **Kept** in localStorage under `sumgeon:drawings` (a page-level key, like the listen check's), with how far each drawer got, until a grown-up deletes them (a second tap confirms), so a kid can stop and carry on.
+    - **Share as a zip** builds a stored (uncompressed) zip in the page (`js/zip.js`, with CRC-32; `scripts/zip.test.mjs`): `drawings.json`, a PNG of each drawing (`3-maya-1.png`, white on dark) and `README.txt`. It's built synchronously inside the tap, so `navigator.share({ files })` still counts as the user's (iOS Safari's share sheet: AirDrop, Messages, Mail, Save to Files); where files can't be shared, it downloads instead. Afterwards it offers to delete the recordings, never on its own.
+    - **To fixtures:** `node scripts/drawings-to-fixtures.mjs <zip or drawings.json>` adds them to `scripts/sigil-fixtures.json` (`{ format, fixtures: [{ id, digit, who, width, height, strokes: [[[x, y], …], …], read }] }`), once each by id, with each name replaced by a hashed label (`kid-…`) so names stay out of the repo.
+    - `scripts/sigil.test.mjs` tests every template, its mirror, messy copies and a scribble.
 - **Boss roars** (`roarSoon` in `app.js`, `roar` in `sfx.js`): every 9–15 s of a boss fight, while you're working on a problem (never during an attack, a card, a hint or the pause), the boss growls (a low, wobbling saw tone over a rumble) and rears up and shakes while the room flickers darker. With reduced motion it only growls.
 - **Monster traits** (`js/traits.js`, DESIGN.md §3): one rule each, shown as a badge on the nameplate and explained in the message as the monster arrives. Plusquito has none (the tutorial monster).
   - Minustaur, ⚡ Charge: every 4th problem on the floor is charged (⚡ by the problem); a miss on it costs 2 hearts.
