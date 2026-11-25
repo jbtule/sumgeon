@@ -62,6 +62,7 @@ A math-practice dungeon crawler. The player fights anthropomorphic monsters buil
     - **Report** copies the flagged lines or opens a GitHub issue with them.
     - It reads the site's `audio.json`, or the live one when run locally.
     - It's `noindex` and nothing in the game links to it; the check enforces both.
+    - It has the game's GitHub badge with the deployed commit, which `stamp.mjs` fills in (and stamps `listen.js`).
     - Keys: space plays or pauses, F flags, R replays, ← goes back.
   - `scripts/audio/listen-test.sh` renders the whole-vs-stitched comparison, for any future method change picked by ear.
 - The game speaks: "Now entering the Sumgeon!" when you tap Enter the dungeon, monster names on arrival, "Critical hits!" at 3 in a row, the right answer after a miss ("seven plus eight is fifteen"), floor clears, and the problem's 🔊 button. (`PHRASE.intro` is still recorded but no longer played.)
