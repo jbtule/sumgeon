@@ -1173,6 +1173,8 @@ function nextWingHint() {
 // drop down through the strata to the depth, then start the run, exactly as without it. The
 // opening lines start on the tap (speech has to start in a tap on iOS), so start() doesn't say
 // them again. The start card falls away as it begins.
+// How long the room shows empty after the descent before the first monster arrives.
+const AFTER_DESCENT_MS = 1300;
 function descend(depth, mode) {
   if (descending()) return;
   const d = depth || deepest(wing(), progress), enter = mode === "enter";
@@ -1182,7 +1184,7 @@ function descend(depth, mode) {
   ov.classList.add("leaving");
   const fell = setTimeout(() => { ov.classList.remove("leaving"); hide(); }, reduced() ? 0 : 450);
   playDescent({ wing: wing(), depth: d, mode, reduced: reduced(), title: enter ? PHRASE.enter : `Depth ${d}`, sub: enter ? `${wing().name} · Depth ${d}` : wing().name },
-    () => { clearTimeout(fell); ov.classList.remove("leaving"); start(d, enter, true); });
+    () => { clearTimeout(fell); ov.classList.remove("leaving"); start(d, enter, true, reduced() ? 300 : AFTER_DESCENT_MS); });
 }
 // What's said as a run begins: "Now entering the Sumgeon!" (from the start screen), then the depth.
 function openingLines(enter, d) {
@@ -1191,17 +1193,25 @@ function openingLines(enter, d) {
 }
 // enter: from the start screen's "Enter the dungeon", which says so first. voiced: the descent
 // already said the opening lines.
-function start(depth, enter, voiced) {
+// pause (ms): after the descent, the room shows empty for a moment before the first monster
+// arrives (AFTER_DESCENT_MS), so the landing and the monster don't run together.
+function start(depth, enter, voiced, pause) {
   G.onMenu = false;
   hide();
   newRun(depth);
   Object.assign(G, { hearts: band().hearts, streak: 0, solved: 0, tries: 0, running: true, retry: [], recent: [], next: false, paused: null, runStars: 0 });
   MR = freshRun();
   if (!voiced) { stopSpeech(); openingLines(enter, G.depth); }
-  loadMonster(0);
-  // The player's first fight: how to attack, before the first problem is read (until they answer).
-  if (once("hit")) say("p", PHRASE.hitHow, false, () => !G.tries && G.running);
-  newProblem();
+  const go = () => {
+    if (!G.running) return;
+    loadMonster(0);
+    // The player's first fight: how to attack, before the first problem is read (until they answer).
+    if (once("hit")) say("p", PHRASE.hitHow, false, () => !G.tries && G.running);
+    newProblem();
+  };
+  if (!pause) return go();
+  G.busy = true; $("mon").innerHTML = ""; $("prob").innerHTML = "";
+  setTimeout(go, pause);
 }
 
 /* ---------- update checking ----------
