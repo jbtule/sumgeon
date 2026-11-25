@@ -352,6 +352,49 @@ Hitting a monster should feel good. Today there is a shake and a damage pop. The
 - Haptics: `navigator.vibrate(15)` on hits and `(40)` on misses where supported, and respect a settings toggle.
 - `prefers-reduced-motion` keeps working: no shake, projectiles replaced by fades, no particles.
 
+### 8.4 Hero Moments (plan, 2026-11-25)
+Now and then, a hero in your answer gets a slow-motion close-up and a quip before it strikes. It's a surprise, so it has to stay rare and never repeat itself.
+
+**When it happens.** Only on a right, unhinted answer that contains the digit of a hero on your team (the captain or a rescued hero), and never in a player's first fight.
+- **A chance that builds:** about 8% on each qualifying hit, plus 4% for each qualifying hit without one, and back to 8% after a moment. It never feels due, but never goes long without one. Target: roughly one moment every 2–3 floors, to be tuned by play.
+- **A rest after each:** none in the next 6 problems, and at most 2 per floor.
+- **A different hero next time,** when the answer has more than one hero's digit.
+- **Always on two occasions:** a rescued hero's first answer after joining the team (their debut), and the blow that finishes a boss.
+- **Damage is unchanged.** It's a show, not a balance lever.
+
+**The animation** (about 2 s, like a video editor's jog shuttle):
+1. **Wind-down:** the hit starts at normal speed, then time drags to a quarter speed, and the room dims a little.
+2. **Close-up:** the hero swells toward the camera, with a slight zoom and blur at the edges.
+3. **Freeze:** a beat, with the quip in a speech bubble.
+4. **Snap:** time snaps back at double speed, and the hero whips into the monster with their own move (Zeroic fist-first, Nine-ja vanishing and striking from behind; see §6.6), then a screen shake and the damage number.
+
+With reduced motion: no zoom or speed ramp, just the hero, the quip and the hit.
+
+**Sound** (synthesized in `sfx.js`, like the boss roars):
+- a tape slowdown: a sweep that drops in pitch through a closing filter;
+- a slow double heartbeat under the freeze;
+- a reverse-cymbal swell into the snap;
+- a whip-whoosh, then a bigger impact.
+
+**The voice.** Quips are a new kind of line, said in a second Kokoro voice, **`af_bella`**, as Sound Box does for its quips. A different voice means a quip is never taken for an instruction. They're recorded by CI, with their own group on the listen check.
+
+**Quips.** Math-obsessed and in each hero's character, played from a shuffled deck per hero so none repeats until all have been heard:
+- **Zeroic (0):** "Zeroic, so heroic!" · "Zero to hero!" · "Times zero? You're done!" · "Nothing can stop me. Literally nothing!"
+- **Onesie (1):** "One and done!" · "Times one? Still me!" · "I'm number one. Literally!"
+- **Twodini (2):** "Abraca-double!" · "Now you see two, now you don't!" · "Twice the trick!"
+- **Threasure Hunter (3):** "X marks the three!" · "Third time's the charm!" · "Treasure comes in threes!"
+- **Sir Fourtress (4):** "Four-ward, charge!" · "Two squared, never cornered!" · "Four sides, all defended!"
+- **High Five (5):** "Up top!" · "Count by fives, fight by fives!" · "Halfway to ten, all the way to victory!"
+- **Sixlock Holmes (6):** "Elementary, my dear divisor!" · "One plus two plus three. A perfect six!" · "I've deduced your weak factor!"
+- **Sevenstein (7):** "It's alive! And it's prime!" · "Lucky seven stomp!" · "Six, seven!"
+- **Chef Eight (8):** "Bon appe-eight!" · "Two cubed, served hot!" · "Order up: one sizzling eight!"
+- **Nine-ja (9):** "Nine lives, zero mercy!" · "Three threes, one strike!" · "Now you see nine…"
+- **For the big moments:** "Final answer!" on a boss's finishing blow, and "Critical math!" during a crit streak.
+
+Respellings for the voice go in `SAY_AS` as usual (Twodini is "Toodini"; check "Bon appe-eight", "Nine-ja" and "Sixlock" on the listen check).
+
+**Collecting.** The Heroes half of Monsters & Heroes shows each hero's quips heard ("Quips: 3 of 5"), a small reason to try different captains.
+
 ---
 
 ## 9. Grown-ups' corner (parents and teachers)
@@ -432,7 +475,7 @@ Each milestone should be playable and shippable on its own. Revised 2026-11-25 f
    - the Fraction Forge;
    - the Parenthesis Pyramid (Shoutandcomma with *Unwrap*);
    - Pirate Cavern (π Pirate).
-7. **M7 — Replay.** Achievements with spoken cards, the 🏆 sheet and share cards (§14), between-floor item choices, Endless Descent (the Endless Specter), Daily Dungeon, and captain cosmetics.
+7. **M7 — Replay.** Hero Moments, the slow-motion hero close-ups with quips in a second voice (§8.4; small enough to build any time). Achievements with spoken cards, the 🏆 sheet and share cards (§14), between-floor item choices, Endless Descent (the Endless Specter), Daily Dungeon, and captain cosmetics.
 8. **M8 — Grown-ups' corner and offline.** Progress heat-maps, custom practice, export, offline play with saved voice clips (the manifest and Home Screen icon are done), and device linking and sync (§15.2–15.4).
 
 ---
