@@ -59,9 +59,9 @@ assert.ok(ids.has("p:Sevenstein comes unbolted. Six... seven! Gone."));
 assert.ok(ids.has("p:Here's how to write a four.") && ids.has("p:Here's how to write an eight.") && ids.has("p:Here's how to write a zero."));
 
 // Hero Moments' quips (moments.js): every one recorded as kind "h" in the quip voice, in its own
-// listen-check group, with "Final answer!" and "Critical math!".
+// listen-check group, with "That's your final answer!" and "Critical math!".
 for (const d of Object.keys(QUIPS)) for (const q of QUIPS[d]) assert.ok(ids.has("h:" + quipLine(q)), q);
-assert.ok(ids.has("h:" + FINAL) && ids.has("h:" + CRIT) && ids.has("h:Final answer!") && ids.has("h:Critical math!"));
+assert.ok(ids.has("h:" + FINAL) && ids.has("h:" + CRIT) && ids.has("h:That's your final answer!") && ids.has("h:Critical math!"));
 assert.ok(FINALS.length >= 10 && FINALS.every((q) => ids.has("h:" + quipLine(q))), "every boss-finish line is recorded");
 assert.ok(ids.has("h:Six... seven!"), "Sevenstein's quip gets its pauses");
 // Team-ups: every general line and every number's line, recorded as kind "h" (so in af_bella),

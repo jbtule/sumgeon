@@ -393,7 +393,7 @@ With reduced motion: no zoom or speed ramp, just the hero, the quip and the hit.
 - **Sevenstein (7):** "It's alive! And it's prime!" · "Lucky seven stomp!" · "Six, seven!"
 - **Chef Eight (8):** "Bon appe-eight!" · "Two cubed, served hot!" · "Order up: one sizzling eight!"
 - **Nine-ja (9):** "Nine lives, zero mercy!" · "Three threes, one strike!" · "Now you see nine…"
-- **For the big moments:** "Final answer!" on a boss's finishing blow, and "Critical math!" on a moment that lands on the hit that turns crits on.
+- **For the big moments:** "That's your final answer!" on a boss's finishing blow, and "Critical math!" on a moment that lands on the hit that turns crits on.
 
 Respellings for the voice go in `SAY_AS` as usual (Twodini is "Toodini"; check "Bon appe-eight", "Nine-ja" and "Sixlock" on the listen check).
 

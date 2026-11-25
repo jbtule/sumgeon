@@ -34,7 +34,7 @@ export const QUIPS = {
 };
 // The big moments: a boss's finishing blow, and a moment on the hit that turns crits on. Every run
 // ends with a boss, so its finishing lines are a deck of their own (key "final"), like a hero's.
-export const FINALS = ["Final answer!", "And that's the sum of it!", "Divided and conquered!", "Subtracted to zero!",
+export const FINALS = ["That's your final answer!", "And that's the sum of it!", "Divided and conquered!", "Subtracted to zero!",
   "Boss solved!", "Equals: victory!", "Proof complete!", "Zero hit points. Math wins!", "Game, set, math!",
   "Problem solved!", "Check your answer: correct!", "That's the bottom line!"];
 export const FINAL = FINALS[0], CRIT = "Critical math!";
