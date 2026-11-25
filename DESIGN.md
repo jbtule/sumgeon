@@ -194,7 +194,7 @@ The prototype rule, HP = mean answer × `hits`, still holds. Compute it from the
 Each floor awards up to 3 stars:
 - ★ cleared it
 - ★ no hearts lost on this floor
-- ★ max streak ≥ 5 (or average answer under the fluency threshold)
+- ★ all fast: every answer right, quick and without a hint (changed 2026-11-25 from a streak of 5, which short floors couldn't reach)
 
 Stars unlock cosmetics, so they give replay goals without grinding. Wings unlock through mastery (§4).
 

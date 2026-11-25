@@ -18,6 +18,7 @@ export var PHRASE = {
   crits: "Critical hits!",
   oops: "Oops!",
   crack: "The curse is cracking!",
+  skip: "You already know these. Skipping ahead!",
   win: "You cleared the Sumgeon!"
 };
 // Names spelled the way the voice should say them. The screen keeps the real spelling.
