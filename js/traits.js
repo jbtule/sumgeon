@@ -7,7 +7,7 @@ export const TRAITS = {
   "Timesaur": { icon: "🛡️", name: "Armor", text: "Hits under 10 do half damage" },
   "Divvy": { icon: "✂️", name: "Split", text: "Splits in two at half HP" },
   "Starbot": { icon: "⭐", name: "Stripes", text: "Loves the ×5 and ×10 tables" },
-  "Make-Ten Golem": { icon: "🧱", name: "Crack", text: "Answers of 10 or more hit double" },
+  "Make-Ten Golem": { icon: "🔟", name: "Ten Smash", text: "Answers of 10 or more smash it for double" },
   "Sigma Rex": { icon: "👑", name: "Second wind", text: "Armors up at half HP" }
 };
 
@@ -30,7 +30,7 @@ export function prefers(m) {
 // Returns { mult, note } where note says why, for the message under the monster.
 export function hitBy(m, ans, typed, low) {
   if (m.cursed != null && String(typed).includes(String(m.cursed))) return { mult: 2, note: `Lucky ${m.cursed}! Double damage` };
-  if (m.n === "Make-Ten Golem" && ans >= 10) return { mult: 2, note: "Crack! Double damage" };
+  if (m.n === "Make-Ten Golem" && ans >= 10) return { mult: 2, note: "Ten Smash! Double damage" };
   if (m.n === "Timesaur" && ans < 10) return { mult: 0.5, note: "Armor! Half damage" };
   if (m.n === "Sigma Rex" && low && ans < 10) return { mult: 0.5, note: "Armor! Half damage" };
   return { mult: 1, note: "" };

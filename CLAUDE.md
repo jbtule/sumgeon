@@ -99,7 +99,7 @@ Runs happen in Wings (`js/wings.js`, DESIGN.md §4). Each Wing asks one band's f
   - Timesaur, 🛡️ Armor: hits under 10 do half damage.
   - Divvy, ✂️ Split: at half HP its art splits into two smaller Divvies.
   - Starbot, ⭐ Stripes: asks ×5 and ×10 facts 70% of the time (`like` in `choose`).
-  - Make-Ten Golem, 🧱 Crack: answers of 10 or more hit double.
+  - Make-Ten Golem, 🔟 Ten Smash: answers of 10 or more hit double.
   - Sigma Rex, 👑 Second wind: at half HP it armors up like Timesaur.
   - Cursed digits, 🍀 Lucky Number: answers with their digit hit double.
 - **Digit heroes** (`js/heroes.js`, DESIGN.md §6.6): Zeroic (0), Onesie, Twodini, Threasure Hunter, Sir Fourtress, High Five, Sixlock Holmes, Sevenstein, Chef Eight, Nine-ja (9).

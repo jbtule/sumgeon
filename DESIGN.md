@@ -65,7 +65,7 @@ Each monster gets one simple trait that changes *how* you do math, never anythin
 - **Timesaur**: 🛡️ *Armor*. Hits under 10 do half damage, so bigger products matter.
 - **Divvy**: ✂️ *Split*. At half HP it splits into two half-size Divvies.
 - **Starbot**: ⭐ *Stripes*. It asks the ×5 and ×10 tables more often.
-- **Make-Ten Golem**: 🧱 *Crack*. Answers of 10 or more hit double.
+- **Make-Ten Golem**: 🔟 *Ten Smash*. Answers of 10 or more hit double.
 - **Sigma Rex**: 👑 *Second wind*. At half HP it armors up like Timesaur.
 - **Cursed digits** (Sevenstein, Octoloop and the other eight; §6.6): 🍀 *Lucky Number*. Answers containing its digit deal double damage.
 

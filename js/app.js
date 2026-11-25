@@ -323,7 +323,7 @@ function submit() {
     if (!G.hinted) G.streak++;
     G.floorStreak = Math.max(G.floorStreak, G.streak);
     const typed = G.input, crit = G.streak >= 3, bonus = heroBonus(typed), m = G.floors[G.floor];
-    // The monster's trait: Lucky Number, Crack, Armor (traits.js).
+    // The monster's trait: Lucky Number, Ten Smash, Armor (traits.js).
     const trait = hitBy(m, G.cur.ans, typed, G.halved);
     const dmg = Math.max(1, Math.round(G.cur.ans * (crit ? 2 : 1) * trait.mult * bonus.mult));
     const level = learnFrom(true);
