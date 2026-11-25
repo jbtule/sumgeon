@@ -11,7 +11,7 @@ import { missingOf, pickBlank, filled, spokenMissing, MISSING_SHARE } from "./mi
 import { coinsSvg } from "./coins.js";
 import { traitOf, charged, prefers, hitBy, atHalf } from "./traits.js";
 import { roster, mastery, meet, beat } from "./bestiary.js";
-import { HEROES, CHALK, heroSvg, freePick, pickHero, curseCaptain } from "./heroes.js";
+import { HEROES, CHALK, heroSvg, freePick, pickHero, curseCaptain, crackCurse, CURSE_HITS } from "./heroes.js";
 import * as sfx from "./sfx.js";
 import { say, stopSpeech, setVoice } from "./speech.js";
 
@@ -103,7 +103,8 @@ const band = () => BANDS[st.band] || BANDS.sprout;
 const wingFor = (b) => WINGS.find((w) => w.band === b) || WINGS[0];
 const wing = () => wingFor(st.band);
 // A floor's art: a cursed digit is its hero, darkened (DESIGN.md §6.6).
-const monsterArt = (m, cls) => (m.cursed != null ? heroSvg(HEROES[m.cursed], { cursed: true, cls }) : svg(m, cls));
+const cracksOf = (d) => (team.cracks || {})[d] || 0;
+const monsterArt = (m, cls) => (m.cursed != null ? heroSvg(HEROES[m.cursed], { cursed: true, cls, cracks: cracksOf(m.cursed) }) : svg(m, cls));
 function loadPlayer() {
   PID = store.active();
   st = store.settings(PID);
@@ -514,10 +515,21 @@ function cleared() {
   const nx = G.floors[G.floor + 1];
   const next = `<div class="cardmon">${monsterArt(nx)}</div>
   <p>Next down the stairs: <strong>${nx.n}</strong>${nx.boss ? ", the boss" : ""}.${healed ? " You found a heart (+1)." : ""}</p>`;
-  if (m.cursed != null) {
-    // A rescue: the curse breaks and the hero joins the team.
+  if (m.cursed != null && !crackCurse(team, m.cursed).freed) {
+    // The curse cracks (heroes.js crackCurse): it takes CURSE_HITS wins to break.
+    const h = HEROES[m.cursed], r = crackCurse(team, m.cursed);
+    Object.assign(team, r.team); saveTeam();
+    say("p", PHRASE.crack);
+    show(`<h2>The curse is cracking!</h2>
+    <div class="cardmon rescued">${heroSvg(h, { cursed: true, cracks: r.cracks })}</div>
+    <p><strong>${r.cracks} of ${CURSE_HITS}</strong> cracks in the curse on ${h.n}. Beat it ${CURSE_HITS - r.cracks === 1 ? "once more" : `${CURSE_HITS - r.cracks} more times`} to set ${h.n} free.</p>
+    ${stars}
+    ${next.replace('class="cardmon"', 'class="cardmon small"')}
+    <div class="btns"><button class="big" id="next">Floor ${G.floor + 2}</button></div>`, "float");
+  } else if (m.cursed != null) {
+    // A rescue: the last crack breaks the curse and the hero joins the team.
     const h = HEROES[m.cursed];
-    if (!team.rescued.includes(h.d)) { team.rescued.push(h.d); saveTeam(); }
+    Object.assign(team, crackCurse(team, m.cursed).team); saveTeam();
     say("p", heroJoins(h));
     show(`<h2>${h.n} is free!</h2>
     <div class="cardmon rescued">${heroSvg(h)}</div>
@@ -760,7 +772,7 @@ function bookPage() {
   const heroes = HEROES.map((h) => onTeam(h.d)
     ? `<section class="hero-card${h.d === team.captain ? " captain-card" : ""}">${heroSvg(h, { color: h.d === team.captain ? team.color : null })}
         <b>${esc(h.n)}</b><small>${esc(h.cls)}</small><small>${esc(h.move)}</small>${h.d === team.captain ? '<small class="cap-tag">Your hero</small>' : ""}</section>`
-    : `<section class="hero-card unmet">${heroSvg(h, { cursed: true })}<b>???</b><small>Still cursed</small></section>`).join("");
+    : `<section class="hero-card unmet">${heroSvg(h, { cursed: true, cracks: cracksOf(h.d) })}<b>???</b><small>${cracksOf(h.d) ? `Curse cracked ${cracksOf(h.d)} of ${CURSE_HITS}` : "Still cursed"}</small></section>`).join("");
   const freed = HEROES.filter((h) => onTeam(h.d)).length, met = roster().filter((x) => seen[x.m.n]).length;
   show(`<div class="cardhead"><h2>Monsters &amp; Heroes</h2></div>
   <h3 class="book-title">Monsters <small>${met} of ${roster().length} met</small></h3>

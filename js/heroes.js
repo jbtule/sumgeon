@@ -90,6 +90,12 @@ export function heroSvg(h, opts) {
   if (o.cursed) {
     body = `<g filter="url(#curse${h.d})">${body}</g>`
       + `<path d="M60 20 l14 22 l-8 10 l16 24 M150 60 l-12 20 l10 12 l-14 26" stroke="#c38bff" stroke-width="3" fill="none" stroke-linecap="round" opacity=".9"/>`;
+    // The curse cracking (o.cracks of CURSE_HITS): gold light breaking through, one crack each.
+    const CRACKS = ["M100 10 l-10 30 l14 14 l-12 34 l10 20 l-8 30", "M40 110 l26 6 l10 -12 l26 10 l14 -8 l30 6 l20 -10"];
+    for (let i = 0; i < Math.min(o.cracks || 0, CRACKS.length); i++) {
+      body += `<path d="${CRACKS[i]}" stroke="#ffc93c" stroke-width="7" fill="none" stroke-linecap="round" stroke-linejoin="round" opacity=".35"/>`
+        + `<path d="${CRACKS[i]}" stroke="#fff6c8" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`;
+    }
   }
   const curse = o.cursed ? `<filter id="curse${h.d}"><feColorMatrix type="matrix" values=".25 .2 .2 0 .08  .1 .15 .1 0 0  .35 .25 .4 0 .14  0 0 0 1 0"/></filter>` : "";
   return `<svg viewBox="-10 -24 220 234" class="${cls}" role="img" aria-label="${o.cursed ? "Cursed " : ""}${h.n}">${defs}<defs>${curse}</defs>${body}</svg>`;
@@ -107,9 +113,22 @@ export function pickHero(team, d) {
   if (!team.rescued.includes(d)) return null;
   return Object.assign({}, team, { captain: d });
 }
+// Breaking a curse takes CURSE_HITS wins over the cursed hero: each one cracks it (saved as
+// team.cracks[digit]), and the last frees them. Returns { team, cracks, freed }.
+export const CURSE_HITS = 3;
+export function crackCurse(team, d) {
+  const cracks = ((team.cracks || {})[d] || 0) + 1, freed = cracks >= CURSE_HITS;
+  const left = Object.assign({}, team.cracks || {});
+  if (freed) delete left[d]; else left[d] = cracks;
+  const rescued = freed && !team.rescued.includes(d) ? team.rescued.concat([d]) : team.rescued;
+  return { team: Object.assign({}, team, { cracks: left, rescued }), cracks, freed };
+}
+
 // Losing all your hearts curses the hero who led the run: it leaves the team (to be rescued again
 // on a rescue floor) and someone else has to be picked to lead.
 export function curseCaptain(team) {
   if (team.captain == null) return team;
-  return Object.assign({}, team, { captain: null, rescued: team.rescued.filter((d) => d !== team.captain) });
+  const cracks = Object.assign({}, team.cracks || {});
+  delete cracks[team.captain]; // a fresh curse
+  return Object.assign({}, team, { captain: null, rescued: team.rescued.filter((d) => d !== team.captain), cracks });
 }
