@@ -6,8 +6,14 @@
 // kept on this device (localStorage "sumgeon:drawings", as the listen check keeps its marks)
 // until a grown-up shares them as a zip: real handwriting to test the reader on (js/drawings.js
 // has the format, scripts/drawings-to-fixtures.mjs turns a zip into test fixtures). The page
-// says nothing, and shows no read while recording, so a kid isn't put off by a wrong guess.
-import { read, CLEAR } from "../js/sigil.js";
+// says nothing, and shows no read while recording, so a kid isn't put off by a wrong guess. The
+// digit to copy is drawn in plain school-style handwriting (js/handwriting.js), not the Bungee
+// font, whose quirks kids copy (its 1 has a long flag and a base; its 4 is a squared U).
+//
+// Expecting (Try it): pick the answer, and see what the game would do with the drawing
+// (judge in js/sigil.js): hit, hit and show how to write it, backwards, wrong, or try again.
+import { read, judge, CLEAR, ACCEPT } from "../js/sigil.js";
+import { handwritingPath } from "../js/handwriting.js";
 import { openStore, displayName } from "../js/store.js";
 import { zip } from "../js/zip.js";
 import { STORE, SOMEONE, summary, pngNames, zipName, drawingsJSON, README } from "../js/drawings.js";
@@ -66,19 +72,38 @@ function makePad(c, onStroke) {
 const tryPad = makePad($("pad"), show);
 $("clear").onclick = () => { tryPad.clear(); $("result").innerHTML = `<div class="verdict">Draw a digit</div>`; };
 $("player").onchange = () => { if (tryPad.strokes.length) show(); };
+$("expect").innerHTML = `<option value="">None</option>` + Array.from({ length: 10 }, (_, d) => `<option value="${d}">${d}</option>`).join("");
+$("expect").onchange = () => { if (tryPad.strokes.length) show(); };
+// A digit in school-style handwriting, as inline SVG.
+const handSVG = (d, cls) => `<svg class="${cls}" viewBox="-12 -8 124 116" role="img" aria-label="${d}"><path d="${handwritingPath(d)}"/></svg>`;
+// What the game would do, knowing the answer.
+const OUTCOME = {
+  hit: ["ok", "Hit, and learned as their handwriting"],
+  show: ["ok", "Hit, and show how to write it"],
+  backwards: ["bad", "Backwards: half damage"],
+  wrong: ["bad", "Wrong answer: a heart lost"],
+  retry: ["bad", "Try again (the spell fails, no cost)"]
+};
 
 // The read, after each stroke.
 function show() {
-  const r = read(plain(tryPad.strokes), personal($("player").value));
+  const strokes = plain(tryPad.strokes), mine = personal($("player").value), r = read(strokes, mine);
   if (!r) return;
   const pct = (x) => Math.round(x * 100) + "%";
+  const ans = $("expect").value === "" ? null : Number($("expect").value);
+  const j = ans === null ? null : judge(r, ans, mine.length ? read(strokes) : r);
+  const game = j ? `<div class="verdict ${OUTCOME[j.outcome][0]}">Expecting ${ans}: ${OUTCOME[j.outcome][1]}</div>
+    ${j.outcome === "show" ? `<div class="howto">${handSVG(ans, "hand mini")}<span>Here's how to write it</span></div>` : ""}
+    <div class="row">Fit for ${ans} <b>${pct(j.fit)}</b></div>` : "";
   $("result").innerHTML = `
     <div class="big${r.reversed ? " rev" : ""}">${r.digit}</div>
-    <div class="verdict ${r.clear ? "ok" : "bad"}">${r.clear ? (r.reversed ? `A ${r.digit}, backwards` : `A ${r.digit}`) : "Not clear: the spell would fail"}</div>
+    <div class="verdict ${r.clear ? "ok" : "bad"}">${r.clear ? (r.reversed ? `A ${r.digit}, backwards` : `A ${r.digit}`) : j ? "Not clear" : "Not clear: the spell would fail"}</div>
+    ${game}
     <div class="row">Fit <b>${pct(r.fit)}</b></div><div class="row">Ahead of the next digit by <b>${pct(r.margin)}</b></div>
     <div class="row">Matched <b>${esc(r.name)}</b></div>
     <div class="alts">Next best: ${r.others.map((o) => `${o.digit} (${pct(o.fit)})`).join(", ")}</div>
-    <div class="alts">Clear means fit ≥ ${pct(CLEAR.fit)} and ahead by ≥ ${pct(CLEAR.margin)} (${pct(CLEAR.reversed)} when backwards).</div>`;
+    <div class="alts">Clear means fit ≥ ${pct(CLEAR.fit)} and ahead by ≥ ${pct(CLEAR.margin)} (${pct(CLEAR.reversed)} when backwards).</div>
+    <div class="alts">Expecting a digit: only a clear read of another digit is wrong. A hit needs the digit best (or its fit within ${pct(ACCEPT.gap)} of the best) and fit ≥ ${pct(ACCEPT.floor)}; it's learned when fit ≥ ${pct(ACCEPT.good)} and near clear (ahead by ≥ ${pct(ACCEPT.near)}), and otherwise shows how to write it.</div>`;
 }
 
 /* ---------- backwards counts ---------- */
@@ -129,7 +154,7 @@ function advance() { progress().i++; persist(); recPad.clear(); recUI(); }
 function recUI() {
   const p = progress(), done = p.i >= 10;
   $("stage").hidden = done; $("done").hidden = !done;
-  $("askDigit").textContent = done ? "" : p.i;
+  $("askDigit").innerHTML = done ? "" : handSVG(p.i, "hand");
   $("count").textContent = done ? "" : `${p.i + 1} of 10${p.round > 1 ? ` · round ${p.round}` : ""}`;
   $("next").disabled = !recPad.strokes.length;
   const n = saved.recordings.length;

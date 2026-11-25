@@ -7,8 +7,8 @@
 // Templates are drawn here in a 100 × 100 box (y down), several per digit for how kids and
 // grown-ups write them, each also slanted and stretched (VARIANTS), plus mirrored copies that
 // mean "reversed". They're checked against real drawings in scripts/sigil-fixtures.json. Each
-// player's clearly read drawings are added as personal templates (app.js), so it learns their
-// handwriting.
+// player's drawings that are a good match for the answer (judge, below) are added as personal
+// templates (app.js), so it learns their handwriting; a poor match is shown how to write it.
 
 const N = 32; // points per cloud
 
@@ -41,6 +41,9 @@ const SHAPES = [
   // A z on top (across, then back to the left), then a belly that sweeps down to the left.
   [3, "z top", [join(line([22, 8], [72, 4], [30, 30], [52, 34], [64, 48], [62, 64], [50, 80], [36, 92], [22, 98]))]],
   [3, "z top, long tail", [line([20, 6], [70, 2], [28, 26], [52, 30], [66, 42], [66, 58], [58, 78], [50, 98])]],
+  // A kindergartner's 3 (drawer-2): a round top, a middle point that comes all the way back to
+  // the left edge, and a squarish belly.
+  [3, "deep middle", [line([2, 4], [22, 1], [42, 6], [58, 16], [64, 30], [58, 44], [42, 48], [6, 48], [30, 54], [56, 64], [68, 76], [68, 90], [60, 99], [36, 97])]],
   [4, "open", [line([28, 5], [24, 58], [82, 58]), line([66, 14], [66, 95])]],
   [4, "closed", [line([64, 5], [18, 62], [86, 62]), line([64, 5], [64, 95])]],
   // A high crossbar and a long stem below it, the way many people write 4 (it read as a 9:
@@ -57,6 +60,9 @@ const SHAPES = [
   [6, "curl", [join(line([68, 6], [50, 14], [36, 30], [29, 50]), arc(50, 72, 22, 21, 180, 540, 24))]],
   // A tall stem that curves into a loop at the bottom.
   [6, "tall stem", [line([30, 2], [18, 12], [14, 34], [16, 56], [22, 74], [36, 62], [52, 60], [64, 68], [62, 86], [50, 98], [34, 98], [22, 88], [20, 76])]],
+  // From the top right, over and down the left into one big lemon-shaped loop that fills the
+  // digit, closing at the middle on the left.
+  [6, "lemon loop", [line([58, 10], [46, 2], [32, 1], [18, 8], [7, 22], [2, 42], [3, 66], [12, 85], [26, 97], [42, 100], [54, 94], [57, 78], [52, 62], [40, 51], [24, 46], [4, 43])]],
   [7, "plain", [line([20, 8], [80, 8], [40, 95])]],
   // The bar slanted up to the right, then a long diagonal.
   [7, "slanted bar", [line([6, 26], [50, 10], [94, 4], [66, 40], [52, 66], [42, 94])]],
@@ -66,13 +72,17 @@ const SHAPES = [
   // One stroke from the top right: down across the middle, around the bottom, back up through
   // the middle and around a flat top loop.
   [8, "from the top right", [line([78, 2], [60, 16], [46, 30], [36, 46], [56, 50], [70, 60], [74, 76], [66, 92], [48, 100], [30, 96], [24, 80], [28, 62], [34, 48], [18, 46], [4, 42], [10, 32], [28, 26], [48, 20], [56, 18])]],
+  // Slanted, with a thin top loop leaning right and a small round bottom loop, in one stroke.
+  [8, "slanted, thin top", [line([46, 2], [26, 6], [11, 18], [4, 38], [6, 57], [17, 68], [32, 76], [42, 88], [34, 99], [16, 100], [4, 92], [2, 77], [12, 62], [24, 46], [36, 28], [46, 12], [40, 1])]],
   [9, "straight", [join(arc(48, 30, 24, 22, 0, 360, 20), line([72, 30], [70, 95]))]],
   // A small head and a long tail: the 9 that a high-bar 4 would otherwise take.
   [9, "small head", [join(arc(48, 20, 20, 17, 0, 360, 20), line([68, 20], [68, 97]))]],
   // A pointed head, then a slanted stem that starts above it.
   [9, "pointed head", [line([42, 6], [22, 12], [6, 22], [2, 32], [16, 36], [30, 30], [40, 18], [44, 8]), line([48, 0], [40, 34], [26, 100])]],
   [9, "pointed head, upright", [line([50, 6], [30, 10], [14, 20], [10, 32], [24, 36], [38, 30], [48, 18], [52, 8]), line([54, 0], [52, 34], [50, 100])]],
-  [9, "curly", [join(arc(48, 30, 24, 22, 0, 360, 20), line([72, 30], [72, 70], [62, 90], [45, 95], [30, 88]))]]
+  [9, "curly", [join(arc(48, 30, 24, 22, 0, 360, 20), line([72, 30], [72, 70], [62, 90], [45, 95], [30, 88]))]],
+  // Like a "g": a big tilted head down to the left, then a stem with a hook back to the left.
+  [9, "like a g", [line([54, 6], [34, 2], [16, 10], [6, 24], [8, 40], [22, 46], [40, 40], [52, 24], [56, 6], [58, 30], [58, 66], [56, 84], [46, 96], [30, 100], [14, 94], [6, 82])]]
 ];
 // Digits whose mirror image is a different shape: the mirror means it's written backwards.
 const CAN_REVERSE = new Set([1, 2, 3, 4, 5, 6, 7, 9]);
@@ -176,7 +186,8 @@ function shortlist(c, all) {
 }
 
 // Reads strokes as a digit. personal: [{ digit, points }] learned from this player.
-// Returns { digit, reversed, fit, margin, clear, name, others: [{ digit, fit }], points } or
+// Returns { digit, reversed, fit, margin, clear, name, others: [{ digit, fit }], forward:
+// { [digit]: fit }, points } or
 // null for nothing drawn. fit runs 0–1 (1 is a perfect match); margin is how much better the
 // best digit is than the next digit.
 export function read(strokes, personal) {
@@ -198,6 +209,40 @@ export function read(strokes, personal) {
     digit, reversed, name, fit: fit(top.d), margin,
     clear: fit(top.d) >= CLEAR.fit && margin >= (reversed ? CLEAR.reversed : CLEAR.margin),
     others: byDigit.slice(1, 4).map((s) => ({ digit: s.t.digit, fit: fit(s.d) })),
+    // Each digit's best fit facing the right way (a digit missing had no close template).
+    forward: Object.fromEntries([...scored].reverse().filter((s) => !s.t.reversed).map((s) => [s.t.digit, fit(s.d)])),
     points: c
   };
+}
+
+/* ---------- reading a spell, knowing the answer ---------- */
+// The game knows the answer, so a drawing only has to look like it, not be sure it's nothing
+// else. A wrong answer costs a heart, so only a clear read of another digit is wrong. Outcomes:
+// - "wrong": read clearly as another digit (checked first, so nothing clear is ever overruled).
+// - "backwards": read clearly as the answer, facing the wrong way (half damage, as before).
+// - "hit": a good match: the best digit is the answer, facing the right way, with fit ≥
+//   ACCEPT.good and clear, or close to it (margin ≥ ACCEPT.near). learn: kept as one of the
+//   player's templates, unless the built-in templates alone (builtin: that read, or r when the
+//   player has none) read it clearly as another digit, so a lucky read can't teach a wrong shape.
+// - "show": a poor match: the math was right, so it hits for full damage, but the game shows
+//   how to write the digit and doesn't learn it, so a kid isn't taught to keep an odd shape (a
+//   squared-U 4). The answer is the best digit, or its own best fit (facing the right way) is
+//   within ACCEPT.gap of the best digit's, and at least ACCEPT.floor.
+// - "retry": anything else ("Incantation failed!", no cost).
+// The numbers come from the real drawings (scripts/sigil-fixtures.json): every one fits its own
+// digit at 0.6 or better but a kindergartner's squared-U 4 (0.27), so good starts at 0.5 and the
+// floor sits just under 0.27. A scribble fits its best digit at 0.3 or more, so the floor alone
+// doesn't stop nonsense; the gap does: 0.05 of fit is about a third of the clear margin.
+export const ACCEPT = { floor: 0.25, gap: 0.05, good: 0.5, near: 0.05 };
+export function judge(r, answer, builtin) {
+  if (!r) return { outcome: "retry", learn: false, fit: 0 };
+  if (r.clear && r.digit !== answer) return { outcome: "wrong", learn: false, fit: r.fit };
+  if (r.clear && r.digit === answer && r.reversed) return { outcome: "backwards", learn: false, fit: r.fit };
+  const own = r.forward[answer] || 0, best = r.digit === answer && !r.reversed;
+  if (best && own >= ACCEPT.good && (r.clear || r.margin >= ACCEPT.near)) {
+    const b = builtin || r;
+    return { outcome: "hit", fit: own, learn: !(b.clear && b.digit !== answer) };
+  }
+  if (own >= ACCEPT.floor && (r.digit === answer || own >= r.fit - ACCEPT.gap)) return { outcome: "show", learn: false, fit: own };
+  return { outcome: "retry", learn: false, fit: own };
 }

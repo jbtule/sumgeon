@@ -5,11 +5,12 @@ import { spokenProblem, spokenFact } from "./problems.js";
 import { BANDS, choose, factOf, record as recordAnswer, helpFor, openLevel, monsterHP, probeKey, tierOf, skipTo, SKIP_PROBES, SKIP_WINDOW, MAX_LEAP, fluentTime, spellKey } from "./learn.js";
 import { hintFor, STRATEGIES } from "./hints.js";
 import { openStore, displayName } from "./store.js";
-import { PHRASE, monsterName, monsterCleared, monsterWon, heroName, heroJoins, heroCursed, heroPower, heroRescue, heroAlmost, heroHelps, traitLine, BARK, wingCleared, wingOpened, depthLine, DEPTH_MAX_SPOKEN, reversedLine } from "./lines.js";
+import { PHRASE, monsterName, monsterCleared, monsterWon, heroName, heroJoins, heroCursed, heroPower, heroRescue, heroAlmost, heroHelps, traitLine, BARK, wingCleared, wingOpened, depthLine, DEPTH_MAX_SPOKEN, reversedLine, howToWriteLine } from "./lines.js";
 import { WINGS, wingOf, runFloors, openWings, toOpen, floorStars, wingStars, depthScale, depthHP, deepest, MAP_DEPTHS } from "./wings.js";
 import { missingOf, pickBlank, filled, spokenMissing, MISSING_SHARE } from "./missing.js";
 import { coinsSvg, pileOf, coinOf } from "./coins.js";
-import { read as readSigil } from "./sigil.js";
+import { read as readSigil, judge as judgeSigil } from "./sigil.js";
+import { HANDWRITING } from "./handwriting.js";
 import { traitOf, charged, prefers, hitBy, atHalf } from "./traits.js";
 import { roster, mastery, meet, beat } from "./bestiary.js";
 import { HEROES, CHALK, heroSvg, freePick, pickHero, curseCaptain, crackCurse, CURSE_HITS, resetTeam } from "./heroes.js";
@@ -547,7 +548,7 @@ function submit() {
       pop((bonus.power ? "Power! " : crit ? "Crit! " : "") + "−" + dmg, crit || bonus.power);
       restartAnim($("mon"), "hit");
       if (crit) restartAnim($("arena"), "shake");
-      setMsg(G.cur.reversed ? `Your ${G.cur.ans} is facing backwards. It faces this way → Half damage: ${dmg}` : level ? level : trait.note ? `${trait.note}: ${dmg}!` : bonus.power ? `${HEROES[team.captain].n} power hit for ${dmg}!` : crit ? `Critical hit for ${dmg}!` : `Hit for ${dmg}!`, "good");
+      setMsg(G.cur.reversed ? `Your ${G.cur.ans} is facing backwards. It faces this way → Half damage: ${dmg}` : G.cur.howTo ? `Here's how to write it. Hit for ${dmg}!` : level ? level : trait.note ? `${trait.note}: ${dmg}!` : bonus.power ? `${HEROES[team.captain].n} power hit for ${dmg}!` : crit ? `Critical hit for ${dmg}!` : `Hit for ${dmg}!`, "good");
       hpUI(); streakUI();
       // Half HP: Divvy splits in two, Sigma Rex armors up (traits.js).
       const half = !G.halved && G.hp > 0 && G.hp <= G.max / 2 ? atHalf(m) : null;
@@ -561,7 +562,7 @@ function submit() {
       // ahead, a backwards spell, or "Critical hits!", unless it's the half-HP change, which only
       // happens once).
       const bark = half ? (half.split ? "split" : "second") : trait.mult > 1 ? "double" : trait.mult < 1 ? "half" : bonus.power ? "power" : null;
-      if (bark && !level && (half || !critsNow) && !G.cur.reversed && !G.barked[bark]) { G.barked[bark] = true; say("p", BARK[bark]); }
+      if (bark && !level && (half || !critsNow) && !G.cur.reversed && !G.cur.howTo && !G.barked[bark]) { G.barked[bark] = true; say("p", BARK[bark]); }
       if (G.hp <= 0) { setTimeout(() => { $("mon").className = "mon dead"; }, 300); setTimeout(cleared, 1100); }
       else setTimeout(newProblem, level ? 1200 : 450);
     });
@@ -1178,12 +1179,16 @@ function press(k) {
 }
 /* ---------- spell casting ----------
    Now and then the answer is drawn instead of typed (newProblem): the number pad becomes a
-   glowing drawing pad in the same space, and sigil.js reads the drawing.
-   - Read clearly and right: it hits. A clear read is saved as one of the player's own templates
+   glowing drawing pad in the same space, and sigil.js reads the drawing knowing the answer
+   (judge in sigil.js):
+   - A good match for the answer: it hits, and it's saved as one of the player's own templates
      (3 per digit), so it learns their handwriting.
-   - Right but backwards: half damage, the digit shown the right way round, and "Your 3 is facing
-     backwards." Each player's reversals are counted per digit (spells.reversed).
-   - Read clearly as another digit: a wrong answer, as on the pad.
+   - A poor match, but closer to the answer than to anything else (or nearly): the math was right,
+     so it hits for full damage, but it isn't learned, and the school-style digit (handwriting.js)
+     is drawn over theirs: "Here's how to write a four." So an odd shape gets taught, not kept.
+   - Right but clearly backwards: half damage, the digit shown the right way round, and "Your 3
+     is facing backwards." Each player's reversals are counted per digit (spells.reversed).
+   - Read clearly as another digit: a wrong answer, as on the pad. Only a clear read is wrong.
    - Can't read it: "Incantation failed!", no heart lost, try again; after two, the number pad.
    Spells are only on touch screens (any-pointer: coarse): drawing with a mouse isn't writing. */
 // Skipping ahead's tally (learnFrom), per player and band, so slow coin probes don't cut short
@@ -1203,8 +1208,9 @@ function sigilSetup() {
 }
 function sigilPoint(e) { const r = $("sigil").getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; }
 function sigilReset() { strokes = []; drawing = null; paintSigil(); }
-// The strokes, glowing gold; extra draws more on top (the right way round, after a reversal).
-function paintSigil(extra) {
+// The strokes, glowing gold; extra draws more on top (the right way round, after a reversal),
+// with the strokes dimmed to dim (0–1) when given.
+function paintSigil(extra, dim = 1) {
   const c = $("sigil");
   if (!c) return;
   const r = c.getBoundingClientRect(), dpr = devicePixelRatio || 1;
@@ -1213,12 +1219,14 @@ function paintSigil(extra) {
   g.setTransform(dpr, 0, 0, dpr, 0, 0);
   g.clearRect(0, 0, r.width, r.height);
   g.lineCap = g.lineJoin = "round"; g.lineWidth = 8; g.strokeStyle = "#fff1b8"; g.shadowColor = "#ffc93c"; g.shadowBlur = 16;
+  g.globalAlpha = dim;
   for (const s of strokes) {
     g.beginPath();
     s.forEach(([x, y], i) => (i ? g.lineTo(x, y) : g.moveTo(x, y)));
     if (s.length === 1) g.lineTo(s[0][0] + 0.5, s[0][1]);
     g.stroke();
   }
+  g.globalAlpha = 1;
   if (extra) extra(g, r);
 }
 // After a reversal: the digit the right way round, glowing, with an arrow.
@@ -1230,11 +1238,27 @@ function showRightWay(d) {
     g.font = `400 ${Math.round(r.height * 0.3)}px Bungee, sans-serif`; g.fillText("→", r.width * 0.9, r.height * 0.55);
   });
 }
+// After a poor match: the school-style digit (handwriting.js) drawn glowing over theirs.
+function showHowToWrite(d) {
+  paintSigil((g, r) => {
+    const k = Math.min(r.width, r.height) * 0.8 / 100, x0 = (r.width - 100 * k) / 2, y0 = (r.height - 100 * k) / 2;
+    g.shadowColor = "#7fdc8a"; g.shadowBlur = 20; g.strokeStyle = "#e8ffe9"; g.lineWidth = 10;
+    for (const s of HANDWRITING[d]) {
+      g.beginPath();
+      s.forEach(([x, y], i) => (i ? g.lineTo(x0 + x * k, y0 + y * k) : g.moveTo(x0 + x * k, y0 + y * k)));
+      g.stroke();
+    }
+  }, 0.35);
+}
 function castSpell() {
   if (G.busy || !strokes.length) return;
   const sp = spellsOf(), mine = Object.entries(sp.templates).flatMap(([d, list]) => list.map((points) => ({ digit: Number(d), points })));
-  const r = readSigil(strokes, mine);
-  if (!r || !r.clear) {
+  const ans = G.cur.ans, r = readSigil(strokes, mine);
+  let j = judgeSigil(r, ans);
+  // Before learning it, the built-in templates alone: a drawing they read clearly as another
+  // digit is never learned (a read takes a few ms, so only then).
+  if (j.learn && mine.length) j = judgeSigil(r, ans, readSigil(strokes));
+  if (j.outcome === "retry") {
     G.spellFails++;
     sfx.crack();
     say("p", PHRASE.spellFail, true);
@@ -1242,21 +1266,26 @@ function castSpell() {
     else { setMsg("Incantation failed! Try again.", "bad"); sigilReset(); say("p", PHRASE.spellAgain); }
     return;
   }
-  const d = r.digit;
-  if (d === G.cur.ans) {
+  if (j.outcome !== "wrong") {
     sp.cast++;
-    if (r.reversed) {
+    if (j.outcome === "backwards") {
       G.cur.reversed = true;
-      sp.reversed[d] = (sp.reversed[d] || 0) + 1;
-      showRightWay(d);
-      say("p", reversedLine(d));
-    } else if (r.fit >= 0.5) {
-      // Their handwriting: keep their last 3 clear reads of each digit.
-      sp.templates[d] = (sp.templates[d] || []).concat([r.points.map((p) => ({ x: +p.x.toFixed(3), y: +p.y.toFixed(3), id: p.id }))]).slice(-3);
+      sp.reversed[ans] = (sp.reversed[ans] || 0) + 1;
+      showRightWay(ans);
+      say("p", reversedLine(ans));
+    } else if (j.outcome === "show") {
+      G.cur.howTo = true;
+      showHowToWrite(ans);
+      setMsg("Here's how to write it.", "good");
+      say("p", howToWriteLine(ans));
+    } else if (j.learn) {
+      // Their handwriting: keep their last 3 good matches of each digit.
+      sp.templates[ans] = (sp.templates[ans] || []).concat([r.points.map((p) => ({ x: +p.x.toFixed(3), y: +p.y.toFixed(3), id: p.id }))]).slice(-3);
     }
     store.player(PID).set("spells", sp);
   }
-  G.input = String(d); ansUI();
+  // A wrong answer goes in as the digit it was read as.
+  G.input = String(j.outcome === "wrong" ? r.digit : ans); ansUI();
   submit();
 }
 
