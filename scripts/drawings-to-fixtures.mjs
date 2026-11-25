@@ -6,10 +6,9 @@
 //     read: { digit, reversed, clear } }] }
 // strokes is one array of [x, y] per stroke, in CSS px on a width × height canvas, ready for
 // sigil.js read(). read is what the built-in templates made of it when it was drawn.
-// A recording already in the file (by id) isn't added twice. Names stay out of the repo: who is
-// "kid-" and a short hash of the name, the same for the same name every time.
+// A recording already in the file (by id) isn't added twice. Names stay out of the repo: who is a
+// plain label, drawer-1, drawer-2, … in the order people first appear.
 import { readFileSync, writeFileSync, existsSync } from "node:fs";
-import { createHash } from "node:crypto";
 import { fileURLToPath } from "node:url";
 import { unzip } from "../js/zip.js";
 import { toFixture, FORMAT } from "../js/drawings.js";
@@ -35,9 +34,13 @@ function recordingsOf(path) {
   if (d.format !== FORMAT) throw new Error(`${path}: drawings format ${d.format}, expected ${FORMAT}`);
   return d.recordings;
 }
-const labelOf = (who) => "kid-" + createHash("sha256").update(String(who)).digest("hex").slice(0, 6);
-
 const file = existsSync(out) ? JSON.parse(readFileSync(out, "utf8")) : { format: 1, fixtures: [] };
+// Each person in this import gets the next plain label (drawer-1, drawer-2, …), numbered on from
+// the labels already in the file. Not a hash of the name: a short hash of a first name could be
+// guessed by trying names.
+let next = Math.max(0, ...file.fixtures.map((f) => Number((/^drawer-(\d+)$/.exec(f.who) || [])[1]) || 0)) + 1;
+const labels = new Map();
+const labelOf = (who) => { const k = String(who); if (!labels.has(k)) labels.set(k, "drawer-" + next++); return labels.get(k); };
 const have = new Set(file.fixtures.map((f) => f.id));
 let added = 0;
 for (const path of args) {

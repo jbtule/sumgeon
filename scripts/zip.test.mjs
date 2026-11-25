@@ -74,7 +74,7 @@ try {
   execFileSync(process.execPath, [script, join(dir, "d.zip"), "--out", out], { stdio: "pipe" });
   const fx = JSON.parse(readFileSync(out, "utf8"));
   assert.deepEqual(fx.fixtures.map((f) => [f.id, f.digit]), [["r2", 2], ["r1", 7]]);
-  assert.match(fx.fixtures[0].who, /^kid-[0-9a-f]{6}$/);
+  assert.match(fx.fixtures[0].who, /^drawer-\d+$/);
   assert.ok(!readFileSync(out, "utf8").includes("Maya"), "names stay out of the fixtures");
 } finally {
   rmSync(dir, { recursive: true, force: true });
