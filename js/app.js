@@ -130,7 +130,7 @@ function whoUI() {
 /* ---------- the run ---------- */
 // retry: missed facts waiting to come back ({ key, after: problems to go }); recent: the last few
 // keys, so a fact doesn't repeat right away; hinted: a hint is open for this problem.
-let G = { floor: 0, hearts: 5, hp: 0, max: 0, streak: 0, solved: 0, tries: 0, cur: null, input: "", busy: true, tEnd: 0, running: false,
+let G = { floor: 0, hearts: 5, hp: 0, max: 0, streak: 0, solved: 0, tries: 0, cur: null, input: "", busy: true, running: false,
   retry: [], recent: [], hinted: false, t0: 0, next: false };
 
 function heartsUI(cracking) {
@@ -204,14 +204,6 @@ function newProblem() {
   ansUI();
   if ($("msg").classList.contains("bad")) setMsg("Your answer is your attack.");
   showHelp(helpFor(recs[key]));
-  $("timer").hidden = !st.timer || G.hinted;
-  if (st.timer && !G.hinted) { G.tEnd = performance.now() + band().seconds * 1000; requestAnimationFrame(tick); }
-}
-function tick() {
-  if (!st.timer || G.busy || G.hinted) return;
-  const total = band().seconds * 1000, left = G.tEnd - performance.now();
-  $("tBar").style.width = Math.max(0, left / total * 100) + "%";
-  if (left <= 0) miss("Too slow!"); else requestAnimationFrame(tick);
 }
 function pop(t, crit) {
   const s = document.createElement("span");
@@ -288,7 +280,7 @@ function burst(crit) {
 /* ---------- hints (DESIGN.md §5.3) ----------
    A new fact shows its model by itself; a fact being learned gets a 💡 button; a fact in review
    gets nothing. After a miss, the worked example stays up until "Got it". A hinted answer still
-   hits, but doesn't build the streak or count toward mastery, and the timer stops while it's open. */
+   hits, but doesn't build the streak or count toward mastery. */
 function showHelp(mode) {
   $("hintBtn").hidden = mode !== "button";
   if (mode === "show") openHint(); else $("hint").hidden = true;
@@ -298,7 +290,7 @@ function openHint() {
   box.innerHTML = `<div class="model">${h.model}</div><p class="hsay">${esc(h.say)}</p>`;
   box.hidden = false;
   $("hintBtn").hidden = true;
-  G.hinted = true; $("timer").hidden = true;
+  G.hinted = true;
 }
 // After a miss: the worked example as a card over the game, "Oops!" and the right answer with
 // the drawing, until "Got it" (or Enter, on the focused button).
@@ -360,7 +352,7 @@ function submit() {
   } else miss("Oops!");
 }
 
-// A wrong answer or timeout: the monster lunges, a heart cracks off, the right answer is shown
+// A wrong answer: the monster lunges, a heart cracks off, the right answer is shown
 // and said with the worked example, and the fact comes back 2–4 problems later.
 function miss(why) {
   G.busy = true; G.streak = 0;
@@ -387,7 +379,6 @@ function miss(why) {
   }, reduced() ? 0 : 220);
   if (G.hearts <= 0) { setTimeout(() => end(false), 1700); return; }
   // The worked example stays until "Got it" (or Enter), so there's time to look.
-  $("timer").hidden = true;
   setTimeout(() => { G.next = true; openWorked(); }, 600);
 }
 function nextAfterMiss() {
@@ -494,13 +485,13 @@ function show(h, kind = "page") {
 function hide() { $("ov").hidden = true; }
 
 /* ---------- pausing ----------
-   ⏸ by the hearts (or Escape) stops the clock mid-problem: Keep fighting, Monsters & Heroes,
+   ⏸ by the hearts (or Escape) pauses mid-problem: Keep fighting, Monsters & Heroes,
    Settings, or Exit to
    the start screen (a second tap confirms, since it ends the run). */
 function pause() {
   if (!G.paused) {
     if (!G.running || G.busy || G.next) return;
-    G.paused = { at: performance.now(), left: G.tEnd - performance.now() };
+    G.paused = { at: performance.now() };
   }
   stopSpeech();
   show(`<h2>Paused</h2>
@@ -518,12 +509,11 @@ function pause() {
     menu();
   };
 }
-// Back to the same problem, with the time that was left.
+// Back to the same problem. The pause doesn't count toward the answer time.
 function resume() {
   const p = G.paused; if (!p) return;
   G.paused = null; hide(); G.busy = false;
   G.t0 += performance.now() - p.at;
-  if (st.timer && !G.hinted) { G.tEnd = performance.now() + p.left; requestAnimationFrame(tick); }
 }
 $("pauseBtn").onclick = pause;
 
@@ -565,7 +555,7 @@ function wingsHTML() {
   }).join("");
 }
 // The start screen, top to bottom: the title (with ⚙ Settings), your hero, the Wings, and
-// "Enter the dungeon" docked at the bottom. Monsters & Heroes is on the pause screen. Players, chalk color, the timer and sounds are in
+// "Enter the dungeon" docked at the bottom. Monsters & Heroes is on the pause screen. Players, chalk color and sounds are in
 // Settings, as in Sound Box. Names are optional.
 function menu() {
   const list = store.profiles();
@@ -591,7 +581,7 @@ function menu() {
   };
 }
 
-// Settings, as a list: players (names optional), chalk color, the timer and sounds as on/off
+// Settings, as a list: players (names optional), chalk color, sounds as on/off
 // switches, and the help page. All save as they change.
 function toggle(id, title, sub, on) {
   return `<label class="switch-row"><span><b>${title}</b>${sub ? `<small>${sub}</small>` : ""}</span>
@@ -604,7 +594,6 @@ function settings(paused) {
   ${paused ? "" : `<div class="grp"><span>Players</span><div id="players">${playersHTML()}</div></div>`}
   <div class="grp"><span>Chalk color</span><div class="swatches" id="swatches">${swatchesHTML()}</div></div>
   <div class="grp"><span>Play</span><div class="list">
-    ${toggle("tm", "Timer", `${band().seconds} seconds a problem`, st.timer)}
     ${toggle("sfxOn", "Sound effects", "", st.sfx)}
     ${toggle("voiceOn", "Voice", "Reads monsters and answers aloud", st.voice)}
     <button class="list-link" type="button" id="openHelp"><span><b>How the hints work</b><small>For grown-ups</small></span><i aria-hidden="true">›</i></button>
@@ -612,7 +601,6 @@ function settings(paused) {
   ${badgesCopy()}
   <div class="btns"><button class="big" id="done">Done</button></div>`);
   $("openHelp").onclick = () => { helpFrom = !!paused; helpPage(); };
-  $("tm").onchange = () => { st.timer = $("tm").checked; saveSettings(); };
   $("sfxOn").onchange = () => { st.sfx = $("sfxOn").checked; sfx.setSfx(st.sfx); saveSettings(); };
   $("voiceOn").onchange = () => { st.voice = $("voiceOn").checked; setVoice(st.voice); saveSettings(); };
   wireSwatches();

@@ -16,7 +16,7 @@ const big = (f) => (f.op === "×" && (f.x > 10 || f.y > 10)) || (f.op === "÷" &
 
 export const BANDS = {
   sprout: {
-    label: "Sprout", grades: "Kindergarten–1st", hearts: 7, seconds: 15, fluentMs: 3000,
+    label: "Sprout", grades: "Kindergarten–1st", hearts: 7, fluentMs: 3000,
     levels: [
       { name: "Within 5", has: within(5) },
       { name: "Within 10", has: within(10) },
@@ -25,7 +25,7 @@ export const BANDS = {
     ]
   },
   apprentice: {
-    label: "Apprentice", grades: "2nd–3rd", hearts: 5, seconds: 12, fluentMs: 3000,
+    label: "Apprentice", grades: "2nd–3rd", hearts: 5, fluentMs: 3000,
     levels: [
       { name: "Add and subtract within 20", has: within(20) },
       { name: "× 2, 5 and 10", has: times([2, 5, 10]) },
