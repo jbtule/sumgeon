@@ -14,7 +14,7 @@ const GAP_MS = 500;
 
 let marks = {};
 try { marks = JSON.parse(localStorage.getItem(STORE)) || {}; } catch (e) { marks = {}; }
-function save() { try { localStorage.setItem(STORE, JSON.stringify(marks)); } catch (e) { /* this visit only */ } }
+function save() { try { localStorage.setItem(STORE, JSON.stringify(marks)); } catch (e) { /* this visit only */ } if (typeof reportUI === "function") reportUI(); }
 
 // The lines, each with its clip from audio.json: the site's own, or when run locally (where any
 // audio.json is a leftover from a local build) the live one.
@@ -36,8 +36,14 @@ function counts(group) {
   const ok = ls.filter((l) => (markOf(l) || {}).s === "ok").length, bad = ls.filter((l) => (markOf(l) || {}).s === "bad").length;
   return { all: ls.length, ok, bad, new: ls.length - ok - bad, missing: LINES.filter((l) => l.group === group && !keyOf(l)).length };
 }
+// The report buttons say how many lines are flagged, and wait until there's one.
+function reportUI() {
+  const n = LINES.filter((l) => (markOf(l) || {}).s === "bad").length;
+  $("copyBtn").textContent = n ? `Copy ${n} issue${n > 1 ? "s" : ""}` : "No issues yet";
+  $("copyBtn").disabled = $("issueBtn").disabled = !n;
+}
 function home() {
-  $("player").hidden = true; $("home").hidden = false; stop();
+  $("player").hidden = true; $("home").hidden = false; stop(); reportUI();
   $("groups").innerHTML = GROUPS.map((g) => {
     const c = counts(g);
     return `<button class="group" type="button" data-g="${g}"><b>${g}</b><span class="pills">
@@ -157,7 +163,10 @@ $("recent").onclick = (e) => {
 $("copyBtn").onclick = () => {
   const r = report();
   if (!r) { $("status").textContent = "No issues flagged."; return; }
-  navigator.clipboard.writeText(r).then(() => ($("status").textContent = "Copied."), () => ($("status").textContent = "Couldn't copy."));
+  // If the browser won't copy, show the text to select and copy by hand.
+  const manual = () => { const t = $("reportText"); t.value = r; t.hidden = false; t.focus(); t.select(); $("status").textContent = "Select it and copy:"; };
+  if (!navigator.clipboard) return manual();
+  navigator.clipboard.writeText(r).then(() => { $("status").textContent = "Copied."; $("reportText").hidden = true; }, manual);
 };
 $("issueBtn").onclick = () => {
   const r = report();
