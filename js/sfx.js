@@ -2,35 +2,50 @@
 // sound-box-crosswords' chime.js. iOS only allows audio that starts from a tap, so the
 // context is created on the first tap and woken on later taps if iOS paused it.
 
-var ctx = null, out = null, on = true, noiseBuf = null;
+var ctx = null, out = null, on = true, noiseBuf = null, lastError = "", played = 0, gestures = 0;
 
+// Safari can leave a context "suspended" or "interrupted" (macOS Safari after the tab was in the
+// background or another app took the audio), and only resumes it inside a tap or click, so every
+// gesture wakes it from anything but "running". A "closed" one is replaced.
 function unlock() {
-  if (ctx) { if (ctx.state === "suspended") { try { ctx.resume(); } catch (e) {} } return; }
+  gestures++;
+  if (ctx && ctx.state === "closed") ctx = null;
+  if (ctx) { if (ctx.state !== "running") { try { ctx.resume().catch(function (e) { lastError = "resume: " + e.message; }); } catch (e) { lastError = "resume: " + e.message; } } return; }
   try {
     var AC = window.AudioContext || window.webkitAudioContext;
-    if (!AC) return;
+    if (!AC) { lastError = "no Web Audio"; return; }
     ctx = new AC();
-    if (ctx.state === "suspended") ctx.resume();
+    if (ctx.state !== "running") ctx.resume().catch(function (e) { lastError = "resume: " + e.message; });
+    // A moment of silence, played inside the gesture: Safari starts the context's output on it.
+    var kick = ctx.createBufferSource();
+    kick.buffer = ctx.createBuffer(1, 1, ctx.sampleRate);
+    kick.connect(ctx.destination); kick.start(0);
     out = ctx.createGain();
     out.gain.value = 0.8;
     out.connect(ctx.destination);
     noiseBuf = ctx.createBuffer(1, ctx.sampleRate * 0.5, ctx.sampleRate);
     var d = noiseBuf.getChannelData(0);
     for (var i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
-  } catch (e) { ctx = null; }
+  } catch (e) { ctx = null; lastError = "create: " + e.message; }
 }
-// Every tap, not just the first: it also wakes audio iOS paused in the background.
-document.addEventListener("pointerdown", unlock, true);
-document.addEventListener("keydown", unlock, true);
+// Every tap, not just the first: it also wakes audio iOS paused in the background. Safari counts
+// some of these as a gesture that may start audio and not others, so listen to all of them.
+["pointerdown", "pointerup", "click", "touchend", "keydown"].forEach(function (ev) { document.addEventListener(ev, unlock, true); });
+
+// For the ?audio readout.
+export function status() {
+  return { state: ctx ? ctx.state : "not created", rate: ctx ? ctx.sampleRate : 0, on: on, played: played, gestures: gestures, error: lastError };
+}
 
 export function setSfx(enabled) { on = !!enabled; }
 
 function play(fn) {
   if (!on || !ctx) return;
   try {
-    if (ctx.state === "suspended") ctx.resume();
+    if (ctx.state !== "running") ctx.resume().catch(function () {});
     fn(ctx.currentTime + 0.02);
-  } catch (e) {}
+    played++;
+  } catch (e) { lastError = "play: " + e.message; }
 }
 function hz(midi) { return 440 * Math.pow(2, (midi - 69) / 12); }
 
