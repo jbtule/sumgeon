@@ -55,6 +55,14 @@ A math-practice dungeon crawler. The player fights anthropomorphic monsters buil
   - The audio host is the Cloudflare Pages project `sumgeon-audio`, served at the custom domain https://sumgeon.asset-data.stream/ (like Sound Box's). Use the custom domain, not `sumgeon-audio.pages.dev`: bare pages.dev ignores byte-range requests, and Safari's `<audio>` needs them. CI's `audio-deploy` job uploads new clips; it needs the `CLOUDFLARE_API_TOKEN` secret.
   - To record locally on a Mac: `ASSET_BASE=https://sumgeon.asset-data.stream/ KOKORO=container KOKORO_DIR=<folder for the model and venv> node scripts/audio/build.mjs`. Kokoro runs in Apple's `container` (the macOS espeak wheel is broken). Then upload with `npx wrangler pages deploy _audio --project-name sumgeon-audio --branch main`.
   - **Audio sprites**: lines marked with a `sprite` in `lines.js` (today "names": the monster and hero lines) are also joined into one file per group, `s/<key>.mp3`, with a `.json` map of where each line starts. `build.mjs` builds them from the clips with ffmpeg (CI installs it), and `audio.json` lists them under `sprites`. In the game (`speech.js`) a sprite downloads and decodes with Web Audio after the first tap; until then, and if it fails, its lines play as single clips. Each line is still recorded whole, so it sounds the same.
+  - **The listen check** (`listen/`, at `/sumgeon/listen/`): a grown-up page for hearing the recorded voice, patterned on Sound Box's. It plays one group of lines at a time (`GROUPS` and each line's `group` in `lines.js`): Phrases, Monsters & heroes, Add & subtract, Times & divide, Missing numbers, Coins, Two-digit, Balance Hall.
+    - **Play/Pause** runs through the unheard lines (or the issues, or all) one after another, and a line that plays to the end unflagged counts as OK.
+    - **⚑ Something's wrong** pauses, flags the line just heard with tags and a note, and Save & continue carries on.
+    - Marks are per device (`sumgeon:listen`), keyed by clip key, so a re-recorded line is unheard again.
+    - **Report** copies the flagged lines or opens a GitHub issue with them.
+    - It reads the site's `audio.json`, or the live one when run locally.
+    - It's `noindex` and nothing in the game links to it; the check enforces both.
+    - Keys: space plays or pauses, F flags, R replays, ← goes back.
   - `scripts/audio/listen-test.sh` renders the whole-vs-stitched comparison, for any future method change picked by ear.
 - The game speaks: "Now entering the Sumgeon!" when you tap Enter the dungeon, monster names on arrival, "Critical hits!" at 3 in a row, the right answer after a miss ("seven plus eight is fifteen"), floor clears, and the problem's 🔊 button. (`PHRASE.intro` is still recorded but no longer played.)
 

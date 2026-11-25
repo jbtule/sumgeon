@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!-- A grown-up tool for checking the recorded voice. Nothing in the game links here, and search
+     engines are asked to skip it. -->
+<meta name="robots" content="noindex, nofollow">
+<title>Listen check · Sumgeon</title>
+<meta name="color-scheme" content="dark">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bungee&family=Nunito:wght@600;800;900&display=swap">
+<style>
+  :root{--bg:#12242b;--panel:#1a313a;--line:#2a4852;--edge:#3a5560;--btn:#24414b;--ink:#f3efe4;--muted:#a9bec1;--coral:#ff5a4e;--gold:#ffc93c;--dark:#0c171c;--ok:#7fdc8a}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:600 16px/1.45 Nunito,system-ui,sans-serif}
+  button{font:inherit;color:inherit;cursor:pointer}
+  button:focus-visible,textarea:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+  .wrap{max-width:720px;margin:0 auto;padding:max(16px,env(safe-area-inset-top)) 16px 40px}
+  h1{font:400 28px Bungee,sans-serif;color:var(--gold);margin:0}
+  h1 b{color:var(--coral);font-weight:400}
+  .sub{color:var(--muted);margin:4px 0 16px}
+  .groups{display:grid;gap:8px}
+  .group{display:flex;justify-content:space-between;align-items:center;gap:10px;width:100%;text-align:left;padding:12px 14px;border-radius:14px;border:2px solid var(--line);background:var(--panel)}
+  .group b{font:400 16px Bungee,sans-serif}
+  .pills{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;font-size:13px;font-weight:800}
+  .pill{padding:2px 9px;border-radius:999px;background:var(--dark);color:var(--muted);white-space:nowrap}
+  .pill.new{color:var(--gold)}.pill.bad{color:var(--coral)}.pill.ok{color:var(--ok)}
+  .bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:16px 0}
+  .small{min-height:40px;padding:0 14px;border-radius:12px;border:2px solid var(--edge);background:var(--btn);font-weight:900}
+  .link{background:none;border:0;color:var(--muted);padding:6px 0;text-decoration:underline}
+  .mode{display:flex;gap:4px;background:var(--dark);border-radius:999px;padding:4px}
+  .mode button{border:0;background:none;border-radius:999px;padding:6px 12px;color:var(--muted);font-weight:800}
+  .mode button[aria-pressed="true"]{background:var(--btn);color:var(--ink)}
+  .now{background:var(--panel);border:2px solid var(--line);border-radius:18px;padding:18px;text-align:center}
+  .now .count{color:var(--muted);font-weight:800;font-size:14px}
+  .now .text{font-size:clamp(22px,5vw,30px);font-weight:900;margin:8px 0 4px;min-height:2.6em;display:grid;place-items:center}
+  .now .kind{color:var(--muted);font-size:13px}
+  .controls{display:flex;justify-content:center;gap:10px;margin-top:14px}
+  .controls button{min-width:56px;height:56px;border-radius:16px;border:2px solid var(--edge);background:var(--btn);font-size:22px}
+  .controls .play{min-width:120px;background:var(--coral);border-color:var(--coral);color:#fff;font:400 18px Bungee,sans-serif}
+  .controls{flex-wrap:wrap}
+  .controls .flag{flex-basis:100%;height:48px;color:var(--coral);font:900 16px Nunito,sans-serif;padding:0 14px}
+  .flagform{margin-top:14px;padding:14px;border-radius:14px;background:var(--dark);border:2px solid var(--coral);text-align:left}
+  .flagform[hidden]{display:none}
+  .flagform p{margin:0 0 8px;font-weight:900}
+  .tags{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
+  .tags button{padding:6px 12px;border-radius:999px;border:2px solid var(--edge);background:none;font-weight:800;font-size:14px}
+  .tags button[aria-pressed="true"]{background:var(--coral);border-color:var(--coral);color:#fff}
+  textarea{width:100%;min-height:64px;border-radius:10px;border:2px solid var(--edge);background:var(--panel);color:var(--ink);font:inherit;padding:8px}
+  .formbtns{display:flex;gap:8px;justify-content:flex-end;margin-top:8px}
+  .recent{list-style:none;margin:18px 0 0;padding:0;display:grid;gap:6px}
+  .recent li{display:grid;grid-template-columns:auto 1fr auto;gap:8px;align-items:center;padding:6px 10px;border-radius:12px;background:var(--panel)}
+  .recent .mark{width:1.4em;text-align:center;font-weight:900}
+  .recent .ok .mark{color:var(--ok)}.recent .bad .mark{color:var(--coral)}
+  .recent .note{display:block;color:var(--coral);font-size:13px}
+  .recent li > div{display:flex;gap:4px}
+  .recent li button{width:36px;height:36px;border-radius:10px;border:2px solid var(--edge);background:var(--btn)}
+  #status{color:var(--muted);font-size:14px;min-height:20px}
+  [hidden]{display:none !important}
+</style>
+</head>
+<body>
+<main class="wrap">
+  <h1>Sum<b>geon</b> listen check</h1>
+  <p class="sub">Plays each group's recorded lines one after another. A line that plays to the end without a flag counts as OK. Hear something wrong? ⚑, say what, and carry on. Marks stay on this device.</p>
+
+  <section id="home">
+    <div class="groups" id="groups"></div>
+    <div class="bar">
+      <button class="small" id="copyBtn" type="button">Copy the issues</button>
+      <button class="small" id="issueBtn" type="button">Open a GitHub issue</button>
+      <span id="status" role="status"></span>
+    </div>
+  </section>
+
+  <section id="player" hidden>
+    <div class="bar">
+      <button class="link" id="backHome" type="button">‹ All groups</button>
+      <div class="mode" role="group" aria-label="Which lines">
+        <button type="button" data-mode="new" aria-pressed="true">Unheard</button>
+        <button type="button" data-mode="bad" aria-pressed="false">Issues</button>
+        <button type="button" data-mode="all" aria-pressed="false">All</button>
+      </div>
+    </div>
+    <div class="now">
+      <div class="count" id="count"></div>
+      <div class="text" id="text"></div>
+      <div class="kind" id="kind"></div>
+      <div class="controls">
+        <button type="button" id="prev" aria-label="Previous line">⏮</button>
+        <button type="button" class="play" id="play">Play</button>
+        <button type="button" id="again" aria-label="Play this line again">🔁</button>
+        <button type="button" class="flag" id="flag">⚑ Something's wrong</button>
+      </div>
+      <div class="flagform" id="flagform" hidden>
+        <p id="flagWhat"></p>
+        <div class="tags" id="tags"></div>
+        <textarea id="note" placeholder="What's wrong? (optional)"></textarea>
+        <div class="formbtns"><button class="small" type="button" id="cancelFlag">Cancel</button><button class="small" type="button" id="saveFlag">Save &amp; continue</button></div>
+      </div>
+    </div>
+    <ul class="recent" id="recent" aria-label="Recently played"></ul>
+  </section>
+</main>
+<script type="module" src="listen.js"></script>
+</body>
+</html>
