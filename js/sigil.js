@@ -4,9 +4,11 @@
 // with every template; $P doesn't care about stroke order or direction, which suits kids.
 // No DOM: runs in Node for the tests.
 //
-// Templates are drawn here in a 100 × 100 box (y down), several per digit for how kids write
-// them, plus mirrored copies that mean "reversed". Each player's clearly read drawings are added
-// as personal templates (app.js), so it learns their handwriting.
+// Templates are drawn here in a 100 × 100 box (y down), several per digit for how kids and
+// grown-ups write them, each also slanted and stretched (VARIANTS), plus mirrored copies that
+// mean "reversed". They're checked against real drawings in scripts/sigil-fixtures.json. Each
+// player's clearly read drawings are added as personal templates (app.js), so it learns their
+// handwriting.
 
 const N = 32; // points per cloud
 
@@ -36,23 +38,40 @@ const SHAPES = [
   [2, "with a loop", [join(arc(50, 30, 26, 24, -165, 15), line([30, 82]), arc(32, 84, 9, 8, 0, 360, 12), line([82, 92]))]],
   [3, "curly", [join(arc(48, 28, 26, 22, -155, 90), arc(48, 72, 28, 23, -90, 155))]],
   [3, "flat top", [join(line([24, 8], [74, 8], [46, 40]), arc(48, 68, 28, 24, -100, 155))]],
+  // A z on top (across, then back to the left), then a belly that sweeps down to the left.
+  [3, "z top", [join(line([22, 8], [72, 4], [30, 30], [52, 34], [64, 48], [62, 64], [50, 80], [36, 92], [22, 98]))]],
+  [3, "z top, long tail", [line([20, 6], [70, 2], [28, 26], [52, 30], [66, 42], [66, 58], [58, 78], [50, 98])]],
   [4, "open", [line([28, 5], [24, 58], [82, 58]), line([66, 14], [66, 95])]],
   [4, "closed", [line([64, 5], [18, 62], [86, 62]), line([64, 5], [64, 95])]],
   // A high crossbar and a long stem below it, the way many people write 4 (it read as a 9:
   // a head on top and a long tail). Open and closed.
   [4, "open, high bar", [line([28, 4], [24, 40], [84, 38]), line([60, 2], [66, 98])]],
   [4, "closed, high bar", [line([60, 3], [20, 40], [84, 40]), line([60, 3], [62, 98])]],
+  // An open 4 whose crossbar curls up at the end, with the stem crossing its middle.
+  [4, "open, curvy bar", [line([22, 2], [22, 44], [44, 44], [64, 46], [76, 42], [82, 32]), line([48, 14], [52, 98])]],
   [5, "one stroke", [join(line([74, 8], [30, 8], [28, 46]), arc(48, 67, 27, 25, -125, 150))]],
   [5, "big belly", [join(line([72, 6], [32, 6], [30, 40]), arc(46, 64, 30, 30, -115, 155))]],
   [5, "hat after", [join(line([30, 8], [28, 46]), arc(48, 67, 27, 25, -125, 150)), line([30, 8], [74, 8])]],
+  // A wide top and a belly that runs straight down to the left, in one stroke from the top right.
+  [5, "wide, from the top right", [line([88, 4], [36, 2], [30, 32], [46, 36], [70, 40], [74, 56], [60, 68], [36, 84], [10, 98])]],
   [6, "curl", [join(line([68, 6], [50, 14], [36, 30], [29, 50]), arc(50, 72, 22, 21, 180, 540, 24))]],
+  // A tall stem that curves into a loop at the bottom.
+  [6, "tall stem", [line([30, 2], [18, 12], [14, 34], [16, 56], [22, 74], [36, 62], [52, 60], [64, 68], [62, 86], [50, 98], [34, 98], [22, 88], [20, 76])]],
   [7, "plain", [line([20, 8], [80, 8], [40, 95])]],
+  // The bar slanted up to the right, then a long diagonal.
+  [7, "slanted bar", [line([6, 26], [50, 10], [94, 4], [66, 40], [52, 66], [42, 94])]],
   [7, "with a crossbar", [line([20, 8], [80, 8], [40, 95]), line([34, 52], [72, 52])]],
   [8, "figure eight", [join(arc(50, 28, 20, 20, 90, -270, 20), arc(50, 72, 24, 22, -90, 270, 22))]],
   [8, "two circles", [arc(50, 28, 20, 20, 0, 360, 20), arc(50, 72, 24, 22, 0, 360, 22)]],
+  // One stroke from the top right: down across the middle, around the bottom, back up through
+  // the middle and around a flat top loop.
+  [8, "from the top right", [line([78, 2], [60, 16], [46, 30], [36, 46], [56, 50], [70, 60], [74, 76], [66, 92], [48, 100], [30, 96], [24, 80], [28, 62], [34, 48], [18, 46], [4, 42], [10, 32], [28, 26], [48, 20], [56, 18])]],
   [9, "straight", [join(arc(48, 30, 24, 22, 0, 360, 20), line([72, 30], [70, 95]))]],
   // A small head and a long tail: the 9 that a high-bar 4 would otherwise take.
   [9, "small head", [join(arc(48, 20, 20, 17, 0, 360, 20), line([68, 20], [68, 97]))]],
+  // A pointed head, then a slanted stem that starts above it.
+  [9, "pointed head", [line([42, 6], [22, 12], [6, 22], [2, 32], [16, 36], [30, 30], [40, 18], [44, 8]), line([48, 0], [40, 34], [26, 100])]],
+  [9, "pointed head, upright", [line([50, 6], [30, 10], [14, 20], [10, 32], [24, 36], [38, 30], [48, 18], [52, 8]), line([54, 0], [52, 34], [50, 100])]],
   [9, "curly", [join(arc(48, 30, 24, 22, 0, 360, 20), line([72, 30], [72, 70], [62, 90], [45, 95], [30, 88]))]]
 ];
 // Digits whose mirror image is a different shape: the mirror means it's written backwards.
@@ -116,21 +135,45 @@ function cloudDistance(a, b, start) {
 }
 
 /* ---------- reading a drawing ---------- */
-// The built-in templates, each { digit, reversed, name, points }.
+// Variants of each shape, since $P scales a drawing evenly: a slanted or a stretched digit is a
+// different cloud. [name, x shear (dx per dy), x stretch]. Slant is about 14° each way.
+export const VARIANTS = [["", 0, 1], ["slanted right", -0.25, 1], ["slanted left", 0.25, 1], ["narrow", 0, 0.7], ["wide", 0, 1.4]];
+const warp = (strokes, k, sx) => strokes.map((s) => s.map(([x, y]) => [50 + (x - 50) * sx + k * (y - 50), y]));
+
+// The built-in templates, each { digit, reversed, name, points }: every shape in every variant,
+// and its mirror: reversed for a digit that can face the wrong way, or the same digit drawn the
+// other way round for 0 and 8 (an 8 begun at the top left).
 export const TEMPLATES = SHAPES.flatMap(([digit, name, strokes, symmetric]) => {
-  const out = [{ digit, reversed: false, name, points: cloud(strokes) }];
-  if (CAN_REVERSE.has(digit) && !symmetric) out.push({ digit, reversed: true, name: name + ", backwards", points: cloud(mirror(strokes)) });
-  return out;
+  const ways = [[false, "", strokes]];
+  if (!symmetric) ways.push(CAN_REVERSE.has(digit) ? [true, ", backwards", mirror(strokes)] : [false, ", mirrored", mirror(strokes)]);
+  return ways.flatMap(([reversed, suffix, st]) => VARIANTS.map(([v, k, sx]) =>
+    ({ digit, reversed, name: name + suffix + (v ? `, ${v}` : ""), points: cloud(warp(st, k, sx)) })));
 });
 export const SHAPES_FOR_TESTS = SHAPES.map(([digit, name, strokes, symmetric]) => ({ digit, name, strokes, symmetric: !!symmetric }));
 export { mirror };
 
 // How sure a read must be to count (both): the drawing is close to its best template (fit), and
-// clearly closer to it than to any other digit (margin). Which way round it faces is a separate
-// question: it only counts as reversed when the mirror image is clearly the better match
-// (REVERSED_MARGIN), so a wobbly 1 gets the benefit of the doubt.
-export const CLEAR = { fit: 0.3, margin: 0.12 };
+// clearly closer to it than to any other digit (margin), either way round. A backwards read needs
+// a wider margin (CLEAR.reversed): every digit's mirror is a template too, so a 7 or a 4 has more
+// near neighbours facing the wrong way (a backwards 9 is close to a backwards 7 or 4), and most
+// drawings face the right way. Which way round it faces is a separate question: it only counts as
+// reversed when the mirror image is clearly the better match (REVERSED_MARGIN), so a wobbly 1
+// gets the benefit of the doubt.
+export const CLEAR = { fit: 0.3, margin: 0.15, reversed: 0.2 };
 export const REVERSED_MARGIN = 0.12;
+
+// With every variant there are a few hundred templates, too many for full $P on a phone. A quick
+// pass (one greedy match, one way: a tenth of the work) keeps the closest SHORTLIST templates and
+// the closest PER_DIGIT of each digit, so every digit's best match is still measured fully.
+const SHORTLIST = 24, PER_DIGIT = 3;
+function shortlist(c, all) {
+  const quick = all.map((t) => ({ t, q: cloudDistance(c, t.points, 0) })).sort((a, b) => a.q - b.q);
+  const count = {};
+  return quick.filter((s, i) => {
+    count[s.t.digit] = (count[s.t.digit] || 0) + 1;
+    return i < SHORTLIST || count[s.t.digit] <= PER_DIGIT;
+  }).map((s) => s.t);
+}
 
 // Reads strokes as a digit. personal: [{ digit, points }] learned from this player.
 // Returns { digit, reversed, fit, margin, clear, name, others: [{ digit, fit }], points } or
@@ -140,7 +183,7 @@ export function read(strokes, personal) {
   const c = cloud(strokes);
   if (!c) return null;
   const all = TEMPLATES.concat((personal || []).map((p) => ({ digit: p.digit, reversed: false, name: "yours", points: p.points })));
-  const scored = all.map((t) => ({ t, d: greedy(c, t.points) })).sort((a, b) => a.d - b.d);
+  const scored = shortlist(c, all).map((t) => ({ t, d: greedy(c, t.points) })).sort((a, b) => a.d - b.d);
   // The best template for each digit, either way round.
   const byDigit = [], seen = new Set();
   for (const s of scored) if (!seen.has(s.t.digit)) { seen.add(s.t.digit); byDigit.push(s); }
@@ -153,7 +196,7 @@ export function read(strokes, personal) {
   const name = (reversed ? back : fwd || top).t.name;
   return {
     digit, reversed, name, fit: fit(top.d), margin,
-    clear: fit(top.d) >= CLEAR.fit && margin >= CLEAR.margin,
+    clear: fit(top.d) >= CLEAR.fit && margin >= (reversed ? CLEAR.reversed : CLEAR.margin),
     others: byDigit.slice(1, 4).map((s) => ({ digit: s.t.digit, fit: fit(s.d) })),
     points: c
   };
