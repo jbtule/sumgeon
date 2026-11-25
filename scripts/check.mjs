@@ -37,7 +37,9 @@ if (/localStorage\.(setItem|getItem)\(/.test(app.replace(/window\.localStorage;[
 
 // The listen check spells out every recorded line: search engines skip it, and the game never
 // links to it.
-if (!readFileSync(join(root, "listen", "index.html"), "utf8").includes('<meta name="robots" content="noindex, nofollow">')) fail("listen/index.html should be noindex");
+const listenHtml = readFileSync(join(root, "listen", "index.html"), "utf8");
+if (!listenHtml.includes('<meta name="robots" content="noindex, nofollow">')) fail("listen/index.html should be noindex");
+for (const s of ['<span id="buildSha">dev</span>', 'src="listen.js"']) if (listenHtml.split(s).length !== 2) fail(`listen/index.html should have ${s} exactly once (stamp.mjs fills it in)`);
 if (/listen\//.test(html) || /listen\//.test(app)) fail("the game shouldn't link to the listen check");
 
 if (failed) process.exit(1);

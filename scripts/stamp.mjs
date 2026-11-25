@@ -54,4 +54,12 @@ swap(mapMatch[1], "\n" + JSON.stringify(map, null, 2) + "\n");
 swap('<span id="buildSha">dev</span>', `<span id="buildSha">${short}</span>`);
 
 writeFileSync(join(out, "index.html"), html);
+
+// The listen check: the same badge, and its script stamped.
+let listen = readFileSync(join(root, "listen", "index.html"), "utf8");
+for (const [from, to] of [['<span id="buildSha">dev</span>', `<span id="buildSha">${short}</span>`], ['src="listen.js"', `src="listen.js${v}"`]]) {
+  if (listen.split(from).length !== 2) throw new Error(`stamp: expected 1 match for ${JSON.stringify(from)} in listen/index.html`);
+  listen = listen.replace(from, to);
+}
+writeFileSync(join(out, "listen", "index.html"), listen);
 console.log(`✓ _site/ stamped with ${short}`);
