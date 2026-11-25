@@ -73,6 +73,7 @@
   .checks{display:flex;flex-wrap:wrap;gap:4px}
   .checks label{display:inline-flex;align-items:center;gap:3px;padding:4px 8px;border-radius:999px;background:var(--dark);font-size:13px;font-weight:800}
   [hidden]{display:none !important}
+  .sound{color:var(--muted);font-size:13px;margin:4px 0 0}
 </style>
 </head>
 <body class="review">
@@ -114,6 +115,7 @@
     <div class="probline"><span id="prob"></span><span class="ansbox" id="ans"></span></div>
   </section>
   <div class="now"><span class="what" id="what"></span><span class="phase" id="phase"></span></div>
+  <p class="sound" id="sound" aria-live="off"></p>
   <div class="controls">
     <button class="small go" type="button" id="play">▶ Replay</button>
     <button class="small" type="button" id="next" hidden>Next frame ›</button>

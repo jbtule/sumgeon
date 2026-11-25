@@ -13,6 +13,7 @@ import { QUIPS, FINAL, CRIT, simulate } from "../js/moments.js";
 import { playMoment, PHASES } from "../js/slowmo.js";
 import { quipLine } from "../js/lines.js";
 import { say, stopSpeech } from "../js/speech.js";
+import * as sfx from "../js/sfx.js";
 
 const $ = (id) => document.getElementById(id);
 const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
@@ -83,11 +84,18 @@ async function play() {
   remember(m);
   return true;
 }
-$("play").onclick = () => play();
-$("next").onclick = () => nextGate && nextGate();
+// iPhone only lets a page start audio inside a tap. On this page the Replay tap is often the
+// first one, and the moment's first sound comes a beat later, outside it, so the effects stayed
+// silent (the quip, an audio element, still played). A tick inside the tap wakes the effects.
+const wake = () => sfx.tick();
+$("play").onclick = () => { wake(); play(); };
+$("next").onclick = () => { wake(); if (nextGate) nextGate(); };
+// The sound effects' state, for checking on a device: the audio context, effects played, errors.
+setInterval(() => { const a = sfx.status(); $("sound").textContent = `Sound effects: ${a.state || "not started"} · ${a.played} played${a.error ? " · " + a.error : ""}`; }, 500);
 
 // Play all: every hero's quips, one after another, with a short gap.
 $("playAll").onclick = async () => {
+  wake();
   if (playing || allQueue) return;
   allQueue = ALL.slice();
   $("playAll").hidden = true; $("stopAll").hidden = false;
