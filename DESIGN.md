@@ -94,7 +94,7 @@ The dungeon is a map of **Wings**, one per math strand. Each Wing has its own fl
 | **The Negative Zone** | Integers and negatives | Master | Negasicle (−, an icy minus-sign popsicle), Absolutely (\|x\|) | **Lord Undefined** (÷0) |
 | **The Root Cellar** | Exponents and roots | Master | Rootling (√), Squaresquatch (²), Exponent-tron (^) | **Hydra of Powers** (heads = exponent) |
 | **Pirate Cove** | Percent and π basics | Master | % Gremlin, π Pirate, Slashbuckler (/), Colon-el Ratio (:) | **Dread Pirate Radius** |
-| **The Balance Hall** | Equations and comparison | Adept/Master | = Twins, Chompers (< >, the "alligator mouth"), Parenthesaurus (( )) | **The Unknown** (x) |
+| **The Balance Hall** | Comparison and balance (built for K–2nd; equations and Parenthesaurus later) | Balance (K–2nd) | Equal Twins (=), Chompers (< >, the "alligator mouth"); later Parenthesaurus (( )) | **The Unknown** (x) |
 
 **Endless Descent** (§6.4) has its own boss, the **Endless Specter** (∞).
 

@@ -76,6 +76,11 @@ A math-practice dungeon crawler. The player fights anthropomorphic monsters buil
 - Monster HP = the average answer of the player's open facts (the monster's operation weighted 70%) × its `hits` value, so fights last about the same number of solves at any level. Deeper floors scale it (`depthScale` in `wings.js`): 0.8 on floor 1, rising evenly to 1.3 for the boss.
 - **Coins** (`js/coins.js`, Trollar): a few US coins drawn in a row, biggest first; "how many cents?" typed on the number pad, and the total is the damage. No multiple choice: kids learn the coins by adding their values. Coins are a *strand* (`BANDS.coins`, `strand: true`): its own 94 facts (keys `¢q,d,n,p`) and levels (2 to 6 pennies, each coin alone, nickels and pennies, dimes, quarters), asked by monsters with `strand: "coins"` whatever the Wing. The hint labels each coin's value and counts on from the biggest. The portraits are traced from public-domain US Mint photos (see the README). Spoken as "two dimes and three pennies. How many cents?" and "… make twenty-three cents".
 - **Two-digit + and − within 100** (`js/twodigit.js`, Haberhasher, 2nd grade): a strand (`BANDS.place`) in seven levels: add tens, add ones, add tens and ones, add and regroup, subtract tens, subtract without regrouping, subtract and regroup. Each level is a fixed sample (200 facts in all), so 70% of a level can be learned and every problem is recorded (both orders of a sum). Hints: base-ten blocks with "tens and ones" for adding; tens crossed out, or counting up on an open number line (to the next ten, by tens, then the rest) for subtracting. It's a strand rather than levels in Apprentice so it doesn't lock multiplication for players already there.
+- **The Balance Hall** (`js/balance.js`, K–2nd): the `balance` band, 120 fixed problems in three levels (compare and balance to 10; sums on both sides; compare to 100), each level with both kinds, opening at 50%.
+  - **Comparing** (Chompers, op `○`): "3 + 4 ○ 8". The answer is the symbol, typed on **< = > keys** that take the number pad's place (`padUI`), three rows tall so nothing moves; on a keyboard `<`, `=`, `>` (or `,` and `.`). It's a math symbol typed like a digit, not multiple choice. A right answer hits for the **bigger number** (Chompers eats it), and that number's digits fly.
+  - **Balancing** (the Equal Twins, op `=`): "3 + 4 = □ + 5", "7 = □ + 2". The hidden number is the answer and the damage.
+  - Hints: dot rows to line up (to 10, and sums), tens then ones (to 100), and a balance scale ("Both sides are the same. 3 + 4 = 7, so □ + 5 = 7. 7 − 5 = ?").
+  - Spoken: "Compare three plus four and eight.", "three plus four is less than eight", "three plus four equals what plus five".
 - **Missing-number problems** (`js/missing.js`): a fact with one number hidden, like `3 + □ = 7`. The answer and the damage are the hidden number. The □ shows as a glowing "?" that fills as you type (the answer box hides), and the hint is the inverse fact's (3 + □ = 7 is 7 − 3). They use the fact's own record. Quizard asks only these; other monsters ask 15% of review facts (box 3+) this way. Spoken as "three plus what is seven", recorded for every fact.
 
 ## Wings, monsters and heroes
@@ -84,9 +89,10 @@ Runs happen in Wings (`js/wings.js`, DESIGN.md §4). Each Wing asks one band's f
 | Wing | Band | Floors | Boss |
 |---|---|---|---|
 | The Counting Cellar | Sprout | Plusquito, Minustaur, rescue, Quizard, Trollar | Make-Ten Golem |
+| The Balance Hall | Balance | Chompers, Equal Twins, rescue, Chompers, pool | The Unknown |
 | The Tables Tower | Apprentice | Timesaur, Divvy, rescue, Starbot, Haberhasher, pool | Sigma Rex |
 
-- A Wing opens the next when its boss is beaten and 60% of its facts are learned. The band a player starts in (`st.start`) opens that Wing from the start.
+- A Wing opens when the Wing it comes `after` has its boss beaten and 60% of its facts learned: the Cellar opens both the Hall and the Tower. The band a player starts in (`st.start`) opens every Wing at that grade or below (`GRADE` in `wings.js`), so starting in Apprentice opens all three.
 - Per player, progress is saved under `wings`: `{ [wingId]: { boss: wins, best: floors, stars: [best stars per floor] } }`.
 - **Stars** (`floorStars` in `wings.js`, DESIGN.md §6.1): each floor awards ★ cleared, ★ no hearts lost on it, ★ a streak of 5 on it (hinted answers don't build streaks). The floor-cleared and win cards show them, and the Wing map shows each Wing's total.
 - Sevenstein and Octoloop aren't regular floors any more: they're cursed digits (7, and 8, whose cursed form is Octoloop).
@@ -105,6 +111,9 @@ Runs happen in Wings (`js/wings.js`, DESIGN.md §4). Each Wing asks one band's f
   - Quizard, ❓ Mystery: every problem hides a number (`blank` on the monster).
   - Trollar, 🪙 Toll: asks only coin problems (its `strand`).
   - Haberhasher, 🔢 Tens and ones: asks only two-digit problems (its `strand`).
+  - Chompers, 🐊 Big Bite: comparisons; hits for the bigger number.
+  - Equal Twins, ⚖️ Balance: balance equations.
+  - The Unknown (the Hall's boss), 🌀 Shapeshift: switches between comparing and balancing.
   - Starbot, ⭐ Stripes: asks ×5 and ×10 facts 70% of the time (`like` in `choose`).
   - Make-Ten Golem, 🔟 Ten Smash: answers of 10 or more hit double.
   - Sigma Rex, 👑 Second wind: at half HP it armors up like Timesaur.

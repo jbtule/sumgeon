@@ -8,6 +8,7 @@ import { facts, spokenProblem, spokenFact } from "./problems.js";
 import { missingOf, spokenMissing } from "./missing.js";
 import { coinFacts } from "./coins.js";
 import { twoDigitFacts } from "./twodigit.js";
+import { balanceFacts } from "./balance.js";
 
 export var PHRASE = {
   // The menu's intro, worded for speaking ("seven times eight", not "7 × 8").
@@ -57,7 +58,8 @@ export function spokenLines() {
     both.push(f);
     if (f.op === "+" && f.x !== f.y) both.push({ op: "+", x: f.y, y: f.x, ans: f.ans }); // either order can come up
   });
-  coinFacts().concat(both).forEach(function (f) {
+  // The Balance Hall: "Compare three plus four and eight.", "three plus four is less than eight".
+  coinFacts().concat(both, balanceFacts()).forEach(function (f) {
     out.push({ kind: "q", text: spokenProblem(f) });
     out.push({ kind: "q", text: spokenFact(f) });
   });

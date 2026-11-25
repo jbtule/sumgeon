@@ -123,7 +123,7 @@ const GEAR = '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="cu
 $("sayProb").innerHTML = SPEAKER;
 $("sayProb").onclick = () => {
   if (!G.cur) return;
-  if (G.cur.blank) say("q", spokenMissing(G.cur), true);
+  if (G.cur.fact) say("q", spokenMissing(G.cur), true);
   else say("q", spokenProblem(G.cur), true);
 };
 
@@ -173,10 +173,11 @@ function ansUI() {
 // The problem as shown: "3 + 4 =", or with a glowing □ for a missing number ("3 + □ = 7").
 function probUI() {
   const p = G.cur, box = $("prob");
-  if (p.blank) box.innerHTML = esc(p.q).replace("□", '<span class="blank" id="blank">?</span>');
+  if (p.blank || p.sym || p.op === "=") box.innerHTML = esc(p.q).replace("□", '<span class="blank" id="blank">?</span>');
   else if (p.op === "¢") box.innerHTML = coinsSvg(p.coins) + " =";
   else box.textContent = p.q + " =";
-  document.querySelector(".game").classList.toggle("missing", !!p.blank);
+  document.querySelector(".game").classList.toggle("missing", !!p.blank || !!p.sym || p.op === "=");
+  padUI(!!p.sym);
   document.querySelector(".game").classList.toggle("cents", p.op === "¢");
 }
 // The facts a monster asks: its own strand (Trollar's coins) or the player's band.
@@ -184,7 +185,8 @@ const strandOf = (m) => m.strand || st.band;
 // A problem with its answer, for the miss message and the Oops card: "3 + 4 = 7", "3 + 4 = 7"
 // for 3 + □ = 7, and "10 + 5 + 1 = 16¢" for coins (just "16¢" for one coin).
 function shownFact(p, ans) {
-  if (p.blank) return filled(p, ans);
+  if (p.sym) return p.q.replace("□", typeof ans === "string" && ans.startsWith("<b>") ? `<b>${esc(p.sym)}</b>` : p.sym);
+  if (p.blank || p.op === "=") return filled(p, ans);
   if (p.op === "¢") return (p.q.includes("+") ? p.q + " = " : "") + ans + "¢";
   return `${esc(p.q)} = ${ans}`;
 }
@@ -232,7 +234,7 @@ function newProblem() {
   // Quizard hides a number in every problem; other monsters sometimes do, for facts in review.
   const rec = recs[key];
   // (Not for a strand's facts: coins can't hide a number, and two-digit ones aren't recorded that way.)
-  if (!m.strand && (m.blank || (rec && rec.b >= 3 && Math.random() < MISSING_SHARE))) G.cur = missingOf(G.cur, pickBlank());
+  if (!m.strand && "+-×÷".includes(G.cur.op) && (m.blank || (rec && rec.b >= 3 && Math.random() < MISSING_SHARE))) G.cur = missingOf(G.cur, pickBlank());
   G.recent = [key].concat(G.recent).slice(0, 3);
   G.input = ""; G.busy = false; G.hinted = false; G.t0 = performance.now();
   probUI();
@@ -258,7 +260,9 @@ function centerOf(el) { const r = el.getBoundingClientRect(); return { x: r.left
 // reduced motion they land at once.
 function fly(text, crit) {
   if (reduced()) return Promise.resolve();
-  const layer = $("fly"), a = centerOf($("ans")), b = centerOf($("mon")), n = text.length;
+  // From the answer box, or from the □ when the problem has one (the answer box hides then).
+  const from = $("blank") && $("blank").offsetParent ? $("blank") : $("ans");
+  const layer = $("fly"), a = centerOf(from), b = centerOf($("mon")), n = text.length;
   return Promise.all([...text].map((ch, i) => new Promise((done) => {
     const d = Number(ch), s = document.createElement("span");
     if (onTeam(d)) { s.className = "shot hero"; s.innerHTML = heroArt(d); }
@@ -353,11 +357,13 @@ function submit() {
   if (G.next) return nextAfterMiss();
   if (G.busy || G.input === "") return;
   G.tries++;
-  if (Number(G.input) === G.cur.ans) {
+  // A comparison's answer is its symbol (<, = or >); everything else is a number.
+  if (G.cur.sym ? G.input === G.cur.sym : Number(G.input) === G.cur.ans) {
     G.busy = true; G.solved++;
     if (!G.hinted) G.streak++;
     G.floorStreak = Math.max(G.floorStreak, G.streak);
-    const typed = G.input, crit = G.streak >= 3, bonus = heroBonus(typed), m = G.floors[G.floor];
+    // A comparison hits with the bigger number (Chompers eats it), so its digits are what fly.
+    const typed = G.cur.sym ? String(G.cur.ans) : G.input, crit = G.streak >= 3, bonus = heroBonus(typed), m = G.floors[G.floor];
     // The monster's trait: Lucky Number, Ten Smash, Armor (traits.js).
     const trait = hitBy(m, G.cur.ans, typed, G.halved);
     const dmg = Math.max(1, Math.round(G.cur.ans * (crit ? 2 : 1) * trait.mult * bonus.mult));
@@ -793,12 +799,12 @@ function switchTo(id) {
   menu();
 }
 
-// After a win, what's left to open the next Wing, if it's still locked.
+// After a win, what's left to open the Wings that come after this one, if they're still locked.
 function nextWingHint() {
-  const i = WINGS.indexOf(wing()), nx = WINGS[i + 1];
-  if (!nx || openWings(progress, recs, st.start).includes(nx.id)) return "";
-  const t = toOpen(nx, progress, recs);
-  return `<p>To open <strong>${nx.name}</strong>, learn ${Math.round(t.need * 100)}% of the facts here. You're at ${Math.round(t.share * 100)}%.</p>`;
+  const open = openWings(progress, recs, st.start), next = WINGS.filter((x) => x.after === wing().id && !open.includes(x.id));
+  if (!next.length) return "";
+  const t = toOpen(next[0], progress, recs);
+  return `<p>To open <strong>${next.map((x) => x.name).join("</strong> and <strong>")}</strong>, learn ${Math.round(t.need * 100)}% of the facts here. You're at ${Math.round(t.share * 100)}%.</p>`;
 }
 function start() {
   hide();
@@ -821,17 +827,33 @@ function press(k) {
   if (G.next && k === "go") return nextAfterMiss();
   if (G.busy) return;
   if (k === "go") return submit();
+  const cmp = !!(G.cur && G.cur.sym), sym = "<=>".includes(k);
+  if (k !== "del" && sym !== cmp) return; // digits for numbers, < = > for comparisons
   sfx.tick();
   if (k === "del") G.input = G.input.slice(0, -1);
+  else if (sym) G.input = k;
   else if (G.input.length < 4) G.input = (G.input === "0" ? "" : G.input) + k;
   ansUI();
 }
-$("pad").innerHTML = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "del", "0", "go"].map((k) => `<button type="button" data-k="${k}" class="${k === "go" ? "go" : k === "del" ? "del" : ""}" aria-label="${k === "del" ? "Delete" : k === "go" ? "Attack" : k}">${k === "del" ? "⌫" : k === "go" ? "Hit!" : k}</button>`).join("");
+// The number pad, or for a comparison (Chompers) the < = > keys, filling the same space.
+const KEY_LABEL = { del: ["⌫", "Delete"], go: ["Hit!", "Attack"], "<": ["<", "Less than"], "=": ["=", "Equal to"], ">": [">", "Greater than"] };
+function padUI(cmp) {
+  const pad = $("pad"), mode = cmp ? "cmp" : "num";
+  if (pad.dataset.mode === mode) return;
+  pad.dataset.mode = mode; pad.classList.toggle("cmp", cmp);
+  const keys = cmp ? ["<", "=", ">", "del", "go"] : ["1", "2", "3", "4", "5", "6", "7", "8", "9", "del", "0", "go"];
+  pad.innerHTML = keys.map((k) => { const [t, a] = KEY_LABEL[k] || [k, k];
+    return `<button type="button" data-k="${k}" class="${k === "go" ? "go" : k === "del" ? "del" : "<=>".includes(k) ? "sym" : ""}" aria-label="${a}">${t}</button>`; }).join("");
+}
+padUI(false);
 $("pad").addEventListener("click", (e) => { const b = e.target.closest("button"); if (b) press(b.dataset.k); });
 document.addEventListener("keydown", (e) => {
   if (e.key === "Escape") { if (G.paused) { if ($("resume")) resume(); } else if ($("ov").hidden) pause(); return; }
   if (!$("ov").hidden) return;
   if (/^[0-9]$/.test(e.key)) press(e.key);
+  else if ("<=>".includes(e.key) && e.key) press(e.key);
+  else if (e.key === ",") press("<");
+  else if (e.key === ".") press(">");
   else if (e.key === "Backspace") press("del");
   else if (e.key === "Enter") { e.preventDefault(); press("go"); }
 });

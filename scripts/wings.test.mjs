@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { WINGS, runFloors, nextRescue, openWings, learnedShare, toOpen } from "../js/wings.js";
 import { pool } from "../js/learn.js";
 
-const cellar = WINGS[0], tower = WINGS[1];
+const [cellar, hall, tower] = ["cellar", "hall", "tower"].map((id) => WINGS.find((w) => w.id === id));
 const run = runFloors(cellar, { captain: 5, rescued: [] }, () => 0);
 assert.equal(run.length, 6);
 assert.equal(run[3].n, "Quizard", "floor 4 is Quizard");
@@ -24,14 +24,15 @@ for (const w of WINGS) for (const m of runFloors(w, { captain: 0, rescued: [1, 2
 
 // The Tower opens for a Sprout player only after the Golem is beaten and 60% of the Cellar is learned.
 assert.deepEqual(openWings({}, {}, "sprout"), ["cellar"]);
-assert.deepEqual(openWings({}, {}, "apprentice"), ["cellar", "tower"], "starting in Apprentice opens the Tower");
+assert.deepEqual(openWings({}, {}, "apprentice"), ["cellar", "hall", "tower"], "starting in Apprentice opens the Hall and the Tower");
 const recs = {};
 const cellarFacts = pool("sprout");
 cellarFacts.slice(0, Math.ceil(cellarFacts.length * 0.6)).forEach((f) => (recs[f.key] = { b: 3, n: 3, c: 3, ms: 2000, t: 0 }));
 assert.ok(learnedShare(cellar, recs) >= 0.6);
 assert.deepEqual(openWings({}, recs, "sprout"), ["cellar"], "learning alone isn't enough: beat the boss too");
 assert.deepEqual(openWings({ cellar: { boss: 1 } }, {}, "sprout"), ["cellar"], "the boss alone isn't enough: learn the facts too");
-assert.deepEqual(openWings({ cellar: { boss: 1 } }, recs, "sprout"), ["cellar", "tower"]);
+assert.deepEqual(openWings({ cellar: { boss: 1 } }, recs, "sprout"), ["cellar", "hall", "tower"], "the Cellar opens both the Hall and the Tower");
+assert.equal(toOpen(hall, {}, {}).prev.id, "cellar", "the Hall comes after the Cellar, and doesn't block the Tower");
 assert.equal(toOpen(tower, {}, {}).boss, false);
 // Depth: floor 1 is easier, the boss tougher, rising evenly.
 import { depthScale } from "../js/wings.js";
@@ -45,5 +46,6 @@ import { floorStars, wingStars } from "../js/wings.js";
 assert.deepEqual(floorStars(0, 5), [true, true, true]);
 assert.deepEqual(floorStars(2, 4), [true, false, false]);
 assert.deepEqual(wingStars(WINGS[0], { cellar: { stars: [3, 1, 2] } }), { got: 6, max: 18 });
-assert.deepEqual(wingStars(WINGS[1], {}), { got: 0, max: 21 });
+assert.deepEqual(wingStars(tower, {}), { got: 0, max: 21 });
+assert.deepEqual(wingStars(hall, {}), { got: 0, max: 18 });
 console.log("✓ stars");
