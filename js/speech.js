@@ -127,7 +127,11 @@ function playSprite(hit) {
       var src = c.createBufferSource(), done = false;
       src.buffer = hit.s.buf;
       src.connect(c.destination);
-      function end() { if (done) return; done = true; if (source === src) { source = null; finishClip = null; } resolve(true); }
+      // A safety net, as playClip has: if Safari pauses the context mid-line (say, while an
+      // <audio> clip starts), onended never comes and every line queued after this one would
+      // wait forever. So the line counts as done a moment after its length either way.
+      var t = setTimeout(function () { end(); }, (hit.len + 1.5) * 1000);
+      function end() { if (done) return; done = true; clearTimeout(t); if (source === src) { source = null; finishClip = null; } resolve(true); }
       src.onended = end;
       source = src; finishClip = function () { try { src.stop(); } catch (e) {} end(); };
       src.start(0, hit.start, hit.len);
