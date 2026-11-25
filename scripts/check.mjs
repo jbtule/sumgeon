@@ -10,7 +10,7 @@ let failed = false;
 function fail(msg) { console.error("✗ " + msg); failed = true; }
 
 // Syntax of every module and script.
-for (const dir of ["js", "scripts", "listen", "spell", "moments"]) {
+for (const dir of ["js", "scripts", "listen", "spell", "moments", "gallery"]) {
   for (const f of readdirSync(join(root, dir)).filter((f) => /\.m?js$/.test(f))) {
     try { execFileSync(process.execPath, ["--check", join(root, dir, f)], { stdio: "pipe" }); }
     catch (e) { fail(`${dir}/${f}: ${e.stderr}`); }
@@ -36,9 +36,9 @@ const app = readFileSync(join(root, "js", "app.js"), "utf8");
 if (/localStorage\.(setItem|getItem)\(/.test(app.replace(/window\.localStorage;[^\n]*/, ""))) fail("app.js should save through store.js, not localStorage directly");
 
 // The grown-up pages (the listen check spells out every recorded line; the spell check tries the
-// recognizer; the moments page plays Hero Moments): search engines skip them, the game never
+// recognizer; the moments page plays Hero Moments; the gallery shows the monster art): search engines skip them, the game never
 // links to them, and stamp.mjs can fill in their badge, script and import map.
-for (const [dir, script] of [["listen", "listen.js"], ["spell", "spell.js"], ["moments", "moments.js"]]) {
+for (const [dir, script] of [["listen", "listen.js"], ["spell", "spell.js"], ["moments", "moments.js"], ["gallery", "gallery.js"]]) {
   const page = readFileSync(join(root, dir, "index.html"), "utf8");
   if (!page.includes('<meta name="robots" content="noindex, nofollow">')) fail(`${dir}/index.html should be noindex`);
   if (!/<script type="importmap">[\s\S]*?<\/script>/.test(page)) fail(`${dir}/index.html has no import map`);

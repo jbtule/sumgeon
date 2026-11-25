@@ -46,6 +46,117 @@ export const MON=[
 MON.push({n:'The Centipede',op:'mix',c:'#a78bfa',hits:6,boss:1,quip:'curls up into a hundred pieces.',
   d:(c)=>MON.find((m)=>m.n==='Make-Ten Golem').d(c)});
 
+/* ---------- new monsters, drawn but not in the game yet ----------
+   The grade strata's new monsters (DESIGN.md §4.1). Same shape as MON, plus sym (the symbol its
+   body is), stratum and trait (the plan, for the gallery page), so they can be reviewed before
+   they're wired into wings.js, traits.js and lines.js. Nothing in the game reads NEW_MON. */
+const CREAM = '#f3efe4', GOLD = '#ffc93c', CORAL = '#ff5a4e';
+const thin = (w) => `stroke="${DK}" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round"`;
+// Points on a circle, for the Centipede's coil and Tick-Tockus's clock.
+const at = (cx, cy, r, deg) => [cx + r * Math.cos(deg * Math.PI / 180), cy + r * Math.sin(deg * Math.PI / 180)];
+const f1 = (n) => Math.round(n * 10) / 10;
+// One slime of Slimelipsis: a drippy dome standing on (x, y), squashed by k (1 is round).
+const slime = (x, y, sx = 1, sy = 1) => `<path transform="translate(${x} ${y}) scale(${sx} ${sy})" d="M-27 0 C-31 -22 -20 -48 0 -48 C20 -48 31 -22 27 0 Q21 6 14 1 Q7 6 0 1 Q-7 6 -14 1 Q-21 6 -27 0Z"/>`;
+// The Centipede's body: ten tens rods in a U, from the neck (i 0, up on the left) round the
+// bottom to the tail (i 9, up on the right). It curls into a full ring only at half HP.
+const CENTI = { cx: 102, cy: 98, r: 60 };
+const rodAt = (i) => 194 - i * 23.6;
+
+export const NEW_MON=[
+ {n:'Pipsqueak',op:'+',sym:'⚃',stratum:'cellar',c:'#ff9ecf',hits:3,
+  trait:{icon:'🎲',name:'Flash',text:'Shows dots for a moment: how many? (up to 5)'},
+  quip:'rolls away squeaking, snake eyes.',
+  d:c=>`<path d="M152 140 q26 6 24 -18 q-2 -16 14 -20" ${ds} stroke-width="5"/>${foot(80,180,12)}${foot(120,180,12)}<path d="M80 160 V174 M120 160 V174" stroke="${DK}" stroke-width="10" stroke-linecap="round"/>`
+   +solid(`<circle cx="62" cy="50" r="18"/><circle cx="138" cy="50" r="18"/>`,c)+`<circle cx="62" cy="50" r="9" fill="#ffd3e8"/><circle cx="138" cy="50" r="9" fill="#ffd3e8"/>`
+   +solid(`<path d="M146 66 L160 54 V150 L146 164 Z"/>`,'#e07cb0')+solid(`<path d="M56 66 L70 54 H160 L146 66 Z"/>`,'#ffc6e2')+solid(`<rect x="52" y="64" width="96" height="102" rx="14"/>`,c)
+   +`${eye(84,88,11)}${eye(116,88,11)}<path d="M96 104 l4 4 l4 -4" fill="#ff5a8a" stroke="${DK}" stroke-width="2.5" stroke-linejoin="round"/><path d="M92 110 Q96 114 100 110 Q104 114 108 110" ${ds} stroke-width="3"/><path d="M58 104 l-18 -4 M58 110 l-18 4 M142 104 l18 -4 M142 110 l18 4" ${ds} stroke-width="2.5"/>`
+   +`<rect x="76" y="118" width="48" height="40" rx="9" fill="${CREAM}" stroke="${DK}" stroke-width="3.5"/>`+[[88,128],[112,128],[88,148],[112,148]].map(([x,y])=>`<circle cx="${x}" cy="${y}" r="5" fill="${DK}"/>`).join('')},
+ {n:'Triceraplus',op:'+',sym:'+ + +',stratum:'hall',c:'#ff9a4a',hits:3,
+  trait:{icon:'🦕',name:'Three horns',text:'Adds three numbers: 4 + 3 + 6'},
+  quip:'stomps off to find a bigger sum.',
+  d:c=>{const plus=(x,y,k=1)=>`<rect x="${x-4.5*k}" y="${y-13*k}" width="${9*k}" height="${26*k}" rx="${2.5*k}"/><rect x="${x-13*k}" y="${y-4.5*k}" width="${26*k}" height="${9*k}" rx="${2.5*k}"/>`;
+   return `${foot(70,184,14)}${foot(142,184,14)}`
+   +solid(`<rect x="88" y="140" width="24" height="40" rx="9"/><rect x="158" y="136" width="24" height="42" rx="9"/>`,'#d9762f')
+   +solid(`<path d="M160 112 Q192 118 204 152 Q182 142 154 148 Z"/>`,c)
+   +solid(`<rect x="58" y="142" width="26" height="40" rx="9"/><rect x="128" y="142" width="26" height="40" rx="9"/><ellipse cx="116" cy="124" rx="62" ry="40"/>`,c)
+   +solid(`<path d="M50 120 Q30 52 84 30 Q140 22 140 84 Q120 110 50 120 Z"/>`,'#e8743a')+[[44,100],[42,74],[56,48],[82,34],[110,32],[132,46],[140,70]].map(([x,y])=>`<circle cx="${x}" cy="${y}" r="7" fill="${GOLD}" stroke="${DK}" stroke-width="3"/>`).join('')
+   +solid(`<ellipse cx="68" cy="108" rx="44" ry="32" transform="rotate(-8 68 108)"/>`,c)
+   +solid(`<path d="M36 100 Q14 102 6 122 Q24 134 50 126 Z"/>`,'#ffc79a')
+   +solid(plus(28,80,1.2)+plus(62,60,1.2)+plus(98,46,1.2),CREAM)
+   +`${eye(66,100,10)}<circle cx="24" cy="114" r="2.5" fill="${DK}"/><path d="M40 124 Q58 136 80 124" ${ds} stroke-width="3"/>`}},
+ {n:'Doublet',op:'+',sym:'+ +',stratum:'hall',c:'#ffd84d',hits:3,
+  trait:{icon:'👯',name:'Doubles',text:'Doubles and halves: 8 + 8 and 16 − 8'},
+  quip:'take a bow together and skip away.',
+  d:c=>{const one=(x)=>solid(`<rect x="${x-17}" y="34" width="34" height="118" rx="15"/>`,c);
+   const tie=(x)=>`<path d="M${x} 116 l-12 -7 v14 z M${x} 116 l12 -7 v14 z" fill="${CORAL}" stroke="${DK}" stroke-width="3" stroke-linejoin="round"/><circle cx="${x}" cy="116" r="4" fill="${CORAL}" stroke="${DK}" stroke-width="3"/>`;
+   const face=(x)=>`${eye(x-9,82,8)}${eye(x+9,82,8)}<path d="M${x-7} 96 Q${x} 102 ${x+7} 96" ${ds} stroke-width="3"/>`;
+   return `${foot(48,160,13)}${foot(70,160,13)}${foot(130,160,13)}${foot(152,160,13)}`
+   +solid(`<rect x="8" y="72" width="94" height="34" rx="15"/><rect x="98" y="72" width="94" height="34" rx="15"/>`,c)+one(59)+one(141)
+   +solid(`<circle cx="94" cy="89" r="12"/><circle cx="106" cy="89" r="12"/>`,c)+`<path d="M100 79 v20" ${ds} stroke-width="3"/>`
+   +face(59)+face(141)+tie(59)+tie(141)}},
+ {n:'Tick-Tockus',op:'mix',sym:'🕒',stratum:'hall, mines, tower',c:'#e8679f',hits:4,
+  trait:{icon:'⏰',name:'Tell the time',text:'Hours and half hours, then 5 minutes, then the minute'},
+  quip:'runs out of time and wriggles away.',
+  d:c=>{const legs=[[58,118,'q-26 10 -34 36 q-4 14 8 14'],[74,128,'q-12 24 -6 44 q4 10 12 2'],[92,132,'q-4 26 -16 42'],[108,132,'q4 26 16 42'],[126,128,'q12 24 6 44 q-4 10 -12 2'],[142,118,'q26 10 34 36 q4 14 -8 14']];
+   const ticks=[0,30,60,90,120,150,180,210,240,270,300,330].map((a)=>{const big=a%90===0,[x0,y0]=at(100,72,big?34:37,a-90),[x1,y1]=at(100,72,42,a-90);return `<path d="M${f1(x0)} ${f1(y0)} L${f1(x1)} ${f1(y1)}" ${thin(big?4:2.5)}/>`;}).join('');
+   return line(legs.map(([x,y,p])=>`<path d="M${x} ${y} ${p}"/>`).join(''),c,13)
+   +legs.map(([x,y],i)=>`<circle cx="${x+(i<3?-6:6)}" cy="${y+16}" r="2.5" fill="#ffd0e3"/>`).join('')
+   +solid(`<path d="M50 34 a22 22 0 0 1 30 -22 Z" transform="rotate(-10 62 24)"/><path d="M150 34 a22 22 0 0 0 -30 -22 Z" transform="rotate(10 138 24)"/>`,GOLD)
+   +solid(`<circle cx="100" cy="76" r="60"/>`,c)
+   +`<circle cx="100" cy="72" r="45" fill="${CREAM}" stroke="${DK}" stroke-width="4"/>${ticks}`
+   +line(`<path d="M100 72 Q88 64 80 50 M100 72 Q118 60 128 58"/>`,c,8)+`<circle cx="100" cy="72" r="5" fill="${GOLD}" stroke="${DK}" stroke-width="3"/>`
+   +`${eye(86,94,8)}${eye(114,94,8)}<path d="M94 106 Q100 111 106 106" ${ds} stroke-width="3"/>`}},
+ {n:'Slimelipsis',op:'mix',sym:'…',stratum:'mines',c:'#3fd6d0',hits:3,
+  trait:{icon:'🫧',name:'What comes next',text:'Skip counting: 15, 20, 25, □'},
+  quip:'bounce off one, two, three, and splat.',
+  d:c=>`<ellipse cx="36" cy="180" rx="30" ry="7" fill="${DK}"/><ellipse cx="100" cy="180" rx="20" ry="5" fill="${DK}" opacity=".55"/><ellipse cx="164" cy="180" rx="38" ry="7" fill="${DK}"/>`
+   +solid(slime(36,176,1.2,1.2)+slime(100,138,1.2,1.2)+slime(164,176,1.42,.96),c)
+   +`${eye(26,142,8)}${eye(46,142,8)}<path d="M30 156 Q36 161 42 156" ${ds} stroke-width="3"/>`
+   +`${eye(90,104,8)}${eye(110,104,8)}<ellipse cx="100" cy="120" rx="5" ry="6" fill="${DK}"/>`
+   +`${eye(153,152,8)}${eye(175,152,8)}<path d="M155 163 Q164 170 173 163" ${ds} stroke-width="3"/>`
+   +`<path d="M80 72 l-5 -8 M100 66 v-10 M120 72 l5 -8" ${ds} stroke-width="3.5"/>`
+   +`<circle cx="18" cy="134" r="4.5" fill="#fff" opacity=".7"/><circle cx="82" cy="96" r="4.5" fill="#fff" opacity=".7"/><circle cx="138" cy="148" r="4.5" fill="#fff" opacity=".7"/>`},
+ {n:'Squaresquatch',op:'×',sym:'²',stratum:'mines',c:'#7f9cff',hits:4,
+  trait:{icon:'🟩',name:'Arrays',text:'Rows and columns up to 5 × 5, as 5 + 5 + 5'},
+  quip:'stomps back into the woods, one square at a time.',
+  d:c=>{const cells=[];for(let r=0;r<3;r++)for(let k=0;k<4;k++)cells.push(`<rect x="${57+k*22}" y="${98+r*22}" width="18" height="18" rx="3"/>`);
+   return solid(`<path d="M52 160 h40 v22 q0 8 -8 8 h-30 q-14 0 -14 -10 q0 -14 12 -20 Z M108 160 h40 q12 6 12 20 q0 10 -14 10 h-30 q-8 0 -8 -8 Z"/>`,'#5a6fd0')
+   +`<path d="M44 186 v-8 M54 188 v-8 M146 188 v-8 M156 186 v-8" ${ds} stroke-width="2.5"/>`
+   +solid(`<path d="M40 74 l-12 70 l8 -4 l2 10 l8 -6 l6 8 l4 -14 Z M160 74 l12 70 l-8 -4 l-2 10 l-8 -6 l-6 8 l-4 -14 Z"/>`,c)
+   +solid(`<path d="M100 18 Q60 18 52 48 L44 80 L46 120 L40 150 L52 146 L54 164 L66 156 L74 168 L86 158 L100 170 L114 158 L126 168 L134 156 L146 164 L148 146 L160 150 L154 120 L156 80 L148 48 Q140 18 100 18 Z"/>`,c)
+   +`<g fill="#c4d0ff" stroke="${DK}" stroke-width="3">${cells.join('')}</g>`
+   +solid(`<ellipse cx="100" cy="60" rx="30" ry="24"/>`,'#c4d0ff')
+   +`<path d="M76 44 Q84 36 96 38 M104 38 Q116 36 124 44" ${ds} stroke-width="5"/>${eye(88,56,8)}${eye(112,56,8)}<ellipse cx="100" cy="68" rx="6" ry="4" fill="${DK}"/><path d="M90 76 Q100 82 110 76" ${ds} stroke-width="3"/>`
+   +line(`<path d="M112 8 Q113 -2 122 -2 Q131 -2 131 6 Q131 13 113 24 H133"/>`,c,7)}},
+ {n:'The Centipede',op:'mix',sym:'¢ 100',stratum:'mines',c:'#ff7a45',hits:6,boss:1,
+  trait:{icon:'🐛',name:'Hundred legs',text:'At half HP it curls up into a ring'},
+  quip:'counts its hundred legs and scuttles off.',
+  d:c=>{const {cx,cy,r}=CENTI,rods=[],legs=[],tips=[],spine=[];
+   for(let i=0;i<10;i++){const a=rodAt(i),[x,y]=at(cx,cy,r,a).map(f1);spine.push(`${x} ${y}`);
+    const [ox,oy]=at(cx,cy,r+20,a);
+    for(const s of [-1,1]){const [lx,ly]=at(cx,cy,r+36,a+s*7);legs.push(`<path d="M${f1(ox)} ${f1(oy)} L${f1(lx)} ${f1(ly)}"/>`);
+     const [qx,qy]=at(lx,ly,5,a);tips.push(`<path transform="rotate(${f1(a+90)} ${f1(qx)} ${f1(qy)})" d="M${f1(qx)} ${f1(qy-6)} l4.5 6 l-4.5 6 l-4.5 -6 Z"/>`);}
+    rods.push(`<g transform="rotate(${f1(a)} ${x} ${y})">${solid(`<rect x="${f1(x-23)}" y="${f1(y-9.5)}" width="46" height="19" rx="5"/>`,c)}<path d="${[1,2,3,4,5,6,7,8,9].map((k)=>`M${f1(x-23+k*4.6)} ${f1(y-7.5)} v15`).join(' ')}" stroke="${DK}" stroke-width="1.3" opacity=".42"/></g>`);}
+   const [ex,ey]=at(cx,cy,r,rodAt(9)-14).map(f1),[hx,hy]=at(cx,cy,r,rodAt(0)+12).map(f1);
+   return line(legs.join(''),DK,1)+`<g fill="#9ef0ff" stroke="${DK}" stroke-width="2.5" stroke-linejoin="round">${tips.join('')}</g>`
+   +line(`<path d="M${hx} ${hy} L${spine.join(' L')} L${ex} ${ey}"/>`,'#c4532a',20)+line(`<path d="M${ex} ${ey} l-4 -16 M${ex} ${ey} l12 -10"/>`,'#c4532a',5)
+   +rods.join('')
+   +line(`<path d="M30 22 Q18 2 4 2 M60 22 Q72 0 88 -2"/>`,'#c4532a',5)+`<g fill="#9ef0ff" stroke="${DK}" stroke-width="2.5" stroke-linejoin="round"><path d="M0 -6 l5 8 l-5 8 l-5 -8Z"/><path d="M92 -10 l5 8 l-5 8 l-5 -8Z"/></g>`
+   +solid(`<circle cx="46" cy="54" r="34"/>`,c)+solid(`<path d="M10 52 Q10 12 46 12 Q82 12 82 52 Z"/>`,GOLD)
+   +`<path d="M55 23 Q46 18 40 25 Q35 32 40 39 Q46 45 55 41 M46 16 V48" ${thin(3.5)} fill="none"/>`
+   +`${eye(34,62,9)}${eye(58,62,9)}<path d="M32 78 Q46 88 60 78" ${ds} stroke-width="3"/><path d="M37 81 l2 7 l3 -6 M55 81 l-2 7 l-3 -6" fill="${CREAM}" stroke="${DK}" stroke-width="2" stroke-linejoin="round"/>`}},
+ {n:'Halfling',op:'mix',sym:'½',stratum:'tower',c:'#a47dff',hits:4,
+  trait:{icon:'½',name:'Halves',text:'Unit fractions, on a number line, and equal fractions'},
+  quip:'splits up and tiptoes home, half each way.',
+  d:c=>solid(`<ellipse cx="66" cy="178" rx="26" ry="12"/><ellipse cx="134" cy="178" rx="26" ry="12"/>`,'#f2b483')+`<path d="M48 172 q3 -6 6 0 M58 170 q3 -6 6 0 M136 170 q3 -6 6 0 M146 172 q3 -6 6 0" ${ds} stroke-width="2.5"/>`
+   +`<path d="M78 150 V168 M122 150 V168" stroke="${DK}" stroke-width="10" stroke-linecap="round"/>`
+   +line(`<path d="M44 104 q-18 8 -20 26 M156 104 q18 8 20 26"/>`,c,10)
+   +solid(`<path d="M95 40 A62 62 0 0 0 95 164 Z"/>`,c)+solid(`<path d="M105 40 A62 62 0 0 1 105 164 Z"/>`,'#d6c6ff')
+   +line(`<path d="M62 36 q-4 -14 8 -16 q10 0 6 10 M86 28 q0 -14 12 -12 q8 4 2 12 M110 30 q4 -14 16 -8 q6 6 -2 12"/>`,'#6b4bc4',6)
+   +solid(`<rect x="34" y="104" width="56" height="14" rx="4"/><rect x="110" y="104" width="56" height="14" rx="4"/>`,'#3a2a6c')+`<rect x="84" y="100" width="32" height="22" rx="5" fill="${GOLD}" stroke="${DK}" stroke-width="3.5"/>`
+   +`${eye(70,78,9)}${eye(130,78,9)}<path d="M76 94 Q86 100 92 94 M108 94 Q114 100 124 94" ${ds} stroke-width="3"/>`}
+];
+
 /* ---------- looks: the same monster with different extras ----------
    Each regular monster has four more looks with alliterative names (Minustaur's Mom, Mighty
    Minustaur). A look is the same drawing plus accessories placed on its face and head, so kids
@@ -53,7 +164,7 @@ MON.push({n:'The Centipede',op:'mix',c:'#a78bfa',hits:6,boss:1,quip:'curls up in
 
 // Where each monster's features are, in its 200 × 200 drawing: eyes [x, y, r], the mouth, the top
 // of its head (and whether it already wears a hat), its neck, the ground, and the eyelid color.
-const ANCHOR = {
+export const ANCHOR = {
   Plusquito: { eyes: [[91, 92, 8], [110, 92, 8]], mouth: [100, 106], top: [100, 36], neck: [100, 128], ground: 184 },
   Minustaur: { eyes: [[82, 101, 9], [118, 101, 9]], mouth: [100, 116], top: [100, 84], neck: [100, 128], ground: 180 },
   Quizard: { eyes: [[88, 30, 8], [112, 30, 8]], mouth: [100, 44], top: [100, -4], hat: true, neck: [100, 62], ground: 204 },
@@ -63,7 +174,17 @@ const ANCHOR = {
   Timesaur: { eyes: [[89, 93, 9], [112, 93, 9]], mouth: [100, 108], top: [100, 76], neck: [100, 124], ground: 174 },
   Divvy: { eyes: [[89, 50, 8], [111, 50, 8]], mouth: [100, 66], top: [100, 22], neck: [100, 88], ground: 192 },
   Starbot: { eyes: [[86, 118, 7], [114, 118, 7]], mouth: [100, 134], top: [100, 86], neck: [100, 152], ground: 188, lid: DK },
-  Haberhasher: { eyes: [[88, 66, 7], [112, 66, 7]], mouth: [100, 78], top: [104, -22], hat: true, neck: [100, 100], ground: 194 }
+  Haberhasher: { eyes: [[88, 66, 7], [112, 66, 7]], mouth: [100, 78], top: [104, -22], hat: true, neck: [100, 100], ground: 194 },
+  // NEW_MON, ready for looks once they're in the game. Doublet's are its left twin's face, with
+  // both twins' eyes; Slimelipsis's are its middle slime's.
+  Pipsqueak: { eyes: [[84, 88, 11], [116, 88, 11]], mouth: [100, 110], top: [100, 56], neck: [100, 114], ground: 186 },
+  Triceraplus: { eyes: [[66, 100, 10]], mouth: [56, 128], top: [80, 72], neck: [100, 136], ground: 190 },
+  Doublet: { eyes: [[50, 82, 8], [68, 82, 8], [132, 82, 8], [150, 82, 8]], mouth: [59, 98], top: [59, 36], neck: [59, 116], ground: 166 },
+  "Tick-Tockus": { eyes: [[86, 94, 8], [114, 94, 8]], mouth: [100, 108], top: [100, 16], neck: [100, 134], ground: 190 },
+  Slimelipsis: { eyes: [[90, 104, 8], [110, 104, 8]], mouth: [100, 120], top: [100, 80], neck: [100, 132], ground: 186 },
+  Squaresquatch: { eyes: [[88, 56, 8], [112, 56, 8]], mouth: [100, 78], top: [100, 20], neck: [100, 90], ground: 194 },
+  "The Centipede": { eyes: [[34, 62, 9], [58, 62, 9]], mouth: [46, 82], top: [46, 12], hat: true, neck: [46, 92], ground: 200 },
+  Halfling: { eyes: [[70, 78, 9], [130, 78, 9]], mouth: [100, 96], top: [100, 30], neck: [100, 100], ground: 190 }
 };
 const st = `stroke="${DK}" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"`;
 // Each accessory: (anchor, color) → SVG drawn over the monster.
