@@ -22,6 +22,9 @@ assert.ok(!PHRASE.intro.includes("×"), "spoken text has no symbols the voice wo
 // Names are said the way the puns need: Twodini as "Toodini" (too-DEE-nee), Jr. as "Junior".
 assert.ok(ids.has("m:Toodini!") && ids.has("m:Trollar Junior!") && ids.has("m:Mister Moneybags!"));
 assert.ok(![...ids].some((id) => /Twodini|Jr\.|Mr\./.test(id)), "no line says Twodini, Jr. or Mr. as written");
+assert.ok(ids.has("m:Sir Plussington!") && ids.has("m:Chomp-ette!") && ids.has("m:Nine-jah!"));
+assert.ok(ids.has("p:Minustaur's Mom loses her footing and her horns.") && ids.has("p:King Minus loses his footing and his horns."));
+assert.ok(ids.has("p:Sevenstein comes unbolted. Six... seven! Gone."));
 
 // Keys are stable and unique.
 const plan = planClips();
