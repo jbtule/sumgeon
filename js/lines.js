@@ -19,6 +19,8 @@ export var PHRASE = {
   oops: "Oops!",
   crack: "The curse is cracking!",
   skip: "You already know these. Skipping ahead!",
+  spell: "Cast a spell!",
+  spellFail: "Incantation failed!",
   win: "You cleared the Sumgeon!"
 };
 // Names spelled the way the voice should say them. The screen keeps the real spelling.
@@ -39,6 +41,10 @@ export function heroName(h) { return sayAs(h.n + "!"); }
 export function heroJoins(h) { return sayAs(h.n + " joins your team!"); }
 export function wingCleared(w) { return "You cleared " + w.name + "!"; }
 export function wingOpened(w) { return w.name + " is open!"; }
+// A spell drawn backwards (sigil.js): "Your three is facing backwards. It faces this way." The
+// screen adds an arrow. For the digits whose mirror image looks different.
+export var REVERSIBLE = [1, 2, 3, 4, 5, 6, 7, 9];
+export function reversedLine(d) { return "Your " + spoken(d) + " is facing backwards. It faces this way."; }
 // "Depth two!", said as a run starts below depth 1. Recorded to depth 20.
 export var DEPTH_MAX_SPOKEN = 20;
 export function depthLine(d) { return "Depth " + spoken(d) + "!"; }
@@ -65,6 +71,7 @@ export function spokenLines() {
     add("p", heroJoins(h), N, S);
   });
   for (var d = 2; d <= DEPTH_MAX_SPOKEN; d++) add("p", depthLine(d), "Phrases");
+  REVERSIBLE.forEach(function (n) { add("p", reversedLine(n), "Phrases"); });
   WINGS.forEach(function (w, i) {
     add("p", wingCleared(w), "Phrases");
     if (i) add("p", wingOpened(w), "Phrases");

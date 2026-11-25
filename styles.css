@@ -343,6 +343,14 @@ body[data-stratum="hall"]{--bg:#141a28;--panel:#1d2537;--line:#33405c;--btn:#2a3
 body[data-stratum="tower"]{--bg:#151c1e;--panel:#20292c;--line:#36454a;--btn:#2c393d;--btn2:#364549;--edge:#4a5b60;--muted:#b3c0c2;--dark:#0d1213}
 body{transition:background-color .4s;--hint-empty:var(--edge);--hint-line:var(--edge)}
 
+/* Spell casting: the drawing pad takes the number pad's place, the same height, glowing. */
+.pad.spell .sigil{grid-column:1/-1;grid-row:span 3;width:100%;height:calc(var(--key) * 3 + var(--gap) * 2);border-radius:16px;touch-action:none;cursor:crosshair;
+  background:radial-gradient(ellipse at 50% 45%,#3b2a6e 0,#1d1638 70%);box-shadow:0 0 0 2px #ffc93c,0 0 22px #ffc93c88,inset 0 0 30px #7b5cd666;animation:sigilglow 1.6s ease-in-out infinite alternate}
+.pad.spell .go{grid-column:span 2}
+.pad.spell .del{font:900 16px Nunito,sans-serif}
+@keyframes sigilglow{to{box-shadow:0 0 0 2px #ffe48a,0 0 32px #ffc93ccc,inset 0 0 40px #9b7bff88}}
+@media(prefers-reduced-motion:reduce){.pad.spell .sigil{animation:none}}
+
 /* Screens other than the battle (show() in app.js). A "page" (the menu, Settings, the book, a
    run's end) fills a phone's screen, with its buttons docked full-width at the bottom; a "float"
    (a floor cleared, a miss) floats over the game as a centered card. */

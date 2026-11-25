@@ -12,6 +12,7 @@ A math-practice dungeon crawler. The player fights anthropomorphic monsters buil
   - `monsters.js`: monster data and SVG art
   - `store.js`: saved data (players, storage upgrade)
   - `sfx.js`: Web Audio sound effects
+  - `sigil.js`: reading a drawn digit for spells (a $P point-cloud recognizer and its templates)
   - `speech.js`: `say(kind, text)`
   The modules other than `app.js`, `sfx.js` and `speech.js` have no DOM and run in Node.
 - Modules need http, so run it with any static server: `python3 -m http.server 8791`, then open http://localhost:8791. Opening `index.html` as a file won't work.
@@ -133,6 +134,20 @@ Runs happen in Wings (`js/wings.js`, DESIGN.md §4), called **strata** (one **st
 - The start screen shows your hero as one line with "Change", which opens the grid of ten (the first time, the grid shows by itself). The run's end card uses the same line.
 - Settings is a list: player rows, the chalk colors in one row, on/off switches for sound effects and voice, and "How the hints work ›".
 - **Looks** (`LOOKS`, `lookOf` in `monsters.js`): each regular monster has four more looks with their own fun names (Minustaur's Mom, King Minus, Baby Minustaur, Professor Minustaur). A look is the same symbol drawing with extras from a kit placed on its face and head (`ANCHOR`, `KIT`: crown, bow, lashes, glasses, monocle, sunglasses, eyepatch, top hat, nightcap with sleepy eyes, headband, scarf, bow tie, medal, spiral eyes, sparkles, or drawn smaller). A look can be "he" or "she" (the third item in `LOOKS`), and its lines say "his" or "her" (Minustaur's Mom loses her footing). It keeps its monster's trait and math (`m.base`; `traits.js` checks `kind(m)`). Depth 1 has the originals; below it each floor's look is fixed per stratum, depth and floor (`dressed` in `wings.js`). Meeting a look counts as meeting its monster, and Monsters & Heroes shows each monster's looks found. Every look's lines are recorded. Bosses and cursed digits have no looks.
+- **Spell casting** (`castSpell` and friends in `app.js`, `js/sigil.js`):
+  - **When:** about 1 problem in 6 (`SPELL_SHARE`), on touch screens only (`any-pointer: coarse`; drawing with a mouse isn't writing). The answer must be a single digit, the fact already learned, and the problem not a skip-ahead probe. `?spells` makes every single-digit problem a spell, for testing.
+  - **The pad:** the number pad becomes a glowing drawing pad in the same space (`padUI("spell")`), with Clear and Cast. The voice says "Cast a spell!".
+  - **Reading:** `sigil.js` is a $P point-cloud recognizer on the device (no machine learning, no server). It has several templates per digit for how kids write them (open and closed 4, 7 with or without a crossbar, 1 with or without a flag and base, 9 straight or curly, 2 with or without a loop), plus mirrored copies that mean reversed (not for 0, 8 or a plain 1, which look the same mirrored).
+    - A read is **clear** when its fit is at least `CLEAR.fit` and it's ahead of the next digit by `CLEAR.margin`.
+    - It counts as **reversed** only when the mirror is clearly the better match (`REVERSED_MARGIN`), so a wobbly 1 gets the benefit of the doubt.
+  - **Outcomes:**
+    - Clear and right: it hits, and the drawing is saved as one of the player's own templates (the last 3 per digit).
+    - Clear but backwards: half damage, the digit shown the right way round with an arrow, and "Your 3 is facing backwards. It faces this way."
+    - Clear but another digit: a wrong answer.
+    - Not clear: "Incantation failed!", no heart lost, try again. After two, the number pad comes back.
+  - **Kept out of learning:** a spell changes no fact record, timing, placement, skipping or the "all fast" star.
+  - **Saved** per player as `spells`: `{ templates, reversed: { digit: count }, cast }`.
+  - **The spell check** (`spell/`, at `/sumgeon/spell/`): a grown-up page, built like the listen check. Draw any digit and see the read, its fit and margin, and whether it's reversed, with or without a player's learned handwriting. It also shows each player's backwards counts by digit. `scripts/sigil.test.mjs` tests every template, its mirror, messy copies and a scribble.
 - **Boss roars** (`roarSoon` in `app.js`, `roar` in `sfx.js`): every 9–15 s of a boss fight, while you're working on a problem (never during an attack, a card, a hint or the pause), the boss growls (a low, wobbling saw tone over a rumble) and rears up and shakes while the room flickers darker. With reduced motion it only growls.
 - **Monster traits** (`js/traits.js`, DESIGN.md §3): one rule each, shown as a badge on the nameplate and explained in the message as the monster arrives. Plusquito has none (the tutorial monster).
   - Minustaur, ⚡ Charge: every 4th problem on the floor is charged (⚡ by the problem); a miss on it costs 2 hearts.
