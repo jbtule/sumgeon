@@ -841,20 +841,36 @@ function openMenu() {
 function chip(type, name, value, checked, label, id) {
   return `<label class="chip"><input type="${type}" name="${name}" value="${value}"${id ? ` id="${id}"` : ""} ${checked ? "checked" : ""}><span>${label}</span></label>`;
 }
+// Settings → Players: one card per player, with their hero, name and grade. Tap a card to play
+// as them (the one playing has a gold outline and a ✓). ✎ opens a card to rename it, set the
+// grade (the current player's; another player is asked theirs when they first play), or remove it
+// (a second tap confirms; never the one playing). "+ Add player" adds a card and opens it.
+let editId = null;
 function playersHTML() {
   const list = store.profiles();
-  const rows = list.map((p, i) => {
-    const me = p.id === PID, g = me ? st.grade : store.settings(p.id).grade;
-    return `<li class="prow${me ? " me" : ""}" data-id="${esc(p.id)}">
-    <input type="text" maxlength="24" value="${esc(p.name)}" placeholder="Player ${i + 1}" aria-label="Player ${i + 1}'s name (optional)">
-    ${!me && g != null ? `<span class="pgrade" aria-label="${gradeName(g)}">Grade ${gradeLabel(g)}</span>` : ""}
-    ${me ? '<span class="now">Playing</span>' : '<button class="small" type="button" data-act="play">Play</button>'}
-    ${store.canRemove(p.id) ? '<button class="small danger" type="button" data-act="remove" aria-label="Remove">✕</button>' : ""}
-    ${me ? `<div class="pgrades"><span>Grade</span>${gradesHTML(true)}</div>` : ""}
-  </li>`;
+  const cards = list.map((p, i) => {
+    const me = p.id === PID, open = editId === p.id;
+    const g = me ? st.grade : store.settings(p.id).grade;
+    const h = me ? team : (store.player(p.id).get("heroes", null) || {});
+    const hero = h.captain != null ? heroSvg(HEROES[h.captain], { color: h.color || null }) : '<span class="pnone" aria-hidden="true">?</span>';
+    const name = esc(displayName(list, p.id));
+    return `<li class="pcard${me ? " me" : ""}${open ? " open" : ""}" data-id="${esc(p.id)}">
+      <div class="phead">
+        <button class="pmain" type="button" data-act="play" ${me ? 'aria-current="true"' : ""} aria-label="${me ? `${name}, playing now` : `Play as ${name}`}">
+          <span class="pav">${hero}</span>
+          <span class="pname"><b>${name}</b><small>${g != null ? gradeName(g) : "Grade not picked yet"}</small></span>
+          ${me ? '<span class="pnow" aria-hidden="true">✓</span>' : ""}
+        </button>
+        <button class="icon-btn pedit${open ? " done" : ""}" type="button" data-act="edit" aria-expanded="${open}" aria-label="${open ? "Done editing" : "Edit"} ${name}">${open ? "Done" : "✎"}</button>
+      </div>
+      ${open ? `<div class="pform">
+        <label>Name <input type="text" maxlength="24" value="${esc(p.name)}" placeholder="Player ${i + 1}" aria-label="Name (optional)"></label>
+        ${me ? `<div class="pgrades"><span>Grade</span>${gradesHTML(true)}</div>` : `<p class="pnote">${g != null ? gradeName(g) + ". To change it, play as them." : "They'll be asked their grade when they first play."}</p>`}
+        ${store.canRemove(p.id) ? '<button class="small danger" type="button" data-act="remove">Remove player</button>' : ""}
+      </div>` : ""}
+    </li>`;
   }).join("");
-  // "+ Add player" adds a row at once, named "Player 3" until someone types a name in it.
-  return `<ul class="players">${rows}</ul>
+  return `<ul class="pcards">${cards}</ul>
   <button class="small add-player" type="button" id="addPlayer">+ Add player</button>`;
 }
 // The grade buttons, K to 5: big on the start screen's question, a compact row (mini) in
@@ -1224,26 +1240,31 @@ function wireCaptain() {
 
 function wirePlayers() {
   const box = $("players");
-  box.querySelectorAll(".players .prow").forEach((row) => {
-    const id = row.dataset.id;
-    row.querySelector("input").onchange = (e) => { store.rename(id, e.target.value); whoUI(); };
-    const play = row.querySelector("[data-act=play]");
-    if (play) play.onclick = () => switchTo(id);
-    const rm = row.querySelector("[data-act=remove]");
+  box.querySelectorAll(".pcard").forEach((card) => {
+    const id = card.dataset.id;
+    card.querySelector("[data-act=play]").onclick = () => { if (id !== PID) { editId = null; switchTo(id); } };
+    card.querySelector("[data-act=edit]").onclick = () => { editId = editId === id ? null : id; refreshPlayers(); };
+    const input = card.querySelector(".pform input");
+    if (input) {
+      input.onchange = (e) => { store.rename(id, e.target.value); whoUI(); };
+      input.onkeydown = (e) => { if (e.key === "Enter") { store.rename(id, e.target.value); editId = null; refreshPlayers(); } };
+    }
+    const rm = card.querySelector("[data-act=remove]");
     // A second tap confirms, as in Sound Box. From this device only.
     if (rm) rm.onclick = () => {
-      if (rm.dataset.sure !== "1") { rm.dataset.sure = "1"; rm.textContent = "Remove?"; return; }
-      store.removeProfile(id);
+      if (rm.dataset.sure !== "1") { rm.dataset.sure = "1"; rm.textContent = "Tap again to remove"; return; }
+      store.removeProfile(id); editId = null;
       refreshPlayers();
     };
   });
   wireGrades(refreshPlayers);
-  // A new row, ready to name (optional), without switching to it: tap its Play to play as them.
+  // A new card, opened to name it (optional), without switching to it.
   $("addPlayer").onclick = () => {
     const id = store.addProfile("");
+    editId = id;
     refreshPlayers();
-    const input = $("players").querySelector(`.prow[data-id="${CSS.escape(id)}"] input`);
-    if (input) input.focus({ preventScroll: false });
+    const input = $("players").querySelector(`.pcard[data-id="${CSS.escape(id)}"] input`);
+    if (input) input.focus();
   };
 }
 function refreshPlayers() { $("players").innerHTML = playersHTML(); wirePlayers(); whoUI(); }

@@ -412,6 +412,26 @@ body{transition:background-color .4s;--hint-empty:var(--edge);--hint-line:var(--
 /* Settings: lists of rows, like a phone's own settings */
 .players{background:var(--dark);border:2px solid var(--line);border-radius:16px;padding:6px;gap:6px}
 .add-player{margin-top:8px;min-height:44px;width:100%}
+.pcards{display:grid;gap:8px;margin:0;padding:0;list-style:none}
+.pcard{border:2px solid var(--line);border-radius:16px;background:var(--dark);overflow:hidden}
+.pcard.me{border-color:var(--gold)}
+.phead{display:flex;align-items:center;gap:6px;padding:6px}
+.pmain{flex:1;display:flex;align-items:center;gap:12px;min-height:56px;padding:4px 8px;border:0;border-radius:12px;background:none;color:inherit;font:inherit;text-align:left;cursor:pointer}
+.pmain:hover{background:var(--panel)}
+.pcard.me .pmain{cursor:default}
+.pav{width:44px;height:44px;flex:none;display:grid;place-items:center}
+.pav svg{width:44px;height:44px}
+.pnone{width:40px;height:40px;border-radius:50%;border:2px dashed var(--edge);display:grid;place-items:center;color:var(--muted);font-weight:900}
+.pname{display:grid;flex:1;min-width:0}
+.pname b{font-size:17px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pname small{color:var(--muted);font-size:13px}
+.pnow{color:var(--gold);font-weight:900;font-size:20px}
+.pedit{flex:none;width:44px;height:44px}
+.pedit.done{width:auto;padding:0 14px;font:900 15px Nunito,sans-serif}
+.pform{display:grid;gap:10px;padding:4px 12px 12px}
+.pform label{display:grid;gap:4px;font-weight:800;color:var(--muted);font-size:13px}
+.pform input{min-height:44px;border-radius:12px;border:2px solid var(--edge);background:var(--panel);color:var(--ink);padding:0 12px;font:800 16px Nunito,sans-serif}
+.pnote{margin:0;color:var(--muted);font-size:13px}
 .players .prow{flex-wrap:nowrap;gap:6px}
 .players .prow input{flex:1 1 auto;width:0;min-height:44px;background:var(--panel);border-color:var(--line)}
 .players .prow.me input{border-color:var(--gold)}
