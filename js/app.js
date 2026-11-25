@@ -953,6 +953,9 @@ function menu() {
 let lastWingTap = null;
 document.addEventListener("click", (e) => {
   const w = e.target.closest && e.target.closest("label.wing");
+  // A tap on the label also fires a click on its radio input right after: that's the same tap,
+  // not a second one (counting it entered the old stratum on a single tap).
+  if (e.target.tagName === "INPUT") return;
   if (!w || !G.onMenu || w.classList.contains("locked") || e.target.closest("button")) { lastWingTap = null; return; }
   const id = w.querySelector("input[name=wing]").value, now = performance.now();
   if (lastWingTap && lastWingTap.id === id && now - lastWingTap.t < 450) { lastWingTap = null; $("go").click(); return; }
