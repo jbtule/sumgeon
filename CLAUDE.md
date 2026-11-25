@@ -75,6 +75,7 @@ A math-practice dungeon crawler. The player fights anthropomorphic monsters buil
 - Clearing a floor restores 1 heart (up to the band's hearts: 7 in Sprout, 5 in Apprentice).
 - Monster HP = the average answer of the player's open facts (the monster's operation weighted 70%) × its `hits` value, so fights last about the same number of solves at any level. Deeper floors scale it (`depthScale` in `wings.js`): 0.8 on floor 1, rising evenly to 1.3 for the boss.
 - **Coins** (`js/coins.js`, Trollar): a few US coins drawn in a row, biggest first; "how many cents?" typed on the number pad, and the total is the damage. No multiple choice: kids learn the coins by adding their values. Coins are a *strand* (`BANDS.coins`, `strand: true`): its own 98 facts (keys `¢q,d,n,p`) and levels (pennies to 10, each coin alone, nickels and pennies, dimes, quarters), asked by monsters with `strand: "coins"` whatever the Wing. The hint labels each coin's value and counts on from the biggest. The portraits are traced from public-domain US Mint photos (see the README). Spoken as "two dimes and three pennies. How many cents?" and "… make twenty-three cents".
+- **Two-digit + and − within 100** (`js/twodigit.js`, Haberhasher, 2nd grade): a strand (`BANDS.place`) in seven levels: add tens, add ones, add tens and ones, add and regroup, subtract tens, subtract without regrouping, subtract and regroup. Each level is a fixed sample (200 facts in all), so 70% of a level can be learned and every problem is recorded (both orders of a sum). Hints: base-ten blocks with "tens and ones" for adding; tens crossed out, or counting up on an open number line (to the next ten, by tens, then the rest) for subtracting. It's a strand rather than levels in Apprentice so it doesn't lock multiplication for players already there.
 - **Missing-number problems** (`js/missing.js`): a fact with one number hidden, like `3 + □ = 7`. The answer and the damage are the hidden number. The □ shows as a glowing "?" that fills as you type (the answer box hides), and the hint is the inverse fact's (3 + □ = 7 is 7 − 3). They use the fact's own record. Quizard asks only these; other monsters ask 15% of review facts (box 3+) this way. Spoken as "three plus what is seven", recorded for every fact.
 
 ## Wings, monsters and heroes
@@ -83,7 +84,7 @@ Runs happen in Wings (`js/wings.js`, DESIGN.md §4). Each Wing asks one band's f
 | Wing | Band | Floors | Boss |
 |---|---|---|---|
 | The Counting Cellar | Sprout | Plusquito, Minustaur, rescue, Quizard, Trollar | Make-Ten Golem |
-| The Tables Tower | Apprentice | Timesaur, Divvy, rescue, Starbot, pool, pool | Sigma Rex |
+| The Tables Tower | Apprentice | Timesaur, Divvy, rescue, Starbot, Haberhasher, pool | Sigma Rex |
 
 - A Wing opens the next when its boss is beaten and 60% of its facts are learned. The band a player starts in (`st.start`) opens that Wing from the start.
 - Per player, progress is saved under `wings`: `{ [wingId]: { boss: wins, best: floors, stars: [best stars per floor] } }`.
@@ -103,6 +104,7 @@ Runs happen in Wings (`js/wings.js`, DESIGN.md §4). Each Wing asks one band's f
   - Divvy, ✂️ Split: at half HP its art splits into two smaller Divvies.
   - Quizard, ❓ Mystery: every problem hides a number (`blank` on the monster).
   - Trollar, 🪙 Toll: asks only coin problems (its `strand`).
+  - Haberhasher, 🔢 Tens and ones: asks only two-digit problems (its `strand`).
   - Starbot, ⭐ Stripes: asks ×5 and ×10 facts 70% of the time (`like` in `choose`).
   - Make-Ten Golem, 🔟 Ten Smash: answers of 10 or more hit double.
   - Sigma Rex, 👑 Second wind: at half HP it armors up like Timesaur.

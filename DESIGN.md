@@ -66,6 +66,7 @@ Each monster gets one simple trait that changes *how* you do math, never anythin
 - **Divvy**: ✂️ *Split*. At half HP it splits into two half-size Divvies.
 - **Starbot**: ⭐ *Stripes*. It asks the ×5 and ×10 tables more often.
 - **Make-Ten Golem**: 🔟 *Ten Smash*. Answers of 10 or more hit double.
+- **Haberhasher (#)**: 🔢 *Tens and ones*. A # with eyes, in the Tables Tower. Asks two-digit sums and differences within 100, with base-ten and count-up hints.
 - **Trollar**: 🪙 *Toll*. Asks only coin problems: count the coins, type the cents.
 - **Quizard**: ❓ *Mystery*. Every problem hides a number (3 + □ = 7); the hidden number is the damage. Its body is a big question mark in a wizard hat.
 - **Sigma Rex**: 👑 *Second wind*. At half HP it armors up like Timesaur.

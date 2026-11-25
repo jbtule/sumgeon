@@ -231,7 +231,8 @@ function newProblem() {
   G.cur = factOf(key);
   // Quizard hides a number in every problem; other monsters sometimes do, for facts in review.
   const rec = recs[key];
-  if (G.cur.op !== "¢" && (m.blank || (rec && rec.b >= 3 && Math.random() < MISSING_SHARE))) G.cur = missingOf(G.cur, pickBlank());
+  // (Not for a strand's facts: coins can't hide a number, and two-digit ones aren't recorded that way.)
+  if (!m.strand && (m.blank || (rec && rec.b >= 3 && Math.random() < MISSING_SHARE))) G.cur = missingOf(G.cur, pickBlank());
   G.recent = [key].concat(G.recent).slice(0, 3);
   G.input = ""; G.busy = false; G.hinted = false; G.t0 = performance.now();
   probUI();

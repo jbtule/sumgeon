@@ -7,6 +7,7 @@ import { WINGS, cursedMonster } from "./wings.js";
 import { facts, spokenProblem, spokenFact } from "./problems.js";
 import { missingOf, spokenMissing } from "./missing.js";
 import { coinFacts } from "./coins.js";
+import { twoDigitFacts } from "./twodigit.js";
 
 export var PHRASE = {
   // The menu's intro, worded for speaking ("seven times eight", not "7 × 8").
@@ -49,8 +50,14 @@ export function spokenLines() {
     out.push({ kind: "q", text: spokenMissing(missingOf(f, "x")) });
     out.push({ kind: "q", text: spokenMissing(missingOf(f, "y")) });
   });
-  // Coins (Trollar): "two dimes and three pennies. How many cents?", and the answer.
-  coinFacts().forEach(function (f) {
+  // Coins (Trollar): "two dimes and three pennies. How many cents?", and the answer; and the
+  // two-digit problems (Haberhasher): "thirty-eight plus twenty-five", and "… is sixty-three".
+  var both = [];
+  twoDigitFacts().forEach(function (f) {
+    both.push(f);
+    if (f.op === "+" && f.x !== f.y) both.push({ op: "+", x: f.y, y: f.x, ans: f.ans }); // either order can come up
+  });
+  coinFacts().concat(both).forEach(function (f) {
     out.push({ kind: "q", text: spokenProblem(f) });
     out.push({ kind: "q", text: spokenFact(f) });
   });
