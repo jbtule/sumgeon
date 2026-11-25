@@ -162,7 +162,7 @@ function streakUI() {
   f.hidden = false;
   f.className = "flame" + (G.streak >= 10 ? " s3" : G.streak >= 5 ? " s2" : "");
   f.innerHTML = FLAME + `<span>${G.streak} in a row</span>`;
-  f.setAttribute("aria-label", `${G.streak} in a row, crits on`);
+  f.setAttribute("aria-label", `${G.streak} in a row, critical hits`);
 }
 function setMsg(t, c = "") { const m = $("msg"); m.textContent = t; m.className = "msg " + c; }
 function ansUI() {
