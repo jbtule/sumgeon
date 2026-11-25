@@ -124,6 +124,12 @@ export function crackCurse(team, d) {
   return { team: Object.assign({}, team, { cracks: left, rescued }), cracks, freed };
 }
 
+// Starting the dungeon over (Settings): only your own hero stays on the team, curse cracks and
+// all. Your chalk color stays too.
+export function resetTeam(team) {
+  return { captain: team.captain, color: team.color, rescued: team.captain == null ? [] : [team.captain], cracks: {} };
+}
+
 // Losing all your hearts curses the hero who led the run: it leaves the team (to be rescued again
 // on a rescue floor) and someone else has to be picked to lead.
 export function curseCaptain(team) {

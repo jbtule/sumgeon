@@ -36,6 +36,7 @@ A math-practice dungeon crawler. The player fights anthropomorphic monsters buil
 ## Players and saving (patterned on sound-box-crosswords)
 - `sumgeon:` holds the device's own data: `profiles` ([{ id, name }]), `profile` (who's playing), `storage` (version) and `device`.
 - `sumgeon:@<id>:` holds one player's data. Every key saved there must be in `OWN_KEYS` in `store.js`, which throws on any other key.
+- **Dungeon version** (`DUNGEON_VERSION` in `app.js`, saved per player as `dungeon`), while we're before release: bump it when a balance change means saved runs should start over (how fast heroes are freed, how strata open). On the next load each player's dungeon progress resets (`wings`, `bestiary`, `best`, and heroes back to just their own captain, via `resetTeam`), keeping `facts` (what's been learned), their hero, chalk color and settings. Add a line to its list saying why. Stop bumping it once real players are using the game.
 - Storage version 2 moved the prototype's single `sumgeon` key into the `default` player, resumably.
 - Names belong to the device. Remove only appears on a device with two or more players, never for the one playing, confirms with a second tap, and only affects this device.
 - Settings (`band`, `sfx`, `voice`) are per player and save as they change in the menu. `ops` and `diff` are the prototype's, kept only so a player who practiced × or ÷ starts in Apprentice.
