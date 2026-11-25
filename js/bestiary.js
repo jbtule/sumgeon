@@ -24,11 +24,14 @@ export function mastery(m, wing, recs) {
 export function meet(seen, m, now) {
   if (m.cursed != null) return seen;
   if (!seen[m.n]) seen[m.n] = { met: now, beaten: 0 };
+  // A look (Minustaur's Mom) also counts as meeting its monster (Minustaur).
+  if (m.base && !seen[m.base]) seen[m.base] = { met: now, beaten: 0 };
   return seen;
 }
 export function beat(seen, m, now) {
   if (m.cursed != null) return seen;
   meet(seen, m, now);
   seen[m.n].beaten = (seen[m.n].beaten || 0) + 1;
+  if (m.base) seen[m.base].beaten = (seen[m.base].beaten || 0) + 1;
   return seen;
 }

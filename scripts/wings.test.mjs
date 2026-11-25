@@ -50,10 +50,14 @@ for (let k = 0; k < 50; k++) {
   assert.equal(deep.length, 6);
   assert.equal(deep[2].cursed, 0, "the rescue floor stays");
   assert.ok(deep[5].boss, "the boss stays last");
-  for (let i = 1; i < 5; i++) if (i !== 2 && i !== 3) assert.notEqual(deep[i].n, deep[i - 1].n, "no monster twice in a row");
-  assert.ok(deep.slice(0, 5).every((m) => m.cursed != null || cellar.pool.includes(m.n)));
+  for (let i = 1; i < 5; i++) if (i !== 2 && i !== 3) assert.notEqual(deep[i].base || deep[i].n, deep[i - 1].base || deep[i - 1].n, "no monster twice in a row");
+  assert.ok(deep.slice(0, 5).every((m) => m.cursed != null || cellar.pool.includes(m.base || m.n)));
+  assert.deepEqual(runFloors(cellar, { captain: 5, rescued: [] }, () => 0.3, 3).map((m) => m.n), runFloors(cellar, { captain: 5, rescued: [] }, () => 0.3, 3).map((m) => m.n), "a depth's looks are the same each time");
 }
-assert.deepEqual(runFloors(cellar, { captain: 5, rescued: [] }, () => 0, 1).map((m) => m.n).slice(0, 2), ["Plusquito", "Minustaur"], "depth 1 keeps the Wing's own order");
+assert.deepEqual(runFloors(cellar, { captain: 5, rescued: [] }, () => 0, 1).map((m) => m.n).slice(0, 2), ["Plusquito", "Minustaur"], "depth 1 keeps the Wing's own order and looks");
+// Below depth 1, monsters wear their looks: across depths, some floors are in a look.
+const looked = [2, 3, 4, 5, 6, 7].flatMap((d) => runFloors(cellar, { captain: 5, rescued: [] }, () => 0.5, d)).filter((m) => m.base);
+assert.ok(looked.length > 0 && looked.every((m) => m.look && m.n !== m.base));
 assert.equal(depthHP(1), 1);
 assert.ok(Math.abs(depthHP(3) - 1.3) < 1e-9);
 assert.equal(deepest(cellar, {}), 1);

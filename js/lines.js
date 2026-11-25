@@ -1,7 +1,7 @@
 // Every line the game says, in one place: app.js takes its words from here, and the audio
 // build (scripts/audio/build.mjs) records exactly these. No DOM, runs in Node.
 // Kinds: "p" phrase, "m" monster line, "q" problem (see speech.js).
-import { MON } from "./monsters.js";
+import { MON, allLooks } from "./monsters.js";
 import { HEROES } from "./heroes.js";
 import { WINGS, cursedMonster } from "./wings.js";
 import { facts, spokenProblem, spokenFact, spoken } from "./problems.js";
@@ -33,7 +33,7 @@ export function depthLine(d) { return "Depth " + spoken(d) + "!"; }
 export function spokenLines() {
   var out = [];
   Object.keys(PHRASE).forEach(function (k) { out.push({ kind: "p", text: PHRASE[k] }); });
-  MON.forEach(function (m) {
+  MON.concat(allLooks()).forEach(function (m) {
     out.push({ kind: "m", text: monsterName(m) });
     if (!m.boss) out.push({ kind: "p", text: monsterCleared(m) }); // beating the boss is the win, said as PHRASE.win
     out.push({ kind: "p", text: monsterWon(m) });
