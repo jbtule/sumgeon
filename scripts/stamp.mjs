@@ -23,16 +23,22 @@ const v = "?v=" + short;
 const root = fileURLToPath(new URL("..", import.meta.url));
 const out = join(root, "_site");
 // Every file the site serves. New top-level site files go here.
-const SITE = ["index.html", "LICENSE.md", "styles.css", "js", "listen", "spell"];
+const SITE = ["index.html", "LICENSE.md", "styles.css", "js", "listen", "spell",
+  "manifest.webmanifest", "favicon.svg", "apple-touch-icon.png", "icon-192.png", "icon-512.png"];
 // Written by scripts/audio/build.mjs in the deploy; without it the game uses the device voice.
 const OPTIONAL = ["audio.json"];
-// Attributes in index.html that load a local file, e.g. 'src="js/app.js"'.
-const STAMPED = ['href="styles.css"', 'src="js/app.js"'];
+// Attributes in index.html that load a local file, e.g. 'src="js/app.js"'. The icons too:
+// browsers, Safari most of all, keep an icon long after it changes, but fetch a new address.
+const STAMPED = ['href="styles.css"', 'src="js/app.js"', 'href="manifest.webmanifest"', 'href="favicon.svg"', 'href="apple-touch-icon.png"'];
 
 rmSync(out, { recursive: true, force: true });
 mkdirSync(out);
 for (const f of SITE) cpSync(join(root, f), join(out, f), { recursive: true });
 for (const f of OPTIONAL) if (existsSync(join(root, f))) cpSync(join(root, f), join(out, f));
+// The manifest's icons, stamped the same way.
+const manifest = JSON.parse(readFileSync(join(root, "manifest.webmanifest"), "utf8"));
+manifest.icons = manifest.icons.map((i) => ({ ...i, src: i.src + v }));
+writeFileSync(join(out, "manifest.webmanifest"), JSON.stringify(manifest, null, 2) + "\n");
 
 let html = readFileSync(join(root, "index.html"), "utf8");
 // Each replacement must match exactly once, so a markup change can't silently skip one.
