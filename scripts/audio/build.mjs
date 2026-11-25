@@ -6,8 +6,11 @@
 // Writes:
 //   _audio/a/<key>.mp3  one clip each; <key> hashes everything that affects the sound (model,
 //                       voice, speed, method, text), so a clip never changes once made
-//   _audio/index.json   every key in this deploy; the next build reads it from the live site
-//                       to know which clips already exist
+//   _audio/s/<key>.mp3  an audio sprite: one group of lines (lines.js `sprite`, today "names":
+//                       the monster and hero lines) joined with short silences, and
+//   _audio/s/<key>.json where each line starts and how long it is. <key> hashes the clips in it.
+//   _audio/index.json   every clip key (and "s-" + sprite key) in this deploy; the next build
+//                       reads it from the live site to know what already exists
 //   _audio/_headers     long-lived caching for clips
 //   audio.json          { base, voice, clips: { "q:seven plus eight": key, ... } }, shipped with
 //                       the game (scripts/stamp.mjs copies it when it's there)
@@ -40,9 +43,40 @@ export function keyFor(kind, text) {
   return createHash("sha256").update(JSON.stringify([MODEL, VOICE, ENCODING, METHOD, SPEED[kind], kind, text])).digest("hex").slice(0, 20);
 }
 
-// { id: "kind:text", key, kind, text, voice, speed } for every line.
+// { id: "kind:text", key, kind, text, voice, speed, sprite } for every line.
 export function planClips() {
-  return spokenLines().map(({ kind, text }) => ({ id: kind + ":" + text, key: keyFor(kind, text), kind, text, voice: VOICE, speed: SPEED[kind] }));
+  return spokenLines().map(({ kind, text, sprite }) => ({ id: kind + ":" + text, key: keyFor(kind, text), kind, text, voice: VOICE, speed: SPEED[kind], sprite }));
+}
+
+// Audio sprites: { name, key, clips } for each group of lines marked with a `sprite`. The key
+// hashes how sprites are made and the clips in it, so a sprite never changes once made either.
+export const SPRITE_METHOD = "sprite-v1: pcm 24k mono, 0.3 s gaps, mp3 64k";
+export function planSprites(plan) {
+  const groups = {};
+  for (const c of plan) if (c.sprite) (groups[c.sprite] = groups[c.sprite] || []).push(c);
+  return Object.entries(groups).map(([name, clips]) => ({ name, clips,
+    key: createHash("sha256").update(JSON.stringify([SPRITE_METHOD, clips.map((c) => c.key)])).digest("hex").slice(0, 20) }));
+}
+// Joins a sprite's clips (already in dir/a) into dir/s/<key>.mp3 and its .json map, with ffmpeg.
+// Each line's span gets a little extra on both sides, which the gaps cover, since browsers differ
+// in whether they skip the MP3 encoder's start-up delay.
+const SR = 24000, GAP = 0.3, LEAD = 0.08, TAIL = 0.15;
+export function buildSprite(sp, dir) {
+  const pcm = [], lines = {};
+  let at = 0;
+  const silence = Buffer.alloc(Math.round(GAP * SR) * 2);
+  for (const c of sp.clips) {
+    const raw = execFileSync("ffmpeg", ["-v", "error", "-i", join(dir, "a", c.key + ".mp3"), "-f", "s16le", "-ac", "1", "-ar", String(SR), "-"], { maxBuffer: 64 << 20 });
+    pcm.push(silence, raw);
+    at += silence.length / 2;
+    lines[c.id] = [+(Math.max(0, at / SR - LEAD)).toFixed(3), +(raw.length / 2 / SR + LEAD + TAIL).toFixed(3)];
+    at += raw.length / 2;
+  }
+  pcm.push(silence);
+  mkdirSync(join(dir, "s"), { recursive: true });
+  execFileSync("ffmpeg", ["-v", "error", "-y", "-f", "s16le", "-ar", String(SR), "-ac", "1", "-i", "-", "-codec:a", "libmp3lame", "-b:a", "64k", join(dir, "s", sp.key + ".mp3")], { input: Buffer.concat(pcm), maxBuffer: 64 << 20 });
+  writeFileSync(join(dir, "s", sp.key + ".json"), JSON.stringify({ lines }));
+  return lines;
 }
 
 function output(name, value) {
@@ -51,8 +85,9 @@ function output(name, value) {
 
 async function main() {
   const plan = planClips();
+  const sprites = planSprites(plan);
   if (process.argv.includes("--plan")) {
-    console.log(JSON.stringify(plan, null, 2));
+    console.log(JSON.stringify({ clips: plan, sprites: sprites.map((s) => ({ name: s.name, key: s.key, lines: s.clips.length })) }, null, 2));
     return;
   }
   const base = process.env.ASSET_BASE;
@@ -66,20 +101,34 @@ async function main() {
     if (res.ok) live = new Set(await res.json());
   } catch (e) { /* treat as empty */ }
   const missing = plan.filter((c) => !live.has(c.key));
-  console.log(`${plan.length} clips: ${plan.length - missing.length} live, ${missing.length} missing`);
+  const spritesMissing = sprites.filter((s) => !live.has("s-" + s.key));
+  console.log(`${plan.length} clips: ${plan.length - missing.length} live, ${missing.length} missing; ${sprites.length} sprites, ${spritesMissing.length} missing`);
 
-  const done = (clipsInJson, deploy) => {
-    writeFileSync(join(root, "audio.json"), JSON.stringify({ base: base + "a/", voice: VOICE, clips: Object.fromEntries(clipsInJson.map((c) => [c.id, c.key])) }));
+  // spriteMaps: { key: { line id: [start, length] } } for the sprites shipped; the game falls back
+  // to single clips for any line not in one.
+  const done = (clipsInJson, deploy, spriteMaps) => {
+    const listed = new Set(clipsInJson.map((c) => c.id));
+    const spritesInJson = sprites.filter((s) => spriteMaps[s.key] && s.clips.every((c) => listed.has(c.id)))
+      .map((s) => ({ url: base + "s/" + s.key + ".mp3", lines: spriteMaps[s.key] }));
+    writeFileSync(join(root, "audio.json"), JSON.stringify({ base: base + "a/", voice: VOICE, clips: Object.fromEntries(clipsInJson.map((c) => [c.id, c.key])), sprites: spritesInJson }));
     output("deploy", deploy ? "true" : "false");
-    console.log(`✓ audio.json lists ${clipsInJson.length} of ${plan.length} lines${deploy ? "; _audio/ ready to deploy" : ""}`);
+    console.log(`✓ audio.json lists ${clipsInJson.length} of ${plan.length} lines and ${spritesInJson.length} sprites${deploy ? "; _audio/ ready to deploy" : ""}`);
   };
+  // The maps of sprites already live.
+  async function liveMaps() {
+    const maps = {};
+    await Promise.all(sprites.filter((s) => live.has("s-" + s.key)).map(async (s) => {
+      try { const r = await fetch(base + "s/" + s.key + ".json"); if (r.ok) maps[s.key] = (await r.json()).lines; } catch (e) { /* no sprite then */ }
+    }));
+    return maps;
+  }
 
   // Everything is live: nothing to record or upload, just the map for the game.
-  if (!missing.length) return done(plan, false);
+  if (!missing.length && !spritesMissing.length) return done(plan, false, await liveMaps());
   // Missing clips but no way to upload them: ship what's live.
   if (!generate) {
     console.log("GENERATE=false: not recording; the missing lines use the device voice");
-    return done(plan.filter((c) => live.has(c.key)), false);
+    return done(plan.filter((c) => live.has(c.key)), false, await liveMaps());
   }
 
   // A Pages deploy replaces the whole site, so the live clips come along (Cloudflare bandwidth
@@ -101,7 +150,7 @@ async function main() {
 
   const missingPath = join(out, "missing.json");
   writeFileSync(missingPath, JSON.stringify(missing));
-  if (process.env.KOKORO === "container") {
+  if (!missing.length) { /* only sprites to make */ } else if (process.env.KOKORO === "container") {
     const dir = process.env.KOKORO_DIR;
     if (!dir) throw new Error("set KOKORO_DIR to a folder for the model files and venv");
     execFileSync("container", ["run", "--rm", "--memory", "4G",
@@ -115,17 +164,26 @@ async function main() {
   }
   rmSync(missingPath);
   for (const c of plan) if (!existsSync(join(out, "a", c.key + ".mp3"))) throw new Error(`clip not produced: ${c.id}`);
+  // Every sprite is rebuilt from the clips (quick, and the same every time). Without ffmpeg
+  // there are no sprites, and their lines play as single clips.
+  const maps = {};
+  let hasFfmpeg = true;
+  try { execFileSync("ffmpeg", ["-version"], { stdio: "ignore" }); } catch (e) { hasFfmpeg = false; console.log("no ffmpeg: skipping the audio sprites"); }
+  if (hasFfmpeg) for (const sp of sprites) { maps[sp.key] = buildSprite(sp, out); console.log(`sprite ${sp.name}: ${sp.clips.length} lines`); }
 
-  writeFileSync(join(out, "index.json"), JSON.stringify(plan.map((c) => c.key)));
+  writeFileSync(join(out, "index.json"), JSON.stringify(plan.map((c) => c.key).concat(sprites.filter((s) => maps[s.key]).map((s) => "s-" + s.key))));
   writeFileSync(join(out, "_headers"), [
     "/a/*",
+    "  Cache-Control: public, max-age=31536000, immutable",
+    "  Access-Control-Allow-Origin: https://tools.tuley.name",
+    "/s/*",
     "  Cache-Control: public, max-age=31536000, immutable",
     "  Access-Control-Allow-Origin: https://tools.tuley.name",
     "/index.json",
     "  Cache-Control: no-store",
     "",
   ].join("\n"));
-  done(plan, true);
+  done(plan, true, maps);
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) await main();
