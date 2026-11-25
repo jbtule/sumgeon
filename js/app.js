@@ -6,7 +6,7 @@ import { BANDS, choose, factOf, record as recordAnswer, helpFor, openLevel, mons
 import { hintFor, STRATEGIES } from "./hints.js";
 import { openStore, displayName } from "./store.js";
 import { PHRASE, monsterName, monsterCleared, monsterWon, heroName, heroJoins, wingCleared, wingOpened, depthLine, DEPTH_MAX_SPOKEN } from "./lines.js";
-import { WINGS, wingOf, runFloors, openWings, toOpen, floorStars, wingStars, STREAK_STAR, depthScale, depthHP, deepest } from "./wings.js";
+import { WINGS, wingOf, runFloors, openWings, toOpen, floorStars, wingStars, STREAK_STAR, depthScale, depthHP, deepest, MAP_DEPTHS } from "./wings.js";
 import { missingOf, pickBlank, filled, spokenMissing, MISSING_SHARE } from "./missing.js";
 import { coinsSvg } from "./coins.js";
 import { traitOf, charged, prefers, hitBy, atHalf } from "./traits.js";
@@ -210,10 +210,22 @@ function shownFact(p, ans) {
 const hintFact = () => G.cur.inverse || G.cur;
 
 // A fresh run through the current Wing: its floors, with this player's rescue floor.
+// The dive, down the side of the monster's box: this stratum's depths from the top, the ones
+// cleared filled in, this run's depth marked, and a few still below. Dots on phones; with
+// numbers on wider screens.
+function diveUI() {
+  const d = G.depth, last = Math.max(MAP_DEPTHS, d + 2), first = Math.max(1, last - 7), rows = [];
+  if (first > 1) rows.push('<li class="more" aria-hidden="true"><span>…</span></li>');
+  for (let n = first; n <= last; n++) rows.push(`<li class="${n < d ? "done" : n === d ? "now" : ""}"><i></i><span>${n}</span></li>`);
+  const box = $("dive");
+  box.innerHTML = rows.join("");
+  box.setAttribute("aria-label", `Depth ${d} of your dive into ${wing().name}`);
+}
 // depth: how deep into this Wing (wings.js); the deepest reached when not given.
 function newRun(depth) {
   document.querySelector(".game").dataset.stratum = wing().id;
   G.depth = depth || deepest(wing(), progress); G.floors = runFloors(wing(), team, null, G.depth);
+  diveUI();
   // The room darkens as you go deeper: 8% per depth, up to 48% at depth 7.
   document.querySelector(".game").style.setProperty("--murk", Math.min(0.48, 0.08 * (G.depth - 1)).toFixed(2));
 }
@@ -613,6 +625,18 @@ function levelLine() {
   const L = openLevel(st.band, recs);
   return `Level ${L + 1} of ${band().levels.length}: ${band().levels[L].name}`;
 }
+// A stratum's depths on the map, as a shaft going down: depths cleared (filled), the deepest
+// reached ("you are here"), and the ones still below. It starts at MAP_DEPTHS rows and grows as
+// you go deeper; a long run of cleared depths folds into one row.
+function depthTrack(w, d) {
+  const last = Math.max(MAP_DEPTHS, d + 1), rows = [];
+  let first = 1;
+  if (last > 8) { first = last - 6; rows.push(`<li class="done fold"><i></i>Depths 1–${first - 1} cleared</li>`); }
+  for (let n = first; n <= last; n++) {
+    rows.push(n < d ? `<li class="done"><i></i>Depth ${n}</li>` : n === d ? `<li class="you"><i></i>Depth ${n} <em>you are here</em></li>` : `<li><i></i>Depth ${n}</li>`);
+  }
+  return `<ol class="shaft" aria-label="Deepest: depth ${d}">${rows.join("")}</ol>`;
+}
 // The depth map: the strata (wings.js WINGS) as rock layers under the surface, each in its own
 // texture, open or locked (and what opens it), with the deepest depth reached on the side.
 function wingsHTML() {
@@ -622,11 +646,11 @@ function wingsHTML() {
     let note;
     const ws = wingStars(w, progress);
     if (isOpen) note = (p.boss ? `Cleared ${p.boss}×` : p.best ? `Best: ${p.best} of ${w.floors.length + 1} floors` : "Not tried yet") + (ws.got ? ` · ★ ${ws.got} of ${ws.max}` : "");
-    else { const t = toOpen(w, progress, recs); note = `🔒 Beat ${t.prev.boss}${t.boss ? " ✓" : ""} and learn ${Math.round(t.need * 100)}% of the ${t.prev.name.replace(/^The /, "")} (now ${Math.round(t.share * 100)}%)`; }
+    else { const t = toOpen(w, progress, recs); note = `🔒 Beat ${t.prev.boss}${t.boss ? " ✓" : ""} and learn ${Math.round(t.need * 100)}% of ${t.prev.name.replace(/^The /, "the ")} (now ${Math.round(t.share * 100)}%)`; }
     const d = deepest(w, progress);
     return `<label class="wing ${w.id}${here ? " here" : ""}${isOpen ? "" : " locked"}"><input type="radio" name="wing" value="${w.id}" ${here ? "checked" : ""} ${isOpen ? "" : "disabled"}>
       <span><b>${w.name}</b><small>${b.label} · ${b.grades}</small><em>${note}</em>${here ? `<em class="level" id="levelLine">${levelLine()}</em>` : ""}
-      ${isOpen ? `<i class="depth" aria-label="Deepest: depth ${d}">▼<b>${d}</b></i>` : ""}</span></label>`;
+      ${isOpen ? depthTrack(w, d) : ""}</span></label>`;
   }).join("");
 }
 // The start screen, top to bottom: the title (with ⚙ Settings), your hero, the Wings, and

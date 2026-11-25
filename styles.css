@@ -232,7 +232,7 @@ h1 b{color:var(--coral);font-weight:400}
 .wings{display:grid;gap:8px}
 .wing{position:relative;display:block}
 .wing input{position:absolute;opacity:0;inset:0;margin:0}
-.wing span{display:grid;gap:0;padding:8px 14px;border-radius:14px;border:2px solid #3a5560;cursor:pointer}
+.wing > span{display:grid;gap:0;padding:8px 14px;border-radius:14px;border:2px solid #3a5560;cursor:pointer}
 .wing b{font:400 16px Bungee,sans-serif}
 .wing small{color:var(--muted);font-weight:800}
 .wing em{font-style:normal;font-size:13px;color:var(--muted);line-height:1.35}
@@ -240,19 +240,31 @@ h1 b{color:var(--coral);font-weight:400}
 .wing.locked em{font-size:12px}
 .wing input:checked+span{border-color:var(--gold);background:#ffc93c1f}
 .wing input:focus-visible+span{outline:3px solid var(--ink);outline-offset:2px}
-.wing.locked span{opacity:.6;cursor:default}
+.wing.locked > span{opacity:.6;cursor:default}
 /* The depth map: the strata stacked like rock layers under a grassy surface, each in its own
    wall texture (lightened so the words read), with the deepest depth on the right. */
 .strata{gap:0;border-radius:16px;overflow:hidden;border:2px solid #0c171c}
 .strata .surface{height:14px;background:linear-gradient(#5fae4e,#3f7d38 60%,#2b4a2a);border-bottom:2px solid #0c171c}
-.strata .wing span{border:0;border-radius:0;border-bottom:3px solid #0c171c;padding:10px 54px 10px 14px;
+.strata .wing > span{border:0;border-radius:0;border-bottom:3px solid #0c171c;padding:12px 14px 12px;
   background:linear-gradient(#0c171ca8,#0c171cc4),var(--wall);text-shadow:0 1px 2px #000}
-.strata .wing:last-child span{border-bottom:0}
+.strata .wing:last-child > span{border-bottom:0}
 .strata .wing input:checked+span{box-shadow:inset 0 0 0 3px var(--gold);background:linear-gradient(#ffc93c24,#0c171cb0),var(--wall)}
 .strata .wing input:focus-visible+span{outline:none;box-shadow:inset 0 0 0 3px var(--ink)}
-.strata .wing.locked span{opacity:1;filter:grayscale(.6) brightness(.7)}
-.strata .depth{position:absolute;right:12px;top:50%;transform:translateY(-50%);display:grid;justify-items:center;font-style:normal;font-size:12px;line-height:1;color:var(--gold)}
-.strata .depth b{font:400 22px/1 Bungee,sans-serif;color:var(--ink)}
+.strata .wing.locked > span{opacity:1;filter:grayscale(.6) brightness(.7)}
+/* Each stratum's depths as a shaft going down, a line with a stop for each depth. */
+.strata .shaft{list-style:none;margin:8px 0 0;padding:0;display:flex;flex-direction:column}
+.strata .shaft li{position:relative;display:flex;align-items:center;gap:8px;min-height:24px;padding-left:28px;font-size:13px;font-weight:800;color:#f3efe4aa}
+.strata .shaft li::before{content:"";position:absolute;left:10px;top:0;bottom:0;width:3px;background:#f3efe444}
+.strata .shaft li:first-child::before{top:50%}
+.strata .shaft li:last-child::before{bottom:50%;background:linear-gradient(#f3efe444,#f3efe400)}
+.strata .shaft li i{position:absolute;left:4px;top:50%;width:15px;height:15px;margin-top:-7.5px;border-radius:50%;border:2px solid #f3efe466;background:#0c171c}
+.strata .shaft li.done{color:var(--ink)}
+.strata .shaft li.done i{background:var(--gold);border-color:var(--gold)}
+.strata .shaft li.done::before{background:var(--gold)}
+.strata .shaft li.you{color:#fff}
+.strata .shaft li.you i{width:19px;height:19px;margin-top:-9.5px;left:2px;background:var(--coral);border-color:#fff;box-shadow:0 0 10px #ff5a4eaa}
+.strata .shaft li em{font-style:normal;font-size:11px;padding:1px 8px;border-radius:999px;background:var(--coral);color:#fff}
+.strata .shaft li.fold{font-size:12px}
 .cardmon.small{width:96px}
 .fallen{display:flex;align-items:center;gap:12px;padding:8px 12px;border-radius:16px;background:var(--dark);border:2px solid #ff8a7f66}
 .fallen .cardmon{margin:0;flex:none;width:64px}
@@ -289,6 +301,23 @@ h1 b{color:var(--coral);font-weight:400}
 .game[data-stratum="cellar"],.wing.cellar{--wall:var(--wall-cellar)}
 .game[data-stratum="hall"],.wing.hall{--wall:var(--wall-hall)}
 .game[data-stratum="tower"],.wing.tower{--wall:var(--wall-tower)}
+
+/* The dive (diveUI): this stratum's depths down the side of the monster's box. */
+.dive{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;justify-content:space-between;position:relative;z-index:1;pointer-events:none}
+.dive::before{content:"";position:absolute;left:6px;top:6px;bottom:6px;width:2px;background:linear-gradient(#f3efe455 70%,#f3efe400)}
+.dive li{position:relative;display:flex;align-items:center;gap:6px;min-height:12px}
+.dive i{flex:none;width:14px;height:14px;border-radius:50%;border:2px solid #f3efe466;background:#0c171c;transform:scale(.8)}
+.dive li.done i{background:var(--gold);border-color:var(--gold)}
+.dive li.now i{background:var(--coral);border-color:#fff;transform:scale(1.15);box-shadow:0 0 10px #ff5a4ecc;animation:divepulse 1.6s ease-in-out infinite}
+.dive span{font:400 11px Bungee,sans-serif;color:#f3efe488;display:none}
+.dive li.done span{color:var(--gold)}
+.dive li.now span{color:#fff}
+.dive li.more{min-height:8px}
+.dive li.more span{display:block;padding-left:2px}
+@keyframes divepulse{50%{box-shadow:0 0 16px #ff5a4e}}
+@media(prefers-reduced-motion:reduce){.dive li.now i{animation:none}}
+@media (max-width: 759px){.dive{grid-area:stage;justify-self:start;align-self:stretch;margin:8px 0 14px 6px;width:16px}}
+@media (min-width: 760px){.dive{grid-area:stage;justify-self:start;align-self:stretch;margin:64px 0 20px 14px;width:46px}.dive span{display:block}}
 
 /* Screens other than the battle (show() in app.js). A "page" (the menu, Settings, the book, a
    run's end) fills a phone's screen, with its buttons docked full-width at the bottom; a "float"
