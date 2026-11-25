@@ -146,7 +146,9 @@ export function choose(bandKey, recs, opts) {
   const fresh = open.filter((f) => !recs[f.key] || !recs[f.key].n);
   const learning = open.filter((f) => recs[f.key] && recs[f.key].n && recs[f.key].b <= 2);
   const due = open.filter((f) => { const r = recs[f.key]; return r && r.b >= 3 && now - r.t >= DUE_MS[r.b]; });
-  const groups = [[learning, 0.6], [due, 0.25], [fresh, 0.15]].filter(([g]) => g.length);
+  // Deeper in a Wing (opts.depth), more of the newest problems: 15% at depth 1, up to 35%.
+  const freshShare = 0.15 + Math.min(0.2, 0.05 * ((opts.depth || 1) - 1));
+  const groups = [[learning, 0.6], [due, 0.25], [fresh, freshShare]].filter(([g]) => g.length);
   if (!groups.length) return open[Math.floor(rnd() * open.length)].key; // all learned and not due: anything open
   let roll = rnd() * groups.reduce((s, [, w]) => s + w, 0), pick = groups[0][0];
   for (const [g, w] of groups) { if (roll < w) { pick = g; break; } roll -= w; }

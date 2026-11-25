@@ -92,6 +92,13 @@ Runs happen in Wings (`js/wings.js`, DESIGN.md §4). Each Wing asks one band's f
 | The Balance Hall | Balance | Chompers, Equal Twins, rescue, Chompers, pool | The Unknown |
 | The Tables Tower | Apprentice | Timesaur, Divvy, rescue, Starbot, Haberhasher, pool | Sigma Rex |
 
+- **Depth** (`depthHP`, `deepest` in `wings.js`): beating a Wing's boss opens its next depth, saved as `wings[id].depth` (the deepest reached). The win card's main button is **Go deeper** (depth + 1), with Play again (same depth) and Menu; a loss offers Try again. "Enter the dungeon" starts at the deepest depth.
+  - Each depth is tougher: HP × (1 + 0.15 per depth).
+  - Every floor but the rescue floor and the boss is drawn from the pool, never the same monster twice in a row.
+  - More of the newest problems: `choose`'s fresh share goes from 15% to 35%.
+  - The room darkens (`--murk`, 8% per depth up to 48%).
+  - Shown as "Depth 2 · Floor 1 / 6" and on the Wing map, and said as "Depth two!" (recorded to 20).
+  - It keeps runs from feeling the same while the next Wing waits on mastery.
 - A Wing opens when the Wing it comes `after` has its boss beaten and 60% of its facts learned: the Cellar opens both the Hall and the Tower. The band a player starts in (`st.start`) opens every Wing at that grade or below (`GRADE` in `wings.js`), so starting in Apprentice opens all three.
 - Per player, progress is saved under `wings`: `{ [wingId]: { boss: wins, best: floors, stars: [best stars per floor] } }`.
 - **Stars** (`floorStars` in `wings.js`, DESIGN.md §6.1): each floor awards ★ cleared, ★ no hearts lost on it, ★ a streak of 5 on it (hinted answers don't build streaks). The floor-cleared and win cards show them, and the Wing map shows each Wing's total.

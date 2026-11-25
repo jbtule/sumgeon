@@ -4,7 +4,7 @@
 import { MON } from "./monsters.js";
 import { HEROES } from "./heroes.js";
 import { WINGS, cursedMonster } from "./wings.js";
-import { facts, spokenProblem, spokenFact } from "./problems.js";
+import { facts, spokenProblem, spokenFact, spoken } from "./problems.js";
 import { missingOf, spokenMissing } from "./missing.js";
 import { coinFacts } from "./coins.js";
 import { twoDigitFacts } from "./twodigit.js";
@@ -25,6 +25,9 @@ export function heroName(h) { return h.n + "!"; }
 export function heroJoins(h) { return h.n + " joins your team!"; }
 export function wingCleared(w) { return "You cleared " + w.name + "!"; }
 export function wingOpened(w) { return w.name + " is open!"; }
+// "Depth two!", said as a run starts below depth 1. Recorded to depth 20.
+export var DEPTH_MAX_SPOKEN = 20;
+export function depthLine(d) { return "Depth " + spoken(d) + "!"; }
 
 // [{ kind, text }], each once.
 export function spokenLines() {
@@ -40,6 +43,7 @@ export function spokenLines() {
     out.push({ kind: "m", text: monsterName(cursedMonster(h.d)) });
     out.push({ kind: "p", text: heroJoins(h) });
   });
+  for (var d = 2; d <= DEPTH_MAX_SPOKEN; d++) out.push({ kind: "p", text: depthLine(d) });
   WINGS.forEach(function (w, i) {
     out.push({ kind: "p", text: wingCleared(w) });
     if (i) out.push({ kind: "p", text: wingOpened(w) });
