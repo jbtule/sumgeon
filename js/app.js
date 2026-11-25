@@ -5,7 +5,7 @@ import { spokenProblem, spokenFact } from "./problems.js";
 import { BANDS, choose, factOf, record as recordAnswer, helpFor, openLevel, monsterHP, probeKey, tierOf, skipTo, SKIP_PROBES, SKIP_WINDOW, MAX_LEAP, fluentTime, spellKey } from "./learn.js";
 import { hintFor, STRATEGIES } from "./hints.js";
 import { openStore, displayName } from "./store.js";
-import { PHRASE, monsterName, monsterCleared, monsterWon, heroName, heroJoins, wingCleared, wingOpened, depthLine, DEPTH_MAX_SPOKEN, reversedLine } from "./lines.js";
+import { PHRASE, monsterName, monsterCleared, monsterWon, heroName, heroJoins, heroCursed, heroPower, wingCleared, wingOpened, depthLine, DEPTH_MAX_SPOKEN, reversedLine } from "./lines.js";
 import { WINGS, wingOf, runFloors, openWings, toOpen, floorStars, wingStars, depthScale, depthHP, deepest, MAP_DEPTHS } from "./wings.js";
 import { missingOf, pickBlank, filled, spokenMissing, MISSING_SHARE } from "./missing.js";
 import { coinsSvg, pileOf, coinOf } from "./coins.js";
@@ -146,6 +146,17 @@ function loadPlayer() {
   whoUI(); captainUI();
 }
 function saveTeam() { store.player(PID).set("heroes", team); }
+// The voice explains a thing only the first time or first few (`times`): true while it still
+// should, counting this time. Saved per player as told: { tag: count }.
+function once(tag, times = 1) {
+  const told = store.player(PID).get("told", {}) || {};
+  if ((told[tag] || 0) >= times) return false;
+  told[tag] = (told[tag] || 0) + 1;
+  store.player(PID).set("told", told);
+  return true;
+}
+// The voice's live check (speech.js): a line about problem p plays only while p is still being worked on.
+const asked = (p) => () => G.cur === p && !G.busy;
 const hasCaptain = () => team.captain != null;
 // The dungeon has no progress yet (nothing played in any stratum): any hero can start.
 const fresh = () => !Object.keys(progress || {}).length;
@@ -355,12 +366,18 @@ function newProblem() {
   G.recent = [key].concat(G.recent).slice(0, 3);
   G.input = ""; G.busy = false; G.hinted = false; G.t0 = performance.now();
   probUI();
-  if (G.cur.spell) { setMsg("Cast a spell! Draw the answer.", "good"); say("p", PHRASE.spell); }
+  // Coins ("How many dimes?") and comparisons can't be read off the screen by a pre-reader, so
+  // the voice reads them, after the monster's name. Skipped if it's answered first.
+  if (G.cur.op === "¢" || G.cur.op === "○") say("q", spokenProblem(G.cur), false, asked(G.cur));
+  // The first comparison: how the < = > keys work.
+  if (G.cur.op === "○" && once("compare")) { say("p", PHRASE.cmpHow, false, asked(G.cur)); say("p", PHRASE.cmpSame, false, asked(G.cur)); }
+  if (G.cur.spell) {
+    setMsg("Cast a spell! Draw the answer.", "good"); say("p", PHRASE.spell);
+    if (once("spell", 3)) say("p", PHRASE.spellHow, false, asked(G.cur)); // the first few spells
+  }
   ansUI();
   if ($("msg").classList.contains("bad")) setMsg("Your answer is your attack.");
   showHelp(helpFor(recs[key]));
-  // "How many dimes?" can't be read off the screen by a pre-reader, so the voice asks it.
-  if (G.cur.find) say("q", spokenProblem(G.cur), true);
 }
 function pop(t, crit) {
   const s = document.createElement("span");
@@ -650,11 +667,14 @@ function end(win) {
   const f = record(), acc = G.tries ? Math.round(G.solved / G.tries * 100) : 0, m = G.floors[G.floor];
   // Strata this run opened (the Cellar can open the Hall and the Tower at once), easiest first.
   const openedAll = WINGS.filter((x) => !before.includes(x.id) && openWings(progress, recs, st.start).includes(x.id)), opened = openedAll[0];
-  if (win) { sfx.victory(); say("p", wingCleared(w)); } else say("p", monsterWon(m));
-  if (opened) { say("p", PHRASE.unlocked); openedAll.forEach((x) => say("p", wingOpened(x))); }
   // Losing all your hearts curses the hero who led the run (heroes.js curseCaptain): rescue them
   // again on a rescue floor, and pick someone else to lead.
   const fallen = !win && hasCaptain() ? HEROES[team.captain] : null;
+  if (win) { sfx.victory(); say("p", wingCleared(w)); } else say("p", monsterWon(m));
+  if (fallen) say("p", heroCursed(fallen));
+  if (opened) { say("p", PHRASE.unlocked); openedAll.forEach((x) => say("p", wingOpened(x))); }
+  // What the win card offers, the first few wins (a new stratum's own offer says it otherwise).
+  else if (win && once("deeper", 3)) say("p", PHRASE.deeper);
   if (fallen) { Object.assign(team, curseCaptain(team)); saveTeam(); captainUI(); whoUI(); }
   const cursedLine = !fallen ? "" : `<div class="fallen"><div class="cardmon small">${heroSvg(fallen, { cursed: true })}</div>
     <p><strong>${esc(fallen.n)} was cursed!</strong> ${team.rescued.length ? "Pick who leads next, and" : "Pick a new hero to start again, and"} rescue ${esc(fallen.n)} on a rescue floor.</p></div>`;
@@ -678,6 +698,7 @@ function end(win) {
   const ready = () => {
     if (hasCaptain()) return true;
     $("warn").textContent = freePick(team, fresh()) ? "Pick your hero first." : "Pick who leads first."; $("captain").scrollIntoView({ block: "center", behavior: "smooth" });
+    say("p", PHRASE.heroFirst, true);
     return false;
   };
   $("again").onclick = () => { if (ready()) start(depth); };
@@ -704,11 +725,13 @@ function hide() { $("ov").hidden = true; }
    Settings, or Exit to
    the start screen (a second tap confirms, since it ends the run). */
 function pause() {
-  if (!G.paused) {
+  const justPaused = !G.paused; // not coming back from Settings or the book
+  if (justPaused) {
     if (!G.running || G.busy || G.next) return;
     G.paused = { at: performance.now() };
   }
   stopSpeech();
+  if (justPaused && once("pause", 3)) say("p", PHRASE.paused);
   show(`<h2>Paused</h2>
   <p>Floor ${G.floor + 1} of ${G.floors.length}: <strong>${esc(G.floors[G.floor].n)}</strong></p>
   <div class="pause-btns"><button class="small" type="button" id="pBook">📖 Monsters &amp; Heroes</button><button class="small" type="button" id="pSettings">⚙ Settings</button><button class="small danger" type="button" id="pExit">Exit the dungeon</button></div>
@@ -718,7 +741,7 @@ function pause() {
   $("pSettings").onclick = () => settings(true);
   $("pExit").onclick = () => {
     const b = $("pExit");
-    if (b.dataset.sure !== "1") { b.dataset.sure = "1"; b.textContent = "Exit? This run ends"; return; }
+    if (b.dataset.sure !== "1") { b.dataset.sure = "1"; b.textContent = "Exit? This run ends"; say("p", PHRASE.exitSure, true); return; }
     G.paused = null; G.running = false; record();
     newRun(); loadMonster(0, true);
     menu();
@@ -790,6 +813,8 @@ function wingsHTML() {
 // Settings, as in Sound Box. Names are optional.
 function menu() {
   G.onMenu = true;
+  // With no hero yet, the first tap here asks for one out loud (below), once per player a visit.
+  if (!hasCaptain() && G.askedFor !== PID) G.askHero = true;
   if (updateReady && !G.running) { reloadForUpdate(); return; } // a new version is waiting
   const list = store.profiles();
   show(`<div class="cardhead logo-head"><h2 class="logo">Sum<b>geon</b></h2><button class="icon-btn" id="openSettings" type="button" aria-label="Settings">${GEAR}</button></div>
@@ -809,10 +834,17 @@ function menu() {
   $("openSettings").onclick = () => settings();
   if ($("switchPlayer")) $("switchPlayer").onclick = () => settings();
   $("go").onclick = () => {
-    if (!hasCaptain()) { $("warn").textContent = freePick(team, fresh()) ? "Pick your hero first." : "Pick who leads first."; $("captain").scrollIntoView({ block: "center", behavior: "smooth" }); return; }
+    if (!hasCaptain()) { $("warn").textContent = freePick(team, fresh()) ? "Pick your hero first." : "Pick who leads first."; $("captain").scrollIntoView({ block: "center", behavior: "smooth" }); say("p", PHRASE.heroFirst, true); return; }
     start(null, true);
   };
 }
+// "Pick your hero!": speech can only start in a tap, so it waits for the first tap on the start
+// screen (not one on a hero, which says that hero's name instead).
+document.addEventListener("pointerdown", (e) => {
+  if (!G.askHero) return;
+  G.askHero = false; G.askedFor = PID;
+  if (G.onMenu && !hasCaptain() && !$("ov").hidden && !e.target.closest(".hpick")) say("p", PHRASE.pickHero);
+}, true);
 
 // Settings, as a list: players (names optional), chalk color, sounds as on/off
 // switches, and the help page. All save as they change.
@@ -962,7 +994,10 @@ function wireCaptain() {
     if (!next) return;
     Object.assign(team, next);
     saveTeam();
+    // The name, what they do, and (on the start screen, the first few times) what to tap next.
     say("m", heroName(HEROES[team.captain]), true);
+    say("p", heroPower(HEROES[team.captain]));
+    if (G.onMenu && once("enter", 3)) say("p", PHRASE.goIn);
     captainUI(); whoUI();
     if ($("warn")) $("warn").textContent = "";
     pickOpen = false; redraw();
@@ -1016,6 +1051,8 @@ function start(depth, enter) {
   if (enter) say("p", PHRASE.enter);
   if (G.depth > 1 && G.depth <= DEPTH_MAX_SPOKEN) say("p", depthLine(G.depth));
   loadMonster(0);
+  // The player's first fight: how to attack, before the first problem is read (until they answer).
+  if (once("hit")) say("p", PHRASE.hitHow, false, () => !G.tries && G.running);
   newProblem();
 }
 
@@ -1140,8 +1177,8 @@ function castSpell() {
     G.spellFails++;
     sfx.crack();
     say("p", PHRASE.spellFail, true);
-    if (G.spellFails >= 2) { G.cur.spell = false; padUI("num"); setMsg("Incantation failed! Use the number pad.", "bad"); }
-    else { setMsg("Incantation failed! Try again.", "bad"); sigilReset(); }
+    if (G.spellFails >= 2) { G.cur.spell = false; padUI("num"); setMsg("Incantation failed! Use the number pad.", "bad"); say("p", PHRASE.spellPad); }
+    else { setMsg("Incantation failed! Try again.", "bad"); sigilReset(); say("p", PHRASE.spellAgain); }
     return;
   }
   const d = r.digit;

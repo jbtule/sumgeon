@@ -11,9 +11,21 @@ import { twoDigitFacts } from "./twodigit.js";
 import { balanceFacts } from "./balance.js";
 
 export var PHRASE = {
-  // The menu's intro, worded for speaking ("seven times eight", not "7 × 8").
-  intro: "Seven glyph monsters guard seven floors. Your answer is your attack: solve seven times eight, and you hit for fifty-six. Three right in a row, and every hit is doubled. A wrong answer costs a heart, and you see the right one.",
   enter: "Now entering the Sumgeon!",
+  // Instructions for a player who can't read yet (app.js says each where it's needed, and the
+  // ones that explain only the first time or first few: app.js `once`). Short and kid-simple.
+  hitHow: "Tap your answer, then tap Hit!",
+  pickHero: "Pick your hero!",
+  heroFirst: "Tap a hero first!",
+  goIn: "Tap Enter to go in!",
+  cmpHow: "Tap the sign whose mouth opens to the greater side!",
+  cmpSame: "Both sides the same? Tap equal!",
+  spellHow: "Draw your answer with your finger, then tap Cast!",
+  spellAgain: "Try again!",
+  spellPad: "Use the numbers this time.",
+  deeper: "Go deeper for tougher monsters, or play again!",
+  paused: "Paused. Tap the big button to keep fighting.",
+  exitSure: "Tap again to leave the dungeon.",
   boss: "Boss floor!",
   crits: "Critical hits!",
   oops: "Oops!",
@@ -40,6 +52,10 @@ export function monsterCleared(m) { return sayAs(m.n + " " + m.quip); }
 export function monsterWon(m) { return sayAs(m.n + " won this round."); }
 export function heroName(h) { return sayAs(h.n + "!"); }
 export function heroJoins(h) { return sayAs(h.n + " joins your team!"); }
+// Losing all your hearts curses the hero who led the run: "Oh no! Twodini was cursed! Pick a new hero."
+export function heroCursed(h) { return sayAs("Oh no! " + h.n + " was cursed! Pick a new hero."); }
+// What a hero does, said after their name when picked: "Your twos hit harder."
+export function heroPower(h) { return "Your " + (h.d === 6 ? "sixes" : spoken(h.d) + "s") + " hit harder."; }
 export function wingCleared(w) { return "You cleared " + w.name + "!"; }
 export function wingOpened(w) { return w.name + " is open!"; }
 // A spell drawn backwards (sigil.js): "Your three is facing backwards. It faces this way." The
@@ -70,6 +86,8 @@ export function spokenLines() {
     add("m", heroName(h), N, S);
     add("m", monsterName(cursedMonster(h.d)), N, S);
     add("p", heroJoins(h), N, S);
+    add("p", heroCursed(h), N, S);
+    add("p", heroPower(h), N, S);
   });
   for (var d = 2; d <= DEPTH_MAX_SPOKEN; d++) add("p", depthLine(d), "Phrases");
   REVERSIBLE.forEach(function (n) { add("p", reversedLine(n), "Phrases"); });

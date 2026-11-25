@@ -155,13 +155,15 @@ function playClip(url) {
 }
 
 // Plays (or speaks) one item after anything already queued; `cancel` clears the queue first.
+// `live`, if given, is asked when the item's turn comes: false skips it, so a line about a
+// problem that's already been answered doesn't pile up behind the others.
 // Returns a promise for when this item is done. Does nothing with the voice switched off.
-export function say(kind, text, cancel) {
+export function say(kind, text, cancel, live) {
   if (!on) return Promise.resolve();
   if (cancel) stopSpeech();
   var my = epoch;
   queue = queue.then(function () {
-    if (my !== epoch) return;
+    if (my !== epoch || (live && !live())) return;
     var key = clips[kind + ":" + text], hit = spriteOf[kind + ":" + text];
     if (!key) return speak(text, RATE[kind]);
     if (hit && hit.s.buf && ac()) return playSprite(hit).then(function (ok) {
