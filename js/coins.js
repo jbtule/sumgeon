@@ -1,64 +1,103 @@
-// Coins (DESIGN.md §4, Trollar): "how many cents?" for a handful of US coins, typed on the number
-// pad. The total is the answer and the damage. No DOM: runs in Node for the tests.
-//
-// A coin fact: { op: "¢", coins: { q, d, n, p }, ans, q: "10 + 5 + 1", key: "¢q,d,n,p" }.
-// No multiple choice: kids learn the coins by adding up their values.
+// Coins (DESIGN.md §4, Trollar), typed on the number pad, no multiple choice. No DOM: runs in Node
+// for the tests. Three kinds of coin fact, all op "¢":
+//   find:  "How many dimes?" in a mixed pile, heads and tails. Naming the coins (K.GM.B.5).
+//          { find: "d", coins, ans: coins.d, q: "dimes", key: "¢?d:0,2,1,1" }
+//   value: one coin, heads or tails, "How many cents?" (its value, said as the K guide
+//          says it: "A dime is small and silver. It's worth ten cents.")
+//          { coins, ans: 10, q: "10", tails: true, key: "¢0,1,0,0" or "¢t0,1,0,0" }
+//   count: a handful of coins, "how many cents?", counted biggest first (1st grade).
+//          { coins, ans, q: "10 + 5 + 1", key: "¢q,d,n,p" }
 
-// Biggest first, the order kids are taught to count them in.
+// Biggest first, the order kids are taught to count them in. look: how the K guide describes it.
 export const COINS = [
-  { k: "q", name: "quarter", names: "quarters", v: 25, r: 24, fill: "#c9d3d8", ridged: true },
-  { k: "d", name: "dime", names: "dimes", v: 10, r: 17, fill: "#c9d3d8", ridged: true },
-  { k: "n", name: "nickel", names: "nickels", v: 5, r: 21, fill: "#b4bfc4" },
-  { k: "p", name: "penny", names: "pennies", v: 1, r: 19, fill: "#d08347" }
+  { k: "q", name: "quarter", names: "quarters", v: 25, r: 24, fill: "#c9d3d8", ridged: true, look: "big and silver" },
+  { k: "d", name: "dime", names: "dimes", v: 10, r: 17, fill: "#c9d3d8", ridged: true, look: "small and silver" },
+  { k: "n", name: "nickel", names: "nickels", v: 5, r: 21, fill: "#b4bfc4", look: "thick and silver" },
+  { k: "p", name: "penny", names: "pennies", v: 1, r: 19, fill: "#d08347", look: "small and brown" }
 ];
+export const coinOf = (k) => COINS.find((t) => t.k === k);
+const count = (c) => c.q + c.d + c.n + c.p;
+const csv = (c) => [c.q, c.d, c.n, c.p].join(",");
+const parse = (s) => { const [q, d, n, p] = s.split(",").map(Number); return { q, d, n, p }; };
 
-export function coinFact(c) {
+export function coinFact(c, tails) {
   const vals = [];
   COINS.forEach((t) => { for (let i = 0; i < c[t.k]; i++) vals.push(t.v); });
-  const ans = vals.reduce((a, b) => a + b, 0);
-  return { op: "¢", coins: { q: c.q, d: c.d, n: c.n, p: c.p }, ans, q: vals.join(" + "), key: "¢" + [c.q, c.d, c.n, c.p].join(",") };
+  const ans = vals.reduce((a, b) => a + b, 0), coins = { q: c.q, d: c.d, n: c.n, p: c.p };
+  if (tails) return { op: "¢", coins, ans, q: vals.join(" + "), tails: true, key: "¢t" + csv(c) };
+  return { op: "¢", coins, ans, q: vals.join(" + "), key: "¢" + csv(c) };
+}
+// "How many dimes?": find the coin k among the others.
+export function findFact(k, c) {
+  return { op: "¢", find: k, coins: { q: c.q, d: c.d, n: c.n, p: c.p }, ans: c[k], q: coinOf(k).names, key: "¢?" + k + ":" + csv(c) };
 }
 export function coinFactOf(key) {
-  const [q, d, n, p] = key.slice(1).split(",").map(Number);
-  return coinFact({ q, d, n, p });
+  if (key[1] === "?") return findFact(key[2], parse(key.slice(4)));
+  if (key[1] === "t") return coinFact(parse(key.slice(2)), true);
+  return coinFact(parse(key.slice(1)));
 }
-const count = (c) => c.q + c.d + c.n + c.p;
+export const isValue = (f) => !f.find && count(f.coins) === 1;
 
-// Every coin fact, once: 2 to 6 pennies; each coin by itself; then nickels, dimes and quarters
-// with smaller coins. (Few penny-only problems, so Trollar soon moves on to real coins.)
+// Every coin fact, once. Find the coin: 1 to 3 of it with one each of two other kinds. Each coin
+// by itself, heads and tails. Then 2 to 6 pennies (few, so Trollar soon moves on to real coins),
+// then nickels, dimes and quarters with smaller coins.
 export function coinFacts() {
   const out = [], add = (q, d, n, p) => out.push(coinFact({ q, d, n, p }));
+  COINS.forEach((t) => {
+    const others = COINS.filter((o) => o !== t);
+    for (let n = 1; n <= 3; n++) others.forEach((skip) => {
+      const c = { q: 0, d: 0, n: 0, p: 0 };
+      c[t.k] = n; others.forEach((o) => { if (o !== skip) c[o.k] = 1; });
+      out.push(findFact(t.k, c));
+    });
+  });
+  COINS.slice().reverse().forEach((t) => { const c = { q: 0, d: 0, n: 0, p: 0 }; c[t.k] = 1; out.push(coinFact(c), coinFact(c, true)); });
   for (let p = 2; p <= 6; p++) add(0, 0, 0, p);
-  add(0, 0, 0, 1); add(0, 0, 1, 0); add(0, 1, 0, 0); add(1, 0, 0, 0);
   for (let n = 1; n <= 2; n++) for (let p = 0; p <= 4; p++) if (n + p > 1) add(0, 0, n, p);
   for (let d = 1; d <= 3; d++) for (let n = 0; n <= 1; n++) for (let p = 0; p <= 4; p++) if (d + n + p > 1) add(0, d, n, p);
   for (let q = 1; q <= 2; q++) for (let d = 0; d <= 2; d++) for (let n = 0; n <= 1; n++) for (let p = 0; p <= 3; p++) if (q + d + n + p > 1) add(q, d, n, p);
   return out;
 }
-// The coin levels, in the order they're taught (K: pennies; 1st: each coin's value, then mixed).
+// The coin levels, in the order they're taught: K names the coins (find them, both sides) and
+// learns what each is worth; 1st grade counts them up.
 export const COIN_LEVELS = [
-  { name: "Pennies", has: (f) => count(f.coins) > 1 && count(f.coins) === f.coins.p },
-  { name: "Each coin", has: (f) => count(f.coins) === 1 },
+  { name: "Find the coin", has: (f) => !!f.find },
+  { name: "Each coin", has: isValue },
+  { name: "Pennies", has: (f) => count(f.coins) === f.coins.p },
   { name: "Nickels and pennies", has: (f) => !f.coins.q && !f.coins.d },
   { name: "Dimes", has: (f) => !f.coins.q },
   { name: "Quarters", has: () => true }
 ];
 
-// The coins drawn in a row, biggest first. labels: write each coin's value under it (hints).
-// Shapes only on the coins themselves, so they read the same everywhere.
-export function coinsSvg(c, labels) {
-  let x = 4, s = "";
-  const h = labels ? 72 : 52, cy = 26;
-  COINS.forEach((t) => {
-    for (let i = 0; i < c[t.k]; i++) {
-      const cx = x + t.r;
-      s += coin(t, cx, cy);
-      if (labels) s += `<text x="${cx}" y="66" text-anchor="middle" fill="var(--ink)" font-family="Nunito,sans-serif" font-size="14" font-weight="900">${t.v}¢</text>`;
-      x += t.r * 2 + 4;
-    }
-  });
-  return `<svg class="coins" viewBox="0 0 ${x} ${h}" width="${Math.round(x * 1.3)}" height="${Math.round(h * 1.3)}" role="img" aria-label="${coinWords(c)}">${s}</svg>`;
+// How the coins lie this time: [{ k, tails }]. A count is laid out biggest first; a pile to find
+// coins in is shuffled. Sides are random (as in a pocket) when rnd is given; a single coin shows
+// the side its fact asks for.
+export function pileOf(f, rnd) {
+  const pile = [];
+  COINS.forEach((t) => { for (let i = 0; i < f.coins[t.k]; i++) pile.push({ k: t.k, tails: isValue(f) ? !!f.tails : !!rnd && rnd() < 0.5 }); });
+  if (f.find && rnd) for (let i = pile.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [pile[i], pile[j]] = [pile[j], pile[i]]; }
+  return pile;
 }
+
+// The coins drawn in a row. c: { q, d, n, p } (biggest first, heads up) or a pile from pileOf.
+// opt.labels: each coin's value under it (hints); opt.names: its name under it instead;
+// opt.ring: ring the coins of this kind in gold (the worked "find" hint).
+export function coinsSvg(c, opt) {
+  opt = opt === true ? { labels: true } : opt || {};
+  const pile = Array.isArray(c) ? c : pileOf({ coins: c });
+  let x = 4, s = "";
+  const under = opt.labels || opt.names, h = under ? 72 : 52, cy = 26;
+  pile.forEach((pc) => {
+    const t = coinOf(pc.k), cx = x + t.r;
+    s += coin(t, cx, cy, pc.tails);
+    if (opt.ring === pc.k) s += `<circle cx="${cx}" cy="${cy}" r="${t.r + 3}" fill="none" stroke="#ffc93c" stroke-width="3"/>`;
+    if (under) s += `<text x="${cx}" y="66" text-anchor="middle" fill="var(--ink)" font-family="Nunito,sans-serif" font-size="${opt.names ? 11 : 14}" font-weight="900">${opt.names ? t.name : t.v + "¢"}</text>`;
+    x += t.r * 2 + 4;
+  });
+  const words = Array.isArray(c) ? coinWords(countOf(c)) : coinWords(c);
+  return `<svg class="coins${pile.length === 1 ? " one" : ""}" viewBox="0 0 ${x} ${h}" width="${Math.round(x * 1.3)}" height="${Math.round(h * 1.3)}" role="img" aria-label="${words}">${s}</svg>`;
+}
+const countOf = (pile) => { const c = { q: 0, d: 0, n: 0, p: 0 }; pile.forEach((pc) => c[pc.k]++); return c; };
 // Each coin's portrait (Washington, Roosevelt, Jefferson, Lincoln), traced from US Mint coin
 // photos (public domain, via Wikimedia Commons) into the relief's lines, lettering left out. Paths
 // are in a 200 × 200 box over the whole coin.
@@ -69,11 +108,63 @@ const BUSTS = {
   p: "M105 184C108 184 103 156 99 149C95 140 83 131 76 131C76 131 75 130 76 130C77 127 87 131 92 136C93 137 95 138 96 138C96 138 105 156 107 160C107 161 107 161 106 160C105 158 105 160 106 170C107 174 108 179 108 180C108 183 118 184 121 182C122 181 119 178 118 178C117 178 116 177 116 176C111 167 110 165 111 165C111 165 114 168 114 169C114 169 116 172 119 176C125 183 124 184 111 185C107 185 104 185 105 184ZM83 183C80 182 75 181 73 180C71 179 68 178 67 178C67 178 66 177 66 176C65 176 65 175 64 175C63 176 49 167 47 164C45 162 45 161 46 158C47 154 47 154 46 157C46 160 46 161 50 163C61 170 82 179 94 182L102 184L96 184C92 184 86 183 83 183ZM95 173C93 171 92 171 91 172C90 174 87 171 88 169C88 167 90 166 90 168C90 168 91 169 93 169C96 170 98 172 98 174C98 174 96 174 95 173ZM125 172C124 167 125 166 127 166C127 166 128 166 128 165C127 164 128 164 128 164C129 164 130 165 129 166C129 168 129 169 130 170C132 170 132 171 129 172C125 174 125 174 125 172ZM120 171C120 170 120 170 119 170C118 171 118 171 119 170C120 167 118 156 116 156C116 156 115 155 115 154C114 152 113 149 111 147C110 145 109 143 109 142C109 141 108 140 107 139C105 138 105 138 107 138C112 137 125 166 121 169C120 169 120 170 121 170C122 170 122 171 122 172C120 174 119 173 120 171ZM83 169C82 168 78 167 69 163C67 163 66 162 66 161C66 160 68 160 68 161C69 162 70 162 71 162C72 162 73 163 74 163C75 164 76 164 77 164C77 164 79 164 80 165C82 166 82 166 83 165C84 164 84 164 84 165C85 166 85 167 86 167C86 166 87 167 86 168C86 170 85 170 83 169ZM97 166C96 165 96 163 96 162C96 157 82 141 75 139C62 135 62 135 69 136C78 136 81 138 87 143C89 145 91 147 91 146C92 146 92 146 92 147C92 148 92 149 93 149C94 149 96 153 97 158C97 159 98 161 98 162C99 162 99 168 98 168C98 168 98 167 97 166ZM90 164C89 163 87 162 87 161C85 159 81 156 77 153C75 152 73 151 73 150C73 149 73 149 75 150C76 151 78 152 80 152C81 152 82 152 82 153C82 153 84 156 88 159C93 165 95 167 90 164ZM77 160C77 159 76 159 74 159C73 160 72 160 73 159C73 158 73 158 72 158C72 159 69 158 67 157C64 155 63 154 64 154C65 154 66 153 66 153C67 152 67 152 68 152C68 153 68 154 67 154C66 155 66 155 67 155C68 155 69 154 69 154C70 153 70 153 70 154C70 155 70 156 71 156C71 156 81 160 81 160C81 160 80 161 79 161C78 161 77 160 77 160ZM132 151C129 148 126 145 126 145C126 144 128 145 132 150C134 151 136 152 137 153C138 154 139 155 139 156C139 156 136 154 132 151ZM48 149C48 144 53 134 57 130C58 128 60 124 62 122C63 119 66 114 67 112C74 102 77 95 75 94C73 93 72 91 71 90C68 83 67 79 67 77C68 75 68 75 69 79C70 81 71 83 71 83C74 84 78 86 81 88C84 92 82 92 78 88C76 86 74 85 74 86C74 87 77 91 79 91C79 91 80 91 80 92C80 93 80 93 79 93C78 93 78 94 79 94C79 95 79 96 78 97C77 97 77 97 78 98C79 99 79 99 78 99C76 99 76 100 76 102C77 104 76 105 76 105C74 105 71 109 72 111C72 113 71 113 71 113C69 112 66 115 66 120C65 122 64 124 63 124C63 125 62 125 62 126C63 126 62 127 62 128C61 129 60 130 61 130C61 130 60 131 60 131C59 131 58 131 58 132C57 134 54 141 52 142C50 145 49 151 50 151C51 151 50 152 49 152C47 153 47 153 48 149ZM132 138C129 134 126 132 126 131C127 131 130 133 133 137C137 140 139 143 139 143C139 144 136 141 132 138ZM124 141C125 141 124 140 122 138C117 133 118 132 123 136C126 138 129 140 129 140C129 141 130 141 130 140C131 140 131 140 131 141C131 142 129 142 128 142C126 142 124 141 124 141ZM95 133C94 130 90 126 86 124C78 118 78 116 86 121C90 124 93 127 96 131C100 137 100 139 95 133ZM107 136C107 135 106 134 104 132C103 131 103 130 103 130C105 131 105 130 104 127C104 126 104 126 103 127C102 128 102 128 102 126C103 125 102 123 99 120C97 118 96 116 96 116C96 115 96 115 95 116C94 117 91 116 92 115C92 115 91 114 90 114C89 113 88 112 87 111C87 110 86 109 85 108C83 107 83 107 84 107C86 106 91 110 90 112C90 113 90 113 91 113C91 112 92 112 93 113C93 114 94 114 94 114C96 113 103 120 104 123C104 125 104 126 105 126C107 126 110 136 108 136C107 137 107 137 107 136ZM123 128C123 126 122 125 121 126C117 127 113 126 112 123C111 121 110 120 111 120C112 120 113 121 113 122C114 124 115 125 116 125C117 125 117 124 117 122C116 121 117 120 117 120C118 120 118 120 118 121C118 123 120 124 121 123C123 122 123 122 125 123C127 124 127 125 126 126C125 126 125 126 126 127C127 127 127 128 126 129C124 130 124 130 123 128ZM116 112C117 111 117 110 118 110C118 111 119 110 120 109C121 108 120 108 117 106C114 104 111 102 110 101C109 100 108 99 107 100C107 101 106 101 105 100C104 99 103 98 102 98C102 98 99 96 97 93C92 85 91 85 93 86C96 87 101 94 100 95C100 96 100 96 101 95C103 94 103 94 105 96C106 97 107 98 108 98C109 98 110 98 111 99C111 100 112 100 113 100C113 99 114 100 115 101C116 101 117 102 117 102C118 101 119 102 120 102C125 105 132 104 128 101C128 100 127 99 127 99C127 98 128 98 128 99C130 100 130 100 130 99C130 98 130 98 131 99C132 99 132 100 131 100C129 101 132 103 134 102C136 102 136 102 135 104C133 107 132 108 127 108C121 109 120 110 120 111C120 112 119 113 118 113C116 114 115 114 116 112ZM87 80C85 79 83 76 83 74C82 73 81 72 81 73C80 73 80 73 80 72C81 71 80 71 78 70C77 70 75 69 74 67C72 65 73 64 75 66C76 67 77 68 77 67C79 66 82 69 84 74C86 78 89 81 92 81C94 81 95 83 92 83C92 84 89 83 87 80ZM115 81C114 79 112 77 112 77C111 77 107 73 107 73C107 72 108 72 108 73C109 73 110 74 111 74C112 73 114 74 115 75C116 76 118 77 119 77C120 77 121 78 122 79C122 80 123 81 123 81C125 81 124 83 122 83C121 84 120 83 119 82C119 81 119 81 118 82C117 84 117 84 115 81ZM131 81C127 80 127 78 132 79C137 79 137 78 133 75C131 74 130 73 130 73C130 72 130 72 131 72C132 73 132 73 130 69C130 67 129 66 129 65C130 64 133 67 133 69C132 69 132 70 133 70C133 69 135 71 136 73C137 75 138 77 139 78C144 79 136 82 131 81ZM105 75C105 75 105 74 105 74C105 73 104 73 103 72C102 71 102 71 102 72C103 74 102 75 100 74C100 73 99 72 98 72C97 71 97 71 98 69C99 68 99 68 100 69C100 70 101 71 101 70C103 70 104 71 106 74C107 75 107 76 106 76C105 76 105 76 105 75ZM117 66C116 65 116 65 119 64C121 63 123 61 123 61C124 59 131 58 132 60C132 61 133 61 133 59C134 58 134 58 134 60C134 62 133 64 132 64C131 64 131 64 131 63C132 63 129 62 124 63C124 63 123 63 123 64C123 65 124 65 125 64C126 64 127 64 127 65C127 66 126 66 124 66C123 65 122 66 121 66C121 67 119 67 117 66ZM94 64C91 62 92 61 95 61C97 61 97 61 96 60C96 59 95 58 96 57C97 56 97 56 97 57C98 58 100 58 100 57C100 57 99 55 98 54C97 53 96 51 96 51C96 50 97 51 98 53C100 54 101 56 101 57C101 57 102 58 103 59C104 60 104 60 103 60C98 60 95 63 96 65C98 67 96 66 94 64ZM89 41C88 40 87 39 88 38C89 37 95 36 96 37C96 38 95 38 94 38C90 38 89 40 92 41C94 42 95 43 94 43C92 44 92 44 89 41ZM126 43C125 42 124 41 124 41C125 40 123 39 120 39C118 39 115 39 115 38C115 37 113 37 112 37C110 38 109 37 109 36C109 35 108 34 108 34C107 34 107 34 108 33C109 31 106 31 103 32C101 34 98 31 100 30C103 27 110 29 110 33C110 35 111 35 114 35C116 35 117 35 116 36C116 37 117 37 118 36C119 35 120 34 120 35C120 35 121 36 123 36C125 36 126 36 126 36C126 34 128 35 130 37C134 40 131 45 126 43Z",
 };
 const INK = { q: "#55636a", d: "#55636a", n: "#55636a", p: "#7d3f17" };
-function coin(t, cx, cy) {
+// Each coin's back, drawn from simple shapes in the same 200 × 200 box (bold, so it reads at coin
+// size): the penny's Union Shield, the nickel's Monticello, the dime's torch between olive and oak
+// branches, and the quarter's eagle (its classic back; most quarters now have state, park or
+// other designs).
+const BACKS = {
+  // Union Shield: a shield, stripes below, a scroll across the top.
+  p: (ink) => {
+    let s = `<path d="M58 62H142V112C142 140 122 158 100 168C78 158 58 140 58 112Z" fill="none" stroke="${ink}" stroke-width="8" stroke-linejoin="round"/>`;
+    for (let i = 0; i < 6; i++) s += `<rect x="${67 + i * 12}" y="92" width="6" height="${i === 0 || i === 5 ? 34 : 56 - Math.abs(2.5 - i) * 6}" fill="${ink}"/>`;
+    s += `<path d="M44 66C50 56 58 56 64 60H136C142 56 150 56 156 66L150 70C146 64 142 64 138 68L136 84H64L62 68C58 64 54 64 50 70Z" fill="${ink}"/>`;
+    return s;
+  },
+  // Monticello: dome, pediment, columns, wings, steps.
+  n: (ink) => {
+    let s = `<path d="M84 74A16 14 0 0 1 116 74Z" fill="${ink}"/><rect x="98" y="54" width="4" height="8" fill="${ink}"/>`;
+    s += `<path d="M76 92L100 76L124 92Z" fill="none" stroke="${ink}" stroke-width="6" stroke-linejoin="round"/>`;
+    s += `<rect x="36" y="94" width="128" height="7" fill="${ink}"/>`;
+    for (const x of [80, 92, 104, 116]) s += `<rect x="${x}" y="101" width="4" height="30" fill="${ink}"/>`;
+    for (const x of [44, 58, 136, 150]) s += `<rect x="${x}" y="108" width="7" height="13" fill="${ink}"/>`;
+    s += `<rect x="36" y="101" width="5" height="30" fill="${ink}"/><rect x="159" y="101" width="5" height="30" fill="${ink}"/>`;
+    s += `<rect x="30" y="131" width="140" height="7" fill="${ink}"/><rect x="72" y="140" width="56" height="5" fill="${ink}"/>`;
+    return s;
+  },
+  // Torch between an olive branch and an oak branch.
+  d: (ink) => {
+    let s = `<path d="M93 72H107L104 150H96Z" fill="${ink}"/><rect x="88" y="64" width="24" height="9" rx="3" fill="${ink}"/>`;
+    s += `<path d="M100 26C112 38 114 48 108 60H92C86 50 90 40 100 26Z" fill="${ink}"/>`;
+    s += `<path d="M84 150C70 120 62 96 58 70" fill="none" stroke="${ink}" stroke-width="4"/><path d="M116 150C130 120 138 96 142 70" fill="none" stroke="${ink}" stroke-width="4"/>`;
+    const leaf = (x, y, a, w, h) => `<ellipse cx="${x}" cy="${y}" rx="${w}" ry="${h}" transform="rotate(${a} ${x} ${y})" fill="${ink}"/>`;
+    [[60, 70, -20], [52, 92, -50], [72, 96, 30], [58, 116, -60], [80, 122, 40]].forEach(([x, y, a]) => (s += leaf(x, y, a, 5, 13)));
+    [[140, 70, 20], [148, 92, 50], [128, 96, -30], [142, 116, 60], [120, 122, -40]].forEach(([x, y, a]) => (s += leaf(x, y, a, 9, 11)));
+    return s;
+  },
+  // Eagle, wings up, on a bundle of arrows, branches below.
+  q: (ink) => {
+    // Wings raised, feather tips along the top edge.
+    let s = `<path d="M90 76C78 60 60 44 34 38L40 48L32 52L44 60L38 66L52 70L48 78L64 80L62 88L88 98Z" fill="${ink}"/>`;
+    s += `<path d="M110 76C122 60 140 44 166 38L160 48L168 52L156 60L162 66L148 70L152 78L136 80L138 88L112 98Z" fill="${ink}"/>`;
+    // Body and tail.
+    s += `<path d="M88 74C88 66 94 62 100 62C106 62 112 66 112 74L116 108L110 122L118 130H82L90 122L84 108Z" fill="${ink}"/>`;
+    // Head turned left, with a hooked beak; a light eye.
+    s += `<circle cx="99" cy="54" r="11" fill="${ink}"/><path d="M90 50L76 54L84 57L90 60Z" fill="${ink}"/>`;
+    // The bundle of arrows it stands on, points to the left.
+    s += `<rect x="62" y="132" width="78" height="6" rx="2" fill="${ink}"/><path d="M64 128L52 135L64 142Z" fill="${ink}"/>`;
+    s += `<path d="M138 128L146 135L138 142Z" fill="${ink}"/>`;
+    // Olive branches curving under it.
+    s += `<path d="M60 150C80 166 120 166 140 150" fill="none" stroke="${ink}" stroke-width="4"/>`;
+    [[70, 152, 40], [86, 160, 70], [114, 160, -70], [130, 152, -40]].forEach(([x, y, a]) => (s += `<ellipse cx="${x}" cy="${y - 6}" rx="4" ry="9" transform="rotate(${a} ${x} ${y - 6})" fill="${ink}"/>`));
+    return s;
+  }
+};
+function coin(t, cx, cy, tails) {
   const dk = "#0c171c", r = t.r;
   let s = `<circle cx="${cx}" cy="${cy}" r="${r}" fill="${t.fill}" stroke="${dk}" stroke-width="3"/>`;
   if (t.ridged) s += `<circle cx="${cx}" cy="${cy}" r="${r - 2.5}" fill="none" stroke="#7f8d93" stroke-width="1.5" stroke-dasharray="1.6 1.6"/>`;
-  s += `<path transform="translate(${cx - r} ${cy - r}) scale(${(r / 100).toFixed(3)})" d="${BUSTS[t.k]}" fill="${INK[t.k]}"/>`;
+  const at = `transform="translate(${cx - r} ${cy - r}) scale(${(r / 100).toFixed(3)})"`;
+  s += tails ? `<g ${at}>${BACKS[t.k](INK[t.k])}</g>` : `<path ${at} d="${BUSTS[t.k]}" fill="${INK[t.k]}"/>`;
   return s;
 }
 

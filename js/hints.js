@@ -1,4 +1,4 @@
-import { coinsSvg, coinFact } from "./coins.js";
+import { coinsSvg, coinFact, findFact, coinOf, pileOf, COINS } from "./coins.js";
 
 // Hints (DESIGN.md §5.3): the models classrooms use now, with the classroom's words, and a line
 // for grown-ups who learned it another way. No DOM: returns { model, say, grownups } where model
@@ -71,21 +71,31 @@ function hops(a, b, via) {
   return svg(W, 72, s, `count up from ${a} to ${b}`);
 }
 
-// Coins (DESIGN.md §5.3): each coin's value under it, then count on from the biggest. A single
-// coin is a value to remember, so its hint is the four coins with their values.
+// Coins (DESIGN.md §5.3), with the K guide's words for each coin ("A dime is small and silver").
+// Find the coin: that coin, heads and tails, then the pile with it ringed. One coin: the four
+// coins with their values (on the side asked), then that coin both ways. A count: each coin's
+// value under it, then count on from the biggest.
+const both = (k) => [{ k, tails: false }, { k, tails: true }];
 function coinHint(f, worked) {
-  const vals = f.q.split(" + ").map(Number), end = worked ? f.ans : "?";
-  const grownups = "Counting coins: kids learn each coin's value (1st grade), then count on from the biggest coin, skip counting by 10s and 5s.";
+  const end = worked ? f.ans : "?";
+  const grownups = "Coins: kindergarten names the penny, nickel, dime and quarter from either side and learns what each is worth; 1st grade counts them up, starting with the biggest coin and skip counting by 10s and 5s.";
+  if (f.find) {
+    const t = coinOf(f.find);
+    if (!worked) return { model: coinsSvg(both(f.find), { names: true }), say: `A ${t.name} is ${t.look}. Look for both sides! ${t.names[0].toUpperCase() + t.names.slice(1)} = ?`, grownups };
+    return { model: coinsSvg(f.pile || pileOf(f), { ring: f.find }), say: `A ${t.name} is ${t.look}. ${t.names[0].toUpperCase() + t.names.slice(1)} = ${f.ans}`, grownups };
+  }
+  const vals = f.q.split(" + ").map(Number);
   if (vals.length === 1) {
-    return { model: coinsSvg(worked ? f.coins : { q: 1, d: 1, n: 1, p: 1 }, true),
-      say: `Penny 1¢, nickel 5¢, dime 10¢, quarter 25¢. This coin = ${end}`, grownups };
+    const t = COINS.find((c) => f.coins[c.k]);
+    if (!worked) return { model: coinsSvg(COINS.map((c) => ({ k: c.k, tails: !!f.tails })), { labels: true }), say: "Penny 1¢, nickel 5¢, dime 10¢, quarter 25¢. This coin = ?", grownups };
+    return { model: coinsSvg(both(t.k), { labels: true }), say: `A ${t.name} is ${t.look}. It's worth ${t.v}¢. This coin = ${t.v}`, grownups };
   }
   let run = 0;
   const steps = vals.map((v) => (run += v));
   const say = vals.every((v) => v === 1)
     ? `Count the pennies, 1 cent each: ${f.q} = ${end}`
     : `Count on from the biggest coin${worked ? ": " + steps.join(", ") + "." : ":"} ${f.q} = ${end}`;
-  return { model: coinsSvg(f.coins, true), say, grownups };
+  return { model: coinsSvg(f.pile || f.coins, { labels: true }), say, grownups };
 }
 
 // Base-ten blocks: a rod for each ten and a little square for each one. crossFrom: rods from this
@@ -256,7 +266,9 @@ export const STRATEGIES = [
   { title: "Doubling", grade: "3rd", f: { op: "×", x: 4, y: 7 } },
   { title: "Break apart", grade: "3rd", f: { op: "×", x: 6, y: 7 } },
   { title: "Nines as tens", grade: "3rd", f: { op: "×", x: 9, y: 7 } },
-  { title: "Counting coins", grade: "K–1st", f: coinFact({ q: 0, d: 1, n: 1, p: 2 }) },
+  { title: "Naming coins", grade: "K", f: findFact("q", { q: 2, d: 1, n: 1, p: 0 }) },
+  { title: "What each coin is worth", grade: "K", f: coinFact({ q: 0, d: 1, n: 0, p: 0 }, true) },
+  { title: "Counting coins", grade: "1st", f: coinFact({ q: 0, d: 1, n: 1, p: 2 }) },
   { title: "Tens and ones", grade: "2nd", f: { op: "+", x: 38, y: 25 } },
   { title: "Count up by tens", grade: "2nd", f: { op: "-", x: 52, y: 28 } },
   { title: "Compare", grade: "K–1st", f: { op: "○", l: "3 + 4", r: "8", sym: "<", ans: 8, q: "3 + 4 □ 8" } },
