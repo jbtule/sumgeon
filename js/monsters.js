@@ -235,7 +235,7 @@ NEW_MON.push(
    +[0,1,2,3,4,5,6,7,8].map(i=>`<rect x="${26+i*17}" y="153" width="13" height="7" rx="2" fill="${CREAM}" stroke="${DK}" stroke-width="2"/>`).join('')
    +`<rect x="36" y="8" width="128" height="100" rx="16" fill="${SCR}" stroke="${DK}" stroke-width="4"/>`
    +`<rect x="132" y="112" width="28" height="5" rx="2" fill="${DK}"/><circle cx="42" cy="115" r="4" fill="${PH}" stroke="${DK}" stroke-width="1.5"/>`
-   +`<path d="M68 16 Q78 10 90 15 M110 12 Q122 6 132 14" stroke="${PH}" stroke-width="3.5" stroke-linecap="round" fill="none"/>`+[[80,3],[120,-3]].map(([x,dx])=>`<ellipse cx="${x}" cy="31" rx="9" ry="12" fill="none" stroke="${PH}" stroke-width="4"/><circle cx="${x+dx}" cy="35" r="4.5" fill="${PH}"/>`).join('')
+   +[[80,3],[120,-3]].map(([x,dx])=>`<path d="M${x-6} 19 H${x-11} V43 H${x-6} M${x+6} 19 H${x+11} V43 H${x+6}" fill="none" stroke="${PH}" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><rect x="${x+dx-4.5}" y="31" width="9" height="9" rx="1" fill="${PH}"/>`).join('')
    +`<circle cx="105" cy="50" r="8.5" fill="${GOLD}" opacity=".3"/>`
    +`<g fill="none" stroke="${PH}" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round">${dig(2,96,59)}${dig(7,115,59)}${dig('+',72,84,11,11)}${dig(1,96,81)}${dig(5,115,81)}<path d="M68 102 H132"/></g>`
    +`<path d="${glyph(1,101,44,8,12)}" fill="none" stroke="${GOLD}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></g>`}});
