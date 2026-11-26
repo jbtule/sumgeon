@@ -297,6 +297,14 @@ export function charge() {
     tone("square", 1800, 2600, t + 0.05, 0.08, 0.03);
   });
 }
+// A charged problem answered right: the lightning thrown back, a bright crackle rising into a zap.
+export function zap() {
+  play(function (t) {
+    for (var i = 0; i < 4; i++) noise(t + i * 0.03, 0.03, 0.25, "highpass", 4000 + i * 900);
+    tone("sawtooth", 300, 2400, t, 0.14, 0.12);
+    tone("square", 2400, 1200, t + 0.12, 0.1, 0.06);
+  });
+}
 export function thunder() {
   play(function (t) {
     noise(t, 0.08, 0.6, "highpass", 2500);

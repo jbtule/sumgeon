@@ -35,9 +35,20 @@ assert.equal(atHalf(mon("Timesaur")), null);
 // Starbot asks ×5 and ×10 facts more often.
 const like = prefers(mon("Starbot"));
 assert.equal(like("×5,7"), true); assert.equal(like("×3,4"), false); assert.equal(like("÷10,5"), true);
-const recs = Object.fromEntries(pool("apprentice").map((p) => [p.key, { b: 3, n: 3, c: 3, ms: 2000, t: 0 }]));
+const recs = Object.fromEntries(pool("third").map((p) => [p.key, { b: 3, n: 3, c: 3, ms: 2000, t: 0 }]));
 let s = 1; const rnd = () => ((s = (s * 16807) % 2147483647) / 2147483647);
 let hits = 0;
-for (let i = 0; i < 1000; i++) if (like(choose("apprentice", recs, { now: 1e12, rnd, op: "×", like }))) hits++;
+for (let i = 0; i < 1000; i++) if (like(choose("third", recs, { now: 1e12, rnd, op: "×", like }))) hits++;
 assert.ok(hits > 650, `Starbot asked ×5/×10 facts ${hits} times in 1000`);
+// The Centipede (a stand-in boss): 100 or more hits double.
+assert.equal(hitBy(mon("The Centipede"), 120, "120", false).mult, 2);
+assert.equal(hitBy(mon("The Centipede"), 99, "99", false).mult, 1);
+// What each monster asks at all: comparing for Chompers, balancing for the Twins, both for The
+// Unknown, never either for the arithmetic monsters; Quizard balances too.
+import { asks } from "../js/traits.js";
+assert.ok(asks(mon("Chompers"))("○") && asks(mon("Chompers"))("more") && !asks(mon("Chompers"))("+"));
+assert.ok(asks(mon("Equal Twins"))("=") && !asks(mon("Equal Twins"))("○"));
+assert.ok(asks(mon("The Unknown"))("=") && asks(mon("The Unknown"))("○"));
+assert.ok(asks(mon("Quizard"))("=") && asks(mon("Quizard"))("+") && !asks(mon("Quizard"))("○"));
+for (const n of ["Plusquito", "Minustaur", "Timesaur", "Haberhasher"]) assert.ok(asks(mon(n))("+") && !asks(mon(n))("○") && !asks(mon(n))("="), n);
 console.log("✓ traits");

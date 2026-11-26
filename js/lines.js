@@ -6,10 +6,11 @@ import { MON, allLooks } from "./monsters.js";
 import { HEROES } from "./heroes.js";
 import { WINGS, cursedMonster } from "./wings.js";
 import { facts, spokenProblem, spokenFact, spoken } from "./problems.js";
-import { missingOf, spokenMissing } from "./missing.js";
+import { missingOf, spokenMissing, canHide } from "./missing.js";
 import { coinFacts } from "./coins.js";
 import { twoDigitFacts } from "./twodigit.js";
-import { balanceFacts } from "./balance.js";
+import { balanceFacts, moreFacts, moreFact } from "./balance.js";
+import { timesTens, fractionFacts, roundFacts, rectFacts } from "./third.js";
 import { traitOf } from "./traits.js";
 import { QUIPS, FINALS, CRIT, TEAM_LINES, TEAM_NUMBERS, CAPTAIN_LINES, captainNames } from "./moments.js";
 
@@ -92,7 +93,8 @@ export var TRAIT_LINE = {
   "Shapeshift": "This boss switches between compare and balance!",
   "Stripes": "Lots of fives and tens!",
   "Ten Smash": "Ten or more smashes for double!",
-  "Second wind": "Halfway down, this boss puts on armor!"
+  "Second wind": "Halfway down, this boss puts on armor!",
+  "Hundred Legs": "A hundred or more hits double!"
 };
 export function luckyLine(d) { return "Answers with " + aDigit(d) + " hit double!"; }
 // The line for monster m's trait, or null (Plusquito has none).
@@ -101,6 +103,9 @@ export function traitLine(m) {
   if (!t) return null;
   return m.cursed != null ? luckyLine(m.cursed) : TRAIT_LINE[t.name];
 }
+// What the voice says to ask a problem: "three plus what is seven" for a missing number, or the
+// problem itself (problems.js spokenProblem).
+export function askLine(p) { return p.fact ? spokenMissing(p) : spokenProblem(p); }
 // One short bark when a hit does something special (app.js says at most one per hit).
 export var BARK = {
   level: "New level!",
@@ -125,7 +130,7 @@ export function depthLine(d) { return "Depth " + spoken(d) + "!"; }
 
 // [{ kind, text }], each once.
 // The groups the listen check (listen/) plays lines in.
-export var GROUPS = ["Phrases", "Monsters & heroes", "Add & subtract", "Times & divide", "Missing numbers", "Coins", "Two-digit", "Balance Hall", "Hero quips", "Team-ups", "Captain lines"];
+export var GROUPS = ["Phrases", "Monsters & heroes", "Add & subtract", "Times & divide", "Missing numbers", "Which is more", "Coins", "Two-digit", "Balance Hall", "Fractions", "Rounding", "Area & perimeter", "Hero quips", "Team-ups", "Captain lines"];
 
 // [{ kind, text, group, sprite? }], each once.
 export function spokenLines() {
@@ -162,9 +167,23 @@ export function spokenLines() {
     var g = f.op === "+" || f.op === "-" ? "Add & subtract" : "Times & divide";
     add("q", spokenProblem(f), g);
     add("q", spokenFact(f), g);
-    // Missing-number problems (Quizard): "three plus what is seven", hiding either number.
+    // Missing-number problems (Quizard): "three plus what is seven", hiding either number. Not
+    // for a zero in × or ÷ (0 × □ = 0 has every answer).
+    if (!canHide(f)) return;
     add("q", spokenMissing(missingOf(f, "x")), "Missing numbers");
     add("q", spokenMissing(missingOf(f, "y")), "Missing numbers");
+  });
+  // × tens (3rd grade): "four times thirty", either order.
+  timesTens().forEach(function (f) {
+    [f, { op: "×", x: f.y, y: f.x, ans: f.ans }].forEach(function (g) { add("q", spokenProblem(g), "Times & divide"); add("q", spokenFact(g), "Times & divide"); });
+  });
+  // Which is more (K): "Which is more, seven or four?", either order, and "Seven is more than four."
+  moreFacts().forEach(function (f) {
+    [f, moreFact(f.y, f.x)].forEach(function (g) { add("q", spokenProblem(g), "Which is more"); add("q", spokenFact(g), "Which is more"); });
+  });
+  // 3rd grade: fractions, rounding, and area and perimeter.
+  [[fractionFacts, "Fractions"], [roundFacts, "Rounding"], [rectFacts, "Area & perimeter"]].forEach(function (set) {
+    set[0]().forEach(function (f) { add("q", spokenProblem(f), set[1]); add("q", spokenFact(f), set[1]); });
   });
   // Coins (Trollar): "two dimes and three pennies. How many cents?", and the answer.
   coinFacts().forEach(function (f) { add("q", spokenProblem(f), "Coins"); add("q", spokenFact(f), "Coins"); });

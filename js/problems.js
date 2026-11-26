@@ -1,4 +1,5 @@
 import { coinWords, coinOf, isValue } from "./coins.js";
+import { fractionWords, unitName } from "./third.js";
 
 // Problem generation and spoken text. No DOM: runs in Node for the tests and, later, the
 // audio build (which records the same spoken text the app asks for).
@@ -70,6 +71,12 @@ function sayPennies(t) { return t.replace(/\bpennies\b/g, "penny's"); }
 // "seven plus eight"; for coins, "two dimes and three pennies. How many cents?", "How many
 // dimes?" (find the coin) or "How many cents?" (one coin: the voice doesn't name it).
 export function spokenProblem(p) {
+  // Which is more (K): "Which is more, seven or four?"
+  if (p.op === "more") return "Which is more, " + spoken(p.x) + " or " + spoken(p.y) + "?";
+  // Fractions: "one half equals what fourths"; "one equals what fourths".
+  if (p.op === "/") return fractionWords(p.a, p.b, spoken) + " equals what " + unitName(p.d);
+  if (p.op === "≈") return "Round " + spoken(p.n) + " to the nearest " + spoken(p.to).replace("one ", "") + ".";
+  if (p.op === "▭") return "What is the " + (p.kind === "a" ? "area" : "perimeter") + " of a " + spoken(p.w) + " by " + spoken(p.h) + " rectangle?";
   if (p.op === "○") return "Compare " + spokenSide(p.l) + " and " + spokenSide(p.r) + ".";
   if (p.op === "=") return spokenSide(p.l) + " equals " + spokenSide(p.r);
   if (p.op === "¢" && p.find) return sayPennies("How many " + coinOf(p.find).names + "?");
@@ -81,6 +88,10 @@ export function spokenProblem(p) {
 // and three pennies make twenty-three cents", "There are two dimes.", and for one coin the K
 // guide's words: "This is a dime. A dime is small and silver. It's worth ten cents."
 export function spokenFact(p) {
+  if (p.op === "more") return capital(spoken(p.ans)) + " is more than " + spoken(Math.min(p.x, p.y)) + ".";
+  if (p.op === "/") return fractionWords(p.a, p.b, spoken) + " equals " + fractionWords(p.ans, p.d, spoken);
+  if (p.op === "≈") return capital(spoken(p.n)) + " rounds to " + spoken(p.ans) + ".";
+  if (p.op === "▭") return "A " + spoken(p.w) + " by " + spoken(p.h) + " rectangle has " + (p.kind === "a" ? "an area" : "a perimeter") + " of " + spoken(p.ans) + ".";
   if (p.op === "○") return spokenSide(p.l) + " " + CMP_WORDS[p.sym] + " " + spokenSide(p.r);
   if (p.op === "=") return spokenSide(p.l.replace("□", p.ans)) + " equals " + spokenSide(p.r.replace("□", p.ans));
   if (p.op === "¢" && p.find) return sayPennies((p.ans === 1 ? "There is one " + coinOf(p.find).name : "There are " + spoken(p.ans) + " " + coinOf(p.find).names) + ".");
@@ -88,6 +99,7 @@ export function spokenFact(p) {
   if (p.op === "¢") return sayPennies(coinWords(p.coins) + (coinCount(p.coins) > 1 ? " make " : " is ") + spoken(p.ans) + (p.ans === 1 ? " cent" : " cents"));
   return spokenProblem(p) + " is " + spoken(p.ans);
 }
+function capital(t) { return t[0].toUpperCase() + t.slice(1); }
 // "This is a dime. A dime is small and silver. It's worth ten cents."
 export function coinLine(t) {
   return "This is a " + t.name + ". A " + t.name + " is " + t.look + ". It's worth " + spoken(t.v) + (t.v === 1 ? " cent." : " cents.");
@@ -95,13 +107,20 @@ export function coinLine(t) {
 function coinCount(c) { return c.q + c.d + c.n + c.p; }
 
 /* ---------- facts ----------
-   The facts that get recorded clips (DESIGN.md §13): sums and differences within 20 and the
-   2–12 times tables with their division facts. Bigger problems use the device voice. */
+   The facts that get recorded clips (DESIGN.md §13): sums and differences within 20, the zero
+   facts within 5 (4 + 0, 4 − 0, 4 − 4), the 0–12 times tables with their division facts (0 × 7,
+   1 × 7, 7 ÷ 1, 0 ÷ 7, never ÷ 0). Bigger problems have their own sets (twodigit.js, third.js). */
 export function facts() {
   var out = [], x, y, q;
   for (x = 1; x <= 19; x++) for (y = 1; x + y <= 20; y++) out.push(make("+", x, y, x + y));
   for (x = 2; x <= 20; x++) for (y = 1; y < x; y++) out.push(make("-", x, y, x - y));
   for (x = 2; x <= 12; x++) for (y = 2; y <= 12; y++) out.push(make("×", x, y, x * y));
   for (y = 2; y <= 12; y++) for (q = 1; q <= 12; q++) out.push(make("÷", y * q, y, q));
+  // Zero within 5 (kindergarten): 4 + 0, 0 + 4, 4 − 0 and 4 − 4.
+  for (x = 1; x <= 5; x++) out.push(make("+", x, 0, x), make("+", 0, x, x), make("-", x, 0, x), make("-", x, x, 0));
+  // × 0 and × 1, and their ÷ (3rd grade): 0 × 7, 1 × 7, 7 ÷ 1, 0 ÷ 7.
+  out.push(make("×", 0, 0, 0), make("×", 1, 1, 1));
+  for (x = 1; x <= 10; x++) out.push(make("×", 0, x, 0), make("×", x, 0, 0), make("÷", x, 1, x), make("÷", 0, x, 0));
+  for (x = 2; x <= 10; x++) out.push(make("×", 1, x, x), make("×", x, 1, x));
   return out;
 }

@@ -1,5 +1,6 @@
-// Two-digit addition and subtraction within 100 (2nd grade, 2.NBT): a strand like coins, asked by
-// Haberhasher in the Tables Tower. There are thousands of such problems, so each level is a fixed
+// Two-digit addition and subtraction: 1st grade's tens (the Balance Hall: 40 + 30, 10 more, 34 + 20)
+// and 2nd grade's within 100 and 10 or 100 more within 1000 (the Crystal Mines, Haberhasher; the
+// bands pick sets with twoLevel, learn.js BANDS). There are thousands of such problems, so each level is a fixed
 // sample of them; that keeps mastery (70% of a level learned) reachable, and every problem gets
 // a recorded voice. No DOM: runs in Node for the tests.
 
@@ -31,10 +32,30 @@ export const TWO_LEVELS = [
   { name: "Add ones", op: "+", test: (x, y) => x < 10 && ones(x) + ones(y) < 10 && y > 10, n: 24 },
   { name: "Add tens and ones", op: "+", test: (x, y) => x > 10 && ones(x) && ones(y) && ones(x) + ones(y) < 10, n: 24 },
   { name: "Add and regroup", op: "+", test: (x, y) => ones(x) + ones(y) >= 10 && ones(x) && ones(y), n: 30 },
-  { name: "Subtract tens", op: "-", test: (x, y) => !ones(x) && !ones(y), n: 99 },
+  { name: "Subtract tens", op: "-", test: (x, y) => !ones(x) && !ones(y), n: 24 }, // (a subset of the 44 it had: the same shuffle, cut shorter)
   { name: "Subtract, no regrouping", op: "-", test: (x, y) => ones(y) && ones(x) > ones(y), n: 24 },
-  { name: "Subtract and regroup", op: "-", test: (x, y) => ones(y) && ones(x) < ones(y), n: 30 }
+  { name: "Subtract and regroup", op: "-", test: (x, y) => ones(y) && ones(x) < ones(y), n: 30 },
+  // 1st grade (1.NBT.C.4–5): 10 more and 10 less than a number, and adding tens to a number.
+  { name: "10 more", op: "+", test: (x, y) => x === 10 && ones(y) && y > 10 && y < 90, n: 16 },
+  { name: "10 less", op: "-", test: (x, y) => y === 10 && ones(x) > 0, n: 16 },
+  { name: "Add tens to a number", op: "+", test: (x, y) => x + y < 100 && ((!ones(x) && x >= 20 && ones(y) && y > 10) || (!ones(y) && y >= 20 && ones(x) && x > 10)), n: 20 },
+  // 2nd grade (2.NBT.B.8): 10 more or less, and 100 more or less, within 1000. Made apart from
+  // the others (candidates only goes to 100).
+  { name: "10 more, 10 less to 1000", big: 10, n: 24 },
+  { name: "100 more, 100 less", big: 100, n: 24 }
 ].map((l, i) => Object.assign(l, { has: (f) => f.lv === i }));
+// The levels by name, for the bands that ask them (learn.js BANDS).
+export const twoLevel = (...names) => (f) => names.some((n) => TWO_LEVELS[f.lv] && TWO_LEVELS[f.lv].name === n);
+
+// Three-digit numbers with step (10 or 100) added or taken away, staying from 100 to 999.
+function hundreds(step) {
+  const out = [];
+  for (let x = 101; x <= 999; x++) {
+    if (x + step <= 999) out.push(make("+", step, x));
+    if (x - step >= 100) out.push(make("-", x, step));
+  }
+  return out;
+}
 
 let cache = null;
 // Every two-digit fact, once, tagged with its level (lv).
@@ -42,7 +63,7 @@ export function twoDigitFacts() {
   if (cache) return cache;
   cache = [];
   TWO_LEVELS.forEach((l, i) => {
-    const all = candidates(l.test, l.op);
+    const all = l.big ? hundreds(l.big) : candidates(l.test, l.op);
     for (const f of sample(all, Math.min(l.n, all.length), 7919 + i * 104729)) cache.push(Object.assign(f, { lv: i }));
   });
   return cache;

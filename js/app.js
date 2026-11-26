@@ -6,12 +6,13 @@ import { BANDS, choose, factOf, record as recordAnswer, helpFor, openLevel, mons
 import { hintFor, STRATEGIES } from "./hints.js";
 import { openStore, displayName } from "./store.js";
 import { PHRASE, monsterName, monsterCleared, monsterWon, heroJoins, heroCursed, heroRescue, heroAlmost, heroHelps, traitLine, BARK, wingCleared, wingOpened, depthLine, DEPTH_MAX_SPOKEN, reversedLine, howToWriteLine, quipLine } from "./lines.js";
-import { WINGS, wingOf, runFloors, openWings, toOpen, floorStars, wingStars, depthScale, depthHP, deepest, MAP_DEPTHS, GRADES, gradeLabel, gradeName, withGrade } from "./wings.js";
-import { missingOf, pickBlank, filled, spokenMissing, MISSING_SHARE } from "./missing.js";
+import { WINGS, wingOf, runFloors, openWings, toOpen, floorStars, wingStars, depthScale, depthHP, deepest, MAP_DEPTHS, GRADES, gradeLabel, gradeName, withGrade, bandOf, gradeBand, OLD_BANDS } from "./wings.js";
+import { missingOf, pickBlank, filled, spokenMissing, MISSING_SHARE, canHide } from "./missing.js";
+import { rectSvg } from "./third.js";
 import { coinsSvg, pileOf, coinOf } from "./coins.js";
 import { read as readSigil, judge as judgeSigil } from "./sigil.js";
 import { HANDWRITING } from "./handwriting.js";
-import { traitOf, charged, prefers, hitBy, atHalf } from "./traits.js";
+import { traitOf, charged, prefers, hitBy, atHalf, asks } from "./traits.js";
 import { roster, mastery, meet, beat } from "./bestiary.js";
 import { HEROES, CHALK, heroSvg, freePick, pickHero, curseCaptain, crackCurse, CURSE_HITS, resetTeam } from "./heroes.js";
 import * as sfx from "./sfx.js";
@@ -104,7 +105,7 @@ store.upgrade();
 // progress: { [wingId]: { boss: wins, best: floors } }.
 // seen: the Bestiary, { [monster]: { met, beaten } }.
 let PID, st, recs, team, progress, seen;
-const band = () => BANDS[st.band] || BANDS.sprout;
+const band = () => BANDS[st.band] || BANDS.kinder;
 const wingFor = (b) => WINGS.find((w) => w.band === b) || WINGS[0];
 const wing = () => wingFor(st.band);
 // A floor's art: a cursed digit is its hero, darkened (DESIGN.md §6.6).
@@ -119,7 +120,10 @@ const monsterArt = (m, cls) => (m.cursed != null ? heroSvg(HEROES[m.cursed], { c
 //      been learned (LEARNING_RESETS), since it changes how learning is counted.
 //   4 (2026-11-25): fluent time scales with digits (4 s + 1 s a digit), skipping tolerates a
 //      slip. Resets learning too: facts counted slow under 3 s weren't slow.
-const DUNGEON_VERSION = 4, DUNGEON_KEYS = ["wings", "bestiary", "best"], LEARNING_RESETS = [3, 4];
+//   5 (2026-11-25): the grade strata (DESIGN.md §4.1): one stratum per grade, K to 3rd, in a
+//      straight chain, with the Crystal Mines new for 2nd grade and monsters moved. Learning is
+//      kept: every fact keeps its key.
+const DUNGEON_VERSION = 5, DUNGEON_KEYS = ["wings", "bestiary", "best"], LEARNING_RESETS = [3, 4];
 function upgradeDungeon(id) {
   const p = store.player(id), had = p.get("dungeon", null);
   if (had === DUNGEON_VERSION) return;
@@ -143,6 +147,13 @@ function loadPlayer() {
   MS = freshMoments(store.player(PID).get("moments", null));
   // A captain picked before heroes could change stays on the team.
   if (team.captain != null && !team.rescued.includes(team.captain)) { team.rescued.push(team.captain); saveTeam(); }
+  // Bands saved before the grade strata (dungeon version 5) become a grade's: a player who picked a
+  // grade starts in that grade's stratum, as a new one would.
+  if (OLD_BANDS[st.band] || OLD_BANDS[st.start]) {
+    const was = OLD_BANDS[st.start] || st.start || OLD_BANDS[st.band] || "kinder";
+    st.start = st.grade != null && BANDS[gradeBand(st.grade)].grade > BANDS[was].grade ? gradeBand(st.grade) : was;
+    st.band = st.start; saveSettings();
+  }
   // The band a player started in opens its Wing from the start (DESIGN.md §4).
   if (!st.start) { st.start = st.band; saveSettings(); }
   if (!openWings(progress, recs, st.start).includes(wingFor(st.band).id)) { st.band = WINGS[0].band; saveSettings(); }
@@ -230,33 +241,47 @@ function ansUI() {
   if ($("blank")) { $("blank").textContent = G.input || "?"; $("blank").classList.toggle("typed", !!G.input); }
 }
 // The problem as shown: "3 + 4 =", or with a glowing □ for a missing number ("3 + □ = 7").
+const BLANK = '<span class="blank" id="blank">?</span>';
+// A fraction stacked, numerator over denominator: "1/2" → ½ drawn as two rows.
+const stacked = (t) => t.replace(/(\d+|□)\/(\d+)/g, '<span class="frac"><span>$1</span><span>$2</span></span>');
 function probUI() {
   const p = G.cur, box = $("prob");
-  if (p.blank || p.sym || p.op === "=") box.innerHTML = esc(p.q).replace("□", '<span class="blank" id="blank">?</span>');
+  if (p.blank || p.sym || p.op === "=") box.innerHTML = esc(p.q).replace("□", BLANK);
+  // "7 or 4": which is more (K). The voice asks it; the answer box is the answer.
+  else if (p.op === "more") box.innerHTML = `${p.x} <small class="or">or</small> ${p.y}`;
+  // Fractions, stacked, with the glowing □ as the hidden numerator: 1/2 = □/4.
+  else if (p.op === "/") box.innerHTML = stacked(esc(p.q)).replace("□", BLANK);
+  // Rounding: 47 ≈ □, and to what.
+  else if (p.op === "≈") box.innerHTML = esc(p.q).replace("□", BLANK) + `<small class="to">nearest ${p.to}</small>`;
+  // A rectangle, drawn: "Area = □".
+  else if (p.op === "▭") box.innerHTML = rectSvg(p) + `<span class="find">${esc(p.q).replace("□", BLANK)}</span>`;
   // "How many quarters?": the pile, then "quarters = ?" with a □ that fills as you type, as a
   // missing number does, under the pile (styles.css .game.find), so it fits a phone.
   else if (p.op === "¢" && p.find) box.innerHTML = coinsSvg(p.pile) + `<span class="find">${coinOf(p.find).names} = <span class="blank" id="blank">?</span></span>`;
   else if (p.op === "¢") box.innerHTML = coinsSvg(p.pile) + " =";
   else box.textContent = p.q + " =";
-  document.querySelector(".game").classList.toggle("missing", !!p.blank || !!p.sym || p.op === "=" || !!p.find);
+  document.querySelector(".game").classList.toggle("missing", !!p.blank || !!p.sym || p.op === "=" || !!p.find || "/≈▭".includes(p.op));
   padUI(p.spell ? "spell" : p.sym ? "cmp" : "num");
   document.querySelector(".game").classList.toggle("cents", p.op === "¢" && !p.find);
-  document.querySelector(".game").classList.toggle("find", !!p.find);
+  document.querySelector(".game").classList.toggle("find", !!p.find || p.op === "▭");
 }
-// The facts a monster asks: its own strand (Trollar's coins) or the player's band.
-const strandOf = (m) => m.strand || st.band;
+// The facts a monster asks: its strand in this stratum (Trollar's coins) or the stratum's band.
+const strandOf = (m) => bandOf(wing(), m);
 // A problem with its answer, for the miss message and the Oops card: "3 + 4 = 7", "3 + 4 = 7"
 // for 3 + □ = 7, and "10 + 5 + 1 = 16¢" for coins (just "16¢" for one coin, "2 dimes" for
 // finding them).
 function shownFact(p, ans) {
   if (p.sym) return p.q.replace("□", typeof ans === "string" && ans.startsWith("<b>") ? `<b>${esc(p.sym)}</b>` : p.sym);
-  if (p.blank || p.op === "=") return filled(p, ans);
+  if (p.blank || p.op === "=" || p.op === "/" || p.op === "≈") return filled(p, ans);
+  if (p.op === "▭") return p.w + " by " + p.h + ": " + filled(p, ans);
+  if (p.op === "more") return `${ans} is more`;
   if (p.op === "¢" && p.find) return `${ans} ${p.ans === 1 ? coinOf(p.find).name : p.q}`;
   if (p.op === "¢") return (p.q.includes("+") ? p.q + " = " : "") + ans + "¢";
   return `${esc(p.q)} = ${ans}`;
 }
-// The fact whose hint helps: for 3 + □ = 7 that's 7 − 3.
-const hintFact = () => G.cur.inverse || G.cur;
+// The fact whose hint helps: the problem itself (hints.js works out a □ problem's own hint, or
+// uses the fact that works it out: 7 − 3 for 3 + □ = 7).
+const hintFact = () => G.cur;
 
 // A fresh run through the current Wing: its floors, with this player's rescue floor.
 // The dive, down the side of the monster's box: every depth of this stratum from the top, the
@@ -348,14 +373,14 @@ function newProblem() {
   const m = G.floors[G.floor];
   // Skipping ahead: while you answer fluently, each problem is a probe from a tier above.
   // And not the same kind of problem with the same answer as the last two, when there's a choice.
-  const bk = strandOf(m), f = flowOf(bk), avoidAns = G.recentAns || [], op = m.op === "mix" || m.strand ? null : m.op;
+  const bk = strandOf(m), f = flowOf(bk), avoidAns = G.recentAns || [], op = m.op === "mix" || bk !== st.band ? null : m.op, kinds = asks(m);
   // Spell casting: about 1 problem in 6 is drawn as a sigil instead of typed (touch screens;
   // ?spells for every one): a fact already learned with a one-digit answer. It's picked before
   // probing, since a fluent player is probing nearly every problem and would never get one.
   const spellTurn = !due && !m.blank && canSpell() && (SPELLS_ALWAYS || Math.random() < SPELL_SHARE);
-  const spell = spellTurn ? spellKey(bk, recs, { recent: G.recent, avoidAns, op }) : null;
-  const probe = !due && !spell && f.on && f.cool <= 0 ? probeKey(bk, recs, null, G.recent, avoidAns, f.leap) : null;
-  const key = spell || probe || choose(bk, recs, { now: Date.now(), recent: G.recent, retry: due ? due.key : null, op, like: prefers(m), depth: G.depth, avoidAns,
+  const spell = spellTurn ? spellKey(bk, recs, { recent: G.recent, avoidAns, op, asks: kinds }) : null;
+  const probe = !due && !spell && f.on && f.cool <= 0 ? probeKey(bk, recs, null, G.recent, avoidAns, f.leap, kinds) : null;
+  const key = spell || probe || choose(bk, recs, { now: Date.now(), recent: G.recent, retry: due ? due.key : null, op, asks: kinds, like: prefers(m), depth: G.depth, avoidAns,
     // The captain's digit: held back in the first fight, then about a third of problems lean to it
     // until the captain's first moment has happened (captainLean).
     digit: team.captain, digitShare: captainLean() ? CAPTAIN_BIAS : 0, avoidDigitShare: firstFight() ? CAPTAIN_HOLD : 0 });
@@ -368,8 +393,9 @@ function newProblem() {
   G.recentAns = [G.cur.op + " " + G.cur.ans].concat(G.recentAns || []).slice(0, 2);
   // Quizard hides a number in every problem; other monsters sometimes do, for facts in review.
   const rec = recs[key];
-  // (Not for a strand's facts: coins can't hide a number, and two-digit ones aren't recorded that way.)
-  if (!spell && !m.strand && "+-×÷".includes(G.cur.op) && (m.blank || (rec && rec.b >= 3 && Math.random() < MISSING_SHARE))) G.cur = missingOf(G.cur, pickBlank());
+  // (Only the recorded facts within 20 and the tables, without a zero in × or ÷ (missing.js
+  // canHide), and not a fact that already has its □.)
+  if (!spell && !G.cur.blank && "+-×÷".includes(G.cur.op) && canHide(G.cur) && (m.blank || (rec && rec.b >= 3 && Math.random() < MISSING_SHARE))) G.cur = missingOf(G.cur, pickBlank());
   // ?spells makes every one-digit problem a spell, for testing.
   const digit = !G.cur.sym && Number.isInteger(G.cur.ans) && G.cur.ans >= 0 && G.cur.ans <= 9;
   G.cur.spell = !!spell || (SPELLS_ALWAYS && canSpell() && !probe && digit);
@@ -381,7 +407,7 @@ function newProblem() {
   probUI();
   // Coins ("How many dimes?") and comparisons can't be read off the screen by a pre-reader, so
   // the voice reads them, after the monster's name. Skipped if it's answered first.
-  if (G.cur.op === "¢" || G.cur.op === "○") say("q", spokenProblem(G.cur), false, asked(G.cur));
+  if (G.cur.op === "¢" || G.cur.op === "○" || G.cur.op === "more") say("q", spokenProblem(G.cur), false, asked(G.cur));
   // The first comparison: how the < = > keys work.
   if (G.cur.op === "○" && once("compare")) { say("p", PHRASE.cmpHow, false, asked(G.cur)); say("p", PHRASE.cmpSame, false, asked(G.cur)); }
   if (G.cur.spell) {
@@ -591,6 +617,7 @@ function submit() {
     const momentName = mo ? HEROES[mo.hero].n + (mo.partner != null ? " & " + HEROES[mo.partner].n : "") : "";
     (mo ? heroMoment(mo, typed, crit) : fly(typed, crit)).then(() => {
       if (!mo) sfx.impact(crit); // a moment lands with its own, bigger impact and shake
+      if (G.charged) sfx.zap(); // a lightning problem beaten: the lightning thrown back
       burst(crit);
       G.hp -= dmg;
       pop((boost ? "Hero! " : bonus.power ? "Power! " : crit ? "Crit! " : "") + "−" + dmg, crit || bonus.power || !!boost);
@@ -922,7 +949,7 @@ function wingsHTML() {
     else { const t = toOpen(w, progress, recs); note = `🔒 Beat ${t.prev.boss}${t.boss ? " ✓" : ""} and learn ${Math.round(t.need * 100)}% of ${t.prev.name.replace(/^The /, "the ")} (now ${Math.round(t.share * 100)}%)`; }
     const d = deepest(w, progress);
     return `<label class="wing ${w.id}${here ? " here" : ""}${isOpen ? "" : " locked"}"><input type="radio" name="wing" value="${w.id}" ${here ? "checked" : ""} ${isOpen ? "" : "disabled"}>
-      <span><b>${w.name}</b><small>${b.label} · ${b.grades}</small><em>${note}</em>${here ? `<em class="level" id="levelLine">${levelLine()}</em>` : ""}
+      <span><b>${w.name}</b><small>${b.label}</small><em>${note}</em>${here ? `<em class="level" id="levelLine">${levelLine()}</em>` : ""}
       ${isOpen ? depthTrack(w, d) : ""}</span></label>`;
   }).join("");
 }
@@ -1542,6 +1569,8 @@ document.addEventListener("keydown", (e) => {
   else if (e.key === ".") press(">");
   else if (e.key === "Backspace") press("del");
   else if (e.key === "Enter") { e.preventDefault(); press("go"); }
+  // ? opens the hint, like tapping 💡, when this problem has one.
+  else if (e.key === "?") { if (!$("hintBtn").hidden) { e.preventDefault(); $("hintBtn").click(); } }
 });
 
 loadPlayer();

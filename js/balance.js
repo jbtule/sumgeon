@@ -1,5 +1,6 @@
 // The Balance Hall's problems (DESIGN.md §4): comparing (Chompers) and balancing equations (the
-// Equal Twins), K–2nd. A band of its own (learn.js BANDS.balance). No DOM: runs in Node.
+// Equal Twins), in 1st grade's band (learn.js BANDS.first); and the kindergarten "which is more?"
+// that Chompers asks in the Counting Cellar. No DOM: runs in Node.
 //
 // A compare fact: { op: "○", l: "3 + 4", r: "8", sym: "<", ans: 8, q: "3 + 4 □ 8", key }. The answer
 //   is the symbol (typed with the <, = and > keys); the damage (ans) is the bigger side, since
@@ -53,15 +54,38 @@ const SETS = [
   { name: "Compare to 100", make: () => compares(range(10, 99).flatMap((x) => [x, x + 1, x - 1, x + 10, x - 10, x + 9, x - 9, (x % 10) * 10 + Math.floor(x / 10)]
     .filter((y) => y >= 10 && y <= 99 && y !== x || y === x).map((y) => [x, y])), 24, 53) }
 ];
-const SET_LEVEL = [0, 0, 1, 1, 2];
-export const BALANCE_LEVELS = ["Compare and balance to 10", "Sums on both sides", "Compare to 100"]
-  .map((name, i) => ({ name, has: (f) => f.lv === i }));
+// Which set each fact came from (f.set, an index into SETS), so the Balance Hall's band (learn.js
+// BANDS.first) can put each set in the level where 1st grade teaches it.
+export const BALANCE_SETS = SETS.map((s) => s.name);
+export const inSet = (name) => (f) => f.set === BALANCE_SETS.indexOf(name);
 
 let cache = null;
 export function balanceFacts() {
   if (cache) return cache;
   cache = [];
   const seen = new Set();
-  SETS.forEach((set, i) => set.make().forEach((f) => { if (!seen.has(f.key)) { seen.add(f.key); cache.push(Object.assign(f, { lv: SET_LEVEL[i] })); } }));
+  SETS.forEach((set, i) => set.make().forEach((f) => { if (!seen.has(f.key)) { seen.add(f.key); cache.push(Object.assign(f, { set: i })); } }));
   return cache;
 }
+
+/* ---------- which is more (kindergarten) ----------
+   Comparing without symbols (K.NS.C): "7 or 4", and the answer is the bigger number, typed on
+   the number pad. Chompers asks it in the Counting Cellar (he eats the bigger number, so it's his
+   hit too). Key "M4,7", smaller first; it's shown either way round. Never two the same. */
+export function moreFact(x, y) {
+  const a = Math.min(x, y), b = Math.max(x, y);
+  return { op: "more", x, y, ans: b, q: x + " or " + y, key: "M" + a + "," + b };
+}
+export function moreFactOf(key, rnd) {
+  const [a, b] = key.slice(1).split(",").map(Number);
+  return (rnd || Math.random)() < 0.5 ? moreFact(b, a) : moreFact(a, b);
+}
+export function moreFacts() {
+  const out = [];
+  for (let b = 2; b <= 10; b++) for (let a = 1; a < b; a++) out.push(moreFact(a, b));
+  return out;
+}
+export const MORE_LEVELS = [
+  { name: "Which is more, to 5", has: (f) => f.ans <= 5 },
+  { name: "Which is more, to 10", has: () => true }
+];
