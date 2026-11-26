@@ -1406,7 +1406,7 @@ function settings(paused, tab) {
   // Screen app, which has no address bar. Test plays the floor-cleared fanfare.
   const soundState = () => { const a = sfx.status(); if ($("soundState")) $("soundState").textContent = `Audio: ${a.state}\nPlayed: ${a.played}  Restarted: ${a.remade || 0}\nError: ${a.error || "none"}`; };
   soundState(); const soundTimer = setInterval(() => { if (!$("soundState")) clearInterval(soundTimer); else soundState(); }, 800);
-  $("soundTest").onclick = () => { sfx.victory(); setTimeout(soundState, 300); };
+  $("soundTest").onclick = () => { sfx.restart(sfx.victory); setTimeout(soundState, 300); };
   wireSwatches();
   if (!paused) wirePlayers();
   $("done").onclick = paused ? pause : menu;

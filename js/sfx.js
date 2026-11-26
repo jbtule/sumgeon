@@ -3,6 +3,9 @@
 // context is created on the first tap and woken on later taps if iOS paused it.
 
 var ctx = null, out = null, on = true, noiseBuf = null, lastError = "", played = 0, gestures = 0, stuckSince = 0, remade = 0;
+// For telling a dead context that says "running" (below): when the page was last hidden, and the
+// context's clock at the last tap.
+var hiddenAt = 0, lastTick = null;
 
 // Safari can leave a context "suspended" or "interrupted" (macOS Safari after the tab was in the
 // background or another app took the audio), and only resumes it inside a tap or click, so every
@@ -11,15 +14,33 @@ var ctx = null, out = null, on = true, noiseBuf = null, lastError = "", played =
 // Sometimes Safari won't wake it (seen in the Home Screen app: the effects stopped partway and
 // stayed silent). So if a tap finds it still not running a second after an earlier tap tried to
 // wake it, the context is thrown away and a fresh one made, inside this tap (remade counts them).
+//
+// And sometimes a context comes back from the background saying "running" but is silent: the
+// Home Screen app played 100 effects into it with nothing heard ("Played" kept counting). Nothing
+// can listen to the output, so a tap remakes it when the page has been hidden since the last tap,
+// or when its clock hasn't moved since the last tap more than half a second ago (a running
+// context's currentTime always advances).
+function stale() {
+  if (!ctx || ctx.state !== "running") return "";
+  if (hiddenAt) return "remade after the background";
+  var now = performance.now();
+  if (lastTick && now - lastTick.at > 500 && ctx.currentTime === lastTick.t) return "remade: its clock stopped";
+  return "";
+}
+function remake(why) {
+  lastError = why; remade++;
+  try { ctx.close(); } catch (e) { /* already gone */ }
+  ctx = null; stuckSince = 0;
+}
 function unlock() {
   gestures++;
   if (ctx && ctx.state === "closed") ctx = null;
+  var why = stale();
+  hiddenAt = 0;
+  if (why) remake(why);
+  if (ctx) lastTick = { at: performance.now(), t: ctx.currentTime };
   if (ctx && ctx.state === "running") { stuckSince = 0; return; }
-  if (ctx && stuckSince && performance.now() - stuckSince > 1000) {
-    lastError = "remade after " + ctx.state; remade++;
-    try { ctx.close(); } catch (e) { /* already gone */ }
-    ctx = null; stuckSince = 0;
-  }
+  if (ctx && stuckSince && performance.now() - stuckSince > 1000) remake("remade after " + ctx.state);
   if (ctx) {
     if (!stuckSince) stuckSince = performance.now();
     try { ctx.resume().then(function () { if (ctx && ctx.state === "running") stuckSince = 0; }, function (e) { lastError = "resume: " + e.message; }); } catch (e) { lastError = "resume: " + e.message; }
@@ -49,6 +70,16 @@ function unlock() {
 // Every tap, not just the first: it also wakes audio iOS paused in the background. Safari counts
 // some of these as a gesture that may start audio and not others, so listen to all of them.
 ["pointerdown", "pointerup", "click", "touchend", "keydown"].forEach(function (ev) { document.addEventListener(ev, unlock, true); });
+document.addEventListener("visibilitychange", function () { if (document.hidden) hiddenAt = performance.now(); });
+window.addEventListener("pagehide", function () { hiddenAt = performance.now(); });
+
+// Settings → Game → Test sound: always starts from a fresh context, inside that tap, so a silent
+// one can be fixed by hand. Then plays the test sound (fn) on it.
+export function restart(fn) {
+  if (ctx) remake("remade by Test sound");
+  unlock();
+  if (fn) fn();
+}
 
 // The one Web Audio context, shared with the voice (speech.js plays its sprites on it): Safari
 // handles one context far more reliably than two. null until the first tap.
