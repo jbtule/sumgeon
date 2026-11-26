@@ -10,7 +10,7 @@
 // With reduced motion there's no zoom or speed ramp: the hero, the bubble and the hit.
 // A team-up (two heroes, playTeamUp below) runs the same phases with both side by side.
 //
-// Used by the game (app.js) and the review page (moments/), so both play exactly this. Its styles
+// Used by the game (app.js) and the review page (review/moments/), so both play exactly this. Its styles
 // are here too, injected once, so the review page needn't load the game's stylesheet.
 import { HEROES, heroSvg } from "./heroes.js";
 import * as sfx from "./sfx.js";

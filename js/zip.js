@@ -1,5 +1,5 @@
 // A tiny .zip writer and reader, "stored" (no compression), with CRC-32. The spell check's
-// Record mode shares its drawings as a zip (spell/spell.js), and
+// Record mode shares its drawings as a zip (review/spell/spell.js), and
 // scripts/drawings-to-fixtures.mjs reads one back. No DOM: runs in Node too.
 //
 //   zip([{ name, data }]) -> Uint8Array   data: Uint8Array or a string (saved as UTF-8)

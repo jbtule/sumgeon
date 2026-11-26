@@ -4,9 +4,9 @@
 // sizes the game uses, to judge contrast and readability. Flags like the moments page's: ⚑ marks
 // a drawing with tags and a note, and Report copies the flags or opens a GitHub issue.
 // Marks live in localStorage ("sumgeon:gallery"), keyed by name: { s: "bad", tags, note, t }.
-import { MON, NEW_MON, RETIRED, svg } from "../js/monsters.js";
-import { HEROES, heroSvg } from "../js/heroes.js";
-import { TRAITS } from "../js/traits.js";
+import { MON, NEW_MON, RETIRED, svg } from "../../js/monsters.js";
+import { HEROES, heroSvg } from "../../js/heroes.js";
+import { TRAITS } from "../../js/traits.js";
 
 const $ = (id) => document.getElementById(id);
 const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);

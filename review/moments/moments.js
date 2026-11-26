@@ -7,13 +7,13 @@
 //
 // Marks live in localStorage ("sumgeon:moments"), keyed by hero and quip: { s: "ok" | "bad",
 // tags, note, t }.
-import { HEROES } from "../js/heroes.js";
-import { MON, svg } from "../js/monsters.js";
-import { QUIPS, FINALS, CRIT, TEAM_LINES, TEAM_NUMBERS, CAPTAIN_LINES, captainNames, simulate } from "../js/moments.js";
-import { playMoment, PHASES } from "../js/slowmo.js";
-import { quipLine, monsterCleared } from "../js/lines.js";
-import { say, stopSpeech, speaking, cutOff } from "../js/speech.js";
-import * as sfx from "../js/sfx.js";
+import { HEROES } from "../../js/heroes.js";
+import { MON, svg } from "../../js/monsters.js";
+import { QUIPS, FINALS, CRIT, TEAM_LINES, TEAM_NUMBERS, CAPTAIN_LINES, captainNames, simulate } from "../../js/moments.js";
+import { playMoment, PHASES } from "../../js/slowmo.js";
+import { quipLine, monsterCleared } from "../../js/lines.js";
+import { say, stopSpeech, speaking, cutOff } from "../../js/speech.js";
+import * as sfx from "../../js/sfx.js";
 
 const $ = (id) => document.getElementById(id);
 const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
