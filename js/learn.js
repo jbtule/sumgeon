@@ -14,6 +14,10 @@ import { threeFacts, threeFactOf } from "./three.js";
 import { arrayFacts, arrayFactOf, ARRAY_LEVELS } from "./arrays.js";
 import { clockFacts, clockFactOf, TIME_LEVELS } from "./clock.js";
 import { patternFacts, patternFactOf, oddEvenFactOf, PATTERN_GAME_LEVELS } from "./patterns.js";
+import { tfFacts, tfFactOf } from "./truefalse.js";
+import { lineFacts, lineFactOf } from "./numberline.js";
+import { pvFacts, pvFactOf, PV_GAME_LEVELS } from "./placevalue.js";
+import { dollarFacts, dollarFactOf, DOLLAR_GAME_LEVELS } from "./dollars.js";
 import { asks as asksOf } from "./traits.js";
 
 // One band per grade, K to 3rd (DESIGN.md §2, §4.1), each the facts of one stratum, with its
@@ -34,6 +38,9 @@ const big = (f) => (f.op === "×" && (f.x > 10 || f.y > 10)) || (f.op === "÷" &
 const is = (op) => (f) => f.op === op;
 const any = (...tests) => (f) => tests.some((t) => t(f));
 const hidden = (f) => !!f.blank;
+// A set of batch 2's facts (true or false, the number line, place value): its set's id.
+const inTF = (...sets) => (f) => (f.op === "✓" || f.op === "✎") && sets.includes(f.set);
+const onLine = (...sets) => (f) => f.op === "↔" && sets.includes(f.set);
 
 export const BANDS = {
   // The Counting Cellar.
@@ -50,30 +57,35 @@ export const BANDS = {
   // The Balance Hall.
   first: {
     label: "1st grade", grade: 1, hearts: 7, fluentMs: 4000,
-    facts: () => facts().concat(balanceFacts(), firstHidden(), twoDigitFacts()),
+    facts: () => facts().concat(balanceFacts(), firstHidden(), twoDigitFacts(), tfFacts()),
     levels: [
       // Within 10 and 10 and some more (10 + 6, 16 − 6) are the Cellar's: here, the rest of the
       // teens (13 + 4, 17 − 5; a teen take away a teen, 17 − 12, is left out to keep the level short).
-      { name: "Within 20, not crossing 10", has: any((f) => within(20)(f) && !within(10)(f) && !teen(f) && !crosses(f) && !(f.op === "-" && f.y > 10), inSet("Compare to 10"), inSet("The other side")) },
-      { name: "Crossing 10", has: any((f) => within(20)(f) && crosses(f), inSet("Compare sums")) },
-      { name: "Missing numbers and the equal sign", has: any(hidden, inSet("Balance both sides")) },
+      // True or false (the Equal Twins, 1.OA.D.7) comes in with the level of its numbers, as the
+      // comparing and balancing sets do: to 10 here, to 20 with crossing 10, and fixing a false
+      // one with the missing numbers.
+      { name: "Within 20, not crossing 10", has: any((f) => within(20)(f) && !within(10)(f) && !teen(f) && !crosses(f) && !(f.op === "-" && f.y > 10), inSet("Compare to 10"), inSet("The other side"), inTF("tf10")) },
+      { name: "Crossing 10", has: any((f) => within(20)(f) && crosses(f), inSet("Compare sums"), inTF("tf20")) },
+      { name: "Missing numbers and the equal sign", has: any(hidden, inSet("Balance both sides"), inTF("fix10", "fix20")) },
       { name: "Add and subtract tens", has: any(twoLevel("Add tens", "Subtract tens", "10 more", "10 less", "Add tens to a number"), inSet("Compare to 100")) }
     ]
   },
   // The Crystal Mines: two-digit ± within 100, adding and subtracting mixed, then regrouping,
-  // then 10 and 100 more or less within 1000.
+  // then place value to 1000 with base-ten blocks (Haberhasher), then 10 and 100 more or less
+  // within 1000: the school's order (two-digit work, then three-digit numbers, then three-digit work).
   second: {
-    label: "2nd grade", grade: 2, hearts: 5, fluentMs: 6000, facts: twoDigitFacts,
+    label: "2nd grade", grade: 2, hearts: 5, fluentMs: 6000, facts: () => twoDigitFacts().concat(pvFacts()),
     levels: [
       { name: "Add and subtract, no regrouping", has: twoLevel("Add ones", "Add tens and ones", "Subtract, no regrouping") },
       { name: "Add and subtract, regrouping", has: twoLevel("Add and regroup", "Subtract and regroup") },
+      ...PV_GAME_LEVELS.map((l) => ({ name: l.name, has: (f) => f.op === "#" && l.sets.includes(f.set) })),
       { name: "10 and 100 more or less", has: twoLevel("10 more, 10 less to 1000", "100 more, 100 less") }
     ]
   },
   // The Tables Tower: × and ÷ only, in the school's order, then the rest of 3rd grade.
   third: {
     label: "3rd grade", grade: 3, hearts: 5, fluentMs: 4000,
-    facts: () => facts().concat(timesTens(), fractionFacts(), roundFacts(), rectFacts()),
+    facts: () => facts().concat(timesTens(), fractionFacts(), roundFacts(), rectFacts(), lineFacts()),
     levels: [
       { name: "× 0, 1, 2, 5 and 10", has: times([0, 1, 2, 5, 10]) },
       { name: "÷ 1, 2, 5 and 10", has: divide([1, 2, 5, 10]) },
@@ -82,7 +94,11 @@ export const BANDS = {
       { name: "× 7, 8 and 9", has: times([7, 8, 9]) },
       { name: "÷ 7, 8 and 9", has: divide([7, 8, 9]) },
       { name: "× tens", has: tens },
-      { name: "Fractions", has: is("/") },
+      // Fractions (3.NF.A): on a number line first (where's the dot, how many equal parts;
+      // Halfling), then equal fractions, with the line from 0 to 2 (past 1, and 4/4 = 1) as
+      // whole numbers as fractions.
+      { name: "Fractions on a number line", has: onLine("where", "parts") },
+      { name: "Equal fractions", has: any(is("/"), onLine("past1")) },
       { name: "Rounding", has: is("≈") },
       { name: "Area and perimeter", has: is("▭") },
       { name: "× and ÷ 11 and 12", has: big }
@@ -93,8 +109,10 @@ export const BANDS = {
   // Coins in the Cellar (K): find the coin, and what each is worth.
   coinsK: { label: "Coins", strand: true, unlock: 0.5, hearts: 7, fluentMs: 5000, facts: coinFacts, levels: COIN_LEVELS.slice(0, 2) },
   // Counting coins in the Mines (2nd grade; 1st grade's counting comes along).
-  coins: { label: "Counting coins", strand: true, unlock: 0.5, hearts: 5, fluentMs: 5000, facts: coinFacts,
-    levels: COIN_LEVELS.slice(2).map((l) => ({ name: l.name, has: (f) => !f.find && !COIN_LEVELS[1].has(f) && l.has(f) })) },
+  // Then dollars (2.GM.D.12): bills alone, then bills and coins, typed as dollars and cents.
+  coins: { label: "Counting coins", strand: true, unlock: 0.5, hearts: 5, fluentMs: 5000, facts: () => coinFacts().concat(dollarFacts()),
+    levels: COIN_LEVELS.slice(2).map((l) => ({ name: l.name, has: (f) => f.op === "¢" && !f.find && !COIN_LEVELS[1].has(f) && l.has(f) }))
+      .concat(DOLLAR_GAME_LEVELS.map((l) => ({ name: l.name, has: (f) => f.op === "$" && f.set === l.set }))) },
   // Which is more (K): Chompers in the Cellar.
   more: { label: "Which is more", strand: true, unlock: 0.5, hearts: 7, fluentMs: 4000, facts: moreFacts, levels: MORE_LEVELS },
   // Three numbers (1st grade): Triceraplus in the Hall, 4 + 3 + 6 with a ten to find. A second more
@@ -132,7 +150,7 @@ export function keyOf(f) {
 }
 // A problem for a key, turned around half the time for + and ×.
 export function factOf(key, rnd) {
-  const own = { "¢": coinFactOf, "○": balanceFactOf, "=": balanceFactOf, "□": hiddenFactOf, "M": moreFactOf, "/": fractionFactOf, "≈": roundFactOf, "▭": rectFactOf, "Σ": threeFactOf, "▦": arrayFactOf, "⌚": clockFactOf, "…": patternFactOf, "◐": oddEvenFactOf }[key[0]];
+  const own = { "¢": coinFactOf, "○": balanceFactOf, "=": balanceFactOf, "□": hiddenFactOf, "M": moreFactOf, "/": fractionFactOf, "≈": roundFactOf, "▭": rectFactOf, "Σ": threeFactOf, "▦": arrayFactOf, "⌚": clockFactOf, "…": patternFactOf, "◐": oddEvenFactOf, "✓": tfFactOf, "✎": tfFactOf, "↔": lineFactOf, "#": pvFactOf, "$": dollarFactOf }[key[0]];
   if (own) return own(key, rnd);
   const op = key[0], [a, b] = key.slice(1).split(",").map(Number);
   const flip = (op === "+" || op === "×") && (rnd || Math.random)() < 0.5;

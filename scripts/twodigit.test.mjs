@@ -26,7 +26,9 @@ assert.ok(big.every((f) => { const n = f.op === "+" ? Math.max(f.x, f.y) : f.x, 
 // 1st grade's tens are the Hall's last level; the Mines ask the rest, adding and subtracting mixed.
 const hall = pool("first").filter((f) => f.level === BANDS.first.levels.length - 1 && "+-".includes(f.op));
 assert.equal(hall.length, lv("Add tens").length + lv("Subtract tens").length + lv("10 more").length + lv("10 less").length + lv("Add tens to a number").length);
-assert.equal(pool("second").length, fs.length - hall.length);
+// The Mines also ask place value (placevalue.js, 76 facts), in two levels of their own.
+assert.equal(pool("second").filter((f) => f.op !== "#").length, fs.length - hall.length);
+assert.equal(pool("second").filter((f) => f.op === "#").length, 76);
 assert.ok([0, 1].every((L) => ["+", "-"].every((op) => pool("second").some((f) => f.level === L && f.op === op))), "each Mines level adds and subtracts");
 assert.equal(openLevel("second", {}), 0);
 const first = factOf(choose("second", {}, { now: 0, rnd: () => 0.5 }));
@@ -40,4 +42,22 @@ assert.equal(hintFor({ op: "+", x: 10, y: 34, ans: 44 }, false).say, "Add the te
 assert.equal(hintFor({ op: "+", x: 100, y: 345, ans: 445 }, false).say, "100 more: the hundreds go up by 1. 100 + 345 = ?");
 assert.equal(hintFor({ op: "+", x: 10, y: 395, ans: 405 }, false).say, "10 more: 9 tens and 1 more ten is 10 tens, a new hundred. 10 + 395 = ?");
 assert.equal(hintFor({ op: "-", x: 405, y: 10, ans: 395 }, true).say, "10 less: there are no tens, so break a hundred into 10 tens. 405 − 10 = 395");
+// Stacked in columns (batch 2): every two- and three-digit + and − can be, nothing within 20, no □,
+// no throw (Judo Judy) or dice; the same key, answer and hint as on one line (the place-value
+// strategy, not carrying); always on Margot-Rythm's floor, about a quarter of the time elsewhere.
+{
+  const { stackable, stackOf, STACK_SHARE } = await import("../js/twodigit.js");
+  for (const p of pool("second").filter((f) => "+-".includes(f.op))) {
+    const f = factOf(p.key, () => 0.9), s = stackOf(f, true);
+    assert.ok(stackable(f) && s.stacked, p.key);
+    assert.deepEqual([keyOf(s), s.ans, s.q], [keyOf(f), f.ans, f.q], "the same fact");
+    assert.equal(hintFor(s, false).say, hintFor(f, false).say, "the same hint");
+    assert.ok(!/carry/i.test(hintFor(s, true).say));
+  }
+  assert.ok(facts().every((f) => !stackable(f)), "nothing within 20 is stacked");
+  assert.ok(!stackable({ op: "+", x: 38, y: 25, ans: 63, flipped: true }) && !stackable({ op: "+", x: 38, y: 25, ans: 63, blank: "x" }) && !stackable({ op: "×", x: 4, y: 30, ans: 120 }));
+  let r = 3, n = 0; const rnd = () => ((r = (r * 16807) % 2147483647) / 2147483647);
+  for (let i = 0; i < 4000; i++) if (stackOf({ op: "+", x: 38, y: 25, ans: 63 }, false, rnd).stacked) n++;
+  assert.ok(Math.abs(n / 4000 - STACK_SHARE) < 0.03, `about a quarter stacked: ${n}`);
+}
 console.log("✓ two-digit");

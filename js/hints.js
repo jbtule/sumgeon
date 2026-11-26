@@ -6,6 +6,10 @@ import { threeFact, tenOf } from "./three.js";
 import { arrayFact } from "./arrays.js";
 import { clockSvg, clockFact, clockFactHint, elapsedSvg, inHour } from "./clock.js";
 import { patternSvg, patternFact, patternFactHint, oddEvenSvg, oddEvenFact } from "./patterns.js";
+import { tfSvg, tfHint, tfFactOf } from "./truefalse.js";
+import { lineSvg, lineHint, lineFactOf } from "./numberline.js";
+import { pvSvg, pvHint, pvFactOf } from "./placevalue.js";
+import { dollarSvg, dollarHint, dollarFactOf } from "./dollars.js";
 
 // Hints (DESIGN.md §5.3): the models classrooms use now, with the classroom's words, and a line
 // for grown-ups who learned it another way. No DOM: returns { model, say, grownups } where model
@@ -557,7 +561,43 @@ function patternHintFor(f, worked) {
     grownups: "Counting patterns: each number is the same step more (or less) than the one before, like hops on a number line: +2, +2, +2. Kids say the step, then take it once more." };
 }
 
+// Batch 2 (DESIGN.md §4.1), each drawn on its own picture: in a fight on the problem's picture
+// (app.js), here for the Oops card and the grown-ups' page.
+// True or false (the Equal Twins): the scale with each side's dots to count, level until it's
+// answered; fix it: the false equation's scale, tipped, and the side to work out.
+function tfHintFor(f, worked) {
+  const h = tfHint(f, worked);
+  return { model: fitted(tfSvg(f, { hint: true, worked }), 150, f.q), say: h.say,
+    grownups: f.kind === "fix"
+      ? "Fix it: the equal sign means both sides are the same amount. Kids work out the side they can, then find the number that makes the other side match."
+      : "True or false: the equal sign means 'the same amount as', not 'the answer comes next'. Kids work out each side; if they match, it balances and it's true, even written 7 = 3 + 4 or 6 = 6." };
+}
+// The number line (Halfling): jumps of 1/4 from 0 to the dot, counted partway before answering;
+// how many equal parts, counted to halfway.
+function lineHintFor(f, worked) {
+  return { model: fitted(lineSvg(f, { hint: true, worked }), 120, f.kind === "parts" ? "a number line in equal parts" : "a number line with a dot"), say: lineHint(f, worked).say,
+    grownups: f.kind === "parts"
+      ? "Equal parts: 0 to 1 on a number line is one whole, cut into equal parts. The number of parts is the bottom number of the fraction."
+      : "Fractions on a number line: 0 to 1 is cut into equal parts, and each jump is one part (1/4). The dot is how many jumps from 0: 3 jumps of 1/4 is 3/4. Past 1, keep counting: 5/4." };
+}
+// Place value (Haberhasher): base-ten blocks on a place-value mat, each place's value under it.
+function pvHintFor(f, worked) {
+  return { model: fitted(pvSvg(f, { hint: true, worked }), 150, "base-ten blocks on a place-value mat"), say: pvHint(f, worked).say,
+    grownups: f.kind === "tens" || f.kind === "odd"
+      ? "Tens in a number: 10 tens make a hundred, so 120 is 12 tens, and 34 tens and 3 ones is 343. Kids trade a flat for ten rods (or ten rods for a flat) to see it."
+      : "Place value: a three-digit number is hundreds, tens and ones (345 is 3 flats, 4 rods and 5 cubes, or 300 + 40 + 5)." };
+}
+// Dollars (Trollar): count on from the biggest bill, then the coins in cents, partway before answering.
+function dollarHintFor(f, worked) {
+  return { model: fitted(dollarSvg(f, { hint: true, worked }), 150, "bills and coins"), say: dollarHint(f, worked).say,
+    grownups: "Dollars and cents: count on from the biggest bill (20, 25, 26 dollars), then the coins in cents. 2nd grade writes it as $26 and 41¢; the decimal ($26.41) waits for 4th grade." };
+}
+
 export function hintFor(f, worked) {
+  if (f.op === "✓" || f.op === "✎") return tfHintFor(f, worked);
+  if (f.op === "↔") return lineHintFor(f, worked);
+  if (f.op === "#") return pvHintFor(f, worked);
+  if (f.op === "$") return dollarHintFor(f, worked);
   if (f.op === "⌚") return timeHintFor(f, worked);
   if (f.op === "…" || f.op === "◐") return patternHintFor(f, worked);
   if (f.op === "¢") return coinHint(f, worked);
@@ -781,6 +821,14 @@ export const STRATEGIES = [
   { title: "Think multiplication", grade: "3rd", f: { op: "÷", x: 32, y: 8 } },
   { title: "Times zero", grade: "3rd", f: { op: "×", x: 0, y: 7 } },
   { title: "Times tens", grade: "3rd", f: { op: "×", x: 4, y: 30 } },
+  { title: "True or false?", grade: "1st", f: tfFactOf("✓4+2=7") },
+  { title: "Fix it", grade: "1st", f: tfFactOf("✎4+2=7") },
+  { title: "Hundreds, tens and ones", grade: "2nd", f: pvFactOf("#b345") },
+  { title: "Tens in a number", grade: "2nd", f: pvFactOf("#o34,3") },
+  { title: "Counting dollars", grade: "2nd", f: dollarFactOf("$20,5,1") },
+  { title: "Dollars and cents", grade: "2nd", f: dollarFactOf("$10,1+1,1,0,2") },
+  { title: "Fractions on a number line", grade: "3rd", f: lineFactOf("↔3/4") },
+  { title: "Equal parts", grade: "3rd", f: lineFactOf("↔p4") },
   { title: "Equal fractions", grade: "3rd", f: fractionFact(1, 2, 4) },
   { title: "Rounding", grade: "3rd", f: roundFact(47, 10) },
   { title: "Area", grade: "3rd", f: rectFact("a", 4, 3) },

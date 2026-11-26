@@ -13,7 +13,12 @@ import { rectSvg } from "./third.js";
 import { arraySvg } from "./arrays.js";
 import { clockSvg, clockFactLine, clockFactHint, clockAnswer, elapsedSvg } from "./clock.js";
 import { patternSvg, oddEvenSvg, patternFactHint } from "./patterns.js";
+import { tfSvg, tiltOf, fixParts } from "./truefalse.js";
+import { lineSvg } from "./numberline.js";
+import { pvSvg, pvLine } from "./placevalue.js";
+import { dollarSvg, dollarLine, moneyText } from "./dollars.js";
 import { coinsSvg, pileOf, coinOf } from "./coins.js";
+import { stackOf } from "./twodigit.js";
 import { read as readSigil, judge as judgeSigil } from "./sigil.js";
 import { HANDWRITING } from "./handwriting.js";
 import { traitOf, charged, prefers, hitBy, atHalf, asks, flipOf, flashOf, dieSvg, FLASH_MS } from "./traits.js";
@@ -322,7 +327,9 @@ function ansUI() {
       b.textContent = v || "?";
       b.classList.toggle("typed", !!v); b.classList.toggle("now", i === G.slot.at); b.classList.toggle("wait", i > G.slot.at && !v);
     });
-    if (go) { go.textContent = G.slot.at ? "Minutes!" : "Hour ✓"; go.classList.add("longkey"); go.setAttribute("aria-label", G.slot.at ? "Attack with the minutes" : "The hour is done"); }
+    // Dollars and cents (Trollar) the same way: "Dollars ✓", then "Cents!".
+    const [first, last] = G.cur.op === "$" ? ["Dollars ✓", "Cents!"] : ["Hour ✓", "Minutes!"], what = G.cur.op === "$" ? ["dollars", "cents"] : ["hour", "minutes"];
+    if (go) { go.textContent = G.slot.at ? last : first; go.classList.add("longkey"); go.setAttribute("aria-label", G.slot.at ? `Attack with the ${what[1]}` : `The ${what[0]} ${G.cur.op === "$" ? "are" : "is"} done`); }
   } else if (go && go.textContent !== "Hit!") { go.textContent = "Hit!"; go.classList.remove("longkey"); go.setAttribute("aria-label", "Attack"); }
   // The slimes (Slimelipsis): the □ slime fills as you type.
   if (G.cur && G.cur.op === "…") $("prob").innerHTML = slimeRow(G.cur);
@@ -336,10 +343,26 @@ const side = (lr, t) => `<span class="side" data-side="${lr}">${t}</span>`;
 const stacked = (t) => t.replace(/(\d+|□)\/(\d+)/g, '<span class="frac"><span>$1</span><span>$2</span></span>');
 function probUI() {
   const p = G.cur, box = $("prob");
+  // Batch 2 (DESIGN.md §4.1): each with its picture over the line, the hint drawn on the picture.
+  // True or false (the Equal Twins): the scale with the equation on it, answered on the True and
+  // False keys; once answered it swings to the truth (G.tfDone).
+  if (p.op === "✓") box.innerHTML = tfSvg(p, Object.assign({ bare: true }, G.tfDone ? { done: true, from: reduced() ? null : 0 } : { hint: G.hinted })) + `<span class="find tfline">${esc(p.q)}</span><span class="tfask">True or false?</span>`;
+  // Fix it: the false equation's scale, tipped; its wrong number lifts above its place and the □
+  // takes it (fixLine). Right, the number drops in and the scale levels.
+  else if (p.op === "✎") box.innerHTML = tfSvg(p, G.fix && G.fix.done ? { value: p.ans, from: reduced() ? null : tiltOf(p.eq) } : { hint: G.hinted }) + `<span class="find fixline">${fixLine(p)}</span>`;
+  // The number line (Halfling): "□/4" under it, stacked like the Tower's fractions, or "Equal parts = □".
+  else if (p.op === "↔") box.innerHTML = lineSvg(p, { hint: G.hinted }) + `<span class="find">${p.kind === "parts" ? `Equal parts = ${BLANK}` : `<span class="frac"><span>${BLANK}</span><span>${p.d}</span></span>`}</span>`;
+  // Place value (Haberhasher): the blocks on their mat, and the question under them.
+  else if (p.op === "#") box.innerHTML = pvSvg(p, { hint: G.hinted }) + `<span class="find pvline">${pvLine(p).map((x) => (x === null ? BLANK : esc(x))).join("")}</span>`;
+  // Dollars (Trollar): the bills (and coins), and "$□" or "$□ and □¢" in two slots.
+  else if (p.op === "$") box.innerHTML = dollarSvg(p, { hint: G.hinted }) + `<span class="find tline">${dollarLine(p).map((x, i, a) => (x !== null ? esc(x) : slotHTML(a.slice(0, i).filter((y) => y === null).length, p))).join("")}</span>`;
+  // A two- or three-digit sum or difference, stacked in columns (G.cur.stacked): ones under ones,
+  // a line, and the answer filling in under it, right-aligned.
+  else if (p.stacked) box.innerHTML = stackHTML(p);
   // Time (Tick-Tockus): the clock is the monster itself (clockArt), so here only the line: "□
   // o'clock", "3:□", or "□:□□" in two slots. Elapsed time shows its two clocks (or one) over it,
   // and a time asked by another monster (a missed one coming back) a plain clock.
-  if (p.op === "⌚") box.innerHTML = timePicture(p) + `<span class="find tline">${clockFactLine(p).map((x, i, a) => (x !== null ? esc(x) : slotHTML(a.slice(0, i).filter((y) => y === null).length, p))).join("")}</span>`;
+  else if (p.op === "⌚") box.innerHTML = timePicture(p) + `<span class="find tline">${clockFactLine(p).map((x, i, a) => (x !== null ? esc(x) : slotHTML(a.slice(0, i).filter((y) => y === null).length, p))).join("")}</span>`;
   // What comes next (Slimelipsis): the row of slimes, the □ one glowing and filling as you type.
   else if (p.op === "…") box.innerHTML = slimeRow(p);
   // Odd and even: the slimes holding their numbers, and "Even numbers = □" under them.
@@ -368,16 +391,36 @@ function probUI() {
   // Flipped by Judo Judy: each number in its own box, so the throw can swap them (judoThrow).
   else if (p.flipped) box.innerHTML = `<span class="jn">${p.x}</span> <span class="jop">+</span> <span class="jn">${p.y}</span> =`;
   else box.textContent = p.q + " =";
-  document.querySelector(".game").classList.toggle("missing", !!p.blank || !!p.sym || p.op === "=" || !!p.find || "/≈▭▦⌚…◐".includes(p.op));
-  padUI(p.spell ? "spell" : p.sym ? "cmp" : "num");
+  document.querySelector(".game").classList.toggle("missing", !!p.blank || !!p.sym || p.op === "=" || !!p.find || !!p.stacked || "/≈▭▦⌚…◐✓✎↔#$".includes(p.op));
+  padUI(p.spell ? "spell" : p.op === "✓" ? "tf" : p.sym ? "cmp" : "num");
   document.querySelector(".game").classList.toggle("cents", p.op === "¢" && !p.find);
-  document.querySelector(".game").classList.toggle("find", !!p.find || p.op === "▭" || p.op === "▦" || p.op === "⌚" || p.op === "◐");
+  document.querySelector(".game").classList.toggle("find", !!p.find || "▭▦⌚◐✓✎↔#$".includes(p.op));
+  document.querySelector(".game").classList.toggle("stack", !!p.stacked);
+  // A wide picture over its line (batch 2's): on phones the 🔊 and 💡 buttons stack beside it.
+  document.querySelector(".game").classList.toggle("pic", "✓✎↔#$".includes(p.op));
   document.querySelector(".game").classList.toggle("slimes", p.op === "…" || p.op === "◐");
   document.querySelector(".game").classList.toggle("hinted", !!G.hinted); // a hint drawn on the picture (iPad keeps it short)
 }
 // Answer slot i of a problem: one slot is the usual glowing □ (#blank); two (a whole time) are
 // #blank0 and #blank1, the hour, then the minutes.
 const slotHTML = (i, p) => (p.slots ? `<span class="blank tslot${i ? " wait" : " now"}" id="blank${i}">?</span>` : BLANK);
+// Fix it's line: the false equation, its wrong number in place for a moment, then (G.fix.swapped)
+// crossed out and lifted above its place, small and red, the □ taking its place, so the line
+// always reads as one equation. Right, the number settles in and the crossed-out one fades.
+function fixLine(p) {
+  const wrong = p.eq[p.eq.fix][p.eq[p.eq.fix].length - 1], f = G.fix || {};
+  const slot = f.done ? `<span class="blank typed fixin">${p.ans}</span>` : BLANK;
+  return fixParts(p).map((x) => (x !== null ? esc(x) : f.swapped ? `<span class="fixslot${f.done ? " settled" : ""}"><s class="was">${wrong}</s>${slot}</span>` : `<span class="fixslot pre">${wrong}</span>`)).join("");
+}
+// Stacked in columns: each number right-aligned over the other, the sign at the left of the second,
+// a line, and the answer's □ under it, right-aligned, as wide as the widest number.
+function stackHTML(p) {
+  const w = Math.max(String(p.x).length, String(p.y).length, String(p.ans).length);
+  return `<span class="stacked" style="--w:${w}" role="img" aria-label="${esc(p.q)}"><span class="sop"></span><span class="snum">${p.x}</span><span class="sop">${p.op === "-" ? "−" : "+"}</span><span class="snum">${p.y}</span><span class="sbar"></span><span class="sop"></span><span class="snum sans"><span class="blank" id="blank">?</span></span></span>`;
+}
+// How often a two- or three-digit + or − is stacked (always on Margot-Rythm's floor: her art is a
+// stacked sum with a carried 1). ?stacked stacks every one, for testing.
+const STACK_ALWAYS = new URLSearchParams(location.search).has("stacked");
 // Is the monster on this floor Tick-Tockus (or one of its looks)? Then the clock is the monster.
 const onClock = () => { const m = G.floors && G.floors[G.floor]; return !!m && (m.base || m.n) === "Tick-Tockus"; };
 // Tick-Tockus showing the problem's time (elapsed time's start), with the hint's layer on it.
@@ -407,6 +450,13 @@ function shownFact(p, ans) {
   if (p.op === "⌚") return p.kind === "long" ? `${esc(p.q)}: ${b(clockAnswer(p))}` : p.kind === "add" ? `${esc(p.q)} = ${b(clockAnswer(p))}` : b(clockAnswer(p));
   if (p.op === "…") return p.nums.map((n, i) => (i === p.blank ? b(n) : n)).join(", ");
   if (p.op === "◐") return `${b(p.ans)} ${p.ask} number${p.ans === 1 ? "" : "s"}`;
+  // Batch 2: "4 + 2 = 7 is False", fix it filled in ("4 + 2 = 6"), "3/4", "4 equal parts",
+  // "34 tens and 3 ones = 343", "$26", "$11 and 37¢".
+  if (p.op === "✓") return `${esc(p.q)} is ${b(p.sym === "T" ? "True" : "False")}`;
+  if (p.op === "✎") return fixParts(p).map((x) => (x !== null ? esc(x) : b(p.ans))).join("");
+  if (p.op === "↔") return p.kind === "parts" ? `${b(p.d)} equal parts` : `${b(p.n)}/${p.d}`;
+  if (p.op === "#") return pvLine(p).map((x) => (x !== null ? esc(x) : b(p.ans))).join("");
+  if (p.op === "$") return b(moneyText(p));
   if (p.sym) return p.q.replace("□", typeof ans === "string" && ans.startsWith("<b>") ? `<b>${esc(p.sym)}</b>` : p.sym);
   if (p.blank || p.op === "=" || p.op === "/" || p.op === "≈" || p.op === "▦") return filled(p, ans);
   if (p.op === "▭") return p.w + " by " + p.h + ": " + filled(p, ans);
@@ -571,9 +621,17 @@ function newProblem() {
   // Flash (Pipsqueak): 3 + 5 comes as two dice, which turn into the numbers (traits.js flashOf).
   const dice = flashOf(m, G.cur);
   if (dice) G.cur = dice;
+  // Stacked in columns (two- and three-digit + and −): a quarter of the time, always on
+  // Margot-Rythm's floor. The same fact and record, only laid out differently.
+  G.cur = stackOf(G.cur, STACK_ALWAYS || (m.base || m.n) === "Margot-Rythm");
   G.recent = [key].concat(G.recent).slice(0, RECENT);
   G.input = ""; G.busy = false; G.hinted = false; G.t0 = performance.now();
   G.slot = G.cur.slots ? { at: 0, vals: ["", ""] } : null;
+  G.tfDone = false;
+  // Fix it: the false equation shows whole for a second, then its wrong number lifts out of the
+  // way (at once with reduced motion, or as soon as anything's typed).
+  G.fix = G.cur.op === "✎" ? { swapped: reduced(), done: false } : null;
+  if (G.fix && !G.fix.swapped) { const cur = G.cur; setTimeout(() => { if (G.cur === cur && G.fix && !G.fix.swapped) fixSwap(); }, FIX_SWAP_MS); }
   probUI();
   clockArt();
   if (onChompers() && G.chomp !== G.chompFace) chompTurn(G.chompFace);
@@ -583,7 +641,10 @@ function newProblem() {
   // the voice reads them, after the monster's name. Skipped if it's answered first.
   // Time and patterns too: "What time is it?" isn't on the screen, and a row of slimes is read
   // like counting out loud ("Two, four, six. What comes next?").
-  if ("¢○⌚…◐".includes(G.cur.op) || G.cur.op === "more") say("q", spokenProblem(G.cur), false, asked(G.cur));
+  // Batch 2's too: an equation to judge, a number line, blocks, and money are read out.
+  if ("¢○⌚…◐✓✎↔#$".includes(G.cur.op) || G.cur.op === "more") say("q", spokenProblem(G.cur), false, asked(G.cur));
+  // The first true or false problems: how the two big keys work.
+  if (G.cur.op === "✓" && once("truefalse", 2)) say("p", PHRASE.tfHow, false, asked(G.cur));
   // The first comparison: how the < = > keys work.
   if (G.cur.op === "○" && once("compare")) { say("p", PHRASE.cmpHow, false, asked(G.cur)); say("p", PHRASE.cmpSame, false, asked(G.cur)); }
   if (G.cur.spell) {
@@ -765,7 +826,7 @@ function openHint() {
   G.hinted = true;
   // Time and patterns draw the hint on the problem's own picture (Tick-Tockus's clock, the
   // slimes), so only its words open here.
-  const inline = "⌚…◐".includes(G.cur.op);
+  const inline = "⌚…◐✓✎↔#$".includes(G.cur.op);
   if (inline) { probUI(); ansUI(); clockArt(h.layer); }
   // An equation in their words doesn't break across lines ("35 + 2 = ?").
   box.innerHTML = (inline ? "" : `<div class="model">${h.model}</div>`) + `<p class="hsay">${esc(inline ? h.say.replace(/ ([=+−→]) /g, "\u00a0$1\u00a0") : h.say)}</p>`;
@@ -820,8 +881,12 @@ function submit() {
   if (G.next) return nextAfterMiss();
   if (G.busy || G.input === "") return;
   G.tries++;
+  // True or false swings to the truth as it's answered, right or wrong; fix it, answered right,
+  // takes the number and levels.
+  if (G.cur.op === "✓") { G.tfDone = true; probUI(); }
   // A comparison's answer is its symbol (<, = or >); everything else is a number.
   const right = G.cur.slots ? G.slot.vals.every((v, i) => v !== "" && Number(v) === G.cur.slots[i]) : G.cur.sym ? G.input === G.cur.sym : Number(G.input) === G.cur.ans;
+  if (right && G.fix) { G.fix.done = true; probUI(); ansUI(); }
   if (right) {
     G.busy = true; G.solved++;
     if (!G.hinted) G.streak++;
@@ -2163,6 +2228,9 @@ function press(k) {
     return; // digits wait for the number pad
   }
   if (G.cur && G.cur.slots && G.slot) return slotPress(k);
+  // True or false: a tap answers at once, after a brief press on the key (no Hit!, no delete).
+  if (G.cur && G.cur.op === "✓") return tfPress(k);
+  if (G.fix && !G.fix.swapped && k !== "go") fixSwap();
   if (k === "go") return submit();
   const cmp = !!(G.cur && G.cur.sym), sym = "<=>".includes(k);
   if (k !== "del" && sym !== cmp) return; // digits for numbers, < = > for comparisons
@@ -2172,6 +2240,21 @@ function press(k) {
   else if (G.input.length < 4) G.input = (G.input === "0" ? "" : G.input) + k;
   ansUI();
 }
+// True or false (the Equal Twins): T or F, the key pressed in for a moment while the pad takes no
+// more taps, then it's answered.
+const TF_PRESS_MS = 160;
+function tfPress(k) {
+  if (k !== "T" && k !== "F") return;
+  sfx.tick();
+  G.input = k; G.busy = true;
+  const pad = $("pad"), key = pad.querySelector(`[data-k="${k}"]`);
+  if (key) key.classList.add("pressed");
+  pad.classList.add("locked");
+  setTimeout(() => { pad.classList.remove("locked"); if (key) key.classList.remove("pressed"); G.busy = false; submit(); }, TF_PRESS_MS);
+}
+// Fix it: the wrong number lifts out and the □ takes its place.
+const FIX_SWAP_MS = 1000;
+function fixSwap() { G.fix.swapped = true; probUI(); ansUI(); }
 // A whole time in two slots (Tick-Tockus): digits go in the slot being typed (two at most); Hit!
 // ("Hour ✓") moves on to the minutes, delete in an empty slot goes back, and Hit! ("Minutes!")
 // answers. The first couple of times, the voice says "Now the minutes!".
@@ -2181,7 +2264,8 @@ function slotPress(k) {
     if (s.at === 1) return submit();
     if (!cur) return;
     sfx.tick(); s.at = 1; ansUI();
-    if (once("minutes", 2)) say("p", PHRASE.nowMinutes, false, asked(G.cur));
+    if (G.cur.op === "$") { if (once("cents", 2)) say("p", PHRASE.nowCents, false, asked(G.cur)); }
+    else if (once("minutes", 2)) say("p", PHRASE.nowMinutes, false, asked(G.cur));
     return;
   }
   if (k !== "del" && !/^[0-9]$/.test(k)) return;
@@ -2324,11 +2408,15 @@ function castSpell() {
 // it scales with the pad's digits on every layout.
 const DEL_ICON = `<svg class="del-icon" viewBox="0 0 30 22" aria-hidden="true"><path d="M10 2.5h16a2.5 2.5 0 0 1 2.5 2.5v12a2.5 2.5 0 0 1-2.5 2.5H10L1.8 11z" fill="none" stroke="currentColor" stroke-width="3" stroke-linejoin="round"/><path d="M14 7l8 8M22 7l-8 8" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg>`;
 const KEY_LABEL = { del: [DEL_ICON, "Delete"], go: ["Hit!", "Attack"], "<": ["<", "Less than"], "=": ["=", "Equal to"], ">": [">", "Greater than"] };
-// mode: "num", "cmp" or "spell" (the drawing pad).
+// mode: "num", "cmp", "tf" (True and False, two big keys filling the pad) or "spell" (the drawing pad).
 function padUI(mode) {
   const pad = $("pad"), cmp = mode === "cmp";
   if (pad.dataset.mode === mode) { if (mode === "spell") sigilReset(); return; }
-  pad.dataset.mode = mode; pad.classList.toggle("cmp", cmp); pad.classList.toggle("spell", mode === "spell");
+  pad.dataset.mode = mode; pad.classList.toggle("cmp", cmp); pad.classList.toggle("spell", mode === "spell"); pad.classList.toggle("tfpad", mode === "tf");
+  if (mode === "tf") {
+    pad.innerHTML = `<button type="button" data-k="T" class="tfk yes" aria-label="True"><b>✓</b>True</button><button type="button" data-k="F" class="tfk no" aria-label="False"><b>✗</b>False</button>`;
+    return;
+  }
   if (mode === "spell") {
     pad.innerHTML = `<canvas id="sigil" class="sigil" aria-label="Draw the answer here"></canvas><button type="button" data-k="clear" class="del" aria-label="Clear the drawing">Clear</button><button type="button" data-k="go" class="go" aria-label="Cast the spell">Cast!</button>`;
     sigilSetup();
@@ -2359,6 +2447,8 @@ document.addEventListener("keydown", (e) => {
   else if (e.key === ".") press(">");
   else if (e.key === "Backspace") press("del");
   else if (e.key === "Enter") { e.preventDefault(); press("go"); }
+  // True or false on a keyboard: T and F.
+  else if (/^[tf]$/i.test(e.key)) { if (G.cur && G.cur.op === "✓") press(e.key.toUpperCase()); }
   // ":" after the hour moves on to the minutes, as on a clock.
   else if (e.key === ":") { if (G.cur && G.slot && G.slot.at === 0) press("go"); }
   // ? opens the hint, like tapping 💡, when this problem has one.

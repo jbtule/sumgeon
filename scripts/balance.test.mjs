@@ -24,7 +24,8 @@ for (const op of ["○", "="]) assert.ok(hall.some((f) => f.op === op && f.level
 const mon = (n) => MON.find((m) => m.n === n);
 for (let i = 0; i < 50; i++) {
   assert.equal(choose("first", {}, { now: 0, asks: asks(mon("Chompers")) })[0], "○", "Chompers only compares");
-  assert.equal(choose("first", {}, { now: 0, asks: asks(mon("Equal Twins")) })[0], "=", "the Twins only balance");
+  // The Twins balance, and say whether an equation is true (true or false, then fix it).
+  assert.ok("=✓✎".includes(choose("first", {}, { now: 0, asks: asks(mon("Equal Twins")) })[0]), "the Twins only balance");
   assert.ok(!"○=".includes(choose("first", {}, { now: 0, asks: asks(mon("Minustaur")) })[0]), "Minustaur never compares");
 }
 

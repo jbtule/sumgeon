@@ -20,7 +20,7 @@ assert.deepEqual(M(tower), ["Timesaur", "Divvy", "Starbot", "Halfling", "Tick-To
 assert.deepEqual(WINGS.map((w) => w.floors), [
   ["Plusquito", "Pipsqueak", "rescue", "Chompers", "Trollar"],
   ["Quizard", "Equal Twins", "rescue", "Tick-Tockus", "Triceraplus"],
-  ["Haberhasher", "Slimelipsis", "rescue", "Margot-Rythm", "Tick-Tockus"],
+  ["Haberhasher", "Squaresquatch", "rescue", "Trollar", "Margot-Rythm"],
   ["Timesaur", "Divvy", "rescue", "Tick-Tockus", "Halfling"]]);
 for (const w of WINGS) {
   assert.ok(w.floors.every((f) => f === "rescue" || f === "pool" || w.pool.includes(f)), `${w.id}: every floor is in the pool`);
@@ -47,7 +47,13 @@ assert.deepEqual([hall, mines, tower].map((w) => bandOf(w, named("Tick-Tockus"))
 assert.equal(bandOf(hall, { n: "Grandfather Tockus", base: "Tick-Tockus" }), "timeH");
 for (const b of ["patK", "patH", "patM", "timeH", "timeM", "timeT"]) assert.ok(BANDS[b].strand && BANDS[b].unlock === 0.5, `${b} is a strand`);
 assert.ok(!cellar.floors.includes("Slimelipsis") && !hall.floors.includes("Slimelipsis"), "Slimelipsis visits the Cellar and the Hall from their pools");
-for (const w of [hall, mines, tower]) assert.ok(w.floors.includes("Tick-Tockus"), `Tick-Tockus has a depth-1 floor in ${w.id}`);
+for (const w of [hall, tower]) assert.ok(w.floors.includes("Tick-Tockus"), `Tick-Tockus has a depth-1 floor in ${w.id}`);
+// The Mines' depth-1 floors are 2nd grade's priority standards (the school's guide): two- and
+// three-digit work (Haberhasher, Margot-Rythm), arrays (Squaresquatch) and money (Trollar). Time to
+// 5 minutes and skip counting aren't priorities there, so Tick-Tockus and Slimelipsis come from the
+// pool, from depth 2.
+assert.deepEqual(mines.floors.filter((n) => n !== "rescue").sort(), ["Haberhasher", "Margot-Rythm", "Squaresquatch", "Trollar"]);
+assert.ok(mines.pool.includes("Tick-Tockus") && mines.pool.includes("Slimelipsis"));
 // Strands don't count toward opening the next stratum: the share is of the stratum's band only.
 assert.equal(learnedShare(hall, Object.fromEntries(pool("timeH").map((f) => [f.key, { b: 4 }]))), 0);
 const run = runFloors(cellar, { captain: 5, rescued: [] }, () => 0);
@@ -117,6 +123,16 @@ assert.equal(depthHP(1), 1);
 assert.ok(Math.abs(depthHP(3) - 1.3) < 1e-9);
 assert.equal(deepest(cellar, {}), 1);
 assert.equal(deepest(cellar, { cellar: { depth: 4 } }), 4);
+// Batch 2's monsters at depth 1: the Equal Twins (true or false) in the Hall, Haberhasher (place
+// value) and Margot-Rythm (always stacked) in the Mines, Halfling (the number line) in the Tower;
+// Trollar's dollars in the Mines' coin strand (its pool), and true or false, place value and the
+// number line count toward their stratum's 60% (they're band facts), dollars don't (a strand).
+{
+  assert.ok(hall.floors.includes("Equal Twins") && mines.floors.includes("Haberhasher") && mines.floors.includes("Margot-Rythm") && tower.floors.includes("Halfling"));
+  assert.ok(mines.pool.includes("Trollar") && bandOf(mines, { n: "Trollar" }) === "coins");
+  assert.ok(pool("first").some((f) => f.op === "✓") && pool("second").some((f) => f.op === "#") && pool("third").some((f) => f.op === "↔"));
+  assert.ok(!pool("second").some((f) => f.op === "$") && pool("coins").some((f) => f.op === "$"));
+}
 console.log("✓ wings");
 
 // Stars.

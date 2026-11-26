@@ -1,7 +1,7 @@
 // Fractions on a number line (js/numberline.js, the prototype page): answers, even ticks, and
 // labels that never show the answer before it's answered.
 import assert from "node:assert/strict";
-import { LINE_LEVELS, lineProblem, lineSvg, lineHint, spokenLine, spokenLineAnswer, tickX, LINE, DENOMS } from "../js/numberline.js";
+import { LINE_LEVELS, lineProblem, lineSvg, lineHint, spokenLine, spokenLineAnswer, tickX, LINE, DENOMS, lineFacts, lineFactOf, hopsCounted } from "../js/numberline.js";
 
 let seed = 3; const rnd = () => ((seed = (seed * 9301 + 49297) % 233280) / 233280);
 const labels = (s) => [...s.matchAll(/class="lab">([^<]*)</g)].map((m) => m[1]);
@@ -28,12 +28,15 @@ for (const lv of LINE_LEVELS) {
     assert.deepEqual(plain, Array.from({ length: p.wholes + 1 }, (_, k) => String(k)), "only 0, 1 (and 2)");
     const hint = labels(lineSvg(p, { hint: true }));
     if (p.kind === "where") {
+      // Before answering, only about half the hops are counted (none of 1 or 2), and the last is
+      // "?"; worked, every hop.
       const tops = hint.slice(p.wholes + 1).filter((_, k) => k % 2 === 0);
-      assert.equal(tops.length, p.n, "a hop for each part to the dot");
-      assert.equal(tops[tops.length - 1], "?");
-      assert.ok(!tops.includes(String(p.n)), "the dot's numerator is hidden");
-      assert.equal(labels(lineSvg(p, { hint: true, worked: true })).filter((x) => x === String(p.n)).length >= 1, true);
-      assert.ok(lineHint(p, false).say.endsWith(`?/${p.d}`));
+      const upto = hopsCounted(p, false);
+      assert.deepEqual(tops, Array.from({ length: upto }, (_, k) => String(k + 1)).concat("?"), `${p.n}/${p.d}: counted to ${upto}`);
+      assert.ok(upto < p.n / 2 + 0.5 && !tops.includes(String(p.n)), "the dot's numerator is hidden");
+      const all = labels(lineSvg(p, { hint: true, worked: true })).slice(p.wholes + 1).filter((_, k) => k % 2 === 0);
+      assert.deepEqual(all, Array.from({ length: p.n }, (_, k) => String(k + 1)), "worked: every hop");
+      assert.ok(lineHint(p, false).say.endsWith(`?/${p.d}`) && !lineHint(p, false).say.split("dot:")[1].includes(` ${p.n}/${p.d}`));
       assert.ok(lineHint(p, true).say.includes(`${p.n}/${p.d}`));
     } else {
       // Before answering it counts to halfway (an even count) or just the first part (odd), never
@@ -60,4 +63,14 @@ assert.equal(spokenLine({ kind: "where", d: 2 }), "Where is the dot? What halves
 assert.equal(spokenLineAnswer({ kind: "where", n: 3, d: 4 }), "It's three fourths.");
 assert.equal(spokenLineAnswer({ kind: "where", n: 1, d: 8 }), "It's one eighth.");
 assert.equal(spokenLine({ kind: "parts" }), "How many equal parts from zero to one?");
+// The game's facts (Halfling): every dot from 0 to 1, every number of parts, and 0 to 2.
+const lf = lineFacts();
+assert.deepEqual(["where", "parts", "past1"].map((s) => lf.filter((f) => f.set === s).length), [18, 5, 12]);
+assert.equal(new Set(lf.map((f) => f.key)).size, lf.length);
+for (const f of lf) {
+  const b = lineFactOf(f.key);
+  assert.deepEqual([b.key, b.set, b.ans, b.d, b.n, b.wholes], [f.key, f.set, f.ans, f.d, f.n, f.wholes]);
+  assert.equal(f.ans, f.kind === "parts" ? f.d : f.n);
+}
+assert.deepEqual([lineFactOf("↔3/4").q, lineFactOf("↔5/4,2").wholes, lineFactOf("↔p6").ans], ["□/4", 2, 6]);
 console.log("✓ number line: answers, ticks, hidden labels, words");

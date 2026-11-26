@@ -1,5 +1,6 @@
-// Dollars (2nd grade, 2.MD.C.8: dollar bills, and bills with coins, using $ and ¢): a prototype
-// for the review page (review/proto/); nothing in the game reads it yet. No DOM: runs in Node.
+// Dollars (2nd grade, 2.GM.D.12 in the Missouri Learning Standards: dollar bills, and bills with
+// coins, using $ and ¢), in the game (Trollar's coin strand in the Mines) and on the review page
+// (review/proto/). No DOM: runs in Node.
 //
 // The bills are drawn stylized, to stay well inside the US rules on illustrations of currency
 // (31 CFR 411, 18 U.S.C. 504): the front only, in one green tint and an outline, never near real
@@ -83,7 +84,9 @@ export function dollarSvg(p, opt = {}) {
     row.forEach((v, i) => {
       const k = r * per + i, x = x0 + i * (BILL.w + gap);
       s += billSvg(v, x, y);
-      if (opt.hint) s += `<text x="${f1(x + BILL.w / 2)}" y="${f1(y + BILL.h + 13)}" text-anchor="middle" font-family="Nunito, sans-serif" font-weight="900" font-size="13" fill="${GOLD}">${k === p.bills.length - 1 && !opt.worked ? "$?" : "$" + run[k]}</text>`;
+      // Before answering, only the first bills' totals (countedOf), then "?" under the last.
+      const label = k < countedOf(p.bills.length, opt.worked) ? "$" + run[k] : k === p.bills.length - 1 ? "$?" : "";
+      if (opt.hint && label) s += `<text x="${f1(x + BILL.w / 2)}" y="${f1(y + BILL.h + 13)}" text-anchor="middle" font-family="Nunito, sans-serif" font-weight="900" font-size="13" fill="${GOLD}">${label}</text>`;
     });
     y += BILL.h + gap + lab;
   }
@@ -96,8 +99,9 @@ export function dollarSvg(p, opt = {}) {
     // Under each coin, the hint counts on in cents.
     y += ch * k + 8;
     if (opt.hint) {
-      const vals = coinValues(p.coins), run2 = runningTotals(vals);
-      coinsPart += `<text x="${W / 2}" y="${f1(y + 6)}" text-anchor="middle" font-family="Nunito, sans-serif" font-weight="900" font-size="13" fill="${GOLD}">${vals.length > 1 ? run2.slice(0, -1).join(", ") + ", " : ""}${opt.worked ? run2[run2.length - 1] : "?"}¢</text>`;
+      const vals = coinValues(p.coins), run2 = runningTotals(vals), upto = countedOf(vals.length, opt.worked);
+      const said = opt.worked ? run2.join(", ") : run2.slice(0, upto).concat(vals.length > 1 ? "… ?" : "?").join(", ");
+      coinsPart += `<text x="${W / 2}" y="${f1(y + 6)}" text-anchor="middle" font-family="Nunito, sans-serif" font-weight="900" font-size="13" fill="${GOLD}">${said}¢</text>`;
       y += 16;
     }
   }
@@ -119,15 +123,65 @@ export function sayMoney(d, c) {
   return cap(ds) + " and " + (c === 1 ? "one cent" : spoken(c) + " cents") + ".";
 }
 const cap = (t) => t[0].toUpperCase() + t.slice(1);
-export const moneyText = (p) => (p.kind === "bills" ? `$${p.ans}` : `$${p.ans[0]} and ${p.ans[1]}¢`);
+// The answer as shown: "$26", "$3 and 25¢" (a game fact keeps its two answers in slots).
+export const moneyText = (p) => { const a = p.slots || p.ans; return p.kind === "bills" ? `$${a}` : `$${a[0]} and ${a[1]}¢`; };
 
-// The hint: count on from the biggest bill, then the coins as cents.
+// The hint: count on from the biggest bill, then the coins as cents. Before answering it counts
+// only part of the way (countedOf: the first of 2 or 3, half of more), then "…" and "?", so the
+// last step is never the answer; worked, every total.
+export const countedOf = (n, worked) => (worked ? n : n <= 1 ? 0 : n <= 3 ? 1 : Math.floor(n / 2));
 export function dollarHint(p, worked) {
-  const run = runningTotals(p.bills), end = (list) => (worked ? list.join(", ") : list.slice(0, -1).concat("?").join(", "));
+  const run = runningTotals(p.bills), end = (list) => (worked ? list.join(", ") : list.slice(0, countedOf(list.length, false)).concat(list.length > 1 ? "… ?" : "?").join(", "));
   let say = `Count on from the biggest bill: ${end(run)} dollars.`;
   if (p.coins) say += ` Then the coins: ${end(runningTotals(coinValues(p.coins)))} cents.`;
   return { say };
 }
+
+/* ---------- the game's facts (Trollar's counting strand in the Mines, learn.js BANDS.coins) ----------
+   Fixed samples, so 70% of a level can be learned and every problem is recorded. Keys:
+   - "$20,5,1": how many dollars? (the bills, biggest first).
+   - "$10,1+0,1,0,2": bills and coins (quarters, dimes, nickels, pennies), typed in two slots:
+     the dollars, then the cents ("$□ and □¢"). Never as a decimal ($3.25 is 4th grade).
+   A fact: { op: "$", set, kind, bills, coins?, ans, slots?, key, q }. Bills alone: the answer and
+   the damage are the dollars. Bills and coins: slots [dollars, cents], and the damage is the cents,
+   the last slot typed (as a whole time hits for its minutes). */
+export function dollarFact(bills, coins) {
+  const dollars = bills.reduce((t, b) => t + b, 0), b = bills.slice().sort((x, y) => y - x);
+  if (!coins) return { op: "$", set: "bills", kind: "bills", bills: b, ans: dollars, key: "$" + b.join(","), q: "$□" };
+  const cents = COINS.reduce((t, c) => t + coins[c.k] * c.v, 0);
+  return { op: "$", set: "mixed", kind: "mixed", bills: b, coins: { ...coins }, slots: [dollars, cents], ans: cents,
+    key: "$" + b.join(",") + "+" + [coins.q, coins.d, coins.n, coins.p].join(","), q: "$□ and □¢" };
+}
+export function dollarFactOf(key) {
+  const [b, c] = key.slice(1).split("+"), bills = b.split(",").map(Number);
+  if (!c) return dollarFact(bills);
+  const [q, d, n, p] = c.split(",").map(Number);
+  return dollarFact(bills, { q, d, n, p });
+}
+// The levels the game asks, after counting coins (COIN_LEVELS).
+export const DOLLAR_GAME_LEVELS = [
+  { name: "Dollar bills", set: "bills" },
+  { name: "Bills and coins", set: "mixed" }
+];
+function seeded(seed) { let s = seed; return () => (s = (s * 1103515245 + 12345) % 2147483648) / 2147483648; }
+let factCache = null;
+export function dollarFacts() {
+  if (factCache) return factCache;
+  const out = [], seen = new Set();
+  for (const lv of DOLLAR_LEVELS) {
+    const rnd = seeded(lv.id === "bills" ? 515 : 616);
+    for (let n = 0, guard = 0; n < 24 && guard < 5000; guard++) {
+      const p = dollarProblem(lv.id, rnd), f = dollarFact(p.bills, p.coins);
+      if (seen.has(f.key)) continue;
+      seen.add(f.key); out.push(f); n++;
+    }
+  }
+  return (factCache = out);
+}
+// The line on screen, in parts (null for each slot): "$□", "$□ and □¢".
+export const dollarLine = (f) => (f.kind === "bills" ? ["$", null] : ["$", null, " and ", null, "¢"]);
+// Said after a miss: "Twenty-six dollars.", "Eleven dollars and twenty cents."
+export const spokenDollarAnswer = (f) => (f.kind === "bills" ? sayMoney(f.ans) : sayMoney(f.slots[0], f.slots[1]));
 
 // Hamilton and Jackson, drawn by hand over the engravings (design/bills/README.md): strokes in the
 // coins' 200 box, line for the outlines, fine for the details.
