@@ -297,6 +297,27 @@ export function reachOf(path, chapter, band) {
   for (const s of path) if (s.chapter <= chapter) for (const [b, L] of s.parts) if (b === band) top = Math.max(top, L);
   return top;
 }
+// A path's review steps' facts from other bands than `band` (the Hall's review of the Cellar for a
+// monster asking the Hall's band): choose's opts.reviews, asked only once seen.
+export function reviewFacts(path, band) {
+  const out = [];
+  for (const s of path) if (s.review) for (const f of stepFacts(s)) if (f.band !== band) out.push(f);
+  return out;
+}
+// Review steps for a player who never learned them (a 1st grader new to the game): they're never
+// new, so they're placed by skipping ahead instead. When a fluent player skips ahead in the
+// stratum's own band, the review steps below the path's first step count as known too (box 3,
+// placed), and come back as reviews from then on; a miss sends one back to learning. Returns how
+// many were placed.
+export function placeReviews(path, recs, now, fluentMs) {
+  let n = 0;
+  for (const s of path) if (s.review) for (const f of stepFacts(s)) {
+    if (recs[f.key] && recs[f.key].n) continue;
+    recs[f.key] = { b: 3, n: 1, c: 1, ms: Math.round(fluentMs * 0.8), t: now, placed: 1 };
+    n++;
+  }
+  return n;
+}
 // Every band a path asks.
 export const pathBands = (path) => [...new Set(path.flatMap((s) => s.parts.map(([b]) => b)))];
 const allLevels = (bandKey) => BANDS[bandKey].levels.map((_, i) => i);

@@ -3,7 +3,7 @@
 import { MON, svg, LOOKS, lookOf, allLooks, CHOMP_SHUT } from "./monsters.js";
 import { chompPose, morePose, mouthOf, SNAP, FLIP_MS, SNAP_MS, EAT_MS } from "./chomp.js";
 import { spokenProblem, spokenFact } from "./problems.js";
-import { BANDS, choose, factOf, record as recordAnswer, helpFor, monsterHP, probeKey, tierOf, skipTo, SKIP_PROBES, SKIP_WINDOW, MAX_LEAP, fluentTime, spellKey, RECENT, pool, drawHit, openLevels, reachOf, chaptersOf, pathBands } from "./learn.js";
+import { BANDS, choose, factOf, record as recordAnswer, helpFor, monsterHP, probeKey, tierOf, skipTo, SKIP_PROBES, SKIP_WINDOW, MAX_LEAP, fluentTime, spellKey, RECENT, pool, drawHit, openLevels, reachOf, chaptersOf, pathBands, reviewFacts, placeReviews } from "./learn.js";
 import { countSvg, readShape, judgeShape, cleanFor, squawkBody, isDrawKey, SHAPE_LINE, SHAPE_CODE, article } from "./shapes.js";
 import { hintFor, STRATEGIES } from "./hints.js";
 import { openStore, displayName } from "./store.js";
@@ -680,7 +680,10 @@ function newProblem() {
   const probe = !due && !spell && f.on && f.cool <= 0 ? probeKey(bk, recs, null, G.recent, avoidAns, f.leap, kinds, reachOf(PATHS[wing().id], chapterNow(), bk)) : null;
   // ?fact=<key> (URL-encoded, "%E2%8C%9At3%3A30" for ⌚t3:30) makes the first problem that fact, for testing.
   const forced = FACT_AT && !G.solved && !G.tries ? FACT_AT : null;
-  const key = forced || spell || probe || choose(bk, recs, { now: Date.now(), recent: G.recent, retry: due ? due.key : null, op, asks: kinds, like: prefers(m), depth: G.depth, avoidAns, open: lv.levels, review: lv.review,
+  // An earlier grade's facts (the path's review steps) are mixed in as reviews for the monsters
+  // asking the stratum's own band, once seen.
+  const reviews = bk === wing().band ? reviewFacts(PATHS[wing().id], bk) : null;
+  const key = forced || spell || probe || choose(bk, recs, { now: Date.now(), recent: G.recent, retry: due ? due.key : null, op, asks: kinds, like: prefers(m), depth: G.depth, avoidAns, open: lv.levels, review: lv.review, reviews,
     // The captain's digit: held back in the first fight, then about a third of problems lean to it
     // until the captain's first moment has happened (captainLean).
     digit: team.captain, digitShare: captainLean() ? CAPTAIN_BIAS : 0, avoidDigitShare: firstFight() ? CAPTAIN_HOLD : 0 });
@@ -986,7 +989,11 @@ function learnFrom(ok) {
   let skipped = 0;
   if (G.cur.probe) {
     f.hist = [fluent].concat(f.hist).slice(0, SKIP_WINDOW);
-    if (fluent && f.hist.filter(Boolean).length >= SKIP_PROBES) { skipped = skipTo(bk, recs, tierOf(bk, key), Date.now(), b.fluentMs); f.hist = []; f.leap = Math.min(MAX_LEAP, f.leap * 2); }
+    if (fluent && f.hist.filter(Boolean).length >= SKIP_PROBES) {
+      skipped = skipTo(bk, recs, tierOf(bk, key), Date.now(), b.fluentMs); f.hist = []; f.leap = Math.min(MAX_LEAP, f.leap * 2);
+      // Skipping ahead in the stratum's own band places the earlier grade's review steps too.
+      if (bk === wing().band) placeReviews(PATHS[wing().id], recs, Date.now(), b.fluentMs);
+    }
     else if (f.hist.filter((x) => !x).length >= 2) { f.cool = 3; f.hist = []; f.on = false; f.leap = 1; }
   }
   f.fluent = fluent ? f.fluent + 1 : 0;

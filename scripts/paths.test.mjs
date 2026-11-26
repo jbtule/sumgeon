@@ -1,6 +1,6 @@
 // Paths (DESIGN.md §4.3): each stratum's steps, the window of new steps, and chapters.
 import assert from "node:assert/strict";
-import { BANDS, pool, openSteps, openLevels, reachOf, stepFacts, stepShare, chaptersOf, WINDOW, JOIN_AT, choose, probeKey } from "../js/learn.js";
+import { BANDS, pool, openSteps, openLevels, reachOf, stepFacts, stepShare, chaptersOf, WINDOW, JOIN_AT, choose, probeKey, reviewFacts, placeReviews } from "../js/learn.js";
 import { WINGS, PATHS, chapterOf, megasOf, stepsOpen, stepMonsters, runFloors, openWings, upgradeProgress } from "../js/wings.js";
 import { MON } from "../js/monsters.js";
 
@@ -163,5 +163,30 @@ const cellar = PATHS.cellar;
   // A stratum opened by the paths' rule, then a miss: it stays open once saved as unlocked.
   assert.ok(openWings({ cellar: { boss: 1 }, hall: { unlocked: true } }, {}, "kinder").includes("hall"));
   assert.equal(chapterOf(h, {}), 1); assert.equal(chapterOf(m, { mines: { depth: 12 } }), 3);
+}
+// Review steps: the Hall reviews the Cellar's facts within 10, the Mines the Hall's within 20, the
+// Tower the Mines' adding and subtracting within 1000. Learned ones come back as due reviews to
+// the monsters asking the stratum's band; never-seen ones never come as new, and are placed when a
+// fluent player skips ahead.
+{
+  const hall = PATHS.hall, rv = reviewFacts(hall, "first");
+  assert.ok(rv.length === pool("kinder").filter((f) => f.level <= 1).length && rv.every((f) => f.band === "kinder"));
+  assert.ok(reviewFacts(PATHS.mines, "second").every((f) => f.band === "first" && f.level <= 2));
+  assert.ok(PATHS.tower[0].review && PATHS.tower[0].parts.every(([b]) => b === "addT"));
+  const open = openLevels(hall, openSteps(hall, {}, 1).open, "first");
+  let seed = 5; const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+  // Never seen: none come up.
+  for (let i = 0; i < 200; i++) assert.ok(!rv.some((f) => f.key === choose("first", {}, { now: 1e12, rnd, open: open.levels, review: open.review, reviews: rv })));
+  // Learned long ago (due): they come up among the reviews.
+  const r = Object.fromEntries(rv.map((f) => [f.key, { b: 4, n: 3, c: 3, ms: 1500, t: 0 }]));
+  for (const f of pool("first").filter((f) => f.level === 0)) r[f.key] = { b: 1, n: 1, c: 1, ms: 3000, t: 1e12 };
+  let n = 0;
+  for (let i = 0; i < 400; i++) if (rv.some((f) => f.key === choose("first", r, { now: 1e12, rnd, open: open.levels, review: open.review, reviews: rv }))) n++;
+  assert.ok(n > 40 && n < 250, `the Cellar's facts come back as reviews: ${n} of 400`);
+  // A fresh 1st grader skipping ahead: the review step is placed.
+  const fresh = { "+1,2": { b: 0, n: 1, c: 0, ms: 9000, t: 0 } };
+  const placed = placeReviews(hall, fresh, 5, 4000);
+  assert.equal(placed, rv.length - 1, "every unseen one, not one already seen");
+  assert.ok(fresh["+3,4"].b === 3 && fresh["+3,4"].placed && fresh["+1,2"].b === 0);
 }
 console.log(`✓ paths (${Object.entries(PATHS).map(([id, p]) => `${id} ${p.length} steps in ${chaptersOf(p)} chapters`).join(", ")})`);

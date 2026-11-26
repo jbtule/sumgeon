@@ -63,6 +63,8 @@ export const PATHS = {
     step("Shapes", [["shapesK", "Circles, squares, triangles, rectangles"], ["shapesK", "Hexagons, sides and corners"]], ["Polly-Gon"], 2, P)
   ],
   hall: [
+    // The Cellar's facts within 10, kept up as reviews (1st grade builds on them).
+    step("Review: within 10", [["kinder", "Within 5, with zero"], ["kinder", "Within 10"]], ["Plusquito", "Minustaur"], 1, { review: true }),
     step("Within 20", [["first", "Within 20, not crossing 10"]], ["Plusquito", "Minustaur"], 1, P),
     step("Count to 120", [["patH", "Count on to 120"]], ["Slimelipsis"], 1, { priority: true, ongoing: true }),
     step("Three numbers", [["three", "Three numbers"]], ["Triceraplus"], 1, P),
@@ -76,6 +78,8 @@ export const PATHS = {
     step("Count by 5s", [["patH", "Count by 5s"]], ["Slimelipsis"], 3)
   ],
   mines: [
+    // Fluency within 20 (2nd grade's priority, i-Ready lessons 1–2): the Hall's facts as reviews.
+    step("Review: within 20", [["first", "Within 20, not crossing 10"], ["first", "Crossing 10"], ["first", "Doubles and near doubles"]], ["Haberhasher", "Margot-Rythm"], 1, { review: true }),
     step("Two-digit add and subtract", [["second", "Add and subtract, no regrouping"], ["second", "Add and subtract, regrouping"]], ["Haberhasher", "Margot-Rythm"], 1, P),
     step("Money", [["coins", "Pennies"], ["coins", "Nickels and pennies"], ["coins", "Dimes"], ["coins", "Quarters"], ["coins", "Dollar bills"], ["coins", "Bills and coins"]], ["Trollar"], 1, P),
     step("Time to 5 minutes", [["timeM", "5 minutes"], ["timeM", "What time is it? (5 minutes)"]], ["Tick-Tockus"], 1),
