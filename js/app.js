@@ -1080,13 +1080,19 @@ function settings(paused, tab) {
   <div class="grp"><span>Sounds</span><div class="list">
     ${toggle("sfxOn", "Sound effects", "", st.sfx)}
     ${toggle("voiceOn", "Voice", "Reads monsters and answers aloud", st.voice)}
-  </div></div>`)}
+  </div></div>
+  <div class="grp"><span>Sound check</span><div class="soundcheck"><pre id="soundState"></pre><button class="small" type="button" id="soundTest">🔊 Test sound</button></div></div>`)}
   ${panel("about", aboutHTML())}
   <div class="btns"><button class="big" id="done">Done</button></div>`);
   wireTabs();
   $("openHelp").onclick = () => { helpFrom = !!paused; helpPage(); };
   $("sfxOn").onchange = () => { st.sfx = $("sfxOn").checked; sfx.setSfx(st.sfx); saveSettings(); };
   $("voiceOn").onchange = () => { st.voice = $("voiceOn").checked; setVoice(st.voice); saveSettings(); };
+  // Sound check (Game tab): what the sound effects' audio reports, as ?audio shows, for the Home
+  // Screen app, which has no address bar. Test plays the floor-cleared fanfare.
+  const soundState = () => { const a = sfx.status(); if ($("soundState")) $("soundState").textContent = `Audio: ${a.state}\nPlayed: ${a.played}  Restarted: ${a.remade || 0}\nError: ${a.error || "none"}`; };
+  soundState(); const soundTimer = setInterval(() => { if (!$("soundState")) clearInterval(soundTimer); else soundState(); }, 800);
+  $("soundTest").onclick = () => { sfx.victory(); setTimeout(soundState, 300); };
   wireSwatches();
   if (!paused) wirePlayers();
   $("done").onclick = paused ? pause : menu;

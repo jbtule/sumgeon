@@ -2,15 +2,29 @@
 // sound-box-crosswords' chime.js. iOS only allows audio that starts from a tap, so the
 // context is created on the first tap and woken on later taps if iOS paused it.
 
-var ctx = null, out = null, on = true, noiseBuf = null, lastError = "", played = 0, gestures = 0;
+var ctx = null, out = null, on = true, noiseBuf = null, lastError = "", played = 0, gestures = 0, stuckSince = 0, remade = 0;
 
 // Safari can leave a context "suspended" or "interrupted" (macOS Safari after the tab was in the
 // background or another app took the audio), and only resumes it inside a tap or click, so every
 // gesture wakes it from anything but "running". A "closed" one is replaced.
+//
+// Sometimes Safari won't wake it (seen in the Home Screen app: the effects stopped partway and
+// stayed silent). So if a tap finds it still not running a second after an earlier tap tried to
+// wake it, the context is thrown away and a fresh one made, inside this tap (remade counts them).
 function unlock() {
   gestures++;
   if (ctx && ctx.state === "closed") ctx = null;
-  if (ctx) { if (ctx.state !== "running") { try { ctx.resume().catch(function (e) { lastError = "resume: " + e.message; }); } catch (e) { lastError = "resume: " + e.message; } } return; }
+  if (ctx && ctx.state === "running") { stuckSince = 0; return; }
+  if (ctx && stuckSince && performance.now() - stuckSince > 1000) {
+    lastError = "remade after " + ctx.state; remade++;
+    try { ctx.close(); } catch (e) { /* already gone */ }
+    ctx = null; stuckSince = 0;
+  }
+  if (ctx) {
+    if (!stuckSince) stuckSince = performance.now();
+    try { ctx.resume().then(function () { if (ctx && ctx.state === "running") stuckSince = 0; }, function (e) { lastError = "resume: " + e.message; }); } catch (e) { lastError = "resume: " + e.message; }
+    return;
+  }
   try {
     var AC = window.AudioContext || window.webkitAudioContext;
     if (!AC) { lastError = "no Web Audio"; return; }
@@ -42,7 +56,7 @@ export function audioContext() { return ctx; }
 
 // For the ?audio readout.
 export function status() {
-  return { state: ctx ? ctx.state : "not created", rate: ctx ? ctx.sampleRate : 0, on: on, played: played, gestures: gestures, error: lastError };
+  return { state: ctx ? ctx.state : "not created", rate: ctx ? ctx.sampleRate : 0, on: on, played: played, gestures: gestures, error: lastError, remade: remade };
 }
 
 export function setSfx(enabled) { on = !!enabled; }
