@@ -161,6 +161,9 @@ export const TEMPLATES = SHAPES.flatMap(([digit, name, strokes, symmetric]) => {
 });
 export const SHAPES_FOR_TESTS = SHAPES.map(([digit, name, strokes, symmetric]) => ({ digit, name, strokes, symmetric: !!symmetric }));
 export { mirror };
+// The $P match itself (a distance; 0 is the same cloud), for other readers built on it
+// (js/shapes.js).
+export { greedy as cloudMatch };
 
 // How sure a read must be to count (both): the drawing is close to its best template (fit), and
 // clearly closer to it than to any other digit (margin), either way round. A backwards read needs

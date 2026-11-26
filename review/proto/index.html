@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!-- A grown-up page for trying two new kinds of problem before they're in the game: telling time
+     (Tick-Tockus, js/clock.js) and what comes next (Slimelipsis, js/patterns.js). Nothing in the
+     game links here, and search engines are asked to skip it. -->
+<meta name="robots" content="noindex, nofollow">
+<title>Prototype · Sumgeon</title>
+<meta name="color-scheme" content="dark">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bungee&family=Nunito:wght@600;800;900&display=swap">
+<!-- The game's stylesheet, for the strata's walls and colors, the number pad and the glowing □;
+     this page's own layout overrides the game's. -->
+<link rel="stylesheet" href="../../styles.css">
+<style>
+  html body.proto{display:block;height:auto;min-height:0;overflow:visible}
+  /* The play area is one screen tall (the smallest one, with Safari's toolbars showing), so the
+     pad always fits; the notes and the badge are under it. */
+  .pp{box-sizing:border-box;display:flex;flex-direction:column;gap:6px;height:100svh;max-width:480px;margin:0 auto;
+    padding:max(8px,env(safe-area-inset-top)) max(12px,env(safe-area-inset-right)) max(8px,env(safe-area-inset-bottom)) max(12px,env(safe-area-inset-left))}
+  .pp-top{display:flex;gap:6px;align-items:center}
+  .pp-top a.back{flex:none;display:grid;place-items:center;width:28px;height:36px;border-radius:10px;background:var(--panel);border:2px solid var(--line);color:var(--muted);text-decoration:none;font-weight:900}
+  .seg{display:inline-flex;gap:3px;background:var(--dark);border-radius:14px;padding:3px;flex:none}
+  .seg button{border:0;background:none;border-radius:11px;min-height:30px;padding:0 7px;color:var(--muted);font:800 13px Nunito,sans-serif;white-space:nowrap}
+  .seg button[aria-pressed="true"]{background:var(--btn2);color:var(--ink)}
+  select.pp-level{flex:1;min-width:0;min-height:36px;border-radius:12px;border:2px solid var(--edge);background:var(--panel);color:var(--ink);font:800 13px Nunito,sans-serif;padding:0 4px}
+  /* The monster's box: its nameplate, then the clock or the slimes, on its stratum's wall. */
+  .pp-box{position:relative;flex:1;min-height:0;display:flex;flex-direction:column;border-radius:18px;border:2px solid var(--line);overflow:hidden;
+    background:radial-gradient(ellipse 60% 50% at 50% 60%,#ffe9b830 0,#0000 70%),radial-gradient(ellipse 95% 90% at 50% 55%,#0000 45%,#05090bb0 100%),var(--wall,var(--wall-plain))}
+  .pp-head{display:flex;align-items:center;gap:8px;padding:6px 10px 0}
+  .pp-head .pp-mon{flex:none;width:44px;height:44px}
+  .pp-head .pp-mon svg{width:100%;height:100%;overflow:visible}
+  .pp-head .mname{font:400 15px Bungee,sans-serif}
+  .pp-pic{flex:1;min-height:0;container-type:size;display:grid;place-items:center;padding:4px 8px 8px}
+  /* The clock is Tick-Tockus: its tentacles spill out of the drawing into the room beside and
+     under it (proto.js measures it and tells clockSvg how far they can reach). Where width is
+     short, the clock leaves a little room on each side for them. */
+  .pp-pic > svg.elapsed{width:100%;height:100%;max-height:100cqh;display:block}
+  .pp-pic > svg.clock{--s:min(100cqw / 1.36,100cqh);width:var(--s);height:var(--s);display:block;overflow:visible}
+  .pp-head .pp-mon[hidden]{display:none}
+  .pp-pic svg.pattern{width:100%;max-height:100cqh;display:block;overflow:visible}
+  .pp-pic svg.shape{width:100%;height:100%;max-height:100cqh;display:block;overflow:visible}
+  .mname.placeholder{font:800 13px Nunito,sans-serif;color:var(--muted);border:1.5px dashed var(--edge);border-radius:999px;padding:2px 10px}
+  .seg button{font-size:18px;padding:0 8px}
+  /* Drawing a shape: the prompt in a short box, and the spell pad takes the rest. */
+  .pp-ask{font:900 20px Nunito,sans-serif;text-align:center;color:var(--muted)}
+  .pp-ask b{display:block;font:400 clamp(28px,9vw,40px)/1.1 Bungee,sans-serif;color:var(--gold);text-transform:uppercase}
+  .pp.drawing .pp-box{flex:0 0 auto}
+  .pp.drawing .pp-pic{flex:none;height:96px}
+  .pp.drawing .pad{flex:1;min-height:0;grid-template-rows:minmax(0,1fr) auto}
+  .pp.drawing .pad.spell .sigil{grid-row:auto;height:100%;min-height:180px}
+  /* Two slots (an hour then minutes, dollars then cents): the one being entered glows; the one
+     still to come waits, dim. */
+  .pp .blank.now{border-style:dashed;animation:blankglow 1.2s ease-in-out infinite alternate;box-shadow:0 0 0 3px var(--gold)}
+  .pp .blank.wait{opacity:.4;animation:none}
+  .pp .pad .longkey{font-size:16px}
+  .pp .prob .frac{font-size:.8em}
+  /* True or false: two keys filling the pad (four rows of keys tall), answered with one tap; then
+     one gold Next › in their place, the same height. */
+  .pp .pad.tfpad{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .pp .pad.tfpad .tfk,.pp .pad.tfpad .tfnext{min-height:calc(var(--key) * 4 + var(--gap) * 3);display:grid;place-content:center;gap:2px;font:400 clamp(24px,7vw,32px) Bungee,sans-serif}
+  .pp .pad.tfpad .tfnext{grid-column:1/-1}
+  .pp .pad.tfpad .pressed{transform:translateY(3px) scale(.97);box-shadow:0 1px 0 var(--dark);filter:brightness(1.3)}
+  .pp .pad.locked{pointer-events:none}
+  .pp .pad.tfpad .tfk b{font:900 clamp(40px,12vw,60px)/1 Nunito,sans-serif}
+  .pp .pad.tfpad .yes{background:#2b4f3a}.pp .pad.tfpad .yes b{color:#7fdc8a}
+  .pp .pad.tfpad .no{background:#4f2b2f}.pp .pad.tfpad .no b{color:#ff8a7f}
+  .pp .prob.long{font-size:clamp(17px,5.2vw,23px);white-space:normal;text-align:center;line-height:1.25}
+  .pp .prob.long:not(.words){font-size:clamp(20px,6vw,28px)}
+  .pp-pic svg.pv{width:100%;height:100%;max-height:100cqh;display:block}
+  .seg button{padding:0 5px;font-size:17px}
+  .pp-pic svg.nl{width:100%;max-height:100cqh;display:block}
+  .pp-pic svg.money,.pp-pic svg.tf{width:100%;height:100%;max-height:100cqh;display:block}
+  /* Fix it: the wrong number, crossed out, lifts above its place, small and red; the "?" takes
+     its place on the line. */
+  .pp .fixslot{position:relative;display:inline-block}
+  .pp .fixslot .was{position:absolute;left:50%;bottom:92%;transform:translateX(-50%);font-size:.42em;line-height:1;margin:0;animation:fixlift .5s ease-out both}
+  @keyframes fixlift{from{transform:translate(-50%,1.6em) scale(2.3);opacity:1}to{transform:translateX(-50%)}}
+  .pp .fixslot.settled .was{animation:fixfade .6s ease-out forwards}
+  @keyframes fixfade{to{opacity:0}}
+  @media(prefers-reduced-motion:reduce){.pp .fixslot .was,.pp .fixslot.settled .was{animation:none}.pp .fixslot.settled .was{opacity:0}}
+  .pp .prob s{color:var(--coral);text-decoration-thickness:.12em;margin-right:.15em;opacity:.85}
+  .pp .prob small{font:900 .5em Nunito,sans-serif;color:var(--muted);vertical-align:middle}
+  .pp-pic .pb-blank{animation:pbglow 1.2s ease-in-out infinite alternate}
+  @keyframes pbglow{to{filter:drop-shadow(0 0 8px #ffc93c)}}
+  @media(prefers-reduced-motion:reduce){.pp-pic .pb-blank{animation:none}}
+  .pp-hint b{display:block;font-size:17px}
+  .pp-hint.good b{color:var(--gold)}.pp-hint.worked b{color:#ff8a7f}
+  .pp-hint .tick{font:400 20px Bungee,sans-serif;margin-right:6px}
+  /* The hint's words (its drawing is on the clock or the slimes). */
+  .pp-hint{display:block;margin:0;padding:6px 10px;border-radius:14px;background:var(--dark);border:2px solid var(--line);text-align:center;font-weight:900;font-size:15px;line-height:1.3}
+  .pp-hint[hidden]{display:none}
+  .pp-hint.worked{border-color:var(--coral)}
+  .pp .probrow{display:flex;align-items:center;justify-content:center;gap:6px;min-height:44px}
+  .pp .probrow .icon-btn{flex:none;width:38px;height:38px;border-radius:12px;font-size:18px}
+  .pp .prob{font:400 clamp(28px,9vw,40px)/1.05 Bungee,sans-serif;white-space:nowrap}
+  .pp .prob.words{font:900 clamp(20px,6vw,26px)/1.1 Nunito,sans-serif}
+  .pp .prob .blank.right{border-style:solid;animation:none;background:var(--gold);color:var(--dark)}
+  .pp .prob .blank.wrong{border-style:solid;animation:none;border-color:var(--coral);color:var(--coral)}
+  .pp-said{margin:-4px 0 0;text-align:center;color:var(--muted);font-size:12px;line-height:1.3;min-height:16px}
+  .pp-said::before{content:"🔊 ";opacity:.7}
+  .pp .pad{margin:0;--key:clamp(38px,6.6svh,54px);--gap:6px;gap:6px}
+  .pp .pad button{min-height:var(--key);font-size:22px}
+  .pp .pad .go.next{background:var(--gold);color:var(--dark)}
+  .notes{max-width:640px;margin:0 auto;padding:16px 16px 48px;color:var(--muted);font-size:14px}
+  .notes h1{font:400 22px Bungee,sans-serif;color:var(--gold);margin:0 0 6px}
+  .notes h1 b{color:var(--coral);font-weight:400}
+  .notes p{margin:0 0 10px}
+  .badge{display:inline-flex;align-items:center;gap:6px;min-height:28px;padding:3px 10px;border:1.5px solid var(--line);border-radius:999px;background:var(--panel);color:var(--muted);font-size:.75rem;font-weight:800;text-decoration:none}
+  .badge svg{width:14px;height:14px}
+  #buildSha{font-family:ui-monospace,"SF Mono",Menlo,monospace}
+  @media (max-height:600px){.pp-head .pp-mon{width:34px;height:34px}.pp-head{padding-top:4px}.pp .probrow{min-height:38px}.pp .prob{font-size:clamp(24px,8vw,32px)}.pp-hint{font-size:13px;padding:4px 8px}.pp-hint b{font-size:15px}}
+</style>
+</head>
+<body class="proto">
+<main class="pp">
+  <div class="pp-top">
+    <a class="back" href="../" aria-label="All review pages">‹</a>
+    <span class="seg" role="group" aria-label="Kind of problem" id="types">
+    </span>
+    <select class="pp-level" id="level" aria-label="Level"></select>
+  </div>
+  <section class="pp-box" id="box">
+    <div class="pp-head"><span class="pp-mon" id="mon"></span><span class="mname" id="mName"></span></div>
+    <div class="pp-pic" id="pic"></div>
+  </section>
+  <!-- One line between the box and the problem: the hint's words, or after an answer ✓ or Oops
+       with the answer (and the worked hint). -->
+  <p class="pp-hint" id="hint" aria-live="polite" hidden></p>
+  <div class="probrow">
+    <button class="icon-btn" id="sayBtn" type="button" aria-label="Read the problem aloud">🔊</button>
+    <button class="icon-btn" id="hintBtn" type="button" aria-label="Show a hint">💡</button>
+    <div class="prob" id="prob" aria-live="polite"></div>
+  </div>
+  <p class="pp-said" id="said"></p>
+  <div class="pad" id="pad"></div>
+</main>
+<section class="notes">
+  <h1>Sum<b>geon</b> prototype</h1>
+  <p>Two new kinds of problem to try on a phone before they go in the game: telling time with Tick-Tockus, and what comes next with Slimelipsis. Nothing is saved or learned here. The voice is the device's own (these lines aren't recorded yet); the small line under the problem is what it says.</p>
+  <p>Type the answer and tap Hit! (or Enter). 💡 (or ?) shows the hint; a miss shows the answer and the worked hint. Next (or Enter again) brings a new problem.</p>
+  <!-- scripts/stamp.mjs fills in the commit at deploy time; locally it reads "dev". -->
+  <a class="badge" id="buildLink" href="https://github.com/jbtule/sumgeon" target="_blank" rel="noopener" title="Deployed version">
+    <svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+    <span id="buildSha">dev</span>
+  </a>
+</section>
+<!-- The game's modules, stamped with the deployed commit by scripts/stamp.mjs (as the other
+     review pages' are). Locally it's empty and the plain files load. -->
+<script type="importmap">
+{ "imports": {} }
+</script>
+<script type="module" src="proto.js"></script>
+</body>
+</html>
