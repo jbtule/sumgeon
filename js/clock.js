@@ -1,0 +1,208 @@
+// Telling time (Tick-Tockus, DESIGN.md §4.1): an analog clock and its problems. A prototype for
+// the review page (review/proto/); nothing in the game reads it yet, and it has no fact keys.
+// No DOM: the drawings are SVG strings, so the tests run in Node.
+//
+// Missouri Learning Standards: 1st grade tells time to the hour and half hour, 2nd grade to the
+// nearest 5 minutes, 3rd grade to the minute. Every answer is a whole number on the number pad:
+// the hour, or the minutes past it.
+import { spoken } from "./problems.js";
+import { HANDWRITING } from "./handwriting.js";
+
+const DK = "#0c171c", CREAM = "#f3efe4", GOLD = "#ffc93c";
+// The clock's own colors: Tick-Tockus's pink rim, a coral short (hour) hand and a blue long
+// (minute) hand, as on a classroom clock. The hint's words name them by length, not color.
+export const CLOCK_COLORS = { rim: "#e8679f", hour: "#ff5a4e", minute: "#2f86e0" };
+
+// The levels, in teaching order, with the grade and the stratum Tick-Tockus visits for it.
+export const CLOCK_LEVELS = [
+  { id: "hours", name: "Hours", grade: "1st", stratum: "hall" },
+  { id: "half", name: "Half hours", grade: "1st", stratum: "hall" },
+  { id: "five", name: "5 minutes", grade: "2nd", stratum: "mines" },
+  { id: "minute", name: "The minute", grade: "3rd", stratum: "tower" }
+];
+export const clockLevel = (id) => CLOCK_LEVELS.find((l) => l.id === id) || CLOCK_LEVELS[0];
+
+// Where the hands point, in degrees clockwise from the 12. The hour hand moves as the minutes
+// pass: half a degree a minute, so it's halfway between two numbers at :30.
+export function handAngles(h, m) {
+  return { hour: (h % 12) * 30 + m * 0.5, minute: m * 6 };
+}
+
+const pick = (list, rnd) => list[Math.floor(rnd() * list.length)];
+const hours = () => Array.from({ length: 12 }, (_, i) => i + 1);
+const nextHour = (h) => h % 12 + 1;
+
+// A problem: { level, h, m, ask: "hour" | "minutes", ans }. rnd is Math.random or a seeded one.
+// - hours: the time on the hour, "What hour is it?" (the hour).
+// - half: half past, asking the minutes (30) or the hour ("half past what?"), and some on the
+//   hour so :00 and :30 are told apart.
+// - five: 5 to 55 minutes past ("How many minutes past three?").
+// - minute: any minute but the fives (37), so it isn't the 5-minute level again.
+export function clockProblem(level, rnd = Math.random) {
+  const h = pick(hours(), rnd);
+  if (level === "hours") return { level, h, m: 0, ask: "hour", ans: h };
+  if (level === "half") {
+    const r = rnd();
+    if (r < 0.2) return { level, h, m: 0, ask: "hour", ans: h };
+    return r < 0.6 ? { level, h, m: 30, ask: "hour", ans: h } : { level, h, m: 30, ask: "minutes", ans: 30 };
+  }
+  if (level === "five") { const m = 5 * (1 + Math.floor(rnd() * 11)); return { level, h, m, ask: "minutes", ans: m }; }
+  const ms = Array.from({ length: 59 }, (_, i) => i + 1).filter((m) => m % 5);
+  const m = pick(ms, rnd);
+  return { level: "minute", h, m, ask: "minutes", ans: m };
+}
+
+// Every problem a level can ask, for the tests.
+export function allClockProblems(level) {
+  const out = [];
+  for (const h of hours()) {
+    if (level === "hours") out.push({ level, h, m: 0, ask: "hour", ans: h });
+    else if (level === "half") out.push({ level, h, m: 0, ask: "hour", ans: h }, { level, h, m: 30, ask: "hour", ans: h }, { level, h, m: 30, ask: "minutes", ans: 30 });
+    else if (level === "five") for (let m = 5; m < 60; m += 5) out.push({ level, h, m, ask: "minutes", ans: m });
+    else for (let m = 1; m < 60; m++) if (m % 5) out.push({ level, h, m, ask: "minutes", ans: m });
+  }
+  return out;
+}
+
+// The question on screen, in words for a grown-up or a reader.
+export function clockQuestion(p) {
+  if (p.ask === "hour") return p.m === 30 ? "Half past what?" : "What hour is it?";
+  return `How many minutes past ${p.h}?`;
+}
+// The problem line, in parts: text, with null where the answer goes ("□ o'clock", "half past □",
+// "3:□"). Reading the digital form under the clock is the 1st grade standard too.
+export function clockLine(p) {
+  if (p.ask === "hour") return p.m === 30 ? ["half past ", null] : [null, " o'clock"];
+  return [`${p.h}:`, null];
+}
+// What the voice says. The time is always asked first, like the classroom's "What time is it?".
+export function spokenClock(p) {
+  if (p.ask === "hour") return p.m === 30 ? "What time is it? Half past what?" : "What hour is it?";
+  return `What time is it? How many minutes past ${spoken(p.h)}?`;
+}
+// Said after a miss: "It's three o'clock.", "It's half past three.", "It's three thirty-seven."
+export function spokenTime(h, m) {
+  if (!m) return `It's ${spoken(h)} o'clock.`;
+  if (m === 30) return `It's half past ${spoken(h)}.`;
+  return `It's ${spoken(h)} ${m < 10 ? "oh " + spoken(m) : spoken(m)}.`;
+}
+// The time as a clock shows it: "3:05".
+export const digital = (h, m) => `${h}:${String(m).padStart(2, "0")}`;
+
+/* ---------- the drawing ---------- */
+// A 240 × 240 box: the center, the rim (Tick-Tockus's pink, its middle at RIM), the cream face,
+// the minute ticks, the numbers, and the hands. The 5s labels of the hint sit on the rim.
+export const CLOCK = { size: 240, c: 120, rim: 104, face: 93, num: 66, hourLen: 52, minLen: 84 };
+const f1 = (n) => Math.round(n * 10) / 10;
+// A point at angle a (degrees clockwise from the 12) and radius r.
+export function clockPoint(a, r) {
+  const t = (a - 90) * Math.PI / 180;
+  return [f1(CLOCK.c + r * Math.cos(t)), f1(CLOCK.c + r * Math.sin(t))];
+}
+
+// A number on the face, in the Bungee font or in school-style handwriting (js/handwriting.js),
+// whose 4 is open and whose 1 is one line. size is the font size; handwriting is drawn as tall as
+// Bungee's capitals (about 0.72 of it), its digits side by side with a small gap.
+const SPAN = HANDWRITING.map((strokes) => { const xs = strokes.flat().map(([x]) => x); return [Math.min(...xs), Math.max(...xs)]; });
+function numeral(n, x, y, style, size) {
+  if (style !== "hand") {
+    return `<text x="${x}" y="${y}" dy=".36em" text-anchor="middle" font-family="Bungee, sans-serif" font-size="${size}" fill="${DK}">${n}</text>`;
+  }
+  const ds = String(n).split("").map(Number), k = size * 0.72 / 88, gap = 22;
+  const total = ds.reduce((t, d, i) => t + SPAN[d][1] - SPAN[d][0] + (i ? gap : 0), 0);
+  let left = -total / 2;
+  return ds.map((d) => {
+    const ox = x + (left - SPAN[d][0]) * k, oy = y - 50 * k;
+    left += SPAN[d][1] - SPAN[d][0] + gap;
+    const path = HANDWRITING[d].map((s) => "M" + s.map(([px, py]) => `${f1(ox + px * k)} ${f1(oy + py * k)}`).join(" L")).join(" ");
+    return `<path d="${path}" fill="none" stroke="${DK}" stroke-width="${f1(size * 0.16)}" stroke-linecap="round" stroke-linejoin="round"/>`;
+  }).join("");
+}
+
+// A hand pointing up from the center, then turned to angle a: a tapered bar with an arrow tip,
+// outlined in the house style (dark edge, color, white sheen).
+function hand(a, len, w, color, glow) {
+  const c = CLOCK.c, tail = 12, head = w * 1.7, neck = len - w * 1.9;
+  const d = `M${c - w / 2} ${c + tail} L${c - w / 2} ${c - neck} L${c - head / 2} ${c - neck} L${c} ${c - len} L${c + head / 2} ${c - neck} L${c + w / 2} ${c - neck} L${c + w / 2} ${c + tail} Z`;
+  return `<g transform="rotate(${f1(a)} ${c} ${c})">`
+    + (glow ? `<path d="${d}" fill="none" stroke="${GOLD}" stroke-width="16" stroke-linejoin="round" opacity=".55"/>` : "")
+    + `<path d="${d}" fill="${DK}" stroke="${DK}" stroke-width="8" stroke-linejoin="round"/><path d="${d}" fill="${color}"/><path d="${d}" fill="url(#clocksh)"/></g>`;
+}
+// A small gold pill on the rim at minute m, holding a label (the hint's count by 5s).
+function pill(m, label, strong, out) {
+  const [x, y] = clockPoint(m * 6, CLOCK.rim + (out ? 25 : 0)), r = String(label).length > 1 ? 14 : 12;
+  return `<circle cx="${x}" cy="${y}" r="${r}" fill="${strong ? GOLD : DK}" stroke="${strong ? DK : GOLD}" stroke-width="2.5"/>`
+    + `<text x="${x}" y="${y}" dy=".35em" text-anchor="middle" font-family="Nunito, sans-serif" font-weight="900" font-size="${String(label).length > 1 ? 13 : 15}" fill="${strong ? DK : GOLD}">${label}</text>`;
+}
+// The minute hand's path from the 12 to minute m, as a wedge of the face.
+function sweep(m) {
+  if (!m) return "";
+  const c = CLOCK.c, r = CLOCK.face - 2, [x, y] = clockPoint(m * 6, r);
+  return `<path d="M${c} ${c} L${c} ${c - r} A${r} ${r} 0 ${m > 30 ? 1 : 0} 1 ${x} ${y} Z" fill="${CLOCK_COLORS.minute}" opacity=".15"/>`
+    + `<path d="M${c} ${c - r} A${r} ${r} 0 ${m > 30 ? 1 : 0} 1 ${x} ${y}" fill="none" stroke="${CLOCK_COLORS.minute}" stroke-width="4" stroke-dasharray="2 7" stroke-linecap="round"/>`;
+}
+
+// The clock at h:m. opt.numbers: "bungee" (default) or "hand"; opt.hint: a hint layer from
+// clockHint ({ ring: [hour numbers to ring], glow: "hour", fives: last 5s label, ask: the label
+// at the hand, ones: [minute ticks to light] }); opt.label: the aria label.
+export function clockSvg(h, m, opt = {}) {
+  const { c, rim, face, num } = CLOCK, { hour, minute } = handAngles(h, m), hint = opt.hint || {};
+  let s = `<defs><linearGradient id="clocksh" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".38"/><stop offset=".55" stop-color="#fff" stop-opacity="0"/></linearGradient></defs>`;
+  // Two little bells on top, like an alarm clock (and Tick-Tockus's ears).
+  const bell = (a) => { const [x, y] = clockPoint(a, rim + 4); return `<circle cx="${x}" cy="${y}" r="15"/>`; };
+  s += `<g fill="${DK}" stroke="${DK}" stroke-width="9">${bell(-38)}${bell(38)}</g><g fill="${GOLD}">${bell(-38)}${bell(38)}</g><g fill="url(#clocksh)">${bell(-38)}${bell(38)}</g>`;
+  // The rim and face.
+  s += `<circle cx="${c}" cy="${c}" r="${rim + 8}" fill="${DK}" stroke="${DK}" stroke-width="9"/><circle cx="${c}" cy="${c}" r="${rim + 8}" fill="${CLOCK_COLORS.rim}"/><circle cx="${c}" cy="${c}" r="${rim + 8}" fill="url(#clocksh)"/>`;
+  s += `<circle cx="${c}" cy="${c}" r="${face}" fill="${CREAM}" stroke="${DK}" stroke-width="4"/>`;
+  if (hint.fives != null || hint.ask) s += sweep(m);
+  // The ticks: a short one each minute, a long one at each number.
+  for (let i = 0; i < 60; i++) {
+    const big = i % 5 === 0, lit = (hint.ones || []).includes(i);
+    const [x0, y0] = clockPoint(i * 6, big || lit ? face - 13 : face - 8), [x1, y1] = clockPoint(i * 6, face - 2);
+    s += `<path d="M${x0} ${y0} L${x1} ${y1}" stroke="${lit ? CLOCK_COLORS.hour : DK}" stroke-width="${lit ? 5 : big ? 4 : 2}" stroke-linecap="round"/>`;
+  }
+  // Ringed numbers (the hour hint) go behind the numbers.
+  for (const n of hint.ring || []) { const [x, y] = clockPoint(n * 30, num); s += `<circle cx="${x}" cy="${y}" r="17" fill="${GOLD}" opacity=".55" stroke="${GOLD}" stroke-width="3"/>`; }
+  for (let n = 1; n <= 12; n++) { const [x, y] = clockPoint(n * 30, num); s += numeral(n, x, y, opt.numbers, n > 9 && opt.numbers !== "hand" ? 22 : 25); }
+  // The hands: the long minute hand under the short hour hand, so the hour is never hidden.
+  s += hand(minute, CLOCK.minLen, 7, CLOCK_COLORS.minute, hint.glow === "minute");
+  s += hand(hour, CLOCK.hourLen, 12, CLOCK_COLORS.hour, hint.glow === "hour");
+  s += `<circle cx="${c}" cy="${c}" r="8" fill="${GOLD}" stroke="${DK}" stroke-width="3.5"/>`;
+  // The hint's count by 5s, on the rim.
+  if (hint.fives != null) for (let k = 5; k <= hint.fives; k += 5) s += pill(k, k, false);
+  // The label at the minute hand moves out past the rim when it would sit on a 5s label (37 by
+  // 35); the page lets the drawing spill out of its box.
+  if (hint.ask) s += pill(m, hint.ask, true, m % 5 !== 0 && hint.fives >= 5);
+  return `<svg viewBox="0 0 ${CLOCK.size} ${CLOCK.size}" class="clock" role="img" aria-label="${opt.label || "A clock showing " + digital(h, m)}">${s}</svg>`;
+}
+
+/* ---------- the hint ---------- */
+// { layer (for clockSvg's opt.hint), say }. Before answering (worked false) it shows how to read
+// the clock without giving the answer; the worked one (after a miss) finishes it.
+// - The hour: the short hand glows; worked, the number it points to is ringed.
+// - Half past, the hour: the short hand is between two numbers, just past the hour.
+// - Minutes: the minute hand's path from the 12, counted by 5s on the rim; to the minute, by 5s
+//   to the last five, then the little ticks one at a time.
+export function clockHint(p, worked) {
+  const { h, m } = p;
+  if (p.ask === "hour" && m === 30) {
+    return worked
+      ? { layer: { glow: "hour", ring: [h] }, say: `The short hand is between ${h} and ${nextHour(h)}. It just passed the ${h}: half past ${h}.` }
+      : { layer: { glow: "hour", ring: [h, nextHour(h)] }, say: `The long hand is on the 6: half past. The short hand just passed the hour.` };
+  }
+  if (p.ask === "hour") {
+    return worked
+      ? { layer: { glow: "hour", ring: [h] }, say: `The short hand points to the ${h}. It's ${h} o'clock.` }
+      : { layer: { glow: "hour" }, say: "The short hand shows the hour. The long hand is on the 12: o'clock!" };
+  }
+  const five = m - m % 5, ones = m % 5;
+  const tick = Array.from({ length: ones }, (_, i) => five + i + 1);
+  if (!ones) {
+    return worked
+      ? { layer: { glow: "minute", fives: m }, say: `Count by 5s from the 12: ${fivesList(m)}. ${m} minutes past ${h}.` }
+      : { layer: { glow: "minute", fives: m - 5, ask: "?" }, say: `Count by 5s from the 12 to the long hand: ${fivesList(m - 5)}${m > 5 ? ", " : ""}?` };
+  }
+  if (worked) return { layer: { glow: "minute", fives: five, ones: tick, ask: m }, say: `By 5s to ${five || "the 12"}, then ${ones} more: ${five} + ${ones} = ${m}.` };
+  return { layer: { glow: "minute", fives: five, ones: tick, ask: "?" }, say: five ? `Count by 5s to ${five}, then the little ticks by 1s: ${five} + ${ones} = ?` : "Count the little ticks from the 12 by 1s." };
+}
+const fivesList = (to) => { const out = []; for (let k = 5; k <= to; k += 5) out.push(k); return out.join(", "); };
