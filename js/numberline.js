@@ -52,12 +52,17 @@ export function lineSvg(p, opt = {}) {
   const { x0, w, y } = LINE, total = p.d * p.wholes;
   let s = "";
   // Parts, shaded one by one in the hint (for "how many parts").
+  // Before answering it never counts to the end: with an even count, up to the halfway tick (ringed);
+  // with an odd one, just the first part. Worked, every part.
   if (opt.hint && p.kind === "parts") {
-    for (let k = 0; k < total; k++) {
-      const a = tickX(p, k), b = tickX(p, k + 1), last = k === total - 1 && !opt.worked;
+    const upto = opt.worked ? total : total % 2 ? 1 : total / 2;
+    for (let k = 0; k < upto; k++) {
+      const a = tickX(p, k), b = tickX(p, k + 1);
       s += `<rect x="${f1(a + 2)}" y="${y - 12}" width="${f1(b - a - 4)}" height="24" rx="6" fill="${k % 2 ? CORAL : GOLD}" opacity=".35"/>`;
-      s += `<text x="${f1((a + b) / 2)}" y="${y - 22}" text-anchor="middle" font-family="Nunito, sans-serif" font-weight="900" font-size="15" fill="${GOLD}" class="lab">${last ? "?" : k + 1}</text>`;
+      s += `<text x="${f1((a + b) / 2)}" y="${y - 22}" text-anchor="middle" font-family="Nunito, sans-serif" font-weight="900" font-size="15" fill="${GOLD}" class="lab">${k + 1}</text>`;
     }
+    if (!opt.worked && total % 2 === 0) s += `<circle cx="${f1(tickX(p, total / 2))}" cy="${y}" r="15" fill="none" stroke="${GOLD}" stroke-width="3"/><text x="${f1(tickX(p, total / 2))}" y="${y + 36}" text-anchor="middle" font-family="Nunito, sans-serif" font-weight="900" font-size="12" fill="${GOLD}" class="lab">half</text>`;
+    if (!opt.worked && total % 2) s += `<text x="${f1((tickX(p, 1) + tickX(p, 2)) / 2)}" y="${y - 22}" text-anchor="middle" font-family="Nunito, sans-serif" font-weight="900" font-size="15" fill="${GOLD}" class="lab">…</text>`;
   }
   // The chalk line, with an end cap each side.
   s += `<line x1="${x0 - 12}" y1="${y}" x2="${x0 + w + 12}" y2="${y}" stroke="${DK}" stroke-width="11" stroke-linecap="round"/><line x1="${x0 - 12}" y1="${y}" x2="${x0 + w + 12}" y2="${y}" stroke="${INK}" stroke-width="5" stroke-linecap="round"/>`;
@@ -82,7 +87,11 @@ export function lineSvg(p, opt = {}) {
   return `<svg viewBox="0 0 ${x0 * 2 + w} ${y + 46}" class="nl" role="img" aria-label="a number line from 0 to ${p.wholes} in ${p.kind === "parts" ? "equal parts" : `${p.d * p.wholes} parts, a dot on one`}">${s}</svg>`;
 }
 export function lineHint(p, worked) {
-  if (p.kind === "parts") return { say: `Count the parts from 0 to 1: ${Array.from({ length: p.d }, (_, i) => i + 1).slice(0, worked ? p.d : p.d - 1).join(", ")}${worked ? `. ${p.d} equal parts.` : ", ?"}` };
+  if (p.kind === "parts") {
+    const count = (n) => Array.from({ length: n }, (_, i) => i + 1).join(", ");
+    if (worked) return { say: `${count(p.d)}. ${p.d} equal parts: ${fractionWords(2, p.d, spoken).replace(/^two /, "")}.` };
+    return { say: p.d % 2 ? "Each part is the same size. 1, …" : `${count(p.d / 2)}. That's half the line. How many parts in all?` };
+  }
   const unit = `1/${p.d}`;
   return { say: `Each jump is ${unit}. Count the jumps from 0 to the dot: ${worked ? `${p.n}/${p.d}` : `?/${p.d}`}` + (worked && p.n % p.d === 0 ? ` = ${p.n / p.d}` : "") };
 }

@@ -36,9 +36,15 @@ for (const lv of LINE_LEVELS) {
       assert.ok(lineHint(p, false).say.endsWith(`?/${p.d}`));
       assert.ok(lineHint(p, true).say.includes(`${p.n}/${p.d}`));
     } else {
-      const nums = hint.slice(0, p.d);
-      assert.equal(nums[nums.length - 1], "?");
-      assert.ok(!nums.includes(String(p.d)));
+      // Before answering it counts to halfway (an even count) or just the first part (odd), never
+      // to the end; the words say no total. Worked, every part.
+      // (The part numbers come first in the drawing, then the 0 and 1 under the line.)
+      const parts = labels(lineSvg(p, { hint: true })).filter((x) => /^\d+$/.test(x)).slice(0, -2).map(Number);
+      assert.ok(!parts.includes(p.d), `${p.d} parts: the hint doesn't count to ${p.d} (${parts})`);
+      assert.equal(Math.max(...parts), p.d % 2 ? 1 : p.d / 2);
+      assert.ok(!new RegExp(`\\b${p.d}\\b`).test(lineHint(p, false).say), lineHint(p, false).say);
+      assert.equal(labels(lineSvg(p, { hint: true, worked: true })).filter((x) => /^\d+$/.test(x)).slice(0, -2).map(Number).pop(), p.d);
+      assert.ok(lineHint(p, true).say.includes(`${p.d} equal parts`));
     }
     assert.ok(!/NaN|undefined/.test(lineSvg(p, { hint: true, worked: true })));
   }
