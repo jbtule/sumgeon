@@ -236,7 +236,7 @@ Runs happen in Wings (`js/wings.js`, DESIGN.md §4), called **strata** (one **st
 |---|---|---|---|
 | The Counting Cellar | `kinder` (K) | Plusquito, Pipsqueak, rescue, Chompers (which is more), Trollar (find the coin, each coin); pool + Minustaur, Slimelipsis (count on and back) | Make-Ten Golem |
 | The Balance Hall | `first` (1st) | Quizard, Equal Twins, rescue, Tick-Tockus (hours, half hours), Triceraplus (three numbers); pool + Chompers, Doublet, Slimelipsis (to 120, by 5s) | Judo Judy |
-| The Crystal Mines | `second` (2nd) | Haberhasher, Slimelipsis (skip counting, odd and even), rescue, Margot-Rythm, Tick-Tockus (5 minutes); pool + Trollar (counting coins), Squaresquatch (arrays) | The Centipede |
+| The Crystal Mines | `second` (2nd) | Haberhasher, Squaresquatch (arrays), rescue, Trollar (counting coins, dollars), Margot-Rythm; pool + Slimelipsis (skip counting, odd and even), Tick-Tockus (5 minutes). Depth 1 follows the school's 2nd grade priority standards: place value and ± within 1000, arrays, money | The Centipede |
 | The Tables Tower | `third` (3rd) | Timesaur, Divvy, rescue, Tick-Tockus (the minute, elapsed time), Halfling; pool + Starbot | Sigma Rex |
 
 - Depth 1's floors bring each monster in once; the pool (depth 2 and deeper) has every monster in the table. Minustaur stays in the Cellar's pool only, and the Mines no longer borrow Plusquito and Minustaur. Batch 1: Slimelipsis only visits the Cellar and the Hall (their pools), and Tick-Tockus and Slimelipsis took a depth-1 floor elsewhere (Doublet, Trollar, Squaresquatch and Starbot moved to their pools). No dungeon version bump: floor counts and rescue floors are unchanged, and no fact's key changed meaning.

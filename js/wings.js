@@ -22,7 +22,7 @@ export const WINGS = [
   { id: "hall", name: "The Balance Hall", band: "first", after: "cellar", strands: { Triceraplus: "three", "Tick-Tockus": "timeH", Slimelipsis: "patH" },
     pool: ["Quizard", "Chompers", "Equal Twins", "Doublet", "Triceraplus", "Tick-Tockus", "Slimelipsis"], floors: ["Quizard", "Equal Twins", "rescue", "Tick-Tockus", "Triceraplus"], boss: "Judo Judy" },
   { id: "mines", name: "The Crystal Mines", band: "second", after: "hall", strands: { Trollar: "coins", Squaresquatch: "arrays", Slimelipsis: "patM", "Tick-Tockus": "timeM" },
-    pool: ["Haberhasher", "Margot-Rythm", "Trollar", "Squaresquatch", "Slimelipsis", "Tick-Tockus"], floors: ["Haberhasher", "Slimelipsis", "rescue", "Margot-Rythm", "Tick-Tockus"], boss: "The Centipede" },
+    pool: ["Haberhasher", "Margot-Rythm", "Trollar", "Squaresquatch", "Slimelipsis", "Tick-Tockus"], floors: ["Haberhasher", "Squaresquatch", "rescue", "Trollar", "Margot-Rythm"], boss: "The Centipede" },
   { id: "tower", name: "The Tables Tower", band: "third", after: "mines", strands: { "Tick-Tockus": "timeT" },
     pool: ["Timesaur", "Divvy", "Starbot", "Halfling", "Tick-Tockus"], floors: ["Timesaur", "Divvy", "rescue", "Tick-Tockus", "Halfling"], boss: "Sigma Rex" }
 ];
