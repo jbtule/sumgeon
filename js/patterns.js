@@ -17,6 +17,7 @@ export const PATTERN_LEVELS = [
   { id: "tens", name: "By 10s", grade: "K", step: 10, stratum: "cellar" },
   { id: "back", name: "Back by 1s", grade: "K–1st", step: -1, stratum: "cellar" },
   { id: "to120", name: "By 1s to 120", grade: "1st", step: 1, stratum: "hall" },
+  { id: "back20", name: "Back from 20", grade: "1st", step: -1, stratum: "hall" },
   { id: "fives", name: "By 5s", grade: "1st", step: 5, stratum: "hall" },
   { id: "twos", name: "By 2s", grade: "2nd", step: 2, stratum: "mines" },
   { id: "hundreds", name: "By 100s", grade: "2nd", step: 100, stratum: "mines" },
@@ -30,6 +31,8 @@ export const patternLevel = (id) => PATTERN_LEVELS.find((l) => l.id === id) || P
 // - tens: 10, 20 … from a ten, to 100.
 // - back: from 10 down, or from 20 down (the K and 1st grade standards), to no lower than 1.
 // - to120: 1st grade's counting past 100: from 95 to 116, often across a ten (38, 39, 40).
+// - back20: 1st grade's counting back from 20 (DESIGN.md §4.3's gap): four shown, from 20 down to
+//   11, so the row crosses ten (13, 12, 11, 10, □) or comes to it.
 // - fives: 5 to 100; twos: even numbers to 50; hundreds: 100 to 1000.
 const range = (a, b, by = 1) => { const out = []; for (let n = a; n <= b; n += by) out.push(n); return out; };
 function rowsOf(id) {
@@ -37,6 +40,7 @@ function rowsOf(id) {
   if (id === "tens") return range(10, 70, 10).map((a) => ({ a, step: 10, shown: 3 }));
   if (id === "back") return range(4, 20).map((a) => ({ a, step: -1, shown: 3 }));
   if (id === "to120") return range(95, 117).map((a) => ({ a, step: 1, shown: 3 }));
+  if (id === "back20") return range(11, 20).reverse().map((a) => ({ a, step: -1, shown: 4 }));
   if (id === "fives") return range(5, 80, 5).map((a) => ({ a, step: 5, shown: 4 }));
   if (id === "twos") return range(2, 42, 2).map((a) => ({ a, step: 2, shown: 4 }));
   if (id === "hundreds") return range(100, 700, 100).map((a) => ({ a, step: 100, shown: 3 }));
@@ -244,7 +248,7 @@ export function patternFactOf(key) {
 function setOf(nums, blank) {
   const step = nums[1] - nums[0];
   if (blank < nums.length - 1) return "middle";
-  if (step === -1) return "back";
+  if (step === -1) return nums.length > 4 ? "back20" : "back";
   if (step === 1) return Math.max(...nums) > 94 ? "to120" : "ones";
   return { 10: "tens", 5: "fives", 2: "twos", 100: "hundreds" }[step];
 }
@@ -263,6 +267,7 @@ export const PATTERN_GAME_LEVELS = [
   { id: "tens", name: "Count by 10s", stratum: "cellar" },
   { id: "back", name: "Count back by 1s", stratum: "cellar" },
   { id: "to120", name: "Count on to 120", stratum: "hall" },
+  { id: "back20", name: "Count back from 20", stratum: "hall" },
   { id: "fives", name: "Count by 5s", stratum: "hall" },
   { id: "twos", name: "Count by 2s", stratum: "mines" },
   { id: "hundreds", name: "Count by 100s", stratum: "mines" },
@@ -278,7 +283,7 @@ export function patternFacts() {
   const out = [];
   // Every row of the counting levels (the middle one sampled to 30), then 16 groups of each
   // odd and even level.
-  for (const id of ["ones", "tens", "back", "to120", "fives", "twos", "hundreds"]) for (const p of allPatterns(id)) out.push(patternFact(id, p.nums, p.blank));
+  for (const id of ["ones", "tens", "back", "to120", "fives", "twos", "hundreds", "back20"]) for (const p of allPatterns(id)) out.push(patternFact(id, p.nums, p.blank));
   const r = seeded(4242), mid = allPatterns("middle");
   for (let i = mid.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [mid[i], mid[j]] = [mid[j], mid[i]]; }
   mid.slice(0, 30).forEach((p) => out.push(patternFact("middle", p.nums, p.blank)));

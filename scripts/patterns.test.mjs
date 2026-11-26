@@ -3,7 +3,7 @@
 import assert from "node:assert/strict";
 import { PATTERN_LEVELS, allPatterns, patternProblem, spokenPattern, spokenPatternAnswer, patternText, patternSvg, patternHint, fontFor, textWidth, rowWidth, INNER, BLOB, ODD_LEVELS, oddEvenProblem, oddEvenSvg, oddEvenHint, spokenOddEven } from "../js/patterns.js";
 
-const STEP = { ones: 1, tens: 10, back: -1, to120: 1, fives: 5, twos: 2, hundreds: 100 };
+const STEP = { ones: 1, tens: 10, back: -1, back20: -1, to120: 1, fives: 5, twos: 2, hundreds: 100 };
 for (const { id } of PATTERN_LEVELS) {
   const all = allPatterns(id);
   assert.ok(all.length >= 7, `${id}: enough rows`);
@@ -30,6 +30,8 @@ for (const { id } of PATTERN_LEVELS) {
     if (id === "twos") assert.ok(hi <= 50 && p.nums.every((n) => n % 2 === 0), what);
     if (id === "hundreds" || id === "middle") assert.ok(hi <= 1000, what);
     if (id === "back") assert.ok(p.nums[0] <= 20 && step === -1, what);
+    // 1st grade counts back from 20, four shown, down to ten or past it.
+    if (id === "back20") assert.ok(p.nums[0] <= 20 && p.nums[0] >= 11 && p.nums.length === 5 && p.ans <= 16, what);
     // The hint: one hop per gap, labeled with the step; the hop into the □ asks "= ?" until it's
     // worked, and the words finish it.
     const before = patternHint(p, false), after = patternHint(p, true);

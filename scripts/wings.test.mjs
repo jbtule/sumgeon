@@ -70,7 +70,7 @@ for (const w of [cellar, hall, tower]) assert.ok(w.pool.includes("Polly-Gon") &&
 // Only the path's priority steps (DESIGN.md §4.3) count toward opening the next stratum: not
 // counting on and back in the Cellar, or counting by 5s in the Hall.
 assert.equal(learnedShare(cellar, Object.fromEntries(pool("patK").filter((f) => f.level < 2).map((f) => [f.key, { b: 4 }]))), 0, "counting on and back isn't a priority step");
-assert.equal(learnedShare(hall, Object.fromEntries(pool("patH").filter((f) => f.level === 1).map((f) => [f.key, { b: 4 }]))), 0, "nor counting by 5s");
+assert.equal(learnedShare(hall, Object.fromEntries(pool("patH").filter((f) => f.level === 2).map((f) => [f.key, { b: 4 }]))), 0, "nor counting by 5s");
 assert.ok(learnedShare(cellar, Object.fromEntries(pool("coinsK").map((f) => [f.key, { b: 4 }]))) > 0, "coins are");
 const run = runFloors(cellar, { captain: 5, rescued: [] }, () => 0);
 assert.equal(run.length, 6);

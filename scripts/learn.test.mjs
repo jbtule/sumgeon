@@ -212,10 +212,11 @@ import { patternFacts } from "../js/patterns.js";
   assert.deepEqual(levels("timeM"), ["5 minutes", "What time is it? (5 minutes)"]);
   assert.deepEqual(levels("timeT"), ["To the minute", "How long? In the hour", "Minutes later, in the hour", "How long? Across the hour", "Minutes later, across the hour"]);
   assert.deepEqual(levels("patK"), ["Count on by 1s", "Count back by 1s", "Count by 10s"]);
-  assert.deepEqual(levels("patH"), ["Count on to 120", "Count by 5s"]);
+  assert.deepEqual(levels("patH"), ["Count on to 120", "Count back from 20", "Count by 5s"]);
   assert.deepEqual(levels("patM"), ["Count by 100s", "What's missing? By 2s, 5s, 10s, 100s", "Count by 2s", "Odd and even to 20", "Odd and even to 100"]);
   assert.deepEqual([sizes("timeH"), sizes("timeM"), sizes("timeT")], [[12, 36], [33, 20], [20, 16, 16, 16, 16]]);
-  assert.deepEqual([sizes("patK"), sizes("patH"), sizes("patM")], [[17, 17, 7], [23, 16], [7, 30, 21, 16, 16]]);
+  assert.deepEqual([sizes("patK"), sizes("patH"), sizes("patM")], [[17, 17, 7], [23, 10, 16], [7, 30, 21, 16, 16]]);
+  assert.deepEqual([factOf("…20,19,18,17,□").ans, factOf("…20,19,18,17,□").set, factOf("…20,19,18,□").set], [16, "back20", "back"], "counting back from 20 (4 shown) is the Hall's");
   for (const b of ["timeH", "timeM", "timeT", "patK", "patH", "patM"]) {
     assert.ok(BANDS[b].strand, b);
     for (const f of pool(b)) {

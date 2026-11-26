@@ -66,7 +66,8 @@ export const PATHS = {
     // The Cellar's facts within 10, kept up as reviews (1st grade builds on them).
     step("Review: within 10", [["kinder", "Within 5, with zero"], ["kinder", "Within 10"]], ["Plusquito", "Minustaur"], 1, { review: true }),
     step("Within 20", [["first", "Within 20, not crossing 10"]], ["Plusquito", "Minustaur"], 1, P),
-    step("Count to 120", [["patH", "Count on to 120"]], ["Slimelipsis"], 1, { priority: true, ongoing: true }),
+    // Counting on to 120, and back from 20 (new), all year.
+    step("Count to 120, and back from 20", [["patH", "Count on to 120"], ["patH", "Count back from 20"]], ["Slimelipsis"], 1, { priority: true, ongoing: true }),
     step("Three numbers", [["three", "Three numbers"]], ["Triceraplus"], 1, P),
     step("Crossing 10", [["first", "Crossing 10"]], ["Plusquito", "Minustaur"], 1, P),
     step("Doubles and near doubles", [["first", "Doubles and near doubles"]], ["Doublet"], 1, P),
