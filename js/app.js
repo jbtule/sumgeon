@@ -617,6 +617,7 @@ function submit() {
     const momentName = mo ? HEROES[mo.hero].n + (mo.partner != null ? " & " + HEROES[mo.partner].n : "") : "";
     (mo ? heroMoment(mo, typed, crit) : fly(typed, crit)).then(() => {
       if (!mo) sfx.impact(crit); // a moment lands with its own, bigger impact and shake
+      if (G.charged) sfx.zap(); // a lightning problem beaten: the lightning thrown back
       burst(crit);
       G.hp -= dmg;
       pop((boost ? "Hero! " : bonus.power ? "Power! " : crit ? "Crit! " : "") + "−" + dmg, crit || bonus.power || !!boost);
@@ -1568,6 +1569,8 @@ document.addEventListener("keydown", (e) => {
   else if (e.key === ".") press(">");
   else if (e.key === "Backspace") press("del");
   else if (e.key === "Enter") { e.preventDefault(); press("go"); }
+  // ? opens the hint, like tapping 💡, when this problem has one.
+  else if (e.key === "?") { if (!$("hintBtn").hidden) { e.preventDefault(); $("hintBtn").click(); } }
 });
 
 loadPlayer();

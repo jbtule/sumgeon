@@ -159,6 +159,7 @@ const SOUNDS = [
   ["Monsters", [
     ["Lightning crackle", "Minustaur: a charged problem appears", () => sfx.charge()],
     ["Thunder strike", "Minustaur: a charged miss (2 hearts)", () => sfx.thunder()],
+    ["Lightning zap", "Minustaur: a charged problem answered right", () => sfx.zap()],
     ["Boss roar", "Every 9–15 s of a boss fight", () => sfx.roar()],
     ["Monster appears", "A new floor's monster", () => sfx.appear(false)],
     ["Boss appears", "The boss floor", () => sfx.appear(true)]]],
