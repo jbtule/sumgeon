@@ -7,11 +7,11 @@ import { facts } from "../js/problems.js";
 import { hintFor } from "../js/hints.js";
 
 const fs = twoDigitFacts();
-assert.equal(fs.length, 280);
+assert.equal(fs.length, 368);
 assert.deepEqual(fs, twoDigitFacts(), "the sample never changes");
 assert.equal(new Set(fs.map(keyOf)).size, fs.length, "each fact once");
 const lv = (name) => fs.filter((f) => TWO_LEVELS[f.lv].name === name);
-const two = fs.filter((f) => !TWO_LEVELS[f.lv].big);
+const two = fs.filter((f) => !TWO_LEVELS[f.lv].big && !TWO_LEVELS[f.lv].three);
 assert.ok(two.every((f) => (f.op === "+" ? f.ans > 20 && f.ans <= 100 : f.x > 20 && f.ans > 0)), "past 20, within 100");
 const within20 = new Set(facts().map(keyOf));
 assert.ok(fs.every((f) => !within20.has(keyOf(f))), "no overlap with the within-20 facts");
@@ -20,6 +20,40 @@ assert.ok(lv("Subtract and regroup").every((f) => f.x % 10 < f.y % 10), "subtrac
 assert.ok(lv("Add tens").concat(lv("Subtract tens")).every((f) => !(f.x % 10) && !(f.y % 10)), "tens only");
 assert.ok(lv("10 more").every((f) => f.x === 10 && f.y % 10) && lv("10 less").every((f) => f.y === 10 && f.x % 10), "10 more and 10 less");
 assert.ok(lv("Add tens to a number").every((f) => (f.x % 10 === 0) !== (f.y % 10 === 0) && f.ans < 100), "34 + 20");
+// Within 1000 (2nd grade's 2.NBT.B.7, after place value; 3rd grade's fluency): three-digit
+// numbers, no whole hundreds, the answer within 1000; adding and subtracting, each without and
+// with regrouping (the ones, the tens, both; across a zero), with the school guides' examples.
+{
+  const { regroupsAt } = await import("../js/twodigit.js");
+  const three = fs.filter((f) => TWO_LEVELS[f.lv].three);
+  assert.equal(three.length, 88);
+  assert.ok(three.every((f) => Math.max(f.x, f.y) > 100 && Math.max(f.x, f.y) < 1000 && f.x % 100 && f.y % 100 && f.ans % 100 && f.ans < 1000 && f.ans >= 20 && Math.min(f.x, f.y) > 10), "three-digit work within 1000");
+  const R = (f) => regroupsAt(f.op, f.x, f.y), any = (f) => R(f).ones || R(f).tens;
+  assert.ok(lv("Add within 1000").every((f) => f.op === "+" && !any(f)) && lv("Subtract within 1000").every((f) => f.op === "-" && !any(f)), "without regrouping");
+  assert.ok(lv("Add and regroup within 1000").every((f) => f.op === "+" && any(f)) && lv("Subtract and regroup within 1000").every((f) => f.op === "-" && any(f)), "with regrouping");
+  const kinds = (name) => lv(name).reduce((t, f) => { const r = R(f), k = r.zero ? "zero" : r.ones && r.tens ? "both" : r.ones ? "ones" : "tens"; t[k] = (t[k] || 0) + 1; return t; }, {});
+  assert.deepEqual(kinds("Add and regroup within 1000"), { ones: 8, tens: 8, both: 8 });
+  assert.deepEqual(kinds("Subtract and regroup within 1000"), { ones: 7, tens: 7, both: 6, zero: 4 }, "a few across a zero");
+  const has = (q) => three.some((f) => f.q === q);
+  assert.ok(has("287 + 359") && has("821 − 511") && has("403 − 158"), "the guides' examples");
+  assert.ok(lv("Add within 1000").some((f) => f.y < 100) && lv("Subtract within 1000").some((f) => f.y < 100), "a two-digit number now and then");
+  // The Mines' last four levels, in the school's order, after 10 and 100 more or less.
+  const names = BANDS.second.levels.map((l) => l.name);
+  assert.deepEqual(names.slice(-5), ["10 and 100 more or less", "Add within 1000", "Add within 1000, regrouping", "Subtract within 1000", "Subtract within 1000, regrouping"]);
+  // Margot-Rythm's strand in the Tower: the same facts (the same keys), adding then subtracting.
+  assert.equal(pool("addT").length, 88);
+  assert.deepEqual(pool("addT").map((f) => f.op === "+" ? 0 : 1), pool("addT").map((f) => f.level));
+  // Hints: partial sums, taking away by place, counting up; never the total before answering.
+  assert.equal(hintFor({ op: "+", x: 287, y: 359, ans: 646 }, false).say, "Add each place: 200 + 300 = 500, 80 + 50 = 130, 7 + 9 = 16. 500 + 130 + 16 = ?");
+  assert.equal(hintFor({ op: "-", x: 821, y: 511, ans: 310 }, false).say, "Take away each place: 800 − 500, 20 − 10, 1 − 1. 821 − 511 = ?");
+  assert.equal(hintFor({ op: "-", x: 821, y: 511, ans: 310 }, true).say, "Take away each place: 800 − 500 = 300, 20 − 10 = 10, 1 − 1 = 0. 300 + 10 = 310");
+  assert.equal(hintFor({ op: "-", x: 403, y: 158, ans: 245 }, false).say, "Think addition: count up from 158 to 403. 2 + 40 + 200 + 3 = ?");
+  for (const f of three) for (const w of [false, true]) {
+    const h = hintFor(f, w);
+    assert.ok(!/carry|borrow/i.test(h.say), f.q);
+    if (f.op === "+") assert.match(h.model, /hundreds/, "the place-value mat");
+  }
+}
 const big = fs.filter((f) => TWO_LEVELS[f.lv].big);
 assert.equal(big.length, 48);
 assert.ok(big.every((f) => { const n = f.op === "+" ? Math.max(f.x, f.y) : f.x, s = f.op === "+" ? Math.min(f.x, f.y) : f.y; return n >= 100 && n <= 999 && [10, 100].includes(s) && f.ans >= 100 && f.ans <= 999; }), "within 1000");
@@ -56,8 +90,15 @@ assert.equal(hintFor({ op: "-", x: 405, y: 10, ans: 395 }, true).say, "10 less: 
   }
   assert.ok(facts().every((f) => !stackable(f)), "nothing within 20 is stacked");
   assert.ok(!stackable({ op: "+", x: 38, y: 25, ans: 63, flipped: true }) && !stackable({ op: "+", x: 38, y: 25, ans: 63, blank: "x" }) && !stackable({ op: "×", x: 4, y: 30, ans: 120 }));
-  let r = 3, n = 0; const rnd = () => ((r = (r * 16807) % 2147483647) / 2147483647);
-  for (let i = 0; i < 4000; i++) if (stackOf({ op: "+", x: 38, y: 25, ans: 63 }, false, rnd).stacked) n++;
+  let r = 3, n = 0, n3 = 0, n4 = 0; const rnd = () => ((r = (r * 16807) % 2147483647) / 2147483647);
+  const { STACK_SHARE3 } = await import("../js/twodigit.js"), { sumFact, threeFact } = await import("../js/three.js");
+  for (let i = 0; i < 4000; i++) {
+    if (stackOf({ op: "+", x: 38, y: 25, ans: 63 }, false, rnd).stacked) n++;
+    if (stackOf({ op: "+", x: 287, y: 359, ans: 646 }, false, rnd).stacked) n3++;
+    if (stackOf(sumFact([23, 14, 31, 12]), false, rnd).stacked) n4++;
+  }
   assert.ok(Math.abs(n / 4000 - STACK_SHARE) < 0.03, `about a quarter stacked: ${n}`);
+  assert.ok(STACK_SHARE3 === 0.5 && Math.abs(n3 / 4000 - STACK_SHARE3) < 0.03 && Math.abs(n4 / 4000 - STACK_SHARE3) < 0.03, `three-digit and four numbers about half: ${n3} ${n4}`);
+  assert.ok(!stackable(threeFact(4, 3, 6)), "the Hall's 4 + 3 + 6 stays on one line");
 }
 console.log("✓ two-digit");

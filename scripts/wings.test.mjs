@@ -13,8 +13,12 @@ assert.equal(mines.name, "The Crystal Mines");
 const M = (w) => w.pool.concat([w.boss]);
 assert.deepEqual(M(cellar), ["Plusquito", "Minustaur", "Pipsqueak", "Chompers", "Trollar", "Slimelipsis", "Make-Ten Golem"]);
 assert.deepEqual(M(hall), ["Quizard", "Chompers", "Equal Twins", "Doublet", "Triceraplus", "Tick-Tockus", "Slimelipsis", "Judo Judy"]);
-assert.deepEqual(M(mines), ["Haberhasher", "Margot-Rythm", "Trollar", "Squaresquatch", "Slimelipsis", "Tick-Tockus", "The Centipede"], "the Mines' own monsters: no more Plusquito and Minustaur standing in");
-assert.deepEqual(M(tower), ["Timesaur", "Divvy", "Starbot", "Halfling", "Tick-Tockus", "Sigma Rex"]);
+assert.deepEqual(M(mines), ["Haberhasher", "Margot-Rythm", "Trollar", "Squaresquatch", "Slimelipsis", "Tick-Tockus", "Chompers", "Triceraplus", "The Centipede"], "the Mines' own monsters, with Chompers and Triceraplus visiting");
+assert.deepEqual(M(tower), ["Timesaur", "Divvy", "Starbot", "Halfling", "Tick-Tockus", "Margot-Rythm", "Sigma Rex"], "Margot-Rythm visits the Tower");
+// Three-digit numbers: Chompers compares them in the Mines and Triceraplus adds up to four
+// two-digit numbers there; Margot-Rythm brings 3rd grade's adding and subtracting to the Tower.
+assert.deepEqual([bandOf(mines, named0("Chompers")), bandOf(mines, named0("Triceraplus")), bandOf(tower, named0("Margot-Rythm")), bandOf(mines, named0("Margot-Rythm"))], ["cmpM", "sumsM", "addT", "second"]);
+function named0(n) { return { n }; }
 // Depth 1's floors: each stratum keeps its five (the rescue floor third), every named floor is in
 // its pool, and no monster comes twice in a row.
 assert.deepEqual(WINGS.map((w) => w.floors), [

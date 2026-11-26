@@ -11,7 +11,7 @@ export const TRAITS = {
   "Divvy": { icon: "✂️", name: "Split", text: "Splits in two at half HP" },
   "Quizard": { icon: "❓", name: "Mystery", text: "Hides a number: find the one that's missing" },
   "Trollar": { icon: "🪙", name: "Toll", text: "Pays in coins and bills: count up" },
-  "Haberhasher": { icon: "🔢", name: "Tens and ones", text: "Two-digit sums and place value" },
+  "Haberhasher": { icon: "🔢", name: "Tens and ones", text: "Sums to 1000 and place value" },
   "Chompers": { icon: "🐊", name: "Big Bite", text: "Eats the bigger number: that's your hit" },
   "Equal Twins": { icon: "⚖️", name: "Balance", text: "Both sides must match" },
   "Judo Judy": { icon: "🥋", name: "Flip", text: "Flips your sums: same answer" },

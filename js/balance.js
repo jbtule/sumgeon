@@ -89,3 +89,42 @@ export const MORE_LEVELS = [
   { name: "Which is more, to 5", has: (f) => f.ans <= 5 },
   { name: "Which is more, to 10", has: () => true }
 ];
+
+/* ---------- comparing three-digit numbers (2nd grade, 2.NBT.A.4) ----------
+   "345 ○ 354", answered on the < = > keys, as the Hall's comparing is: Chompers' strand in the
+   Crystal Mines (learn.js BANDS.cmpM). The school's guide puts the comparing before the symbols:
+   compare the hundreds, then the tens, then the ones, so the set has each kind: a different
+   hundred (345 ○ 435), the same hundreds and a different ten (345 ○ 354), the same hundreds and
+   tens (518 ○ 516), the digits turned around (345 ○ 543), and a few the same. A fixed sample:
+   the same key and answer as any comparison ("○345,354"; the damage is the bigger number). */
+export const COMPARE_1000 = [{ name: "Compare three-digit numbers" }];
+// Which place decides: "hundreds", "tens", "ones", or null when they're the same.
+export function decidingPlace(a, b) {
+  const da = String(a).padStart(3, "0"), db = String(b).padStart(3, "0");
+  const i = [0, 1, 2].find((k) => da[k] !== db[k]);
+  return i == null ? null : ["hundreds", "tens", "ones"][i];
+}
+let cmpCache = null;
+export function compare1000Facts() {
+  if (cmpCache) return cmpCache;
+  let s = 3457;
+  const r = () => (s = (s * 1103515245 + 12345) % 2147483648) / 2147483648;
+  const d = (a, b) => a + Math.floor(r() * (b - a + 1));
+  // How many of each kind: the place that decides, the digits turned around, or the same.
+  const want = { hundreds: 5, tens: 7, ones: 5, swap: 4, same: 3 };
+  const out = [], seen = new Set();
+  const add = (x, y, kind) => {
+    const f = compareFact(String(x), String(y));
+    if (seen.has(f.key) || seen.has("○" + y + "," + x)) return;
+    seen.add(f.key); out.push(Object.assign(f, { set: "1000" })); want[kind]--;
+  };
+  for (let guard = 0; Object.values(want).some((n) => n > 0) && guard < 20000; guard++) {
+    const h = d(1, 9), t = d(0, 9), o = d(0, 9), x = h * 100 + t * 10 + o;
+    if (want.hundreds > 0) { const h2 = d(1, 9); if (h2 !== h) add(x, h2 * 100 + d(0, 9) * 10 + d(0, 9), "hundreds"); }
+    else if (want.tens > 0) { const t2 = d(0, 9); if (t2 !== t) add(x, h * 100 + t2 * 10 + d(0, 9), "tens"); }
+    else if (want.ones > 0) { const o2 = d(0, 9); if (o2 !== o) add(x, h * 100 + t * 10 + o2, "ones"); }
+    else if (want.swap > 0) { if (o && o !== h) add(x, o * 100 + t * 10 + h, "swap"); }
+    else add(x, x, "same");
+  }
+  return (cmpCache = out);
+}

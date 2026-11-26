@@ -8,10 +8,10 @@ import { WINGS, cursedMonster } from "./wings.js";
 import { facts, spokenProblem, spokenFact, spoken } from "./problems.js";
 import { missingOf, spokenMissing, canHide } from "./missing.js";
 import { coinFacts } from "./coins.js";
-import { twoDigitFacts } from "./twodigit.js";
-import { balanceFacts, moreFacts, moreFact } from "./balance.js";
+import { twoDigitFacts, TWO_LEVELS } from "./twodigit.js";
+import { balanceFacts, moreFacts, moreFact, compare1000Facts } from "./balance.js";
 import { timesTens, fractionFacts, roundFacts, rectFacts } from "./third.js";
-import { threeFacts } from "./three.js";
+import { threeFacts, sumFacts } from "./three.js";
 import { arrayFacts } from "./arrays.js";
 import { clockFacts, TIME_LEVELS } from "./clock.js";
 import { patternFacts, PATTERN_GAME_LEVELS } from "./patterns.js";
@@ -250,7 +250,7 @@ export function changeLine(c) { return "Here's " + cents(c) + " back!"; }
 
 // [{ kind, text }], each once.
 // The groups the listen check (review/listen/) plays lines in.
-export var GROUPS = ["Phrases", "Monsters & heroes", "Add & subtract", "Times & divide", "Missing numbers", "Which is more", "Coins", "Two-digit", "Balance Hall", "Three numbers", "Arrays", "Time", "Patterns", "True or false", "Place value", "Dollars", "Number line", "Fractions", "Rounding", "Area & perimeter", "Hero quips", "Team-ups", "Captain lines", "Boss forms", "Chests & items", "Money", "Shop", "Clothing"];
+export var GROUPS = ["Phrases", "Monsters & heroes", "Add & subtract", "Times & divide", "Missing numbers", "Which is more", "Coins", "Two-digit", "Three-digit", "Balance Hall", "Compare to 1000", "Three numbers", "Up to four numbers", "Arrays", "Time", "Patterns", "True or false", "Place value", "Dollars", "Number line", "Fractions", "Rounding", "Area & perimeter", "Hero quips", "Team-ups", "Captain lines", "Boss forms", "Chests & items", "Money", "Shop", "Clothing"];
 
 // [{ kind, text, group, sprite? }], each once.
 export function spokenLines() {
@@ -328,12 +328,17 @@ export function spokenLines() {
   });
   // Coins (Trollar): "two dimes and three pennies. How many cents?", and the answer.
   coinFacts().forEach(function (f) { add("q", spokenProblem(f), "Coins"); add("q", spokenFact(f), "Coins"); });
-  // The two-digit problems (Haberhasher): "thirty-eight plus twenty-five", and "… is sixty-three".
+  // The two-digit problems (Haberhasher): "thirty-eight plus twenty-five", and "… is sixty-three";
+  // and adding and subtracting within 1000 (the Mines, and Margot-Rythm in the Tower).
   twoDigitFacts().forEach(function (f) {
-    var fs = [f];
+    var fs = [f], g3 = TWO_LEVELS[f.lv].three ? "Three-digit" : "Two-digit";
     if (f.op === "+" && f.x !== f.y) fs.push({ op: "+", x: f.y, y: f.x, ans: f.ans }); // either order can come up
-    fs.forEach(function (g) { add("q", spokenProblem(g), "Two-digit"); add("q", spokenFact(g), "Two-digit"); });
+    fs.forEach(function (g) { add("q", spokenProblem(g), g3); add("q", spokenFact(g), g3); });
   });
+  // Comparing three-digit numbers (Chompers in the Mines): "Compare three hundred forty-five and
+  // three hundred fifty-four.", and adding up to four two-digit numbers (Triceraplus there).
+  compare1000Facts().forEach(function (f) { add("q", spokenProblem(f), "Compare to 1000"); add("q", spokenFact(f), "Compare to 1000"); });
+  sumFacts().forEach(function (f) { add("q", spokenProblem(f), "Up to four numbers"); add("q", spokenFact(f), "Up to four numbers"); });
   // The Balance Hall: "Compare three plus four and eight.", "three plus four is less than eight".
   balanceFacts().forEach(function (f) { add("q", spokenProblem(f), "Balance Hall"); add("q", spokenFact(f), "Balance Hall"); });
   // Hero Moments (moments.js): every hero's quips, and the two for the big moments.

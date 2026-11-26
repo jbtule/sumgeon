@@ -129,6 +129,20 @@ for (const l of spokenLines().filter((l) => l.kind === "h")) assert.ok(words(l.t
   assert.ok(ids.has("q:Three rows of five. How many in all?") && ids.has("q:Three rows of five make fifteen."), "arrays");
   assert.ok(GROUPS.includes("Three numbers") && GROUPS.includes("Arrays"));
 }
+// Three-digit numbers (2nd grade, and 3rd grade's fluency): adding and subtracting within 1000
+// (both orders of a sum), comparing them, and adding up to four two-digit numbers, asked and
+// answered, each in its listen-check group.
+{
+  const group = (t) => spokenLines().find((l) => l.kind === "q" && l.text === t)?.group;
+  for (const [t, g] of [["two hundred eighty-seven plus three hundred fifty-nine", "Three-digit"], ["three hundred fifty-nine plus two hundred eighty-seven is six hundred forty-six", "Three-digit"],
+    ["four hundred three minus one hundred fifty-eight is two hundred forty-five", "Three-digit"], ["eight hundred twenty-one minus five hundred eleven", "Three-digit"],
+    ["Compare four hundred thirty-six and three hundred fifty-six.", "Compare to 1000"], ["four hundred thirty-six is greater than three hundred fifty-six", "Compare to 1000"],
+    ["twenty-nine plus twenty-three plus sixteen plus seventeen", "Up to four numbers"], ["twenty-nine plus twenty-three plus sixteen plus seventeen is eighty-five", "Up to four numbers"]]) {
+    assert.ok(ids.has("q:" + t), t);
+    assert.equal(group(t), g, t);
+  }
+  assert.ok(["Three-digit", "Compare to 1000", "Up to four numbers"].every((g) => GROUPS.includes(g)));
+}
 // Batch 1: Tick-Tockus and Slimelipsis (and their looks) in the names sprite; their trait lines;
 // every time and pattern asked and answered, in small sprites by strand, in "Time" and
 // "Patterns"; times said the way a teacher says them ("three oh five").

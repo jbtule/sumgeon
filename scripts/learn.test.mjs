@@ -30,7 +30,8 @@ const names = (b) => BANDS[b].levels.map((l) => l.name);
 const at = (b, L) => pool(b).filter((p) => p.level === L).map((p) => factOf(p.key, () => 0.9));
 assert.deepEqual(names("kinder"), ["Within 5, with zero", "Within 10", "Make 10 and number bonds", "10 and some more"]);
 assert.deepEqual(names("first"), ["Within 20, not crossing 10", "Crossing 10", "Missing numbers and the equal sign", "Add and subtract tens"]);
-assert.deepEqual(names("second"), ["Add and subtract, no regrouping", "Add and subtract, regrouping", "Hundreds, tens and ones", "Tens in a number", "10 and 100 more or less"]);
+assert.deepEqual(names("second"), ["Add and subtract, no regrouping", "Add and subtract, regrouping", "Hundreds, tens and ones", "Tens in a number", "10 and 100 more or less",
+  "Add within 1000", "Add within 1000, regrouping", "Subtract within 1000", "Subtract within 1000, regrouping"]);
 assert.deepEqual(names("third"), ["× 0, 1, 2, 5 and 10", "÷ 1, 2, 5 and 10", "× 3, 4 and 6", "÷ 3, 4 and 6", "× 7, 8 and 9", "÷ 7, 8 and 9", "× tens", "Fractions on a number line", "Equal fractions", "Rounding", "Area and perimeter", "× and ÷ 11 and 12"]);
 // K: + and − to 20, with zero, make 10 and number bonds as □ problems.
 assert.ok(pool("kinder").every((p) => (p.op === "+" || p.op === "-") && factOf(p.key).ans <= 20), "the Cellar is + and − to 20");
@@ -54,7 +55,11 @@ assert.ok(at("first", 2).some((f) => f.blank) && at("first", 3).some((f) => f.an
 assert.ok(pool("second").every((p) => (p.op === "+" || p.op === "-" || p.op === "#") && factOf(p.key).ans > 0), "the Mines are + and −, and place value");
 assert.ok(pool("second").filter((p) => p.op !== "#").every((p) => { const f = factOf(p.key); return Math.max(f.x, f.y) > 20 || f.ans > 20; }), "past 20");
 // Place value (batch 2) after the two-digit work and before the three-digit work.
-assert.deepEqual([0, 1, 2, 3, 4].map((L) => at("second", L).filter((f) => f.op === "#").length), [0, 0, 40, 36, 0], "place value before 10 and 100 more or less");
+assert.deepEqual([0, 1, 2, 3, 4, 5, 6, 7, 8].map((L) => at("second", L).filter((f) => f.op === "#").length), [0, 0, 40, 36, 0, 0, 0, 0, 0], "place value before 10 and 100 more or less");
+// Then adding and subtracting within 1000 (2.NBT.B.7): adding without regrouping, with it, then
+// subtracting the same way.
+assert.deepEqual([5, 6, 7, 8].map((L) => [...new Set(at("second", L).map((f) => f.op))].join()), ["+", "+", "-", "-"]);
+assert.ok([5, 6, 7, 8].every((L) => at("second", L).every((f) => Math.max(f.x, f.y) > 100 && f.ans < 1000)), "three-digit work within 1000");
 assert.ok(at("second", 2).every((f) => f.kind === "blocks" || f.kind === "expanded") && at("second", 3).every((f) => f.kind === "tens" || f.kind === "odd"));
 assert.ok(pool("third").every((p) => "×÷/≈▭↔".includes(p.op)), "the Tower is × and ÷, no + or −");
 // The number line (batch 2) before equal fractions, its 0 to 2 line with them.

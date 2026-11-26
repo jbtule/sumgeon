@@ -7,10 +7,10 @@
 import { facts } from "./problems.js";
 import { coinFacts, coinFactOf, COIN_LEVELS } from "./coins.js";
 import { twoDigitFacts, twoLevel } from "./twodigit.js";
-import { balanceFacts, balanceFactOf, inSet, moreFacts, moreFactOf, MORE_LEVELS } from "./balance.js";
+import { balanceFacts, balanceFactOf, inSet, moreFacts, moreFactOf, MORE_LEVELS, compare1000Facts } from "./balance.js";
 import { hiddenFactOf, kinderHidden, firstHidden } from "./missing.js";
 import { timesTens, fractionFacts, fractionFactOf, roundFacts, roundFactOf, rectFacts, rectFactOf } from "./third.js";
-import { threeFacts, threeFactOf } from "./three.js";
+import { threeFacts, threeFactOf, sumFacts, SUM_LEVELS } from "./three.js";
 import { arrayFacts, arrayFactOf, ARRAY_LEVELS } from "./arrays.js";
 import { clockFacts, clockFactOf, TIME_LEVELS } from "./clock.js";
 import { patternFacts, patternFactOf, oddEvenFactOf, PATTERN_GAME_LEVELS } from "./patterns.js";
@@ -72,14 +72,20 @@ export const BANDS = {
   },
   // The Crystal Mines: two-digit ± within 100, adding and subtracting mixed, then regrouping,
   // then place value to 1000 with base-ten blocks (Haberhasher), then 10 and 100 more or less
-  // within 1000: the school's order (two-digit work, then three-digit numbers, then three-digit work).
+  // within 1000, then adding and subtracting within 1000 (2.NBT.B.7: adding without regrouping,
+  // then with it, then subtracting the same way): the school's order (two-digit work, then
+  // three-digit numbers, then three-digit work).
   second: {
     label: "2nd grade", grade: 2, hearts: 5, fluentMs: 6000, facts: () => twoDigitFacts().concat(pvFacts()),
     levels: [
       { name: "Add and subtract, no regrouping", has: twoLevel("Add ones", "Add tens and ones", "Subtract, no regrouping") },
       { name: "Add and subtract, regrouping", has: twoLevel("Add and regroup", "Subtract and regroup") },
       ...PV_GAME_LEVELS.map((l) => ({ name: l.name, has: (f) => f.op === "#" && l.sets.includes(f.set) })),
-      { name: "10 and 100 more or less", has: twoLevel("10 more, 10 less to 1000", "100 more, 100 less") }
+      { name: "10 and 100 more or less", has: twoLevel("10 more, 10 less to 1000", "100 more, 100 less") },
+      { name: "Add within 1000", has: twoLevel("Add within 1000") },
+      { name: "Add within 1000, regrouping", has: twoLevel("Add and regroup within 1000") },
+      { name: "Subtract within 1000", has: twoLevel("Subtract within 1000") },
+      { name: "Subtract within 1000, regrouping", has: twoLevel("Subtract and regroup within 1000") }
     ]
   },
   // The Tables Tower: × and ÷ only, in the school's order, then the rest of 3rd grade.
@@ -118,6 +124,16 @@ export const BANDS = {
   // Three numbers (1st grade): Triceraplus in the Hall, 4 + 3 + 6 with a ten to find. A second more
   // than the Hall's time, for reading three numbers.
   three: { label: "Three numbers", strand: true, unlock: 0.5, hearts: 7, fluentMs: 5000, facts: threeFacts, levels: [{ name: "Three numbers", has: is("Σ") }] },
+  // Comparing three-digit numbers (2nd grade, 2.NBT.A.4): Chompers in the Mines, "345 ○ 354".
+  cmpM: { label: "Compare to 1000", strand: true, unlock: 0.5, hearts: 5, fluentMs: 6000, facts: compare1000Facts, levels: [{ name: "Compare three-digit numbers", has: is("○") }] },
+  // Adding up to four two-digit numbers (2nd grade, 2.NBT.B.7): Triceraplus visiting the Mines,
+  // three numbers, then four. Reading and adding four numbers takes a while: 9 s.
+  sumsM: { label: "Up to four numbers", strand: true, unlock: 0.5, hearts: 5, fluentMs: 9000, facts: sumFacts, levels: SUM_LEVELS.map((l) => ({ name: l.name, has: (f) => f.op === "Σ" && f.set === l.n })) },
+  // 3rd grade's fluency adding and subtracting within 1000 (3.NBT.A.2): Margot-Rythm visiting the
+  // Tables Tower, which is otherwise × and ÷ only. The Mines' three-digit facts (the same keys,
+  // so what was learned there counts here), adding, then subtracting.
+  addT: { label: "Add and subtract to 1000", strand: true, unlock: 0.5, hearts: 5, fluentMs: 6000, facts: twoDigitFacts,
+    levels: [{ name: "Add within 1000", has: twoLevel("Add within 1000", "Add and regroup within 1000") }, { name: "Subtract within 1000", has: twoLevel("Subtract within 1000", "Subtract and regroup within 1000") }] },
   // Arrays (2nd grade): Squaresquatch in the Mines, rows of dots added as equal rows.
   arrays: { label: "Arrays", strand: true, unlock: 0.5, hearts: 5, fluentMs: 6000, facts: arrayFacts, levels: ARRAY_LEVELS },
   // Telling time (Tick-Tockus, js/clock.js), a strand in each stratum it visits: hours and half

@@ -4,14 +4,15 @@
 // can be learned and every problem is recorded. Key "Σ4,3,6": the three numbers in the order
 // shown. No DOM: runs in Node for the tests.
 
-export function threeFact(a, b, c) {
-  const ans = a + b + c;
-  return { op: "Σ", a, b, c, ans, q: a + " + " + b + " + " + c, key: "Σ" + a + "," + b + "," + c };
+//
+// 2nd grade adds up to four two-digit numbers (2.NBT.B.7; Triceraplus visiting the Crystal Mines):
+// 23 + 14 + 31 + 12, the same kind of fact with more numbers (key "Σ23,14,31,12"), in sumFacts.
+export function sumFact(nums) {
+  const [a, b, c] = nums, ans = nums.reduce((t, n) => t + n, 0);
+  return { op: "Σ", nums: nums.slice(), a, b, c, ans, q: nums.join(" + "), key: "Σ" + nums.join(",") };
 }
-export function threeFactOf(key) {
-  const [a, b, c] = key.slice(1).split(",").map(Number);
-  return threeFact(a, b, c);
-}
+export const threeFact = (a, b, c) => sumFact([a, b, c]);
+export function threeFactOf(key) { return sumFact(key.slice(1).split(",").map(Number)); }
 // The two numbers that make the ten, and the one left over: { ten: [a, b], rest }.
 export function tenOf(f) {
   const n = [f.a, f.b, f.c];
@@ -36,4 +37,38 @@ export function threeFacts() {
   const seen = new Set();
   cache = all.filter((f) => !seen.has(f.key) && seen.add(f.key)).slice(0, 20);
   return cache;
+}
+
+/* ---------- up to four two-digit numbers (2nd grade, 2.NBT.B.7) ----------
+   Triceraplus's strand in the Crystal Mines: three two-digit numbers, then four, each sum under
+   100 (the Mines' within 100; the place-value strategy is the point, not big numbers). About half
+   have two numbers whose ones make a ten (23 + 17: find the ten), the rest add the tens, then the
+   ones. Every number has ones (no 30), so neither strategy adds a 0. A fixed sample, recorded. */
+export const SUM_LEVELS = [{ name: "Three two-digit numbers", n: 3 }, { name: "Four two-digit numbers", n: 4 }];
+// Two numbers whose ones make 10: [i, j], or null.
+export function tenPairOf(nums) {
+  for (let i = 0; i < nums.length; i++) for (let j = i + 1; j < nums.length; j++) if ((nums[i] % 10) + (nums[j] % 10) === 10) return [i, j];
+  return null;
+}
+let sumCache = null;
+export function sumFacts() {
+  if (sumCache) return sumCache;
+  let s = 7331;
+  const r = () => (s = (s * 1103515245 + 12345) % 2147483648) / 2147483648;
+  const out = [], seen = new Set();
+  for (const lv of SUM_LEVELS) {
+    let pair = 0, plain = 0;
+    for (let guard = 0; pair + plain < 12 && guard < 100000; guard++) {
+      const nums = Array.from({ length: lv.n }, () => 11 + Math.floor(r() * (lv.n === 3 ? 29 : 19)));
+      const sum = nums.reduce((t, n) => t + n, 0);
+      if (sum >= 100 || nums.some((n) => n % 10 === 0) || new Set(nums).size < nums.length) continue;
+      const has = !!tenPairOf(nums);
+      if (has ? pair >= 6 : plain >= 6) continue;
+      const f = sumFact(nums);
+      if (seen.has(f.key)) continue;
+      seen.add(f.key); has ? pair++ : plain++;
+      out.push(Object.assign(f, { set: lv.n }));
+    }
+  }
+  return (sumCache = out);
 }
