@@ -7,6 +7,7 @@
 //   Chompers eats the bigger number.
 // A balance fact: { op: "=", l: "3 + 4", r: "□ + 5", ans: 2, q: "3 + 4 = □ + 5", key }. The answer
 //   and the damage are the hidden number.
+import { isFracCompare, fracCompareFactOf } from "./third.js";
 
 const value = (side) => side.split(" + ").reduce((t, n) => t + Number(n), 0);
 
@@ -20,7 +21,9 @@ export function balanceFact(l, r) {
   return { op: "=", l, r, ans, q: l + " = " + r, key: "=" + l.replace(/ /g, "") + "," + r.replace(/ /g, "") };
 }
 // From a key: "○3+4,8" or "=3+4,□+5".
+// (Comparing fractions, "○3/8,5/8", is the Tower's: third.js.)
 export function balanceFactOf(key) {
+  if (isFracCompare(key)) return fracCompareFactOf(key);
   const [a, b] = key.slice(1).split(",").map((s) => s.split("+").join(" + "));
   return key[0] === "○" ? compareFact(a, b) : balanceFact(a, b);
 }

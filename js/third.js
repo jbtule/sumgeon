@@ -107,3 +107,40 @@ export function rectSvg(f, opt) {
   const vw = x0 + W + (per ? 26 : 8), vh = y0 + H + 24;
   return `<svg class="rectfig" viewBox="0 0 ${vw} ${vh}" width="${Math.round(vw * 1.2)}" height="${Math.round(vh * 1.2)}" role="img" aria-label="a rectangle ${f.w} by ${f.h}">${s}</svg>`;
 }
+
+/* ---------- comparing fractions (3.NF.A.3d; Missouri 3.NF.A.6) ----------
+   Two fractions with the same denominator (3/8 ○ 5/8: same size pieces, more pieces is more) or
+   the same numerator (2/3 ○ 2/6: same number of pieces, bigger pieces is more), answered on the
+   < = > keys as every comparison is: Chompers, visiting the Tables Tower, eats the bigger fraction
+   (and Halfling, who asks fractions, asks them too). A few are equal, equal fractions from the
+   level before (2/4 ○ 1/2), so = is sometimes the answer. Denominators 2, 3, 4, 6 and 8.
+   The fact: { op: "○", l: "3/8", r: "5/8", sym, ans, q: "3/8 □ 5/8", key: "○3/8,5/8", frac: "den",
+   "num" or "eq" }. A comparison hits for its bigger number; for fractions that's the bigger
+   fraction's numerator, its pieces (as the Tower's other fractions hit for a numerator). */
+export function fracCompareFact(l, r) {
+  const [ln, ld] = l.split("/").map(Number), [rn, rd] = r.split("/").map(Number), a = ln * rd, b = rn * ld;
+  const sym = a < b ? "<" : a > b ? ">" : "=";
+  return { op: "○", l, r, sym, ans: sym === "<" ? rn : sym === ">" ? ln : Math.max(ln, rn), q: l + " □ " + r, key: "○" + l + "," + r,
+    frac: ld === rd ? "den" : ln === rn ? "num" : "eq" };
+}
+export const isFracCompare = (key) => String(key)[0] === "○" && String(key).includes("/");
+export function fracCompareFactOf(key) {
+  const [l, r] = key.slice(1).split(",");
+  return fracCompareFact(l, r);
+}
+let fcCache = null;
+export function fracCompareFacts() {
+  if (fcCache) return fcCache;
+  const D = [2, 3, 4, 6, 8], den = [], num = [];
+  // Same denominator: two different numerators under it (1/4 ○ 3/4).
+  for (const d of D) for (let a = 1; a < d; a++) for (let b = a + 1; b < d; b++) den.push([a + "/" + d, b + "/" + d]);
+  // Same numerator: two different denominators, the numerator less than both (1/2 ○ 1/3, 2/3 ○ 2/6).
+  for (let n = 1; n <= 3; n++) for (const d of D) for (const e of D) if (d < e && n < d) num.push([n + "/" + d, n + "/" + e]);
+  // A fixed sample, either order (the bigger on the left or the right).
+  let s = 6203;
+  const r = () => (s = (s * 1103515245 + 12345) % 2147483648) / 2147483648;
+  const pick = (list, k, seed) => sample(list, k, seed).map(([x, y]) => (r() < 0.5 ? [x, y] : [y, x]));
+  // Equal: equal fractions from the level before, so = is the answer now and then.
+  const eq = [["2/4", "1/2"], ["1/3", "2/6"], ["3/4", "6/8"], ["4/6", "2/3"]];
+  return (fcCache = pick(den, 10, 8807).concat(pick(num, 10, 9901), eq).map(([x, y]) => fracCompareFact(x, y)));
+}

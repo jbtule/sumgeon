@@ -1,5 +1,5 @@
 import { coinsSvg, coinFact, findFact, coinOf, pileOf, COINS } from "./coins.js";
-import { unitName, fractionFact, roundFact, rectFact } from "./third.js";
+import { unitName, fractionFact, roundFact, rectFact, fracCompareFact } from "./third.js";
 import { hiddenFact } from "./missing.js";
 import { moreFact } from "./balance.js";
 import { threeFact, tenOf, tenPairOf, sumFact } from "./three.js";
@@ -588,6 +588,30 @@ function fractionHint(f, worked) {
     grownups: "Equal fractions with fraction bars: two bars the same length, cut into different pieces. 1/2 and 2/4 shade the same amount, so they're equal. A whole is all its pieces: 4/4 = 1." };
 }
 
+// Comparing fractions (3rd grade, 3.NF.A.3d): the two fractions as fraction bars of the same whole,
+// one over the other, each labeled and shaded, so they line up. Same denominator: same size
+// pieces, more pieces is more; same numerator: the same number of pieces, bigger pieces is more;
+// equal fractions: line them up. Before answering, no symbol and no ring; worked, the bigger bar
+// ringed in gold (both for =) and the comparison written under them.
+export const FRAC_RULE = { den: "Same size pieces: more pieces is more.", num: "Same number of pieces: bigger pieces is more.", eq: "Line up the bars. Which shades more?" };
+function fracCompareHint(f, worked) {
+  const X0 = 44, W = 200, rows = [[f.l, 4, C.a], [f.r, 38, C.b]];
+  let s = "";
+  rows.forEach(([t, y, color]) => {
+    const [n, d] = t.split("/").map(Number);
+    s += txt(X0 - 8, y + 19, t, 15, color, "end");
+    for (let i = 0; i < d; i++) s += `<rect x="${f1(X0 + i * W / d)}" y="${y}" width="${f1(W / d)}" height="26" fill="${i < n ? color : "none"}" stroke="${C.ink}" stroke-width="2"/>`;
+  });
+  if (worked) {
+    const big = f.sym === "=" ? [0, 1] : f.sym === ">" ? [0] : [1];
+    big.forEach((i) => { s += `<rect x="${X0 - 4}" y="${rows[i][1] - 4}" width="${W + 8}" height="34" rx="6" fill="none" stroke="${C.a}" stroke-width="3"/>`; });
+    s += compareLine(X0 + W / 2, 90, f);
+  }
+  const model = svg(250, worked ? 98 : 70, s, `fraction bars: ${f.l} and ${f.r}`);
+  return { model, say: `${FRAC_RULE[f.frac]} ${worked ? f.l + " " + f.sym + " " + f.r : f.l + " ? " + f.r}`,
+    grownups: "Comparing fractions: with the same bottom number the pieces are the same size, so more pieces is more (5/8 > 3/8). With the same top number there are as many pieces, so bigger pieces is more: halves are bigger than sixths, so 2/3 > 2/6. Fraction bars of the same whole show it; the open side of < or > faces the bigger one." };
+}
+
 // Rounding (3rd grade): where the number sits on a number line between two tens (or hundreds).
 function roundHint(f, worked) {
   const lo = Math.floor(f.n / f.to) * f.to, hi = lo + f.to, mid = lo + f.to / 2, x = (n) => 14 + (n - lo) / f.to * 232;
@@ -756,6 +780,7 @@ export function hintFor(f, worked) {
   if (f.op === "…" || f.op === "◐") return patternHintFor(f, worked);
   if (f.op === "¢") return coinHint(f, worked);
   if (f.op === "Σ") return f.nums && Math.max(...f.nums) >= 10 ? sumsHint(f, worked) : threeHint(f, worked);
+  if (f.op === "○" && f.frac) return fracCompareHint(f, worked);
   if (f.op === "○" && Math.max(Number(f.l), Number(f.r)) >= 100) return compare1000Hint(f, worked);
   if (f.op === "▦") return arrayHint(f, worked);
   if (f.op === "○" || f.op === "=") return balanceHint(f, worked);
@@ -997,6 +1022,8 @@ export const STRATEGIES = [
   { title: "Rows and columns of squares", grade: "2nd", f: shapeFactOf("◇squares:3,4") },
   { title: "Unit fractions", grade: "3rd", f: shapeFactOf("◇unit:circle4") },
   { title: "Equal fractions", grade: "3rd", f: fractionFact(1, 2, 4) },
+  { title: "Compare fractions: same size pieces", grade: "3rd", f: fracCompareFact("3/8", "5/8") },
+  { title: "Compare fractions: same number of pieces", grade: "3rd", f: fracCompareFact("2/3", "2/6") },
   { title: "Rounding", grade: "3rd", f: roundFact(47, 10) },
   { title: "Area", grade: "3rd", f: rectFact("a", 4, 3) },
   { title: "Perimeter", grade: "3rd", f: rectFact("p", 4, 3) }

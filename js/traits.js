@@ -27,7 +27,7 @@ export const TRAITS = {
   "Triceraplus": { icon: "🦕", name: "Three horns", text: "Add three: find a ten" },
   "Margot-Rythm": { icon: "🔁", name: "Carry the One", text: "Regroup: double hit" },
   "Squaresquatch": { icon: "🟩", name: "Arrays", text: "Add up the equal rows" },
-  "Halfling": { icon: "½", name: "Halves", text: "Fractions on a line, and equal ones" },
+  "Halfling": { icon: "½", name: "Halves", text: "Fractions on a line, equal, compared" },
   // Batch 1 of the strands (time and patterns): each asks only its own strand.
   "Tick-Tockus": { icon: "🕒", name: "Tick Tock", text: "Asks the time" },
   "Slimelipsis": { icon: "🫧", name: "What's Next", text: "Counts in patterns" },
@@ -62,8 +62,8 @@ export function asks(m) {
   if (k === "Pipsqueak") return isDice;
   if (k === "Doublet") return isDouble;
   if (k === "Triceraplus") return (op) => op === "Σ";
-  // Halfling: fractions, on the number line too.
-  if (k === "Halfling") return (op) => op === "/" || op === "↔";
+  // Halfling: fractions, on the number line too, and comparing them (the Tower's only comparisons).
+  if (k === "Halfling") return (op) => op === "/" || op === "↔" || op === "○";
   // Margot-Rythm (Carry the One, always stacked) asks only the Mines' sums and differences, not
   // its place value.
   if (k === "Margot-Rythm") return (op) => op === "+" || op === "-";

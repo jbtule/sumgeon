@@ -372,7 +372,8 @@ function probUI() {
   // Odd and even: the slimes holding their numbers, and "Even numbers = □" under them.
   else if (p.op === "◐") box.innerHTML = oddEvenSvg(p, { hint: G.hinted, perRow: p.nums.length <= 6 ? p.nums.length : 4 }) + `<span class="find">${p.ask === "even" ? "Even" : "Odd"} numbers = ${BLANK}</span>`;
   // A comparison: each side in its own box, so Chompers can eat the bigger one (chompAct).
-  else if (p.sym && p.op === "○") box.innerHTML = `${side("l", esc(p.l))} ${BLANK} ${side("r", esc(p.r))}`;
+  // Fractions (the Tower) stacked, as the Tower shows them: 3/8 ○ 5/8.
+  else if (p.sym && p.op === "○") box.innerHTML = `${side("l", p.frac ? stacked(esc(p.l)) : esc(p.l))} ${BLANK} ${side("r", p.frac ? stacked(esc(p.r)) : esc(p.r))}`;
   else if (p.blank || p.sym || p.op === "=") box.innerHTML = esc(p.q).replace("□", BLANK);
   // "7 or 4": which is more (K). The voice asks it; the answer box is the answer.
   else if (p.op === "more") box.innerHTML = `${side("l", p.x)} <small class="or">or</small> ${side("r", p.y)}`;
@@ -870,7 +871,7 @@ function openHint() {
   const inline = "⌚…◐✓✎↔#$".includes(G.cur.op) || (G.cur.op === "◇" && !G.cur.draw);
   if (inline) { probUI(); ansUI(); clockArt(h.layer); }
   // An equation in their words doesn't break across lines ("35 + 2 = ?").
-  box.innerHTML = (inline ? "" : `<div class="model">${h.model}</div>`) + `<p class="hsay">${esc(inline ? h.say.replace(/ ([=+−→]) /g, "\u00a0$1\u00a0") : h.say)}</p>`;
+  box.innerHTML = (inline ? "" : `<div class="model">${h.model}</div>`) + `<p class="hsay">${esc(inline ? h.say.replace(/ ([=+−→]) /g, "\u00a0$1\u00a0") : h.say.replace(/ \? (\S+)$/, "\u00a0?\u00a0$1"))}</p>`; // nor a comparison ("2/3 ? 2/6")
   box.classList.toggle("words", inline);
   box.hidden = false;
   $("hintBtn").hidden = true;
@@ -1206,7 +1207,7 @@ function nextLock(C) {
 // The lock's problem: "4 + 3 = ?", or with the glowing ? in place of the □ ("7 + ? = 10").
 function lockHTML(p) {
   const B = '<span class="blank" id="lockAns">?</span>';
-  let t = p.op === "more" ? `${p.x} <small class="or">or</small> ${p.y}` : p.op === "/" ? stacked(esc(p.q)) : esc(p.q);
+  let t = p.op === "more" ? `${p.x} <small class="or">or</small> ${p.y}` : p.op === "/" || p.frac ? stacked(esc(p.q)) : esc(p.q);
   if (t.includes("□")) t = t.replace("□", B);
   else t += (p.op === "more" ? "<br>" : " = ") + B;
   if (p.op === "≈") t += `<small class="to">nearest ${p.to}</small>`;

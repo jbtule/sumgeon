@@ -9,7 +9,7 @@ import { coinFacts, coinFactOf, COIN_LEVELS } from "./coins.js";
 import { twoDigitFacts, twoLevel } from "./twodigit.js";
 import { balanceFacts, balanceFactOf, inSet, moreFacts, moreFactOf, MORE_LEVELS, compare1000Facts } from "./balance.js";
 import { hiddenFactOf, kinderHidden, firstHidden } from "./missing.js";
-import { timesTens, fractionFacts, fractionFactOf, roundFacts, roundFactOf, rectFacts, rectFactOf } from "./third.js";
+import { timesTens, fractionFacts, fractionFactOf, roundFacts, roundFactOf, rectFacts, rectFactOf, fracCompareFacts } from "./third.js";
 import { threeFacts, threeFactOf, sumFacts, SUM_LEVELS } from "./three.js";
 import { arrayFacts, arrayFactOf, ARRAY_LEVELS } from "./arrays.js";
 import { clockFacts, clockFactOf, TIME_LEVELS } from "./clock.js";
@@ -92,7 +92,7 @@ export const BANDS = {
   // The Tables Tower: × and ÷ only, in the school's order, then the rest of 3rd grade.
   third: {
     label: "3rd grade", grade: 3, hearts: 5, fluentMs: 4000,
-    facts: () => facts().concat(timesTens(), fractionFacts(), roundFacts(), rectFacts(), lineFacts()),
+    facts: () => facts().concat(timesTens(), fractionFacts(), roundFacts(), rectFacts(), lineFacts(), fracCompareFacts()),
     levels: [
       { name: "× 0, 1, 2, 5 and 10", has: times([0, 1, 2, 5, 10]) },
       { name: "÷ 1, 2, 5 and 10", has: divide([1, 2, 5, 10]) },
@@ -106,6 +106,10 @@ export const BANDS = {
       // whole numbers as fractions.
       { name: "Fractions on a number line", has: onLine("where", "parts") },
       { name: "Equal fractions", has: any(is("/"), onLine("past1")) },
+      // Comparing fractions (3.NF.A.3d, a priority standard, so it's in the band and counts
+      // toward the 60%): Chompers visiting the Tower, and Halfling, on the < = > keys. The
+      // Tower's only comparisons.
+      { name: "Compare fractions", has: is("○") },
       { name: "Rounding", has: is("≈") },
       { name: "Area and perimeter", has: is("▭") },
       { name: "× and ÷ 11 and 12", has: big }

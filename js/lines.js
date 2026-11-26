@@ -10,7 +10,7 @@ import { missingOf, spokenMissing, canHide } from "./missing.js";
 import { coinFacts } from "./coins.js";
 import { twoDigitFacts, TWO_LEVELS } from "./twodigit.js";
 import { balanceFacts, moreFacts, moreFact, compare1000Facts } from "./balance.js";
-import { timesTens, fractionFacts, roundFacts, rectFacts } from "./third.js";
+import { timesTens, fractionFacts, roundFacts, rectFacts, fracCompareFacts } from "./third.js";
 import { threeFacts, sumFacts } from "./three.js";
 import { arrayFacts } from "./arrays.js";
 import { clockFacts, TIME_LEVELS } from "./clock.js";
@@ -259,7 +259,7 @@ export function changeLine(c) { return "Here's " + cents(c) + " back!"; }
 
 // [{ kind, text }], each once.
 // The groups the listen check (review/listen/) plays lines in.
-export var GROUPS = ["Phrases", "Monsters & heroes", "Add & subtract", "Times & divide", "Missing numbers", "Which is more", "Coins", "Two-digit", "Three-digit", "Balance Hall", "Compare to 1000", "Three numbers", "Up to four numbers", "Arrays", "Time", "Patterns", "True or false", "Place value", "Dollars", "Number line", "Shapes", "Fractions", "Rounding", "Area & perimeter", "Hero quips", "Team-ups", "Captain lines", "Boss forms", "Chests & items", "Money", "Shop", "Clothing"];
+export var GROUPS = ["Phrases", "Monsters & heroes", "Add & subtract", "Times & divide", "Missing numbers", "Which is more", "Coins", "Two-digit", "Three-digit", "Balance Hall", "Compare to 1000", "Three numbers", "Up to four numbers", "Arrays", "Time", "Patterns", "True or false", "Place value", "Dollars", "Number line", "Shapes", "Fractions", "Compare fractions", "Rounding", "Area & perimeter", "Hero quips", "Team-ups", "Captain lines", "Boss forms", "Chests & items", "Money", "Shop", "Clothing"];
 
 // [{ kind, text, group, sprite? }], each once.
 export function spokenLines() {
@@ -350,6 +350,9 @@ export function spokenLines() {
   // Comparing three-digit numbers (Chompers in the Mines): "Compare three hundred forty-five and
   // three hundred fifty-four.", and adding up to four two-digit numbers (Triceraplus there).
   compare1000Facts().forEach(function (f) { add("q", spokenProblem(f), "Compare to 1000"); add("q", spokenFact(f), "Compare to 1000"); });
+  // Comparing fractions (Chompers and Halfling in the Tower): "Compare three eighths and five
+  // eighths.", "three eighths is less than five eighths".
+  fracCompareFacts().forEach(function (f) { add("q", spokenProblem(f), "Compare fractions"); add("q", spokenFact(f), "Compare fractions"); });
   sumFacts().forEach(function (f) { add("q", spokenProblem(f), "Up to four numbers"); add("q", spokenFact(f), "Up to four numbers"); });
   // The Balance Hall: "Compare three plus four and eight.", "three plus four is less than eight".
   balanceFacts().forEach(function (f) { add("q", spokenProblem(f), "Balance Hall"); add("q", spokenFact(f), "Balance Hall"); });

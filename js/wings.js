@@ -24,6 +24,8 @@ const mon = (n) => MON.find((m) => m.n === n);
 // their pools; 2nd grade's equal shares are, so it has a depth-1 floor in the Mines, in
 // Margot-Rythm's place (her adding and subtracting within 1000 is the Mines' own band, which
 // Haberhasher and the boss ask too), and she visits from the pool.
+// Chompers visits the Tower's pool too, with no strand there: he asks the band's comparisons, which
+// in the Tower are comparing fractions (3/8 ○ 5/8), and eats the bigger fraction.
 export const WINGS = [
   { id: "cellar", name: "The Counting Cellar", band: "kinder", strands: { Trollar: "coinsK", Chompers: "more", Slimelipsis: "patK", "Polly-Gon": "shapesK" },
     pool: ["Plusquito", "Minustaur", "Pipsqueak", "Chompers", "Trollar", "Slimelipsis", "Polly-Gon"], floors: ["Plusquito", "Pipsqueak", "rescue", "Chompers", "Trollar"], boss: "Make-Ten Golem" },
@@ -32,7 +34,7 @@ export const WINGS = [
   { id: "mines", name: "The Crystal Mines", band: "second", after: "hall", strands: { Trollar: "coins", Squaresquatch: "arrays", Slimelipsis: "patM", "Tick-Tockus": "timeM", Chompers: "cmpM", Triceraplus: "sumsM", "Polly-Gon": "shapesM" },
     pool: ["Haberhasher", "Margot-Rythm", "Trollar", "Squaresquatch", "Slimelipsis", "Tick-Tockus", "Chompers", "Triceraplus", "Polly-Gon"], floors: ["Haberhasher", "Squaresquatch", "rescue", "Trollar", "Polly-Gon"], boss: "The Centipede" },
   { id: "tower", name: "The Tables Tower", band: "third", after: "mines", strands: { "Tick-Tockus": "timeT", "Margot-Rythm": "addT", "Polly-Gon": "shapesT" },
-    pool: ["Timesaur", "Divvy", "Starbot", "Halfling", "Tick-Tockus", "Margot-Rythm", "Polly-Gon"], floors: ["Timesaur", "Divvy", "rescue", "Tick-Tockus", "Halfling"], boss: "Sigma Rex" }
+    pool: ["Timesaur", "Divvy", "Starbot", "Halfling", "Tick-Tockus", "Margot-Rythm", "Polly-Gon", "Chompers"], floors: ["Timesaur", "Divvy", "rescue", "Tick-Tockus", "Halfling"], boss: "Sigma Rex" }
 ];
 // The band a monster asks in a Wing: its strand there, or the Wing's band.
 export const bandOf = (wing, m) => (wing.strands || {})[m.base || m.n] || wing.band;

@@ -32,7 +32,7 @@ assert.deepEqual(names("kinder"), ["Within 5, with zero", "Within 10", "Make 10 
 assert.deepEqual(names("first"), ["Within 20, not crossing 10", "Crossing 10", "Missing numbers and the equal sign", "Add and subtract tens"]);
 assert.deepEqual(names("second"), ["Add and subtract, no regrouping", "Add and subtract, regrouping", "Hundreds, tens and ones", "Tens in a number", "10 and 100 more or less",
   "Add within 1000", "Add within 1000, regrouping", "Subtract within 1000", "Subtract within 1000, regrouping"]);
-assert.deepEqual(names("third"), ["× 0, 1, 2, 5 and 10", "÷ 1, 2, 5 and 10", "× 3, 4 and 6", "÷ 3, 4 and 6", "× 7, 8 and 9", "÷ 7, 8 and 9", "× tens", "Fractions on a number line", "Equal fractions", "Rounding", "Area and perimeter", "× and ÷ 11 and 12"]);
+assert.deepEqual(names("third"), ["× 0, 1, 2, 5 and 10", "÷ 1, 2, 5 and 10", "× 3, 4 and 6", "÷ 3, 4 and 6", "× 7, 8 and 9", "÷ 7, 8 and 9", "× tens", "Fractions on a number line", "Equal fractions", "Compare fractions", "Rounding", "Area and perimeter", "× and ÷ 11 and 12"]);
 // K: + and − to 20, with zero, make 10 and number bonds as □ problems.
 assert.ok(pool("kinder").every((p) => (p.op === "+" || p.op === "-") && factOf(p.key).ans <= 20), "the Cellar is + and − to 20");
 assert.ok(at("kinder", 0).every((f) => Math.max(f.x, f.y, f.ans) <= 5), "within 5");
@@ -61,7 +61,9 @@ assert.deepEqual([0, 1, 2, 3, 4, 5, 6, 7, 8].map((L) => at("second", L).filter((
 assert.deepEqual([5, 6, 7, 8].map((L) => [...new Set(at("second", L).map((f) => f.op))].join()), ["+", "+", "-", "-"]);
 assert.ok([5, 6, 7, 8].every((L) => at("second", L).every((f) => Math.max(f.x, f.y) > 100 && f.ans < 1000)), "three-digit work within 1000");
 assert.ok(at("second", 2).every((f) => f.kind === "blocks" || f.kind === "expanded") && at("second", 3).every((f) => f.kind === "tens" || f.kind === "odd"));
-assert.ok(pool("third").every((p) => "×÷/≈▭↔".includes(p.op)), "the Tower is × and ÷, no + or −");
+assert.ok(pool("third").every((p) => "×÷/≈▭↔○".includes(p.op)), "the Tower is × and ÷, no + or −");
+// Its only comparisons are fractions (Chompers visiting, and Halfling).
+assert.ok(pool("third").filter((p) => p.op === "○").every((p) => p.key.includes("/")) && pool("third").filter((p) => p.op === "○").length === 24);
 // The number line (batch 2) before equal fractions, its 0 to 2 line with them.
 assert.ok(at("third", 7).every((f) => f.op === "↔" && f.wholes === 1) && at("third", 7).length === 23, "where's the dot, and equal parts");
 assert.ok(at("third", 8).some((f) => f.op === "/") && at("third", 8).filter((f) => f.op === "↔").length === 12 && at("third", 8).filter((f) => f.op === "↔").every((f) => f.wholes === 2), "past 1 with equal fractions");
