@@ -337,12 +337,16 @@ export function choose(bandKey, recs, opts) {
 // A fact for a spell (app.js): learned, with a one-digit answer, from the open levels and not
 // one of the last few; the monster's operation preferred. Null when there's none.
 export function spellKey(bandKey, recs, opts) {
-  const rnd = opts.rnd || Math.random, recent = opts.recent || [], L = openLevel(bandKey, recs);
-  let ok = notRecent(asked(bandKey, L, opts.asks).filter((f) => "+-×÷".includes(f.key[0]) && f.ans >= 0 && f.ans <= 9 && learned(recs[f.key])), recent);
+  // Spells are a treat, not practice: never one that's come up lately (the fight's recent
+  // problems, and opts.spells, the last few spells across runs). With nothing else left, no
+  // spell: a stratum with few one-digit answers (the Mines' 76 − 73) kept casting the same one.
+  const rnd = opts.rnd || Math.random, L = openLevel(bandKey, recs), skip = (opts.recent || []).concat(opts.spells || []);
+  let ok = asked(bandKey, L, opts.asks).filter((f) => "+-×÷".includes(f.key[0]) && f.ans >= 0 && f.ans <= 9 && learned(recs[f.key]) && !skip.includes(f.key));
   const varied = ok.filter((f) => !(opts.avoidAns || []).includes(f.op + " " + f.ans));
   if (varied.length) ok = varied;
+  // The monster's operation, when that still leaves a few to vary between.
   const mine = ok.filter((f) => f.op === opts.op);
-  if (mine.length) ok = mine;
+  if (mine.length >= 3) ok = mine;
   return ok.length ? ok[Math.floor(rnd() * ok.length)].key : null;
 }
 

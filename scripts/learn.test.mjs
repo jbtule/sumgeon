@@ -1,6 +1,6 @@
 // The learning engine: keys, records, levels opening, and how problems are chosen.
 import assert from "node:assert/strict";
-import { BANDS, pool, keyOf, factOf, record, openLevel, helpFor, choose, monsterHP, learned, mastered, RECENT, notRecent } from "../js/learn.js";
+import { BANDS, pool, keyOf, factOf, record, openLevel, helpFor, choose, monsterHP, learned, mastered, RECENT, notRecent, spellKey } from "../js/learn.js";
 import { MON } from "../js/monsters.js";
 import { facts, spokenProblem, spokenFact } from "../js/problems.js";
 import { spokenLines, askLine } from "../js/lines.js";
@@ -181,4 +181,14 @@ console.log(`✓ learn (K ${pool("kinder").length} facts, 1st ${pool("first").le
   const few = [{ key: "a" }, { key: "b" }, { key: "c" }, { key: "d" }];
   assert.deepEqual(notRecent(few, ["a", "b", "c", "d"]).map((f) => f.key), ["d"]);
   assert.deepEqual(notRecent(few.slice(0, 2), ["a", "b"]).map((f) => f.key), ["a", "b"]);
+}
+
+// Spells never repeat lately: not one of the fight's recent problems or the last spells, and with
+// nothing else left, no spell (the Mines' only learned one-digit answer was cast fight after fight).
+{
+  const one = pool("second").find((f) => f.op === "-" && f.ans >= 0 && f.ans <= 9);
+  const recs = { [one.key]: { b: 3, n: 1, c: 1, ms: 3000, t: 0 } };
+  assert.equal(spellKey("second", recs, { recent: [], op: "-" }), one.key);
+  assert.equal(spellKey("second", recs, { recent: [one.key], op: "-" }), null, "a recent problem isn't cast");
+  assert.equal(spellKey("second", recs, { recent: [], spells: [one.key], op: "-" }), null, "nor a recent spell");
 }

@@ -391,7 +391,9 @@ function newProblem() {
   // ?spells for every one): a fact already learned with a one-digit answer. It's picked before
   // probing, since a fluent player is probing nearly every problem and would never get one.
   const spellTurn = !due && !m.blank && canSpell() && (SPELLS_ALWAYS || Math.random() < SPELL_SHARE);
-  const spell = spellTurn ? spellKey(bk, recs, { recent: G.recent, avoidAns, op, asks: kinds }) : null;
+  const spell = spellTurn ? spellKey(bk, recs, { recent: G.recent, spells: G.spells, avoidAns, op, asks: kinds }) : null;
+  // The last few spells, across runs while the game is open, so the same one isn't cast fight after fight.
+  if (spell) G.spells = [spell].concat(G.spells || []).slice(0, SPELL_MEMORY);
   const probe = !due && !spell && f.on && f.cool <= 0 ? probeKey(bk, recs, null, G.recent, avoidAns, f.leap, kinds) : null;
   const key = spell || probe || choose(bk, recs, { now: Date.now(), recent: G.recent, retry: due ? due.key : null, op, asks: kinds, like: prefers(m), depth: G.depth, avoidAns,
     // The captain's digit: held back in the first fight, then about a third of problems lean to it
@@ -1520,6 +1522,8 @@ const firstFight = () => !Object.values(seen).some((s) => s.beaten > 0);
 // The lean toward the captain's digit lasts until that captain's first Hero Moment (moments.js
 // saves it in captains), at any depth; a new captain gets it again.
 const captainLean = () => hasCaptain() && !firstFight() && !(MS.captains || []).includes(team.captain);
+// SPELL_MEMORY: how many of the last spells (across runs) aren't cast again (spellKey in learn.js).
+const SPELL_MEMORY = 6;
 const SPELL_SHARE = 1 / 6, SPELLS_ALWAYS = new URLSearchParams(location.search).has("spells");
 const canSpell = () => SPELLS_ALWAYS || matchMedia("(any-pointer: coarse)").matches;
 const spellsOf = () => Object.assign({ templates: {}, reversed: {}, cast: 0 }, store.player(PID).get("spells", {}));
