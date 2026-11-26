@@ -27,7 +27,10 @@ export const TRAITS = {
   "Triceraplus": { icon: "🦕", name: "Three horns", text: "Add three: find a ten" },
   "Margot-Rythm": { icon: "🔁", name: "Carry the One", text: "Regroup: double hit" },
   "Squaresquatch": { icon: "🟩", name: "Arrays", text: "Add up the equal rows" },
-  "Halfling": { icon: "½", name: "Halves", text: "Equal fractions: 1/2 = □/4" }
+  "Halfling": { icon: "½", name: "Halves", text: "Equal fractions: 1/2 = □/4" },
+  // Batch 1 of the strands (time and patterns): each asks only its own strand.
+  "Tick-Tockus": { icon: "🕒", name: "Tick Tock", text: "Asks the time" },
+  "Slimelipsis": { icon: "🫧", name: "What's Next", text: "Counts in patterns" }
 };
 
 // A fact key's two numbers: "+3,8" and "□+7,7" (7 + □ = 14) give [3, 8] and [7, 7].
@@ -57,8 +60,11 @@ export function asks(m) {
   if (k === "Doublet") return isDouble;
   if (k === "Triceraplus") return (op) => op === "Σ";
   if (k === "Halfling") return (op) => op === "/";
-  if (k === "Quizard") return (op) => op !== "○" && op !== "Σ";
-  return (op) => op !== "○" && op !== "=" && op !== "Σ";
+  // Tick-Tockus tells time, Slimelipsis counts in patterns (and odd and even): their strands'.
+  if (k === "Tick-Tockus") return (op) => op === "⌚";
+  if (k === "Slimelipsis") return (op) => op === "…" || op === "◐";
+  if (k === "Quizard") return (op) => op !== "○" && op !== "Σ" && op !== "⌚" && op !== "…" && op !== "◐";
+  return (op) => op !== "○" && op !== "=" && op !== "Σ" && op !== "⌚" && op !== "…" && op !== "◐";
 }
 
 // A monster's trait, or null. Cursed digits have Lucky Number (DESIGN.md §6.6).

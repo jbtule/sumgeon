@@ -183,6 +183,43 @@ console.log(`✓ learn (K ${pool("kinder").length} facts, 1st ${pool("first").le
   assert.deepEqual(notRecent(few.slice(0, 2), ["a", "b"]).map((f) => f.key), ["a", "b"]);
 }
 
+// Batch 1: time (Tick-Tockus) and patterns (Slimelipsis) as strands, a fixed sample per level in
+// the school's order, every key its own fact and back.
+import { clockFacts, clockFactOf } from "../js/clock.js";
+import { patternFacts } from "../js/patterns.js";
+{
+  const levels = (b) => BANDS[b].levels.map((l) => l.name);
+  const sizes = (b) => BANDS[b].levels.map((_, i) => pool(b).filter((f) => f.level === i).length);
+  assert.deepEqual(levels("timeH"), ["Hours", "Half hours"]);
+  assert.deepEqual(levels("timeM"), ["5 minutes", "What time is it? (5 minutes)"]);
+  assert.deepEqual(levels("timeT"), ["To the minute", "How long? In the hour", "Minutes later, in the hour", "How long? Across the hour", "Minutes later, across the hour"]);
+  assert.deepEqual(levels("patK"), ["Count on by 1s", "Count by 10s", "Count back by 1s"]);
+  assert.deepEqual(levels("patH"), ["Count on to 120", "Count by 5s"]);
+  assert.deepEqual(levels("patM"), ["Count by 2s", "Count by 100s", "What's missing? By 2s, 5s, 10s, 100s", "Odd and even to 20", "Odd and even to 100"]);
+  assert.deepEqual([sizes("timeH"), sizes("timeM"), sizes("timeT")], [[12, 36], [33, 20], [20, 16, 16, 16, 16]]);
+  assert.deepEqual([sizes("patK"), sizes("patH"), sizes("patM")], [[17, 7, 17], [23, 16], [21, 7, 30, 16, 16]]);
+  for (const b of ["timeH", "timeM", "timeT", "patK", "patH", "patM"]) {
+    assert.ok(BANDS[b].strand && BANDS[b].unlock === 0.5, b);
+    for (const f of pool(b)) {
+      const g = factOf(f.key, () => 0.5);
+      assert.equal(g.key, f.key, `${b}: ${f.key} round-trips`);
+      assert.ok(Number.isInteger(g.ans) && g.ans >= 0, `${f.key}: a whole number to type`);
+      assert.ok(/^[⌚…◐]/.test(f.key), f.key);
+    }
+  }
+  // Keys: the hour, half past, the whole time (two slots), minutes past, how long, minutes later.
+  const t = (k) => factOf(k);
+  assert.deepEqual([t("⌚h3").ans, t("⌚h3:30").ans, t("⌚t3:30").slots, t("⌚m3:35").ans, t("⌚e3:10,3:45").ans, t("⌚a3:15,20").ans, t("⌚a3:50,25").slots],
+    [3, 3, [3, 30], 35, 35, 35, [4, 15]]);
+  assert.deepEqual([t("…2,4,6,□").ans, t("…2,□,6,8").ans, t("…10,9,8,□").ans, t("◐e3,8,11,14,6").ans, t("◐o3,8,11,14,6").ans], [8, 4, 7, 3, 2]);
+  assert.equal(new Set(clockFacts().map((f) => f.key)).size, clockFacts().length, "each time once");
+  assert.equal(new Set(patternFacts().map((f) => f.key)).size, patternFacts().length, "each row once");
+  // A whole time's damage is its minutes, or the hour on the hour.
+  assert.deepEqual([clockFactOf("⌚t4:25").ans, clockFactOf("⌚t4:00").ans], [25, 4]);
+  // Nothing a band already has: the strands' keys are their own.
+  for (const b of ["kinder", "first", "second", "third"]) assert.ok(!pool(b).some((f) => /^[⌚…◐]/.test(f.key)), b);
+}
+
 // Spells never repeat lately: not one of the fight's recent problems or the last spells, and with
 // nothing else left, no spell (the Mines' only learned one-digit answer was cast fight after fight).
 {

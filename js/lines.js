@@ -13,6 +13,8 @@ import { balanceFacts, moreFacts, moreFact } from "./balance.js";
 import { timesTens, fractionFacts, roundFacts, rectFacts } from "./third.js";
 import { threeFacts } from "./three.js";
 import { arrayFacts } from "./arrays.js";
+import { clockFacts, TIME_LEVELS } from "./clock.js";
+import { patternFacts, PATTERN_GAME_LEVELS } from "./patterns.js";
 import { traitOf } from "./traits.js";
 import { QUIPS, FINALS, CRIT, TEAM_LINES, TEAM_NUMBERS, CAPTAIN_LINES, captainNames } from "./moments.js";
 import { fewest, ITEMS } from "./loot.js";
@@ -31,6 +33,8 @@ export var PHRASE = {
   spellHow: "Draw your answer with your finger, then tap Cast!",
   spellAgain: "Try again!",
   spellPad: "Use the numbers this time.",
+  // A whole time is typed in two slots (Tick-Tockus): the hour, then the minutes.
+  nowMinutes: "Now the minutes!",
   deeper: "Go deeper for tougher monsters, or play again!",
   paused: "Paused. Tap the big button to keep fighting.",
   exitSure: "Tap again to leave the dungeon.",
@@ -110,7 +114,9 @@ export var TRAIT_LINE = {
   "Three horns": "Three numbers! Find two that make ten.",
   "Carry the One": "If you have to regroup, you hit double!",
   "Arrays": "Count the rows! Every row is the same.",
-  "Halves": "Fractions! Find the one that's the same size."
+  "Halves": "Fractions! Find the one that's the same size.",
+  "Tick Tock": "What time is it? Read the clock!",
+  "What's Next": "What comes next? Count the pattern!"
 };
 export function luckyLine(d) { return "Answers with " + aDigit(d) + " hit double!"; }
 // The line for monster m's trait, or null (Plusquito has none).
@@ -197,7 +203,7 @@ export function purseLine(c) {
 
 // [{ kind, text }], each once.
 // The groups the listen check (review/listen/) plays lines in.
-export var GROUPS = ["Phrases", "Monsters & heroes", "Add & subtract", "Times & divide", "Missing numbers", "Which is more", "Coins", "Two-digit", "Balance Hall", "Three numbers", "Arrays", "Fractions", "Rounding", "Area & perimeter", "Hero quips", "Team-ups", "Captain lines", "Boss forms", "Chests & items", "Money"];
+export var GROUPS = ["Phrases", "Monsters & heroes", "Add & subtract", "Times & divide", "Missing numbers", "Which is more", "Coins", "Two-digit", "Balance Hall", "Three numbers", "Arrays", "Time", "Patterns", "Fractions", "Rounding", "Area & perimeter", "Hero quips", "Team-ups", "Captain lines", "Boss forms", "Chests & items", "Money"];
 
 // [{ kind, text, group, sprite? }], each once.
 export function spokenLines() {
@@ -260,6 +266,13 @@ export function spokenLines() {
   [[threeFacts, "Three numbers"], [arrayFacts, "Arrays"], [fractionFacts, "Fractions"], [roundFacts, "Rounding"], [rectFacts, "Area & perimeter"]].forEach(function (set) {
     set[0]().forEach(function (f) { add("q", spokenProblem(f), set[1]); add("q", spokenFact(f), set[1]); });
   });
+  // Time (Tick-Tockus) and patterns (Slimelipsis), asked and answered, each in a small audio
+  // sprite for its strand ("time-h", "time-m", "time-t"; "pat-k", "pat-h", "pat-m"), since a
+  // fight asks them one after another. A line two strands share is in the first one's.
+  var SPRITE_AT = { cellar: "k", hall: "h", mines: "m", tower: "t" };
+  var stratumOf = function (list, set) { return list.find(function (l) { return l.id === set; }).stratum; };
+  clockFacts().forEach(function (f) { var sp = "time-" + SPRITE_AT[stratumOf(TIME_LEVELS, f.set)]; add("q", spokenProblem(f), "Time", sp); add("q", spokenFact(f), "Time", sp); });
+  patternFacts().forEach(function (f) { var sp = "pat-" + SPRITE_AT[stratumOf(PATTERN_GAME_LEVELS, f.set)]; add("q", spokenProblem(f), "Patterns", sp); add("q", spokenFact(f), "Patterns", sp); });
   // Coins (Trollar): "two dimes and three pennies. How many cents?", and the answer.
   coinFacts().forEach(function (f) { add("q", spokenProblem(f), "Coins"); add("q", spokenFact(f), "Coins"); });
   // The two-digit problems (Haberhasher): "thirty-eight plus twenty-five", and "… is sixty-three".

@@ -8,7 +8,7 @@ import { spokenLines, monsterName, monsterCleared, monsterWon } from "../js/line
 assert.equal(new Set(MON.map((m) => m.n)).size, MON.length, "every monster has its own name");
 assert.deepEqual(MON.filter((m) => m.boss).map((m) => m.n).sort(), ["Judo Judy", "Make-Ten Golem", "Sigma Rex", "The Centipede"], "one boss per Wing");
 for (const m of MON) {
-  assert.ok(["+", "-", "×", "÷", "¢", "○", "=", "Σ", "▦", "/", "mix"].includes(m.op), m.n);
+  assert.ok(["+", "-", "×", "÷", "¢", "○", "=", "Σ", "▦", "/", "⌚", "…", "mix"].includes(m.op), m.n);
   assert.ok(m.hits >= 3 && m.quip && m.c, m.n);
   const s = svg(m);
   assert.ok(s.startsWith("<svg") && s.endsWith("</svg>"), m.n);
@@ -40,9 +40,9 @@ assert.ok(ja && ja.eyes.length === 2 && ja.mouth && ja.top && ja.neck && ja.grou
 assert.ok(!LOOKS["Judo Judy"], "bosses have no looks");
 assert.ok(!/\b(she|her|hers|he|him|his)\b/i.test(judy.quip), "Judo Judy's lines use the name, never a pronoun");
 // The six new monsters in the game (M5 step 3): in MON with a symbol, a stratum for the gallery,
-// anchors and four looks each; Tick-Tockus and Slimelipsis wait in NEW_MON for their problems.
-const SIX = ["Pipsqueak", "Doublet", "Triceraplus", "Margot-Rythm", "Squaresquatch", "Halfling"];
-assert.deepEqual(NEW_MON.map((m) => m.n), ["Tick-Tockus", "Slimelipsis", "Polly-Gon"]);
+// anchors and four looks each; and batch 1's two (time and patterns). NEW_MON holds only Polly-Gon.
+const SIX = ["Pipsqueak", "Doublet", "Triceraplus", "Margot-Rythm", "Squaresquatch", "Halfling", "Tick-Tockus", "Slimelipsis"];
+assert.deepEqual(NEW_MON.map((m) => m.n), ["Polly-Gon"]);
 // Polly-Gon (shapes, K–2), drawn but not in play: its beaten line names it, no pronoun.
 assert.ok(!/\b(she|her|hers|he|him|his|its|they|their)\b/i.test(NEW_MON.find((m) => m.n === "Polly-Gon").quip), "Polly-Gon's beaten line uses no pronoun");
 for (const n of SIX) {
@@ -57,6 +57,15 @@ for (const n of SIX) {
   assert.ok(!/\b(she|her|hers|he|him|his|its|they|their)\b/i.test(m.quip), `${n}'s beaten line uses no pronoun`);
 }
 assert.equal(new Set(Object.values(LOOKS).flat().map((l) => l[0])).size, Object.values(LOOKS).flat().length, "every look has its own name");
+// Tick-Tockus is the clock: it shows the time it's given (m.at), its hands where they belong,
+// and its looks keep the face clear: only things on the case (the top, the bottom, all round).
+{
+  const tt = MON.find((m) => m.n === "Tick-Tockus");
+  assert.ok(svg(tt).includes('class="clock"') === false && svg(tt).includes("rotate("), "the clock's hands are drawn");
+  assert.notEqual(svg({ ...tt, at: { h: 3, m: 0 } }), svg({ ...tt, at: { h: 9, m: 45 } }), "it shows the time asked");
+  const FACE = ["lashes", "blush", "mustache", "glasses", "monocle", "sunglasses", "eyepatch", "lids", "spiral", "headband"];
+  for (const [name, kit] of LOOKS["Tick-Tockus"]) assert.ok(!kit.some((k) => FACE.includes(k)), `${name} keeps the clock's face clear`);
+}
 // Retired monsters: out of every Wing, still drawable for the gallery.
 assert.deepEqual(RETIRED.map((m) => m.n), ["The Unknown"]);
 for (const m of RETIRED) {

@@ -274,6 +274,9 @@ export function clockSvg(h, m, opt = {}) {
   s += `<circle cx="${c}" cy="${c}" r="8" fill="${GOLD}" stroke="${DK}" stroke-width="3.5"/>`;
   // The hint's count by 5s, on the rim.
   if (hint.fives != null) for (let k = 5; k <= hint.fives; k += 5) s += pill(k, k, false);
+  // Before answering, the 5s still to count show "?" all the way to the long hand (hint.rest:
+  // the last 5 to mark), so the child keeps counting where the labels stop.
+  if (hint.rest) for (let k = (hint.fives || 0) + 5; k <= hint.rest; k += 5) s += pill(k, "?", false);
   // The label at the minute hand moves out past the rim when it would sit on a 5s label (37 by
   // 35); the page lets the drawing spill out of its box.
   if (hint.ask) s += pill(m, hint.ask, true, m % 5 !== 0 && hint.fives >= 5);
@@ -305,13 +308,16 @@ export function clockHint(p, worked) {
   }
   const five = m - m % 5, ones = m % 5;
   const tick = Array.from({ length: ones }, (_, i) => five + i + 1);
+  // Before answering, only the first half of the 5s are labeled (35: "5, 10, 15, …"), so the
+  // count is started but never finished: the rest of the sweep shows the way to the long hand.
+  const half = 5 * Math.floor(five / 10), started = half ? `${fivesList(half)}, … ` : "";
   if (!ones) {
     return worked
       ? { layer: { glow: "minute", fives: m }, say: `Count by 5s from the 12: ${fivesList(m)}. ${m} minutes past ${h}.` }
-      : { layer: { glow: "minute", fives: m - 5, ask: "?" }, say: `Count by 5s from the 12 to the long hand: ${fivesList(m - 5)}${m > 5 ? ", " : ""}?` };
+      : { layer: { glow: "minute", fives: half, rest: m - 5, ask: "?" }, say: `Count by 5s from the 12 to the long hand: ${started}?` };
   }
-  if (worked) return { layer: { glow: "minute", fives: five, ones: tick, ask: m }, say: `By 5s to ${five || "the 12"}, then ${ones} more: ${five} + ${ones} = ${m}.` };
-  return { layer: { glow: "minute", fives: five, ones: tick, ask: "?" }, say: five ? `Count by 5s to ${five}, then the little ticks by 1s: ${five} + ${ones} = ?` : "Count the little ticks from the 12 by 1s." };
+  if (worked) return { layer: { glow: "minute", fives: five, ones: tick, ask: m }, say: five ? `By 5s to ${five}, then ${ones} more: ${five} + ${ones} = ${m}.` : `Count the little ticks from the 12 by 1s: ${tick.join(", ")}. ${m} minute${m === 1 ? "" : "s"} past ${p.h}.` };
+  return { layer: { glow: "minute", fives: half, rest: five, ask: "?" }, say: five ? `Count by 5s from the top: ${started}then the little ticks by 1s to the long hand.` : "Count the little ticks from the top by 1s." };
 }
 const fivesList = (to) => { const out = []; for (let k = 5; k <= to; k += 5) out.push(k); return out.join(", "); };
 
@@ -454,3 +460,146 @@ export function elapsedLine(p) {
 // A whole time is typed in two slots, "□:□□": the hour, then (Hit!, "Minutes ›") the minutes.
 // readTime reads them as the page checks them: "7" and "05" (or "5") are 7:05.
 export const readTime = (hour, minutes) => ({ h: Number(hour), m: Number(minutes) });
+
+/* ---------- the game's facts (Tick-Tockus's strands, learn.js timeH, timeM, timeT) ----------
+   Fixed samples, so 70% of a level can be learned and every problem is recorded. Keys:
+   - "⌚h3": what hour is it? (3 o'clock, the hour typed); "⌚h3:30": half past what? (the hour).
+   - "⌚t3:30": the whole time, typed in two slots, "□:□□": the hour, then the minutes.
+   - "⌚m3:35": how many minutes past 3? ("3:□").
+   - "⌚e3:10,3:45": how long, from 3:10 to 3:45? (the minutes).
+   - "⌚a3:15,20": what time is it 20 minutes later? In the hour, the minutes ("3:□"); across
+     it, the whole time in two slots.
+   A fact: { op: "⌚", set (its level), kind, h, m, ask, ans, slots?, key, q }, and for elapsed
+   time h2, m2, d (and cross when it crosses the hour). ans is a whole number, the damage: the
+   hour or the minutes asked; with two slots (slots: [hour, minutes]), the minutes, or the hour
+   on the hour. q is the problem in text (for the tests and grown-ups). */
+const pad2 = (m) => String(m).padStart(2, "0");
+export function clockFact(set, kind, h, m, extra = {}) {
+  const base = { op: "⌚", set, kind, h, m };
+  if (kind === "hour") return Object.assign(base, { ask: "hour", ans: h, key: "⌚h" + h + (m ? ":" + pad2(m) : ""), q: m ? "half past □" : "□ o'clock" });
+  if (kind === "time") return Object.assign(base, { ask: "time", ans: m || h, slots: [h, m], key: "⌚t" + digital(h, m), q: "□:□□" });
+  if (kind === "minutes") return Object.assign(base, { ask: "minutes", ans: m, key: "⌚m" + digital(h, m), q: `${h}:□` });
+  const d = extra.d, end = fromMin(toMin(h, m) + d), cross = end.h !== h;
+  const f = Object.assign(base, { h2: end.h, m2: end.m, d });
+  if (kind === "long") return Object.assign(f, { ans: d, key: "⌚e" + digital(h, m) + "," + digital(end.h, end.m), q: `${digital(h, m)} → ${digital(end.h, end.m)}` });
+  return Object.assign(f, cross ? { cross: true, ans: end.m || end.h, slots: [end.h, end.m] } : { ans: end.m },
+    { key: "⌚a" + digital(h, m) + "," + d, q: `${digital(h, m)} + ${d} min` });
+}
+export function clockFactOf(key) {
+  const t = key[1], rest = key.slice(2);
+  const hm = (s) => { const [h, m] = s.split(":").map(Number); return [h, m || 0]; };
+  if (t === "h") { const [h, m] = hm(rest); return clockFact(m ? "half" : "hours", "hour", h, m); }
+  if (t === "t") { const [h, m] = hm(rest); return clockFact(m % 30 ? "fivetime" : "half", "time", h, m); }
+  if (t === "m") { const [h, m] = hm(rest); return clockFact(m % 5 ? "minute" : "five", "minutes", h, m); }
+  const [a, b] = rest.split(","), [h, m] = hm(a);
+  if (t === "e") { const [h2, m2] = hm(b), d = ((toMin(h2, m2) - toMin(h, m)) % 720 + 720) % 720; return clockFact(m + d > 60 ? "longB" : "longA", "long", h, m, { d }); }
+  const d = Number(b);
+  return clockFact(m + d > 60 ? "addB" : "addA", "add", h, m, { d });
+}
+// A fixed shuffle (a small LCG, as three.js), so a sample never changes between builds.
+function shuffled(list, seed) {
+  let s = seed;
+  const r = () => (s = (s * 1103515245 + 12345) % 2147483648) / 2147483648;
+  const out = list.slice();
+  for (let i = out.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [out[i], out[j]] = [out[j], out[i]]; }
+  return out;
+}
+// The levels, in teaching order, with the stratum each belongs to (learn.js makes one strand
+// per stratum from them).
+export const TIME_LEVELS = [
+  { id: "hours", name: "Hours", stratum: "hall" },
+  { id: "half", name: "Half hours", stratum: "hall" },
+  { id: "five", name: "5 minutes", stratum: "mines" },
+  { id: "fivetime", name: "What time is it? (5 minutes)", stratum: "mines" },
+  { id: "minute", name: "To the minute", stratum: "tower" },
+  { id: "longA", name: "How long? In the hour", stratum: "tower" },
+  { id: "addA", name: "Minutes later, in the hour", stratum: "tower" },
+  { id: "longB", name: "How long? Across the hour", stratum: "tower" },
+  { id: "addB", name: "Minutes later, across the hour", stratum: "tower" }
+];
+let factCache = null;
+export function clockFacts() {
+  if (factCache) return factCache;
+  const H = hours(), out = [];
+  // 1st grade: every hour (12); half past, asking the hour (12), and the whole time, half past
+  // and on the hour (24).
+  for (const h of H) out.push(clockFact("hours", "hour", h, 0));
+  for (const h of H) out.push(clockFact("half", "hour", h, 30), clockFact("half", "time", h, 30), clockFact("half", "time", h, 0));
+  // 2nd grade: each 5 minutes from :05 to :55 at three hours (33), and the whole time at two
+  // (20; half past is 1st grade's).
+  const fives = Array.from({ length: 11 }, (_, i) => 5 * (i + 1));
+  fives.forEach((m, i) => shuffled(H, 31 + i).slice(0, 3).forEach((h) => out.push(clockFact("five", "minutes", h, m))));
+  fives.filter((m) => m !== 30).forEach((m, i) => shuffled(H, 71 + i).slice(0, 2).forEach((h) => out.push(clockFact("fivetime", "time", h, m))));
+  // 3rd grade: 20 times to the minute (never a five), then 16 of each kind of elapsed time.
+  const odd = [];
+  for (const h of H) for (let m = 1; m < 60; m++) if (m % 5) odd.push([h, m]);
+  shuffled(odd, 4241).slice(0, 20).forEach(([h, m]) => out.push(clockFact("minute", "minutes", h, m)));
+  const sample = (set, kind, ok, seed) => {
+    const all = [];
+    for (const h of H) for (let m = 0; m < 60; m += 5) for (let d = 5; d < 60; d += 5) if (ok(m, d)) all.push([h, m, d]);
+    shuffled(all, seed).slice(0, 16).forEach(([h, m, d]) => out.push(clockFact(set, kind, h, m, { d })));
+  };
+  // In the hour: 10 to 55 minutes, ending by :55. Across it: from :30 on, ending past the hour.
+  const inside = (m, d) => d >= 10 && m + d <= 55, across = (m, d) => m >= 30 && m + d > 60;
+  sample("longA", "long", inside, 101); sample("addA", "add", inside, 202);
+  sample("longB", "long", across, 303); sample("addB", "add", across, 404);
+  return (factCache = out);
+}
+// The problem line in parts (text, with null for each slot): "□ o'clock", "half past □",
+// "□:□□", "3:□", "Minutes: □".
+export function clockFactLine(f) {
+  if (f.kind === "time") return [null, ":", null];
+  if (f.kind === "long" || f.kind === "add") return elapsedLine(f);
+  return clockLine(f);
+}
+// What the voice says: "What hour is it?", "What time is it? Half past what?", "What time is
+// it?", "What time is it? How many minutes past three?", and elapsed time's.
+export function spokenClockFact(f) {
+  if (f.kind === "time") return "What time is it?";
+  if (f.kind === "long" || f.kind === "add") return spokenElapsed(f);
+  return spokenClock(f);
+}
+// Said after a miss: "It's three o'clock.", "It's half past three." (asked "half past what?"),
+// "It's three thirty." (the whole time), "It's three thirty-seven.", "Thirty-five minutes."
+export function spokenClockAnswer(f) {
+  if (f.kind === "long" || f.kind === "add") return spokenElapsedAnswer(f);
+  if (f.kind === "time") return `It's ${timeWords(f.h, f.m)}.`;
+  return spokenTime(f.h, f.m);
+}
+// The answer as shown: "3 o'clock", "half past 3", "3:30", "35 minutes".
+export function clockAnswer(f) {
+  if (f.kind === "hour") return f.m ? `half past ${f.h}` : `${f.h} o'clock`;
+  if (f.kind === "long") return `${f.d} minutes`;
+  if (f.kind === "add") return digital(f.h2, f.m2);
+  return digital(f.h, f.m);
+}
+// The whole time's hint (two slots): the short hand for the hour, then the long hand counted by
+// 5s from the 12, stopping short before answering.
+export function timeHint(f, worked) {
+  const { h, m } = f;
+  if (!m) {
+    return worked
+      ? { layer: { glow: "hour", ring: [h] }, say: `The short hand points to the ${h}. The long hand is on the 12. It's ${digital(h, m)}.` }
+      : { layer: { glow: "hour" }, say: "The short hand shows the hour. The long hand is on the 12: o'clock!" };
+  }
+  if (worked) return { layer: { glow: "minute", ring: [h], fives: m }, say: `The short hand just passed the ${h}. Count by 5s: ${fivesList(m)}. It's ${digital(h, m)}.` };
+  return { layer: { glow: "minute", fives: m - 5, ask: "?" }, say: `The short hand shows the hour. Count by 5s from the 12 to the long hand: ${fivesList(m - 5)}${m > 5 ? ", " : ""}?` };
+}
+// The hint for any clock fact: { layer (for the clock, when it's drawn on one), say }.
+export function clockFactHint(f, worked) {
+  if (f.kind === "long" || f.kind === "add") return elapsedHint(f, worked);
+  if (f.kind === "time") return timeHint(f, worked);
+  return clockHint(f, worked);
+}
+
+/* ---------- Tick-Tockus as a monster ----------
+   The fight's drawing (monsters.js): the clock with its tentacles, fitted into the monsters'
+   200 × 200 frame, showing the time asked (at: { h, m, layer }; 10:10 when there's none, as
+   clocks in shop windows do). The face stays clear: a look's extras go on the case. */
+export const MON_CLOCK = { s: 0.6, cx: 100, cy: 94 };
+export function clockMonster(c, at) {
+  const t = at || { h: 10, m: 10 }, { s, cx, cy } = MON_CLOCK;
+  const inner = clockSvg(t.h, t.m, { hint: t.layer, reach: { side: 50, below: 40 }, label: "Tick-Tockus" })
+    .replace(/^<svg[^>]*>/, "").replace(/<\/svg>$/, "").split(TENTACLE).join(c);
+  return `<g transform="translate(${cx} ${cy}) scale(${s}) translate(${-CLOCK.c} ${-CLOCK.c})">${inner}</g>`;
+}

@@ -100,9 +100,14 @@ assert.equal(spokenTime(11, 5), "It's eleven oh five.");
 assert.equal(digital(3, 5), "3:05");
 // The hints' words.
 assert.equal(clockHint({ h: 3, m: 0, ask: "hour" }, true).say, "The short hand points to the 3. It's 3 o'clock.");
-assert.equal(clockHint({ h: 2, m: 25, ask: "minutes" }, false).say, "Count by 5s from the 12 to the long hand: 5, 10, 15, 20, ?");
+assert.equal(clockHint({ h: 2, m: 25, ask: "minutes" }, false).say, "Count by 5s from the 12 to the long hand: 5, 10, … ?");
+// Before answering, at most half the 5s are labeled, so the count is started, never finished.
+for (let m = 5; m < 60; m++) {
+  const f = clockHint({ h: 4, m, ask: "minutes" }, false).layer.fives || 0;
+  assert.ok(f <= (m - m % 5) / 2, `4:${m}: labels 5s only to halfway (${f})`);
+}
 assert.equal(clockHint({ h: 10, m: 37, ask: "minutes" }, true).say, "By 5s to 35, then 2 more: 35 + 2 = 37.");
-assert.deepEqual(clockHint({ h: 10, m: 37, ask: "minutes" }, false).layer.ones, [36, 37], "the extra minutes' ticks light up");
+assert.deepEqual(clockHint({ h: 10, m: 37, ask: "minutes" }, true).layer.ones, [36, 37], "worked, the extra minutes' ticks light up");
 
 // Elapsed time: the answers, the hands on both clocks, and hints that never give the answer
 // before answering.
