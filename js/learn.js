@@ -248,9 +248,9 @@ export function mastered(rec, fluentMs) { return !!rec && rec.b >= BOX_MAX && re
    bands or strands ({ parts: [[band, level]] }), so fact keys and records never change, with flags:
    priority (opens the next stratum), ongoing (open from the start and kept open: counting,
    comparing), review (an earlier grade's facts, mixed in as reviews, never new), and the chapter
-   it's in. About WINDOW new steps are open at once; the next one joins when the oldest new one is
-   JOIN_AT learned. A step past the player's chapter never opens: chapters open by beating the mega
-   bosses (wings.js). */
+   it's in. About WINDOW new steps are open at once; the next one joins when one of them (usually
+   the oldest) is JOIN_AT learned. A step past the player's chapter never opens: chapters open by
+   beating the mega bosses (wings.js). */
 export const WINDOW = 3, JOIN_AT = 0.4;
 // A step's facts, each key once: [{ key, op, ans, level, band }].
 const stepCache = new WeakMap();
@@ -268,22 +268,18 @@ export function stepShare(step, recs) {
 }
 // The steps open to a player: { open: [step indexes], window: [the new steps, oldest first],
 // joined: how many of the path's new steps have joined so far }.
-// Ongoing and review steps are open from the start. The rest join in order, WINDOW at first; then
-// each time the oldest new one is JOIN_AT learned it stops being new and the next joins. None
-// past `chapter`. `had` (saved): the most that ever joined, so a step stays open after a miss
-// takes a fact back out of learned.
+// Ongoing and review steps are open from the start. The rest join in order, WINDOW at first; a
+// step stops being new once it's JOIN_AT learned, and then the next one joins, so there are never
+// more than WINDOW new ones (a step already learned, skipped ahead or placed, joins and is done at
+// once). None past `chapter`. `had` (saved): the most that ever joined, so a step stays open after
+// a miss takes a fact back out of learned.
 export function openSteps(path, recs, chapter = 1, had = 0) {
-  const open = [], win = [];
+  const open = [], joined = [], fresh = (i) => stepShare(path[i], recs) < JOIN_AT;
   path.forEach((s, i) => { if ((s.ongoing || s.review) && s.chapter <= chapter) open.push(i); });
   const main = path.map((_, i) => i).filter((i) => !path[i].ongoing && !path[i].review);
   let k = 0;
-  while (k < main.length && path[main[k]].chapter <= chapter) {
-    if (win.length < WINDOW || k < had) { win.push(main[k]); open.push(main[k]); k++; }
-    else if (stepShare(path[win[0]], recs) >= JOIN_AT) win.shift();
-    else break;
-  }
-  while (win.length && stepShare(path[win[0]], recs) >= JOIN_AT) win.shift();
-  return { open: open.sort((a, b) => a - b), window: win, joined: k };
+  while (k < main.length && path[main[k]].chapter <= chapter && (k < had || joined.filter(fresh).length < WINDOW)) { joined.push(main[k]); open.push(main[k]); k++; }
+  return { open: open.sort((a, b) => a - b), window: joined.filter(fresh), joined: k };
 }
 // How many chapters a path has.
 export const chaptersOf = (path) => Math.max(...path.map((s) => s.chapter));

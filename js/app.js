@@ -8,7 +8,7 @@ import { countSvg, readShape, judgeShape, cleanFor, squawkBody, isDrawKey, SHAPE
 import { hintFor, STRATEGIES } from "./hints.js";
 import { openStore, displayName } from "./store.js";
 import { PHRASE, monsterName, monsterCleared, monsterWon, heroJoins, heroCursed, heroRescue, heroAlmost, heroHelps, traitLine, BARK, wingCleared, wingOpened, depthLine, DEPTH_MAX_SPOKEN, reversedLine, howToWriteLine, quipLine, squawk, trait2Line, newMonsterLine } from "./lines.js";
-import { WINGS, wingOf, runFloors, openWings, toOpen, floorStars, wingStars, depthScale, depthHP, deepest, MAP_DEPTHS, GRADES, gradeLabel, gradeName, withGrade, bandOf, gradeBand, OLD_BANDS, PATHS, chapterOf, stepsOpen, bossStage, isMega, BOSS_HP, MEGA_EVERY, megasOf, stepMonsters } from "./wings.js";
+import { WINGS, wingOf, runFloors, openWings, toOpen, floorStars, wingStars, depthScale, depthHP, deepest, MAP_DEPTHS, GRADES, gradeLabel, gradeName, withGrade, bandOf, gradeBand, OLD_BANDS, PATHS, chapterOf, stepsOpen, bossStage, isMega, BOSS_HP, MEGA_EVERY, megasOf, stepMonsters, upgradeProgress } from "./wings.js";
 import { missingOf, pickBlank, filled, spokenMissing, MISSING_SHARE, canHide } from "./missing.js";
 import { rectSvg } from "./third.js";
 import { arraySvg } from "./arrays.js";
@@ -179,6 +179,9 @@ function loadPlayer() {
   }
   // The band a player started in opens its Wing from the start (DESIGN.md §4).
   if (!st.start) { st.start = st.band; saveSettings(); }
+  // Progress saved before the paths (DESIGN.md §4.3): strata that were open stay open, and the
+  // depths reached count as chapters (wings.js upgradeProgress). Nothing is lost.
+  if (upgradeProgress(progress, recs)) store.player(PID).set("wings", progress);
   if (!openWings(progress, recs, st.start).includes(wingFor(st.band).id)) { st.band = WINGS[0].band; saveSettings(); }
   sfx.setSfx(st.sfx);
   setVoice(st.voice);
@@ -1219,6 +1222,8 @@ function end(win) {
   const f = record(), acc = G.tries ? Math.round(G.solved / G.tries * 100) : 0, m = G.floors[G.floor];
   // Strata this run opened (the Cellar can open the Hall and the Tower at once), easiest first.
   const openedAll = WINGS.filter((x) => !before.includes(x.id) && openWings(progress, recs, st.start).includes(x.id)), opened = openedAll[0];
+  // A stratum opened stays open (wings.js openWings).
+  if (openedAll.length) { openedAll.forEach((x) => { (progress[x.id] ||= { boss: 0, best: 0 }).unlocked = true; }); store.player(PID).set("wings", progress); }
   // Losing all your hearts curses the hero who led the run (heroes.js curseCaptain): rescue them
   // again on a rescue floor, and pick someone else to lead.
   const fallen = !win && hasCaptain() ? HEROES[team.captain] : null;

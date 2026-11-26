@@ -229,8 +229,9 @@ export function learnedShare(wing, recs) {
 
 // Which Wings are open. progress: { [wingId]: { boss: wins, best: floors } }; start: the band the
 // player started in. A Wing opens when the Wing it comes after (\`after\`) has its boss beaten and
-// 60% of its facts learned. Starting in a band opens every Wing at that grade or below: a 3rd
-// grader starting in the Tower has all four open from the start.
+// 60% of its path's priority steps learned (DESIGN.md §4.3). Starting in a band opens every Wing
+// at that grade or below: a 3rd grader starting in the Tower has all four open from the start. A
+// Wing once opened stays open (unlocked, saved), even if a miss takes a fact back out of learned.
 const GRADE = { kinder: 0, first: 1, second: 2, third: 3 };
 // Bands saved before the grade strata (dungeon version 5), as today's.
 export const OLD_BANDS = { sprout: "kinder", balance: "first", apprentice: "third" };
@@ -239,7 +240,7 @@ export function openWings(progress, recs, start) {
   WINGS.forEach((w, i) => {
     const prev = w.after && wingOf(w.after);
     const earned = prev && open.includes(prev.id) && ((progress[prev.id] || {}).boss || 0) > 0 && learnedShare(prev, recs) >= OPEN_AT;
-    if (i === 0 || GRADE[w.band] <= (GRADE[start] ?? 0) || earned) open.push(w.id);
+    if (i === 0 || GRADE[w.band] <= (GRADE[start] ?? 0) || earned || (progress[w.id] || {}).unlocked) open.push(w.id);
   });
   return open;
 }
@@ -261,6 +262,26 @@ export function withGrade(st, grade, { first = false, fresh = false, progress = 
   let band = fresh ? start : st.band;
   if (!openWings(progress, recs, start).includes(WINGS.find((w) => w.band === band)?.id)) band = WINGS[0].band;
   return Object.assign({}, st, { grade, start, band });
+}
+
+// Saved progress from before the paths (DESIGN.md §4.3), brought up to them once, losing nothing:
+// - a Wing that was open stays open (unlocked): one played in, or one the old rule opened (its boss
+//   beaten and 60% of the band before learned), though the paths' rule (the priority steps) may
+//   not have opened it yet;
+// - each Wing's chapter, one for every 5 depths reached (megasOf), is saved as its mega bosses.
+// The open steps need nothing: they follow from the facts learned (openSteps). Done once: after it
+// every Wing played has megas saved. Returns whether anything changed.
+export function upgradeProgress(progress, recs) {
+  const ps = Object.values(progress || {});
+  if (!ps.length || ps.some((p) => p && p.megas != null)) return false;
+  const bandShare = (w) => { const p = pool(w.band); return p.filter((f) => learned(recs[f.key])).length / p.length; };
+  WINGS.forEach((w) => {
+    const prev = w.after && wingOf(w.after), p = progress[w.id] || {}, q = prev ? progress[prev.id] || {} : {};
+    const played = p.best > 0 || p.boss > 0 || (p.depth || 1) > 1, oldRule = prev && q.boss > 0 && bandShare(prev) >= OPEN_AT;
+    if (prev && (played || oldRule)) (progress[w.id] ||= { boss: 0, best: 0 }).unlocked = true;
+  });
+  for (const p of Object.values(progress)) p.megas = megasOf(p);
+  return true;
 }
 
 // What's left to open a Wing, for the map: { prev, boss: beaten?, share, need }.
