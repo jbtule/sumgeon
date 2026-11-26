@@ -22,8 +22,6 @@ A math-practice dungeon crawler. The player fights anthropomorphic monsters buil
   - `drawings.js` and `zip.js`: the spell check's recorded drawings and the zip they're shared in
   - `loot.js`: chests, money and items' rules (when a chest comes, its lock, what's inside, the fewest coins, the inventory and slots, the items' effects)
   - `chest.js`: the chest, coin purse and $1 bill art, and the wallet drawn as money
-  - `clock.js` and `patterns.js`: prototypes of Tick-Tockus's telling time (an analog clock, its problems and hint) and Slimelipsis's what comes next (skip counting on a row of slimes), used only by `review/proto/` so far: no fact keys, nothing in the game reads them
-  - `clock.js` and `patterns.js`: prototypes of Tick-Tockus's telling time (the clock is Tick-Tockus, its tentacles fitted to the room around it; arrow or tentacle hands; its problems and hint) and Slimelipsis's what comes next (skip counting on a row of slimes), used only by `review/proto/` so far: no fact keys, nothing in the game reads them
   - Prototypes of new kinds of problem, used only by `review/proto/` so far (no fact keys, nothing in the game reads them), each with its own `scripts/*.test.mjs`:
     - `clock.js`: Tick-Tockus's telling time (the clock is Tick-Tockus, its tentacles behind the case, handwritten numbers and arrow hands) and elapsed time (how long, minutes later; an open number line hint);
     - `patterns.js`: Slimelipsis's what comes next (skip counting on a row of slimes) and odd and even;
