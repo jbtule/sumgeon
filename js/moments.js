@@ -13,6 +13,7 @@
 import { pool, monsterHP } from "./learn.js";
 import { WINGS, runFloors, depthScale, bandOf } from "./wings.js";
 import { HEROES } from "./heroes.js";
+import { asks } from "./traits.js";
 
 // The chance on a qualifying hit: CHANCE, plus BUILD for each one that rolled without a moment,
 // back to CHANCE after one. None in the REST problems after a moment, at most PER_FLOOR a floor.
@@ -187,7 +188,8 @@ export function simulate(opts) {
     const run = freshRun(), floors = runFloors(w, o.team, r, 1);
     let n = 0, streak = 0, got = 0;
     floors.forEach((m, i) => {
-      const bk = bandOf(w, m), facts = pool(bk), recs = recsFor(bk);
+      // What the monster asks at all (traits.js asks: Pipsqueak's dice sums, Doublet's doubles).
+      const bk = bandOf(w, m), k = asks(m), its = pool(bk).filter((f) => k(f.op, f.key)), facts = its.length ? its : pool(bk), recs = recsFor(bk);
       let hp = Math.round(monsterHP(m, bk, recs) * depthScale(i, floors.length));
       out.floors++;
       for (let guard = 0; hp > 0 && guard < 200; guard++) {

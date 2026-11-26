@@ -11,10 +11,29 @@ assert.deepEqual(WINGS.map((w) => w.after || null), [null, "cellar", "hall", "mi
 assert.equal(mines.name, "The Crystal Mines");
 // Each stratum's monsters, and what they ask there.
 const M = (w) => w.pool.concat([w.boss]);
-assert.deepEqual(M(cellar), ["Plusquito", "Minustaur", "Chompers", "Trollar", "Make-Ten Golem"]);
-assert.deepEqual(M(hall), ["Quizard", "Chompers", "Equal Twins", "Minustaur", "Judo Judy"]);
-assert.deepEqual(M(mines), ["Haberhasher", "Trollar", "Plusquito", "Minustaur", "The Centipede"]);
-assert.deepEqual(M(tower), ["Timesaur", "Divvy", "Starbot", "Sigma Rex"]);
+assert.deepEqual(M(cellar), ["Plusquito", "Minustaur", "Pipsqueak", "Chompers", "Trollar", "Make-Ten Golem"]);
+assert.deepEqual(M(hall), ["Quizard", "Chompers", "Equal Twins", "Doublet", "Triceraplus", "Judo Judy"]);
+assert.deepEqual(M(mines), ["Haberhasher", "Margot-Rythm", "Trollar", "Squaresquatch", "The Centipede"], "the Mines' own monsters: no more Plusquito and Minustaur standing in");
+assert.deepEqual(M(tower), ["Timesaur", "Divvy", "Starbot", "Halfling", "Sigma Rex"]);
+// Depth 1's floors: each stratum keeps its five (the rescue floor third), every named floor is in
+// its pool, and no monster comes twice in a row.
+assert.deepEqual(WINGS.map((w) => w.floors), [
+  ["Plusquito", "Pipsqueak", "rescue", "Chompers", "Trollar"],
+  ["Quizard", "Equal Twins", "rescue", "Doublet", "Triceraplus"],
+  ["Haberhasher", "Margot-Rythm", "rescue", "Trollar", "Squaresquatch"],
+  ["Timesaur", "Divvy", "rescue", "Starbot", "Halfling"]]);
+for (const w of WINGS) {
+  assert.ok(w.floors.every((f) => f === "rescue" || f === "pool" || w.pool.includes(f)), `${w.id}: every floor is in the pool`);
+  for (const depth of [1, 2, 3, 5, 9]) for (let seed = 1; seed < 40; seed++) {
+    let s = seed; const rnd = () => ((s = (s * 16807) % 2147483647) / 2147483647);
+    const names = runFloors(w, { captain: 5, rescued: [] }, rnd, depth).map((m) => m.base || m.n);
+    assert.ok(names.every((n, i) => !i || n !== names[i - 1]), `${w.id} depth ${depth}: ${names.join(", ")}`);
+  }
+}
+// The new monsters' strands and bands: Squaresquatch asks arrays in the Mines and Triceraplus
+// three numbers in the Hall; the rest their stratum's band.
+assert.deepEqual([bandOf(mines, { n: "Squaresquatch" }), bandOf(mines, { n: "Margot-Rythm" }), bandOf(hall, { n: "Doublet" }), bandOf(tower, { n: "Halfling" }), bandOf(cellar, { n: "Pipsqueak" }), bandOf(hall, { n: "Triceraplus" })],
+  ["arrays", "second", "first", "third", "kinder", "three"]);
 const named = (n) => ({ n });
 assert.deepEqual([bandOf(cellar, named("Trollar")), bandOf(mines, named("Trollar")), bandOf(cellar, named("Chompers")), bandOf(hall, named("Chompers")), bandOf(mines, named("Haberhasher"))],
   ["coinsK", "coins", "more", "first", "second"], "Trollar finds coins in the Cellar and counts them in the Mines");
@@ -78,7 +97,7 @@ for (let k = 0; k < 50; k++) {
   assert.ok(deep.slice(0, 5).every((m) => m.cursed != null || cellar.pool.includes(m.base || m.n)));
   assert.deepEqual(runFloors(cellar, { captain: 5, rescued: [] }, () => 0.3, 3).map((m) => m.n), runFloors(cellar, { captain: 5, rescued: [] }, () => 0.3, 3).map((m) => m.n), "a depth's looks are the same each time");
 }
-assert.deepEqual(runFloors(cellar, { captain: 5, rescued: [] }, () => 0, 1).map((m) => m.n).slice(0, 2), ["Plusquito", "Minustaur"], "depth 1 keeps the Wing's own order and looks");
+assert.deepEqual(runFloors(cellar, { captain: 5, rescued: [] }, () => 0, 1).map((m) => m.n).slice(0, 2), ["Plusquito", "Pipsqueak"], "depth 1 keeps the Wing's own order and looks");
 // Below depth 1, monsters wear their looks: across depths, some floors are in a look.
 const looked = [2, 3, 4, 5, 6, 7].flatMap((d) => runFloors(cellar, { captain: 5, rescued: [] }, () => 0.5, d)).filter((m) => m.base);
 assert.ok(looked.length > 0 && looked.every((m) => m.look && m.n !== m.base));

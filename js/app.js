@@ -2,17 +2,18 @@
 // Problems, monsters, saving, sound and speech live in their own modules.
 import { MON, svg, LOOKS, lookOf } from "./monsters.js";
 import { spokenProblem, spokenFact } from "./problems.js";
-import { BANDS, choose, factOf, record as recordAnswer, helpFor, openLevel, monsterHP, probeKey, tierOf, skipTo, SKIP_PROBES, SKIP_WINDOW, MAX_LEAP, fluentTime, spellKey } from "./learn.js";
+import { BANDS, choose, factOf, record as recordAnswer, helpFor, openLevel, monsterHP, probeKey, tierOf, skipTo, SKIP_PROBES, SKIP_WINDOW, MAX_LEAP, fluentTime, spellKey, RECENT } from "./learn.js";
 import { hintFor, STRATEGIES } from "./hints.js";
 import { openStore, displayName } from "./store.js";
 import { PHRASE, monsterName, monsterCleared, monsterWon, heroJoins, heroCursed, heroRescue, heroAlmost, heroHelps, traitLine, BARK, wingCleared, wingOpened, depthLine, DEPTH_MAX_SPOKEN, reversedLine, howToWriteLine, quipLine } from "./lines.js";
 import { WINGS, wingOf, runFloors, openWings, toOpen, floorStars, wingStars, depthScale, depthHP, deepest, MAP_DEPTHS, GRADES, gradeLabel, gradeName, withGrade, bandOf, gradeBand, OLD_BANDS } from "./wings.js";
 import { missingOf, pickBlank, filled, spokenMissing, MISSING_SHARE, canHide } from "./missing.js";
 import { rectSvg } from "./third.js";
+import { arraySvg } from "./arrays.js";
 import { coinsSvg, pileOf, coinOf } from "./coins.js";
 import { read as readSigil, judge as judgeSigil } from "./sigil.js";
 import { HANDWRITING } from "./handwriting.js";
-import { traitOf, charged, prefers, hitBy, atHalf, asks, flipOf } from "./traits.js";
+import { traitOf, charged, prefers, hitBy, atHalf, asks, flipOf, flashOf, dieSvg, FLASH_MS } from "./traits.js";
 import { roster, mastery, meet, beat } from "./bestiary.js";
 import { HEROES, CHALK, heroSvg, freePick, pickHero, curseCaptain, crackCurse, CURSE_HITS, resetTeam } from "./heroes.js";
 import * as sfx from "./sfx.js";
@@ -255,6 +256,12 @@ function probUI() {
   else if (p.op === "≈") box.innerHTML = esc(p.q).replace("□", BLANK) + `<small class="to">nearest ${p.to}</small>`;
   // A rectangle, drawn: "Area = □".
   else if (p.op === "▭") box.innerHTML = rectSvg(p) + `<span class="find">${esc(p.q).replace("□", BLANK)}</span>`;
+  // An array (Squaresquatch), drawn: rows of dots, and "5 + 5 + 5 = □" under them.
+  else if (p.op === "▦") box.innerHTML = arraySvg(p) + `<span class="find">${esc(p.q).replace("□", BLANK)}</span>`;
+  // Three numbers (Triceraplus), a little smaller so "4 + 6 + 3 =" fits beside the buttons on a small phone.
+  else if (p.op === "Σ") box.innerHTML = `<span class="sum3">${esc(p.q)} =</span>`;
+  // Dice (Pipsqueak's Flash): each number as a die, until diceFlash turns them into numbers.
+  else if (p.dice) box.innerHTML = `<span class="dn" data-n="${p.x}">${dieSvg(p.x)}</span> + <span class="dn" data-n="${p.y}">${dieSvg(p.y)}</span> =`;
   // "How many quarters?": the pile, then "quarters = ?" with a □ that fills as you type, as a
   // missing number does, under the pile (styles.css .game.find), so it fits a phone.
   else if (p.op === "¢" && p.find) box.innerHTML = coinsSvg(p.pile) + `<span class="find">${coinOf(p.find).names} = <span class="blank" id="blank">?</span></span>`;
@@ -262,10 +269,10 @@ function probUI() {
   // Flipped by Judo Judy: each number in its own box, so the throw can swap them (judoThrow).
   else if (p.flipped) box.innerHTML = `<span class="jn">${p.x}</span> <span class="jop">+</span> <span class="jn">${p.y}</span> =`;
   else box.textContent = p.q + " =";
-  document.querySelector(".game").classList.toggle("missing", !!p.blank || !!p.sym || p.op === "=" || !!p.find || "/≈▭".includes(p.op));
+  document.querySelector(".game").classList.toggle("missing", !!p.blank || !!p.sym || p.op === "=" || !!p.find || "/≈▭▦".includes(p.op));
   padUI(p.spell ? "spell" : p.sym ? "cmp" : "num");
   document.querySelector(".game").classList.toggle("cents", p.op === "¢" && !p.find);
-  document.querySelector(".game").classList.toggle("find", !!p.find || p.op === "▭");
+  document.querySelector(".game").classList.toggle("find", !!p.find || p.op === "▭" || p.op === "▦");
 }
 // The facts a monster asks: its strand in this stratum (Trollar's coins) or the stratum's band.
 const strandOf = (m) => bandOf(wing(), m);
@@ -274,7 +281,7 @@ const strandOf = (m) => bandOf(wing(), m);
 // finding them).
 function shownFact(p, ans) {
   if (p.sym) return p.q.replace("□", typeof ans === "string" && ans.startsWith("<b>") ? `<b>${esc(p.sym)}</b>` : p.sym);
-  if (p.blank || p.op === "=" || p.op === "/" || p.op === "≈") return filled(p, ans);
+  if (p.blank || p.op === "=" || p.op === "/" || p.op === "≈" || p.op === "▦") return filled(p, ans);
   if (p.op === "▭") return p.w + " by " + p.h + ": " + filled(p, ans);
   if (p.op === "more") return `${ans} is more`;
   if (p.op === "¢" && p.find) return `${ans} ${p.ans === 1 ? coinOf(p.find).name : p.q}`;
@@ -346,11 +353,15 @@ function loadMonster(i, quiet) {
   el.className = "mon";
   el.innerHTML = monsterArt(m);
   $("mName").textContent = m.n;
-  $("mName").classList.toggle("long", m.n.length > 13); // a long look name (Professor Minustaur) shrinks to fit
   // The trait badge, and what it does under the monster as it arrives.
   const t = traitOf(m), badge = $("trait");
   badge.hidden = !t;
   if (t) { badge.textContent = `${t.icon} ${t.name}`; badge.title = t.text; }
+  // A long name (Professor Minustaur), or one that doesn't fit beside its trait badge on a small
+  // phone (Disco Squatch and 🟩 Arrays), shrinks to fit.
+  const nm = $("mName");
+  nm.classList.remove("long");
+  if (m.n.length > 13 || nm.scrollWidth > nm.clientWidth + 1) nm.classList.add("long");
   G.onFloor = 0; G.halved = false; G.floorLost = 0; G.floorStreak = 0; G.floorSlow = false; G.barked = {};
   if (!quiet) setMsg(t ? `${t.icon} ${t.name}: ${t.text}` : "Your answer is your attack.");
   $("floorLbl").textContent = (G.depth > 1 ? `Depth ${G.depth} · ` : "") + (m.boss ? "Boss floor" : m.cursed != null ? "Rescue floor" : `Floor ${i + 1} / ${G.floors.length}`);
@@ -408,10 +419,14 @@ function newProblem() {
   // problem is the flipped one from the start, so the 🔊 button, a miss and the hint all read it.
   const flipped = flipOf(m, G.cur);
   if (flipped) G.cur = flipped;
-  G.recent = [key].concat(G.recent).slice(0, 3);
+  // Flash (Pipsqueak): 3 + 5 comes as two dice, which turn into the numbers (traits.js flashOf).
+  const dice = flashOf(m, G.cur);
+  if (dice) G.cur = dice;
+  G.recent = [key].concat(G.recent).slice(0, RECENT);
   G.input = ""; G.busy = false; G.hinted = false; G.t0 = performance.now();
   probUI();
   if (flipped) judoThrow(G.cur);
+  if (dice) diceFlash(G.cur);
   // Coins ("How many dimes?") and comparisons can't be read off the screen by a pre-reader, so
   // the voice reads them, after the monster's name. Skipped if it's answered first.
   if (G.cur.op === "¢" || G.cur.op === "○" || G.cur.op === "more") say("q", spokenProblem(G.cur), false, asked(G.cur));
@@ -450,6 +465,21 @@ function judoThrow(p) {
     if (G.cur !== p || G.paused) return;
     G.busy = false; G.t0 = performance.now();
   }, THROW_MS);
+}
+// Pipsqueak's Flash (🎲): the problem comes as two dice, to count by sight; after FLASH_MS each die
+// flips over and is its number, so nobody is left stuck. Answering works the whole time, and the
+// clock isn't touched: speed never changes damage. With reduced motion they just swap.
+function diceFlash(p) {
+  setTimeout(() => {
+    if (G.cur !== p) return;
+    $("prob").querySelectorAll(".dn").forEach((d, i) => {
+      const show = () => { d.textContent = d.dataset.n; d.classList.add("shown"); };
+      if (reduced() || !d.animate) return show();
+      setTimeout(() => d.animate([{ transform: "rotateY(0)" }, { transform: "rotateY(90deg)" }], { duration: 160, easing: "ease-in" }).finished.then(() => {
+        show(); d.animate([{ transform: "rotateY(-90deg)" }, { transform: "rotateY(0)" }], { duration: 180, easing: "ease-out" });
+      }), i * 120);
+    });
+  }, FLASH_MS);
 }
 function pop(t, crit) {
   const s = document.createElement("span");
@@ -633,8 +663,8 @@ function submit() {
     G.floorStreak = Math.max(G.floorStreak, G.streak);
     // A comparison hits with the bigger number (Chompers eats it), so its digits are what fly.
     const typed = G.cur.sym ? String(G.cur.ans) : G.input, crit = G.streak >= 3, bonus = heroBonus(typed), m = G.floors[G.floor];
-    // The monster's trait: Lucky Number, Ten Smash, Armor (traits.js).
-    const trait = hitBy(m, G.cur.ans, typed, G.halved);
+    // The monster's trait: Lucky Number, Ten Smash, Armor, Carry the One (traits.js).
+    const trait = hitBy(m, G.cur.ans, typed, G.halved, G.cur);
     // A spell drawn backwards fizzles at half damage.
     let dmg = Math.max(1, Math.round(G.cur.ans * (crit ? 2 : 1) * trait.mult * bonus.mult * (G.cur.reversed ? 0.5 : 1)));
     const level = learnFrom(true);
@@ -1020,7 +1050,10 @@ function menu() {
   card.querySelectorAll("input[name=wing]").forEach((i) => i.onchange = () => {
     st.band = wingOf(i.value).band; saveSettings();
     G.running = false; newRun(); loadMonster(0, true);
+    // Redrawing the start screen would scroll it back to the top: keep it where the tap was.
+    const ov = $("ov"), top = ov.scrollTop, inner = card.scrollTop;
     menu();
+    ov.scrollTop = top; card.scrollTop = inner;
   });
   wireCaptain();
   $("openSettings").onclick = () => settings();

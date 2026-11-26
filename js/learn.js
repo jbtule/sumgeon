@@ -10,6 +10,8 @@ import { twoDigitFacts, twoLevel } from "./twodigit.js";
 import { balanceFacts, balanceFactOf, inSet, moreFacts, moreFactOf, MORE_LEVELS } from "./balance.js";
 import { hiddenFactOf, kinderHidden, firstHidden } from "./missing.js";
 import { timesTens, fractionFacts, fractionFactOf, roundFacts, roundFactOf, rectFacts, rectFactOf } from "./third.js";
+import { threeFacts, threeFactOf } from "./three.js";
+import { arrayFacts, arrayFactOf, ARRAY_LEVELS } from "./arrays.js";
 import { asks as asksOf } from "./traits.js";
 
 // One band per grade, K to 3rd (DESIGN.md §2, §4.1), each the facts of one stratum, with its
@@ -92,7 +94,12 @@ export const BANDS = {
   coins: { label: "Counting coins", strand: true, unlock: 0.5, hearts: 5, fluentMs: 5000, facts: coinFacts,
     levels: COIN_LEVELS.slice(2).map((l) => ({ name: l.name, has: (f) => !f.find && !COIN_LEVELS[1].has(f) && l.has(f) })) },
   // Which is more (K): Chompers in the Cellar.
-  more: { label: "Which is more", strand: true, unlock: 0.5, hearts: 7, fluentMs: 4000, facts: moreFacts, levels: MORE_LEVELS }
+  more: { label: "Which is more", strand: true, unlock: 0.5, hearts: 7, fluentMs: 4000, facts: moreFacts, levels: MORE_LEVELS },
+  // Three numbers (1st grade): Triceraplus in the Hall, 4 + 3 + 6 with a ten to find. A second more
+  // than the Hall's time, for reading three numbers.
+  three: { label: "Three numbers", strand: true, unlock: 0.5, hearts: 7, fluentMs: 5000, facts: threeFacts, levels: [{ name: "Three numbers", has: is("Σ") }] },
+  // Arrays (2nd grade): Squaresquatch in the Mines, rows of dots added as equal rows.
+  arrays: { label: "Arrays", strand: true, unlock: 0.5, hearts: 5, fluentMs: 6000, facts: arrayFacts, levels: ARRAY_LEVELS }
 };
 export const UNLOCK = 0.7;
 const BOX_MAX = 4;
@@ -109,7 +116,7 @@ export function keyOf(f) {
 }
 // A problem for a key, turned around half the time for + and ×.
 export function factOf(key, rnd) {
-  const own = { "¢": coinFactOf, "○": balanceFactOf, "=": balanceFactOf, "□": hiddenFactOf, "M": moreFactOf, "/": fractionFactOf, "≈": roundFactOf, "▭": rectFactOf }[key[0]];
+  const own = { "¢": coinFactOf, "○": balanceFactOf, "=": balanceFactOf, "□": hiddenFactOf, "M": moreFactOf, "/": fractionFactOf, "≈": roundFactOf, "▭": rectFactOf, "Σ": threeFactOf, "▦": arrayFactOf }[key[0]];
   if (own) return own(key, rnd);
   const op = key[0], [a, b] = key.slice(1).split(",").map(Number);
   const flip = (op === "+" || op === "×") && (rnd || Math.random)() < 0.5;
@@ -219,14 +226,29 @@ export function frontier(bandKey, recs) {
 }
 // A probe: a fact not learned yet from `leap` tiers above the frontier (1 by default; the top
 // tier at most), or null when there's none.
-// asks: the kinds of problem the monster asks (traits.js asks), as a test on an operation.
+// asks: the kinds of problem the monster asks (traits.js asks), as a test on a fact's operation
+// and key.
+// How many of the last problems a fight keeps out of the way (app.js G.recent), so the same
+// problem doesn't come back within a fight while there are others to ask. A missed fact still
+// comes back on purpose (retry). When a monster asks only a few (Doublet's doubles), fewer are
+// kept out: the last 3, then none (notRecent).
+export const RECENT = 12;
+// The ones not among the recent keys: all the recent ones if that leaves any, else not the last
+// 3, else anything.
+export function notRecent(list, recent, keyOf = (f) => f.key) {
+  for (const n of [(recent || []).length, 3, 0]) {
+    const r = (recent || []).slice(0, n), left = list.filter((f) => !r.includes(keyOf(f)));
+    if (left.length) return left;
+  }
+  return list;
+}
 export function probeKey(bandKey, recs, rnd, recent, avoidAns, leap, asks) {
   const t = tiers(bandKey), fr = frontier(bandKey, recs);
   if (fr + 1 >= t.length) return null;
   const i = Math.min(t.length - 1, fr + Math.max(1, leap || 1));
   const factAt = (k) => pool(bandKey).find((x) => x.key === k) || {};
   const ansOf = (k) => { const f = factAt(k); return f.op + " " + f.ans; };
-  let fresh = t[i].filter((k) => !learned(recs[k]) && !(recent || []).includes(k) && (!asks || asks(factAt(k).op)));
+  let fresh = notRecent(t[i].filter((k) => !learned(recs[k]) && (!asks || asks(factAt(k).op, k))), recent, (k) => k);
   const varied = fresh.filter((k) => !(avoidAns || []).includes(ansOf(k)));
   if (varied.length) fresh = varied;
   return fresh.length ? fresh[Math.floor((rnd || Math.random)() * fresh.length)] : null;
@@ -244,7 +266,7 @@ export function skipTo(bandKey, recs, upto, now, fluentMs) {
 }
 
 // The next fact's key. opts: { now, rnd, recent: [keys] (not again so soon), retry: key due now
-// or null, asks: a test on an operation for the kinds of problem the monster asks at all
+// or null, asks: a test on a fact (its operation and key) for the kinds of problem the monster asks at all
 // (traits.js asks: Chompers only compares), op: the monster's operation, preferred 70% of the
 // time when it has facts here, like: a test on a key for facts the monster asks more often (a
 // trait), also 70% }.
@@ -254,8 +276,7 @@ export function choose(bandKey, recs, opts) {
   const rnd = opts.rnd || Math.random, now = opts.now, recent = opts.recent || [];
   if (opts.retry) return opts.retry;
   const L = openLevel(bandKey, recs);
-  let open = asked(bandKey, L, opts.asks).filter((f) => !recent.includes(f.key));
-  if (!open.length) open = asked(bandKey, L, opts.asks);
+  let open = notRecent(asked(bandKey, L, opts.asks), recent);
   // Not the same kind of problem with the same answer as the last couple (opts.avoidAns, as
   // "op ans" like "- 10"), when there's anything else: the teen subtraction facts (17 − 7,
   // 15 − 5, 12 − 2) all equal 10 and came up in a row. A different kind (3 + 7) is fine.
@@ -317,7 +338,7 @@ export function choose(bandKey, recs, opts) {
 // one of the last few; the monster's operation preferred. Null when there's none.
 export function spellKey(bandKey, recs, opts) {
   const rnd = opts.rnd || Math.random, recent = opts.recent || [], L = openLevel(bandKey, recs);
-  let ok = asked(bandKey, L, opts.asks).filter((f) => "+-×÷".includes(f.key[0]) && f.ans >= 0 && f.ans <= 9 && learned(recs[f.key]) && !recent.includes(f.key));
+  let ok = notRecent(asked(bandKey, L, opts.asks).filter((f) => "+-×÷".includes(f.key[0]) && f.ans >= 0 && f.ans <= 9 && learned(recs[f.key])), recent);
   const varied = ok.filter((f) => !(opts.avoidAns || []).includes(f.op + " " + f.ans));
   if (varied.length) ok = varied;
   const mine = ok.filter((f) => f.op === opts.op);
@@ -345,9 +366,9 @@ export function monsterHP(m, bandKey, recs) {
 function asked(bandKey, L, asks) {
   const open = pool(bandKey).filter((f) => f.level <= L);
   if (!asks) return open;
-  const mine = open.filter((f) => asks(f.op));
+  const mine = open.filter((f) => asks(f.op, f.key));
   if (mine.length) return mine;
-  const kind = pool(bandKey).filter((f) => asks(f.op));
+  const kind = pool(bandKey).filter((f) => asks(f.op, f.key));
   if (!kind.length) return open;
   const low = Math.min(...kind.map((f) => f.level));
   return kind.filter((f) => f.level === low);

@@ -3,6 +3,7 @@
 import { MON } from "./monsters.js";
 import { WINGS, bandOf } from "./wings.js";
 import { pool, learned } from "./learn.js";
+import { asks } from "./traits.js";
 
 // [{ wing, m }] in Wing order: each Wing's pool, then its boss. A monster in more than one Wing
 // (Chompers, Trollar, Minustaur) is listed once, in the first.
@@ -12,12 +13,13 @@ export function roster() {
   return out;
 }
 
-// The share (0–1) of a monster's facts learned: its operation's facts in its Wing's band, or every
-// fact there for a monster that mixes or prefers none.
+// The share (0–1) of a monster's facts learned: the facts it asks in its Wing's band (traits.js
+// asks: Doublet's doubles, Halfling's fractions), of its operation when it has one, or every fact
+// there for a monster that mixes or prefers none.
 export function mastery(m, wing, recs) {
   // A monster with its own strand there (Trollar's coins) is measured on that strand.
-  const p = pool(bandOf(wing, m)), mine = p.filter((f) => f.op === m.op);
-  const facts = mine.length ? mine : p;
+  const p = pool(bandOf(wing, m)), k = asks(m), its = p.filter((f) => k(f.op, f.key)), mine = its.filter((f) => f.op === m.op);
+  const facts = mine.length ? mine : its.length ? its : p;
   return facts.filter((f) => learned(recs[f.key])).length / facts.length;
 }
 

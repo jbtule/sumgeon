@@ -108,6 +108,25 @@ for (const l of spokenLines().filter((l) => l.kind === "h")) assert.ok(words(l.t
   }
   assert.ok(thrown > 50, `Judo Judy flips ${thrown} of the Hall's sums`);
 }
+// The new monsters (M5 step 3): name, beaten and won lines, for each and its looks, in the names
+// sprite; their trait lines; Margot-Rythm said like "algorithm" (Margo-rithm), and so is Margot
+// in its looks' names; and the new problems, asked and answered.
+{
+  for (const n of ["Pipsqueak", "Doublet", "Triceraplus", "Margot-Rythm", "Squaresquatch", "Halfling"]) {
+    const m = MON.find((x) => x.n === n);
+    for (const x of [m].concat(allLooks().filter((l) => l.base === n))) {
+      assert.ok(names.includes(monsterName(x)) && names.includes(monsterCleared(x)) && names.includes(monsterWon(x)), x.n);
+    }
+    assert.ok(ids.has("p:" + traitLine(m)) && words(traitLine(m)) <= 12, traitLine(m));
+  }
+  assert.ok(ids.has("m:Margo-rithm!") && ids.has("p:Margo-rithm carries the one and shuts down for the night.") && ids.has("m:Glitchy Margo!"));
+  assert.ok(![...ids].some((id) => /Margot/.test(id)), "no line says Margot as written");
+  assert.ok(ids.has("p:Doublet bows twice and skips away."));
+  assert.ok(ids.has("m:Tricera-plus!") && ids.has("m:Queen Tricera-plus!") && ids.has("m:Tricera-cool!") && ![...ids].some((id) => /Triceraplus|Triceracool/.test(id)), "Triceraplus keeps its plus");
+  assert.ok(ids.has("q:three plus four plus six") && ids.has("q:three plus four plus six is thirteen"), "three numbers");
+  assert.ok(ids.has("q:Three rows of five. How many in all?") && ids.has("q:Three rows of five make fifteen."), "arrays");
+  assert.ok(GROUPS.includes("Three numbers") && GROUPS.includes("Arrays"));
+}
 // Keys are stable and unique.
 const plan = planClips();
 assert.equal(new Set(plan.map((c) => c.key)).size, plan.length);

@@ -4,7 +4,7 @@
 // depth and floor, crits after 3 in a row), and prints how many runs it takes to learn 60% of the
 // stratum (which, with the boss beaten, opens the next one). Target: about 5 for a fluent player;
 // a learner should never skip. Run: node scripts/balance-sim.mjs [stratum]
-import { BANDS, pool, choose, factOf, record, probeKey, tierOf, skipTo, SKIP_PROBES, SKIP_WINDOW, MAX_LEAP, fluentTime, learned, monsterHP, openLevel } from "../js/learn.js";
+import { BANDS, pool, choose, factOf, record, probeKey, tierOf, skipTo, SKIP_PROBES, SKIP_WINDOW, MAX_LEAP, fluentTime, learned, monsterHP, openLevel, RECENT } from "../js/learn.js";
 import { WINGS, depthHP, depthScale, runFloors, bandOf, learnedShare, OPEN_AT } from "../js/wings.js";
 import { asks } from "../js/traits.js";
 
@@ -33,7 +33,7 @@ function trial(wing, seed, { slip = 0.05, think = [1.2, 2.6], tap = [0.5, 0.9], 
           else if (f.hist.filter((x) => !x).length >= 2) { f.cool = 3; f.hist = []; f.on = false; f.leap = 1; }
         }
         f.fluent = fluent ? f.fluent + 1 : 0; if (f.fluent >= 2) f.on = true; f.cool--;
-        recent = [key].concat(recent).slice(0, 3); avoid = [fact.op + " " + fact.ans].concat(avoid).slice(0, 2);
+        recent = [key].concat(recent).slice(0, RECENT); avoid = [fact.op + " " + fact.ans].concat(avoid).slice(0, 2);
         now += 7000;
         if (ok) { streak++; const hit = m.blank && !fact.blank && "+-×÷".includes(fact.op) ? Math.max(1, Math.min(fact.x, fact.y)) : fact.ans; hp -= Math.max(1, hit) * (streak >= 3 ? 2 : 1) * 1.1; }
         else streak = 0;
