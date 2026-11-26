@@ -120,10 +120,10 @@ for (const steps of Object.values(PATHS)) for (const s of steps) s.parts = s.par
 });
 export const pathOf = (wing) => PATHS[wing.id];
 // The chapter a player has reached in a stratum (DESIGN.md §4.3): 1 + the mega bosses beaten
-// there (saved as wings[id].megas), up to the path's last chapter. Progress saved before chapters
-// has none saved: one for every 5 depths already reached, so a player at depth 7 has beaten the
-// boss at depth 5 and isn't sent back.
-export const megasOf = (p) => (!p ? 0 : p.megas != null ? p.megas : Math.floor(((p.depth || 1) - 1) / 5));
+// there (saved as wings[id].megas), up to the path's last chapter. Everyone starts at chapter 1
+// (dungeon version 6 started runs over); what they've learned still lets skipping ahead carry them
+// along the path.
+export const megasOf = (p) => (p && p.megas) || 0;
 export function chapterOf(wing, progress) { return Math.min(chaptersOf(PATHS[wing.id]), 1 + megasOf((progress || {})[wing.id])); }
 // The steps open to a player in a stratum (learn.js openSteps), with the most that ever joined
 // (saved as wings[id].steps) kept open.
@@ -272,26 +272,6 @@ export function withGrade(st, grade, { first = false, fresh = false, progress = 
   let band = fresh ? start : st.band;
   if (!openWings(progress, recs, start).includes(WINGS.find((w) => w.band === band)?.id)) band = WINGS[0].band;
   return Object.assign({}, st, { grade, start, band });
-}
-
-// Saved progress from before the paths (DESIGN.md §4.3), brought up to them once, losing nothing:
-// - a Wing that was open stays open (unlocked): one played in, or one the old rule opened (its boss
-//   beaten and 60% of the band before learned), though the paths' rule (the priority steps) may
-//   not have opened it yet;
-// - each Wing's chapter, one for every 5 depths reached (megasOf), is saved as its mega bosses.
-// The open steps need nothing: they follow from the facts learned (openSteps). Done once: after it
-// every Wing played has megas saved. Returns whether anything changed.
-export function upgradeProgress(progress, recs) {
-  const ps = Object.values(progress || {});
-  if (!ps.length || ps.some((p) => p && p.megas != null)) return false;
-  const bandShare = (w) => { const p = pool(w.band); return p.filter((f) => learned(recs[f.key])).length / p.length; };
-  WINGS.forEach((w) => {
-    const prev = w.after && wingOf(w.after), p = progress[w.id] || {}, q = prev ? progress[prev.id] || {} : {};
-    const played = p.best > 0 || p.boss > 0 || (p.depth || 1) > 1, oldRule = prev && q.boss > 0 && bandShare(prev) >= OPEN_AT;
-    if (prev && (played || oldRule)) (progress[w.id] ||= { boss: 0, best: 0 }).unlocked = true;
-  });
-  for (const p of Object.values(progress)) p.megas = megasOf(p);
-  return true;
 }
 
 // What's left to open a Wing, for the map: { prev, boss: beaten?, share, need }.

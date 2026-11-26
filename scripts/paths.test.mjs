@@ -1,7 +1,7 @@
 // Paths (DESIGN.md §4.3): each stratum's steps, the window of new steps, and chapters.
 import assert from "node:assert/strict";
 import { BANDS, pool, openSteps, openLevels, reachOf, stepFacts, stepShare, chaptersOf, WINDOW, JOIN_AT, choose, probeKey, reviewFacts, placeReviews } from "../js/learn.js";
-import { WINGS, PATHS, chapterOf, megasOf, stepsOpen, stepMonsters, runFloors, openWings, upgradeProgress } from "../js/wings.js";
+import { WINGS, PATHS, chapterOf, megasOf, stepsOpen, stepMonsters, runFloors, openWings } from "../js/wings.js";
 import { MON } from "../js/monsters.js";
 
 const learnedRec = { b: 3, n: 1, c: 1, ms: 1000, t: 0 };
@@ -91,17 +91,16 @@ const cellar = PATHS.cellar;
   const seen = { "+321,406": { b: 1, n: 1, c: 1, ms: 9000, t: 0 } };
   for (let i = 0; i < 20; i++) assert.equal(choose("addT", seen, { now: 1, open: [0, 1], review: [0, 1] }), "+321,406");
 }
-// Chapters: 1 + the mega bosses beaten, saved; progress from before chapters gets one for every 5
-// depths reached, so a player at depth 7 has chapter 2.
+// Chapters: 1 + the mega bosses beaten, saved; everyone starts at chapter 1 (dungeon version 6
+// started runs over), however deep the saved depth.
 {
   const [c] = WINGS;
   assert.equal(chapterOf(c, {}), 1);
-  assert.equal(chapterOf(c, { cellar: { depth: 5 } }), 1, "depth 5 reached: its mega boss isn't beaten yet");
-  assert.equal(chapterOf(c, { cellar: { depth: 7 } }), 2);
-  assert.equal(chapterOf(c, { cellar: { depth: 7, megas: 0 } }), 1, "once saved, the count is what's saved");
-  assert.equal(chapterOf(c, { cellar: { depth: 40 } }), chaptersOf(cellar), "past the last chapter, it stays the last");
-  assert.equal(megasOf({ depth: 11 }), 2);
-  assert.equal(stepsOpen(c, { cellar: { depth: 7, steps: 4 } }, {}).joined, 4, "what joined stays open");
+  assert.equal(chapterOf(c, { cellar: { depth: 7 } }), 1, "no chapter from depth alone");
+  assert.equal(chapterOf(c, { cellar: { depth: 7, megas: 1 } }), 2);
+  assert.equal(chapterOf(c, { cellar: { megas: 9 } }), chaptersOf(cellar), "past the last chapter, it stays the last");
+  assert.equal(megasOf({ depth: 11 }), 0);
+  assert.equal(stepsOpen(c, { cellar: { steps: 4, megas: 1 } }, {}).joined, 4, "what joined stays open");
 }
 // Monsters arrive as their step opens: a stratum's pool is exactly its steps' monsters, a run has
 // only monsters with an open step (and the boss and the rescue floor), depth 1 the newest steps'
@@ -135,34 +134,19 @@ const cellar = PATHS.cellar;
   assert.deepEqual(runFloors(WINGS[0], { captain: 5, rescued: [] }, () => 0, 1, avail).map((m) => m.n), ["Trollar", "Plusquito", "Cursed Zeroic", "Minustaur", "Pipsqueak", "Make-Ten Golem"]);
   assert.ok(!avail.includes("Polly-Gon"));
 }
-// Existing saves (the kids'): nothing is lost. Strata open stay open, depths reached count as
-// chapters, and the open steps follow from what's been learned.
+// The kids' saves after the reset (dungeon version 6): runs start over at chapter 1, but what's
+// been learned is kept, so the open steps follow from it, and the steps they already know join and
+// are done at once.
 {
-  const [c, h, m] = WINGS;
-  // A kindergartner at depth 7 who opened the Hall under the old rule (60% of the Cellar's band),
-  // though the paths' rule (60% of its priority steps, which include coins and shapes) hasn't.
+  const [c] = WINGS;
   const recs = {};
   for (const f of pool("kinder").filter((f) => f.level <= 2)) recs[f.key] = learnedRec; // within 5, within 10, make 10
-  const progress = { cellar: { boss: 6, best: 6, depth: 7, stars: [3, 3, 3, 2, 3, 3], depthStars: { 1: 15, 6: 17 } } };
-  const keep = JSON.stringify(progress.cellar);
-  assert.ok(!openWings({ cellar: { boss: 6, depth: 7 } }, recs, "kinder").includes("hall"), "the paths' rule alone wouldn't open the Hall");
-  assert.equal(upgradeProgress(progress, recs), true);
-  assert.deepEqual(openWings(progress, recs, "kinder"), ["cellar", "hall"], "the Hall stays open");
-  assert.equal(chapterOf(c, progress), 2, "depth 7: chapter 2, not sent back");
-  assert.deepEqual(Object.assign({}, progress.cellar, { megas: undefined }), Object.assign(JSON.parse(keep), { megas: undefined }), "nothing else changes");
-  assert.equal(upgradeProgress(progress, recs), false, "only once");
-  // Her open steps follow from what she's learned: within 5, within 10 and make 10 are learned, so
-  // the window has moved on to coins, 10 and some more, and shapes.
-  const o = stepsOpen(c, progress, recs);
-  assert.deepEqual(o.window.map((i) => PATHS.cellar[i].name), ["Coins", "10 and some more", "Shapes"]);
-  // A 3rd grader who played in the Mines keeps it open; a new player has nothing to upgrade.
-  const p3 = { tower: { boss: 2, best: 6, depth: 3 }, mines: { best: 2 } };
-  assert.equal(upgradeProgress(p3, {}), true);
-  assert.ok(p3.mines.unlocked && p3.tower.unlocked && !(p3.hall || {}).unlocked);
-  assert.equal(upgradeProgress({}, {}), false);
-  // A stratum opened by the paths' rule, then a miss: it stays open once saved as unlocked.
+  // Chapter 1: within 5 and within 10 learned, so coins is the one new step; make 10 waits for the
+  // first mega boss, and then joins already learned.
+  assert.deepEqual(stepsOpen(c, {}, recs).window.map((i) => PATHS.cellar[i].name), ["Coins"]);
+  assert.deepEqual(stepsOpen(c, { cellar: { megas: 1 } }, recs).window.map((i) => PATHS.cellar[i].name), ["Coins", "10 and some more", "Shapes"]);
+  // A stratum opened stays open once saved as unlocked, even after a miss.
   assert.ok(openWings({ cellar: { boss: 1 }, hall: { unlocked: true } }, {}, "kinder").includes("hall"));
-  assert.equal(chapterOf(h, {}), 1); assert.equal(chapterOf(m, { mines: { depth: 12 } }), 3);
 }
 // Review steps: the Hall reviews the Cellar's facts within 10, the Mines the Hall's within 20, the
 // Tower the Mines' adding and subtracting within 1000. Learned ones come back as due reviews to

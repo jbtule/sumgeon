@@ -8,7 +8,7 @@ import { countSvg, readShape, judgeShape, cleanFor, squawkBody, isDrawKey, SHAPE
 import { hintFor, STRATEGIES } from "./hints.js";
 import { openStore, displayName } from "./store.js";
 import { PHRASE, monsterName, monsterCleared, monsterWon, heroJoins, heroCursed, heroRescue, heroAlmost, heroHelps, traitLine, BARK, wingCleared, wingOpened, depthLine, DEPTH_MAX_SPOKEN, reversedLine, howToWriteLine, quipLine, squawk, trait2Line, newMonsterLine } from "./lines.js";
-import { WINGS, wingOf, runFloors, openWings, toOpen, floorStars, wingStars, depthScale, depthHP, deepest, MAP_DEPTHS, GRADES, gradeLabel, gradeName, withGrade, bandOf, gradeBand, OLD_BANDS, PATHS, chapterOf, stepsOpen, bossStage, isMega, BOSS_HP, MEGA_EVERY, megasOf, stepMonsters, upgradeProgress } from "./wings.js";
+import { WINGS, wingOf, runFloors, openWings, toOpen, floorStars, wingStars, depthScale, depthHP, deepest, MAP_DEPTHS, GRADES, gradeLabel, gradeName, withGrade, bandOf, gradeBand, OLD_BANDS, PATHS, chapterOf, stepsOpen, bossStage, isMega, BOSS_HP, MEGA_EVERY, megasOf, stepMonsters } from "./wings.js";
 import { missingOf, pickBlank, filled, spokenMissing, MISSING_SHARE, canHide } from "./missing.js";
 import { rectSvg } from "./third.js";
 import { arraySvg } from "./arrays.js";
@@ -141,7 +141,10 @@ const monsterArt = (m, cls) => (m.cursed != null ? heroSvg(HEROES[m.cursed], { c
 //   5 (2026-11-25): the grade strata (DESIGN.md §4.1): one stratum per grade, K to 3rd, in a
 //      straight chain, with the Crystal Mines new for 2nd grade and monsters moved. Learning is
 //      kept: every fact keeps its key.
-const DUNGEON_VERSION = 5, DUNGEON_KEYS = ["wings", "bestiary", "best"], LEARNING_RESETS = [3, 4];
+//   6 (2026-11-26): the progression (DESIGN.md §4.3): paths, the window, chapters and mega bosses.
+//      Everyone starts at chapter 1 of their grade's stratum; learning is kept (no fact key changed
+//      meaning), so skipping ahead carries a player along the path.
+const DUNGEON_VERSION = 6, DUNGEON_KEYS = ["wings", "bestiary", "best"], LEARNING_RESETS = [3, 4];
 function upgradeDungeon(id) {
   const p = store.player(id), had = p.get("dungeon", null);
   if (had === DUNGEON_VERSION) return;
@@ -179,9 +182,6 @@ function loadPlayer() {
   }
   // The band a player started in opens its Wing from the start (DESIGN.md §4).
   if (!st.start) { st.start = st.band; saveSettings(); }
-  // Progress saved before the paths (DESIGN.md §4.3): strata that were open stay open, and the
-  // depths reached count as chapters (wings.js upgradeProgress). Nothing is lost.
-  if (upgradeProgress(progress, recs)) store.player(PID).set("wings", progress);
   if (!openWings(progress, recs, st.start).includes(wingFor(st.band).id)) { st.band = WINGS[0].band; saveSettings(); }
   sfx.setSfx(st.sfx);
   setVoice(st.voice);
