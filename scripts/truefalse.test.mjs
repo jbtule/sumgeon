@@ -1,34 +1,27 @@
-// True or false (js/truefalse.js, the prototype page): the answers, never all or none true, the
-// false ones off by 1 or 2, and the words.
+// True or false (js/truefalse.js, the prototype page): about half true, the false ones off by 1
+// or 2, every form, fix it's answers, and the words.
 import assert from "node:assert/strict";
-import { TF_LEVELS, tfProblem, tfSvg, tfHint, spokenTF, isTrue, eqText, eqValue, trueEquation, falsify, fixParts, eqWords } from "../js/truefalse.js";
+import { TF_LEVELS, tfProblem, tfSvg, tfHint, spokenTF, spokenTFAnswer, tfWorked, isTrue, eqText, eqValue, trueEquation, falsify, fixParts, eqWords } from "../js/truefalse.js";
 
 let seed = 9; const rnd = () => ((seed = (seed * 9301 + 49297) % 233280) / 233280);
 const allNums = (e) => e.l.concat(e.r);
 const forms = new Set();
 for (const lv of TF_LEVELS) {
-  for (let i = 0; i < 400; i++) {
-    const p = tfProblem(lv.id, rnd);
-    if (p.kind === "count") {
-      assert.ok(p.eqs.length === 3 || p.eqs.length === 4);
-      assert.equal(p.ans, p.eqs.filter(isTrue).length);
-      assert.ok(p.ans >= 1 && p.ans < p.eqs.length, `${lv.id}: never all or none true (${p.eqs.map(eqText)})`);
-      assert.equal(new Set(p.eqs.map(eqText)).size, p.eqs.length, "no equation twice");
-      for (const e of p.eqs) {
-        forms.add(e.form);
-        assert.ok(allNums(e).every((n) => Number.isInteger(n) && n >= 0 && n <= lv.max), `${eqText(e)} within ${lv.max}`);
-        // A false one is off by 1 or 2.
-        if (!isTrue(e)) { const [a, b] = eqValue(e); assert.ok(Math.abs(a - b) === 1 || Math.abs(a - b) === 2, `${eqText(e)} off by 1 or 2`); }
-      }
-      // The spoken problem reads every equation, then asks.
-      const said = spokenTF(p);
-      assert.ok(said.endsWith("How many are true?"));
-      assert.equal(said.split(" equals ").length - 1, p.eqs.length);
-      assert.ok(said.split(" ").length <= 44, `not too long to hear: ${said}`);
-      assert.ok(tfHint(p, true).say.includes(`${p.ans} ${p.ans === 1 ? "is" : "are"} true`));
-      assert.ok(!/\d+ (is|are) true/.test(tfHint(p, false).say));
+  let trues = 0, n = 0;
+  for (let i = 0; i < 600; i++) {
+    const p = tfProblem(lv.id, rnd), e = p.eq;
+    assert.ok(allNums(e).every((v) => Number.isInteger(v) && v >= 0 && v <= lv.max), `${eqText(e)} within ${lv.max}`);
+    if (p.kind === "tf") {
+      n++; forms.add(e.form);
+      assert.equal(p.ans, isTrue(e) ? "T" : "F");
+      if (p.ans === "T") trues++;
+      else { const [a, b] = eqValue(e); assert.ok([1, 2].includes(Math.abs(a - b)), `${eqText(e)} off by 1 or 2`); }
+      assert.equal(spokenTF(p), `${eqWords(e)}. True or false?`);
+      assert.ok(tfHint(p, false).say.startsWith("Work out each side"));
+      assert.ok(tfHint(p, true).say.endsWith(isTrue(e) ? "True." : "False."));
+      assert.equal(spokenTFAnswer(p), tfWorked(e));
     } else {
-      const e = p.eq, fixed = { ...e, [e.fix]: e[e.fix].slice(0, -1).concat(p.ans) };
+      const fixed = { ...e, [e.fix]: e[e.fix].slice(0, -1).concat(p.ans) };
       assert.ok(!isTrue(e), "fix it starts false");
       assert.ok(isTrue(fixed), `${eqText(e)}: ${p.ans} makes it true`);
       assert.ok([1, 2].includes(Math.abs(e[e.fix][e[e.fix].length - 1] - p.ans)), "off by 1 or 2");
@@ -38,15 +31,22 @@ for (const lv of TF_LEVELS) {
     }
     for (const opt of [{}, { hint: true }, { hint: true, worked: true }]) assert.ok(!/NaN|undefined/.test(tfSvg(p, opt)));
   }
+  if (n) assert.ok(trues / n > 0.4 && trues / n < 0.6, `${lv.id}: about half true (${trues} of ${n})`);
 }
 for (const f of ["a + b = c", "c = a + b", "c = c", "a + b = c + d", "a − b = c", "c = a − b"]) assert.ok(forms.has(f), `the form ${f} comes up`);
-// A worked count drawing numbers exactly the true ones.
-const p = tfProblem("count10", rnd);
-assert.equal((tfSvg(p, { hint: true, worked: true }).match(/font-size="14" fill="#0c171c">\d</g) || []).length, p.ans);
+// The scale is level until the hint, then tips toward the heavier side (level when true).
+const f42 = { kind: "tf", eq: { l: [4, 2], lop: "+", r: [7], fix: "r" }, ans: "F" };
+assert.ok(tfSvg(f42).includes("rotate(0 "));
+assert.ok(tfSvg(f42, { hint: true }).includes("rotate(8 "), "tips right, toward 7");
+assert.ok(tfSvg({ kind: "tf", eq: { l: [4, 2], lop: "+", r: [6], fix: "r" }, ans: "T" }, { hint: true }).includes("rotate(0 "));
 // Words.
-assert.equal(eqWords({ l: [3, 4], lop: "+", r: [7] }), "Three plus four equals seven");
+assert.equal(spokenTF(f42), "Four plus two equals seven. True or false?");
+assert.equal(tfWorked(f42.eq), "4 + 2 is 6, not 7. False.");
+assert.equal(tfWorked({ l: [8], r: [5, 3], rop: "+" }), "5 + 3 is 8. True.");
+assert.equal(tfWorked({ l: [5, 1], lop: "+", r: [2, 4], rop: "+" }), "5 + 1 is 6 and 2 + 4 is 6. True.");
+assert.equal(tfWorked({ l: [6], r: [6] }), "6 is 6. True.");
 assert.equal(spokenTF({ kind: "fix", eq: { l: [4, 2], lop: "+", r: [7], fix: "r" }, ans: 6 }), "Fix it! Four plus two equals what?");
 assert.equal(tfHint({ kind: "fix", eq: { l: [4, 2], lop: "+", r: [7], fix: "r" }, ans: 6 }, true).say, "4 + 2 is 6.");
 const t = trueEquation(10, rnd), f = falsify(t, 10, rnd);
 assert.ok(isTrue(t) && (f === null || !isTrue(f)));
-console.log("✓ true or false: answers, forms, off by 1 or 2, words");
+console.log("✓ true or false: half true, forms, off by 1 or 2, fix it, words");

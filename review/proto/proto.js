@@ -11,7 +11,7 @@
 import { NEW_MON, MON as GAME_MON, svg } from "../../js/monsters.js";
 import { CLOCK_LEVELS, clockProblem, clockLine, clockQuestion, spokenClock, spokenTime, clockSvg, clockHint, digital } from "../../js/clock.js";
 import { PATTERN_LEVELS, patternProblem, spokenPattern, spokenPatternAnswer, patternSvg, patternHint, ODD_LEVELS, isOddEven, oddEvenProblem, oddEvenSvg, oddEvenHint, spokenOddEven } from "../../js/patterns.js";
-import { TF_LEVELS, tfProblem, tfSvg, tfHint, spokenTF, fixParts, eqWords } from "../../js/truefalse.js";
+import { TF_LEVELS, tfProblem, tfSvg, tfHint, spokenTF, spokenTFAnswer, fixParts } from "../../js/truefalse.js";
 import { LINE_LEVELS, lineProblem, lineSvg, lineHint, spokenLine, spokenLineAnswer } from "../../js/numberline.js";
 import { DOLLAR_LEVELS, dollarProblem, dollarSvg, dollarHint, spokenDollars, sayMoney } from "../../js/dollars.js";
 import { SHAPE_LEVELS, shapeLevel, isDraw, countProblem, countSvg, countHint, spokenCount, spokenDraw, readShape, judgeShape, cleanShape, article, CORNERS, COUNT_LINE } from "../../js/shapes.js";
@@ -57,13 +57,16 @@ const TYPES = {
     icon: "⚖️", label: "True or false", mon: "Equal Twins", levels: TF_LEVELS, stratum: () => "hall",
     problem: (lv, rnd) => tfProblem(lv.id, rnd),
     picture: (p, st) => tfSvg(p, { hint: !!st.hint, worked: st.hint && st.worked }),
-    // Fix it: the false equation, its wrong number struck through, then the □.
-    line: (p, slot) => (p.kind === "count" ? `True ones: ${slot(0)}`
+    // True or false: answered on the True and False keys (pad "tf"). Fix it: the false equation,
+    // its wrong number struck through, then the □.
+    pad: (p) => (p.kind === "tf" ? (S.done ? "tfnext" : "tf") : "num"),
+    line: (p, slot) => (p.kind === "tf" ? `True or false? ${slot(0)}`
       : fixParts(p).map((x) => (x === null ? `<s>${p.eq[p.eq.fix][p.eq[p.eq.fix].length - 1]}</s>${slot(0)}` : esc(x))).join("")),
-    words: (p) => p.kind === "count",
-    hint: tfHint, spoken: spokenTF,
-    missed: (p) => (p.kind === "count" ? `${p.ans} ${p.ans === 1 ? "is" : "are"} true.` : eqWords({ ...p.eq, [p.eq.fix]: p.eq[p.eq.fix].slice(0, -1).concat(p.ans) }) + "."),
-    answer: (p) => p.ans
+    shown: (p) => (p.kind === "tf" ? (p.ans === "T" ? "True" : "False") : p.ans),
+    typedShown: (v) => (v === "T" ? "True" : v === "F" ? "False" : v),
+    words: (p) => p.kind === "tf",
+    hint: tfHint, spoken: spokenTF, missed: spokenTFAnswer,
+    answer: (p) => (p.kind === "tf" ? (p.ans === "T" ? "true" : "false") : p.ans)
   },
   numberline: {
     icon: "½", label: "Number line", mon: "Halfling", levels: LINE_LEVELS, stratum: () => "tower",
@@ -165,7 +168,7 @@ function reach() {
 function slot(i) {
   const t = T(), shown = t.shown ? t.shown(S.p, i) : [].concat(S.p.ans)[i];
   const typed = S.typed[i], cls = S.done ? S.done : typed ? "typed" : "", now = !S.done && i === S.at && S.typed.length > 1 ? " now" : "";
-  return `<span class="blank ${cls}${now}">${S.done ? shown : typed || "?"}</span>`;
+  return `<span class="blank ${cls}${now}">${S.done ? shown : (typed && t.typedShown ? t.typedShown(typed) : typed) || "?"}</span>`;
 }
 function hintNow() { return S.hint ? T().hint(S.p, S.hint === "worked") : null; }
 function draw() {
@@ -183,11 +186,13 @@ function draw() {
   $("hint").className = "pp-hint" + (worked || S.done === "wrong" ? " worked" : S.done === "right" ? " good" : "");
   $("hint").innerHTML = head + words;
   $("said").textContent = t.spoken(p);
-  padUI(p.draw ? "spell" : "num");
+  padUI(p.draw ? "spell" : t.pad ? t.pad(p) : "num");
   const go = $("pad").querySelector('[data-k="go"]');
-  go.textContent = S.done ? "Next ›" : p.draw ? "Cast!" : S.at < S.typed.length - 1 ? t.nextLabel || "Next ›" : "Hit!";
-  go.classList.toggle("next", !!S.done);
-  go.setAttribute("aria-label", S.done ? "Next problem" : p.draw ? "Cast the drawing" : "Attack");
+  if (go) {
+    go.textContent = S.done ? "Next ›" : p.draw ? "Cast!" : S.at < S.typed.length - 1 ? t.nextLabel || "Next ›" : "Hit!";
+    go.classList.toggle("next", !!S.done);
+    go.setAttribute("aria-label", S.done ? "Next problem" : p.draw ? "Cast the drawing" : "Attack");
+  }
   document.querySelector(".pp").classList.toggle("drawing", !!p.draw);
   // Again now the hint line has settled the room left, so the tentacles fit it.
   if (view.type === "clock") $("pic").innerHTML = t.picture(p, st);
@@ -204,6 +209,17 @@ function padUI(mode) {
   if (pad.dataset.mode === mode) return;
   pad.dataset.mode = mode;
   pad.classList.toggle("spell", mode === "spell");
+  pad.classList.toggle("tfpad", mode === "tf" || mode === "tfnext");
+  // True or false: two big keys filling the pad, so nothing moves; after the answer, one gold
+  // Next › in their place.
+  if (mode === "tf") {
+    pad.innerHTML = `<button type="button" data-k="T" class="tfk yes" aria-label="True"><b>✓</b>True</button><button type="button" data-k="F" class="tfk no" aria-label="False"><b>✗</b>False</button>`;
+    return;
+  }
+  if (mode === "tfnext") {
+    pad.innerHTML = `<button type="button" data-k="go" class="go next tfnext" aria-label="Next problem">Next ›</button>`;
+    return;
+  }
   if (mode === "spell") {
     pad.innerHTML = `<canvas id="sigil" class="sigil" aria-label="Draw here"></canvas><button type="button" data-k="clear" class="del">Clear</button><button type="button" data-k="go" class="go">Cast!</button>`;
     const c = $("sigil");
@@ -295,17 +311,32 @@ function press(k) {
     else if (k === "go" && strokes.length) cast();
     return;
   }
-  const cur = S.typed[S.at];
+  const cur = S.typed[S.at], tf = $("pad").dataset.mode === "tf";
+  // True or false: a tap answers at once, after a brief press on the key (no Hit!, no delete).
+  if (tf) {
+    if (k !== "T" && k !== "F") return;
+    S.typed[S.at] = k;
+    const key = $("pad").querySelector(`[data-k="${k}"]`);
+    if (key) key.classList.add("pressed");
+    $("pad").classList.add("locked");
+    setTimeout(() => { $("pad").classList.remove("locked"); answer(); }, 160);
+    return;
+  }
   if (/^[0-9]$/.test(k)) { if (cur.length < 4) S.typed[S.at] = (cur === "0" ? "" : cur) + k; }
   else if (k === "del") { if (cur) S.typed[S.at] = cur.slice(0, -1); else if (S.at) S.at--; }
   else if (k === "go") {
     if (!cur) return;
     // More than one slot (dollars, then cents): Hit! moves on to the next one first.
     if (S.at < S.typed.length - 1) { S.at++; draw(); return; }
-    const ans = [].concat(S.p.ans);
-    if (ans.every((a, i) => Number(S.typed[i]) === a)) { S.done = "right"; S.hint = null; }
-    else { S.done = "wrong"; S.hint = "worked"; say("Oops! " + T().missed(S.p)); }
+    answer();
+    return;
   }
+  draw();
+}
+function answer() {
+  const ans = [].concat(S.p.ans);
+  if (ans.every((a, i) => (typeof a === "string" ? S.typed[i] === a : Number(S.typed[i]) === a))) { S.done = "right"; S.hint = null; }
+  else { S.done = "wrong"; S.hint = "worked"; say("Oops! " + T().missed(S.p)); }
   draw();
 }
 
@@ -317,6 +348,8 @@ document.addEventListener("keydown", (e) => {
   else if (e.key === "Backspace") press("del");
   else if (e.key === "Enter") { e.preventDefault(); press("go"); }
   else if (e.key === "?") toggleHint();
+  // True or false on a keyboard: T and F.
+  else if (/^[tf]$/i.test(e.key)) press(e.key.toUpperCase());
 });
 function toggleHint() {
   if (S.done) return;
