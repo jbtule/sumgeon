@@ -11,6 +11,7 @@
 import { NEW_MON, MON as GAME_MON, svg } from "../../js/monsters.js";
 import { CLOCK_LEVELS, clockProblem, clockLine, clockQuestion, spokenClock, spokenTime, clockSvg, clockHint, digital } from "../../js/clock.js";
 import { PATTERN_LEVELS, patternProblem, spokenPattern, spokenPatternAnswer, patternSvg, patternHint, ODD_LEVELS, isOddEven, oddEvenProblem, oddEvenSvg, oddEvenHint, spokenOddEven } from "../../js/patterns.js";
+import { TF_LEVELS, tfProblem, tfSvg, tfHint, spokenTF, fixParts, eqWords } from "../../js/truefalse.js";
 import { DOLLAR_LEVELS, dollarProblem, dollarSvg, dollarHint, spokenDollars, sayMoney } from "../../js/dollars.js";
 import { SHAPE_LEVELS, shapeLevel, isDraw, countProblem, countSvg, countHint, spokenCount, spokenDraw, readShape, judgeShape, cleanShape, article, CORNERS, COUNT_LINE } from "../../js/shapes.js";
 
@@ -50,6 +51,18 @@ const TYPES = {
     hint: (p, worked) => (p.draw ? { say: `${cap(article(p.shape))}${p.shape} has ${CORNERS[p.shape] ? `${CORNERS[p.shape]} sides and ${CORNERS[p.shape]} corners` : "no corners: it's round all the way"}.` } : countHint(p, worked)),
     spoken: (p) => (p.draw ? spokenDraw(p.shape) : spokenCount(p)),
     missed: (p) => `It's ${p.ans}.`, answer: (p) => p.ans
+  },
+  truefalse: {
+    icon: "⚖️", label: "True or false", mon: "Equal Twins", levels: TF_LEVELS, stratum: () => "hall",
+    problem: (lv, rnd) => tfProblem(lv.id, rnd),
+    picture: (p, st) => tfSvg(p, { hint: !!st.hint, worked: st.hint && st.worked }),
+    // Fix it: the false equation, its wrong number struck through, then the □.
+    line: (p, slot) => (p.kind === "count" ? `True ones: ${slot(0)}`
+      : fixParts(p).map((x) => (x === null ? `<s>${p.eq[p.eq.fix][p.eq[p.eq.fix].length - 1]}</s>${slot(0)}` : esc(x))).join("")),
+    words: (p) => p.kind === "count",
+    hint: tfHint, spoken: spokenTF,
+    missed: (p) => (p.kind === "count" ? `${p.ans} ${p.ans === 1 ? "is" : "are"} true.` : eqWords({ ...p.eq, [p.eq.fix]: p.eq[p.eq.fix].slice(0, -1).concat(p.ans) }) + "."),
+    answer: (p) => p.ans
   },
   dollars: {
     icon: "💵", label: "Dollars", mon: "Trollar", levels: DOLLAR_LEVELS,
@@ -148,7 +161,7 @@ function draw() {
   const t = T(), p = S.p, worked = S.hint === "worked", hint = hintNow();
   const st = { typed: S.typed, done: S.done, hint, worked };
   $("pic").innerHTML = t.picture(p, st);
-  $("prob").className = "prob" + (t.words ? " words" : "");
+  $("prob").className = "prob" + ((typeof t.words === "function" ? t.words(p) : t.words) ? " words" : "");
   $("prob").innerHTML = t.line(p, slot);
   if (t.question) $("prob").setAttribute("aria-label", t.question(p)); else $("prob").removeAttribute("aria-label");
   // The line under the box: ✓ Right!, or Oops with the answer and the worked hint, or the hint.
