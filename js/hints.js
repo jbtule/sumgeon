@@ -4,6 +4,8 @@ import { hiddenFact } from "./missing.js";
 import { moreFact } from "./balance.js";
 import { threeFact, tenOf } from "./three.js";
 import { arrayFact } from "./arrays.js";
+import { clockSvg, clockFact, clockFactHint, elapsedSvg, inHour } from "./clock.js";
+import { patternSvg, patternFact, patternFactHint, oddEvenSvg, oddEvenFact } from "./patterns.js";
 
 // Hints (DESIGN.md §5.3): the models classrooms use now, with the classroom's words, and a line
 // for grown-ups who learned it another way. No DOM: returns { model, say, grownups } where model
@@ -492,23 +494,72 @@ function threeHint(f, worked) {
     say: `Find the ten: ${a} + ${b} = 10. 10 + ${rest} = ${end}`,
     grownups: "Three numbers: kids look for two that make 10 (4 + 3 + 6: the 4 and the 6), then add the third. Numbers can be added in any order, so the ten can come first." };
 }
-// Arrays (2nd grade): the rows, each ringed, with the total so far at the end of each row; the
-// last total is "?" before answering.
+// Arrays (2nd grade): the rows, each ringed. Before answering, the running total counts on by
+// rows only partway, to the halfway row (or just the first row of 2 or 3), and the rows still to
+// go are dimmed with no total, like the squares hint (shapes.js), so it never counts to the end.
+// Worked, every row has its running total.
+export const arrayRowsCounted = (f, worked) => (worked ? f.r : f.r <= 3 ? 1 : Math.floor(f.r / 2));
 function arrayHint(f, worked) {
-  const G = 16, w = f.c * G + 4;
+  const G = 16, w = f.c * G + 4, upto = arrayRowsCounted(f, worked);
   let s = "";
   for (let r = 0; r < f.r; r++) {
-    const y = 9 + r * G;
-    s += `<rect x="2" y="${y - 7}" width="${w - 4}" height="14" rx="7" fill="none" stroke="${C.line}" stroke-width="1.5"/>`;
+    const y = 9 + r * G, dim = r >= upto;
+    s += `<g${dim ? ' opacity=".35"' : ""}><rect x="2" y="${y - 7}" width="${w - 4}" height="14" rx="7" fill="none" stroke="${C.line}" stroke-width="1.5"/>`;
     for (let c = 0; c < f.c; c++) s += `<circle cx="${10 + c * G}" cy="${y}" r="5" fill="${r % 2 ? C.b : C.a}"/>`;
-    s += txt(w + 6, y + 5, r === f.r - 1 && !worked ? "?" : (r + 1) * f.c, 13, C.ink, "start");
+    s += "</g>";
+    if (!dim) s += txt(w + 6, y + 5, (r + 1) * f.c, 13, C.ink, "start");
   }
+  const run = Array.from({ length: upto }, (_, i) => (i + 1) * f.c).join(", ");
   return { model: svg(w + 34, f.r * G + 4, s, `${f.r} rows of ${f.c}`),
-    say: `Add the rows: ${Array(f.r).fill(f.c).join(" + ")} = ${worked ? f.ans : "?"}`,
+    say: worked ? `Add the rows: ${Array(f.r).fill(f.c).join(" + ")} = ${f.ans}` : `Each row has ${f.c}: ${run}, … How many in ${f.r} rows? ${Array(f.r).fill(f.c).join(" + ")} = ?`,
     grownups: "Arrays: things in equal rows and columns. 2nd graders add the equal rows (3 rows of 5 is 5 + 5 + 5, or 5, 10, 15), the step before multiplication." };
 }
 
+// A drawing from another module (the clock, the slimes), fitted into a box no taller than maxH
+// units, so it stays wide and short like the other hints; its own viewBox is kept inside.
+const f1 = (n) => Math.round(n * 10) / 10;
+function fitted(inner, maxH, label, view) {
+  const m = (view ? `viewBox="${view}"` : inner).match(/viewBox="([-\d.]+) ([-\d.]+) ([\d.]+) ([\d.]+)"/), w = Number(m[3]), h = Number(m[4]), k = Math.min(1, maxH / h);
+  const W = f1(w * k), H = f1(h * k);
+  const body = inner.replace(/^<svg[^>]*>/, `<svg x="0" y="0" width="${W}" height="${H}" viewBox="${m[1]} ${m[2]} ${w} ${h}" overflow="visible">`);
+  return `<svg viewBox="0 0 ${W} ${H}" width="${f1(W * SCALE)}" height="${f1(H * SCALE)}" role="img" aria-label="${label}">${body}</svg>`;
+}
+// Telling time (Tick-Tockus, js/clock.js): the clock with the hint drawn on it (the hour hand
+// glowing, the hour ringed, the count by 5s round the rim), or for elapsed time the minute hand's
+// sweep (in the hour) or the open number line (across it). In a fight the drawing goes on
+// Tick-Tockus's own clock (app.js); this one is for the Oops card and the grown-ups' page.
+const TIME_WHY = {
+  hours: "Telling time: the short hand shows the hour and the long hand the minutes. On the hour, the long hand points straight up at the 12: o'clock.",
+  half: "Half past: the long hand is on the 6, halfway round, and the short hand is halfway between two numbers, just past the hour it's half past.",
+  time: "Writing the time: the hour from the short hand, then the minutes from the long hand, counted by 5s from the 12 (3:35). Kids write it the way a digital clock shows it.",
+  five: "5 minutes: each number on the clock is 5 more minutes, so kids count by 5s from the 12 to the long hand.",
+  minute: "To the minute: count by 5s to the last number the long hand passed, then the little marks by 1s (35, 36, 37).",
+  sweep: "Elapsed time in the hour: the long hand sweeps from the start to the end, counted by 5s round the clock.",
+  line: "Elapsed time across the hour: an open number line, jumping from the start to a friendly time (the next quarter hour, then the hour), then on to the end. Add up the jumps."
+};
+function timeHintFor(f, worked) {
+  const h = clockFactHint(f, worked);
+  if (f.kind === "long" || f.kind === "add") {
+    return { model: fitted(elapsedSvg(f, { hint: true, worked }), 150, f.kind === "long" ? `from ${f.q.replace(" → ", " to ")}` : f.q), say: h.say, grownups: inHour(f) ? TIME_WHY.sweep : TIME_WHY.line };
+  }
+  const why = f.kind === "time" ? TIME_WHY.time : f.kind === "hour" ? (f.m ? TIME_WHY.half : TIME_WHY.hours) : f.m % 5 ? TIME_WHY.minute : TIME_WHY.five;
+  return { model: fitted(clockSvg(f.h, f.m, { monster: false, hint: h.layer, label: "the clock" }), 150, "the clock, with the hint on it", "-16 -16 272 272"), say: h.say, grownups: why, layer: h.layer };
+}
+// What comes next (Slimelipsis, js/patterns.js): the hops from slime to slime, each the step;
+// odd and even, each number's dots in pairs. In a fight they're drawn on the problem's own slimes.
+function patternHintFor(f, worked) {
+  const h = patternFactHint(f, worked);
+  if (f.op === "◐") {
+    return { model: fitted(oddEvenSvg(f, { hint: true, worked, perRow: f.nums.length }), 120, f.nums.join(", ")), say: h.say,
+      grownups: "Odd and even: pair up the dots, and a dot left over means odd. Past 20, the ones digit tells: numbers ending in 0, 2, 4, 6 or 8 are even." };
+  }
+  return { model: fitted(patternSvg(f, { hops: h.hops, state: worked ? "right" : null }), 150, f.q), say: h.say, hops: h.hops,
+    grownups: "Counting patterns: each number is the same step more (or less) than the one before, like hops on a number line: +2, +2, +2. Kids say the step, then take it once more." };
+}
+
 export function hintFor(f, worked) {
+  if (f.op === "⌚") return timeHintFor(f, worked);
+  if (f.op === "…" || f.op === "◐") return patternHintFor(f, worked);
   if (f.op === "¢") return coinHint(f, worked);
   if (f.op === "Σ") return threeHint(f, worked);
   if (f.op === "▦") return arrayHint(f, worked);
@@ -707,6 +758,19 @@ export const STRATEGIES = [
   { title: "What each coin is worth", grade: "K", f: coinFact({ q: 0, d: 1, n: 0, p: 0 }, true) },
   { title: "Counting coins", grade: "1st", f: coinFact({ q: 0, d: 1, n: 1, p: 2 }) },
   { title: "Arrays as equal rows", grade: "2nd", f: arrayFact(3, 5) },
+  { title: "Count on", grade: "K", f: patternFact("ones", [4, 5, 6, 7], 3) },
+  { title: "Count back", grade: "K", f: patternFact("back", [10, 9, 8, 7], 3) },
+  { title: "Skip counting", grade: "1st–2nd", f: patternFact("fives", [15, 20, 25, 30, 35], 4) },
+  { title: "What's missing", grade: "2nd", f: patternFact("middle", [20, 30, 40, 50], 1) },
+  { title: "Odd and even", grade: "2nd", f: oddEvenFact("oddeven20", "even", [3, 8, 11, 14, 6], 20) },
+  { title: "Telling the hour", grade: "1st", f: clockFact("hours", "hour", 3, 0) },
+  { title: "Half past", grade: "1st", f: clockFact("half", "hour", 3, 30) },
+  { title: "Writing the time", grade: "1st–2nd", f: clockFact("fivetime", "time", 4, 25) },
+  { title: "Minutes by 5s", grade: "2nd", f: clockFact("five", "minutes", 3, 35) },
+  { title: "To the minute", grade: "3rd", f: clockFact("minute", "minutes", 3, 37) },
+  { title: "How long? Round the clock", grade: "3rd", f: clockFact("longA", "long", 3, 10, { d: 35 }) },
+  { title: "How long? An open number line", grade: "3rd", f: clockFact("longB", "long", 3, 50, { d: 35 }) },
+  { title: "Minutes later", grade: "3rd", f: clockFact("addB", "add", 3, 50, { d: 25 }) },
   { title: "Tens and ones", grade: "2nd", f: { op: "+", x: 38, y: 25 } },
   { title: "Take away tens and ones", grade: "2nd", f: { op: "-", x: 69, y: 26 } },
   { title: "Back to a ten", grade: "2nd", f: { op: "-", x: 52, y: 7 } },

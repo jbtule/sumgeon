@@ -12,6 +12,8 @@ import { hiddenFactOf, kinderHidden, firstHidden } from "./missing.js";
 import { timesTens, fractionFacts, fractionFactOf, roundFacts, roundFactOf, rectFacts, rectFactOf } from "./third.js";
 import { threeFacts, threeFactOf } from "./three.js";
 import { arrayFacts, arrayFactOf, ARRAY_LEVELS } from "./arrays.js";
+import { clockFacts, clockFactOf, TIME_LEVELS } from "./clock.js";
+import { patternFacts, patternFactOf, oddEvenFactOf, PATTERN_GAME_LEVELS } from "./patterns.js";
 import { asks as asksOf } from "./traits.js";
 
 // One band per grade, K to 3rd (DESIGN.md §2, §4.1), each the facts of one stratum, with its
@@ -99,8 +101,22 @@ export const BANDS = {
   // than the Hall's time, for reading three numbers.
   three: { label: "Three numbers", strand: true, unlock: 0.5, hearts: 7, fluentMs: 5000, facts: threeFacts, levels: [{ name: "Three numbers", has: is("Σ") }] },
   // Arrays (2nd grade): Squaresquatch in the Mines, rows of dots added as equal rows.
-  arrays: { label: "Arrays", strand: true, unlock: 0.5, hearts: 5, fluentMs: 6000, facts: arrayFacts, levels: ARRAY_LEVELS }
+  arrays: { label: "Arrays", strand: true, unlock: 0.5, hearts: 5, fluentMs: 6000, facts: arrayFacts, levels: ARRAY_LEVELS },
+  // Telling time (Tick-Tockus, js/clock.js), a strand in each stratum it visits: hours and half
+  // hours in the Hall (1st grade), 5 minutes in the Mines (2nd), the minute and elapsed time in
+  // the Tower (3rd). Reading a clock takes longer than a sum, so a second or more extra.
+  timeH: { label: "Time: hours", strand: true, unlock: 0.5, hearts: 7, fluentMs: 6000, facts: clockFacts, levels: levelsOf(TIME_LEVELS, "hall") },
+  timeM: { label: "Time: 5 minutes", strand: true, unlock: 0.5, hearts: 5, fluentMs: 7000, facts: clockFacts, levels: levelsOf(TIME_LEVELS, "mines") },
+  timeT: { label: "Time: minutes", strand: true, unlock: 0.5, hearts: 5, fluentMs: 8000, facts: clockFacts, levels: levelsOf(TIME_LEVELS, "tower") },
+  // What comes next (Slimelipsis, js/patterns.js): counting on and back in the Cellar (K), to 120
+  // and by 5s in the Hall (1st), by 2s and 100s, what's missing, and odd and even in the Mines (2nd).
+  patK: { label: "Patterns: count on", strand: true, unlock: 0.5, hearts: 7, fluentMs: 5000, facts: patternFacts, levels: levelsOf(PATTERN_GAME_LEVELS, "cellar") },
+  patH: { label: "Patterns: to 120", strand: true, unlock: 0.5, hearts: 7, fluentMs: 5000, facts: patternFacts, levels: levelsOf(PATTERN_GAME_LEVELS, "hall") },
+  patM: { label: "Patterns: skip counting", strand: true, unlock: 0.5, hearts: 5, fluentMs: 6000, facts: patternFacts, levels: levelsOf(PATTERN_GAME_LEVELS, "mines") }
 };
+// A strand's levels from a module's level list (TIME_LEVELS, PATTERN_GAME_LEVELS): the ones for
+// one stratum, each holding the facts of its set.
+function levelsOf(list, stratum) { return list.filter((l) => l.stratum === stratum).map((l) => ({ name: l.name, has: (f) => f.set === l.id })); }
 export const UNLOCK = 0.7;
 const BOX_MAX = 4;
 // Review spacing by box: a box-3 fact comes back after 10 minutes, box 4 after a day.
@@ -116,7 +132,7 @@ export function keyOf(f) {
 }
 // A problem for a key, turned around half the time for + and ×.
 export function factOf(key, rnd) {
-  const own = { "¢": coinFactOf, "○": balanceFactOf, "=": balanceFactOf, "□": hiddenFactOf, "M": moreFactOf, "/": fractionFactOf, "≈": roundFactOf, "▭": rectFactOf, "Σ": threeFactOf, "▦": arrayFactOf }[key[0]];
+  const own = { "¢": coinFactOf, "○": balanceFactOf, "=": balanceFactOf, "□": hiddenFactOf, "M": moreFactOf, "/": fractionFactOf, "≈": roundFactOf, "▭": rectFactOf, "Σ": threeFactOf, "▦": arrayFactOf, "⌚": clockFactOf, "…": patternFactOf, "◐": oddEvenFactOf }[key[0]];
   if (own) return own(key, rnd);
   const op = key[0], [a, b] = key.slice(1).split(",").map(Number);
   const flip = (op === "+" || op === "×") && (rnd || Math.random)() < 0.5;

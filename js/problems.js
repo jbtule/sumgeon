@@ -1,5 +1,7 @@
 import { coinWords, coinOf, isValue } from "./coins.js";
 import { fractionWords, unitName } from "./third.js";
+import { spokenClockFact, spokenClockAnswer } from "./clock.js";
+import { spokenPatternFact, spokenPatternFactAnswer } from "./patterns.js";
 
 // Problem generation and spoken text. No DOM: runs in Node for the tests and, later, the
 // audio build (which records the same spoken text the app asks for).
@@ -71,6 +73,10 @@ function sayPennies(t) { return t.replace(/\bpennies\b/g, "penny's"); }
 // "seven plus eight"; for coins, "two dimes and three pennies. How many cents?", "How many
 // dimes?" (find the coin) or "How many cents?" (one coin: the voice doesn't name it).
 export function spokenProblem(p) {
+  // Time (Tick-Tockus): "What time is it? How many minutes past three?"; patterns (Slimelipsis):
+  // "Two, four, six. What comes next?", "How many even numbers?".
+  if (p.op === "⌚") return spokenClockFact(p);
+  if (p.op === "…" || p.op === "◐") return spokenPatternFact(p);
   // Which is more (K): "Which is more, seven or four?"
   if (p.op === "more") return "Which is more, " + spoken(p.x) + " or " + spoken(p.y) + "?";
   // Fractions: "one half equals what fourths"; "one equals what fourths".
@@ -92,6 +98,8 @@ export function spokenProblem(p) {
 // and three pennies make twenty-three cents", "There are two dimes.", and for one coin the K
 // guide's words: "This is a dime. A dime is small and silver. It's worth ten cents."
 export function spokenFact(p) {
+  if (p.op === "⌚") return spokenClockAnswer(p);
+  if (p.op === "…" || p.op === "◐") return spokenPatternFactAnswer(p);
   if (p.op === "more") return capital(spoken(p.ans)) + " is more than " + spoken(Math.min(p.x, p.y)) + ".";
   if (p.op === "/") return fractionWords(p.a, p.b, spoken) + " equals " + fractionWords(p.ans, p.d, spoken);
   if (p.op === "▦") return capital(spoken(p.r)) + " rows of " + spoken(p.c) + " make " + spoken(p.ans) + ".";

@@ -1,4 +1,5 @@
 // The monsters: data and inline SVG art. No DOM, so the check can run it in Node.
+import { clockMonster, TENTACLE } from "./clock.js";
 // Art is simple shapes, no fonts: solid() and line() draw a dark outline, then the color,
 // then a white sheen gradient.
 export const DK='#0c171c';
@@ -94,8 +95,7 @@ function judy(c) {
    The grade strata's new monsters (DESIGN.md §4.1). Same shape as MON, plus sym (the symbol its
    body is), stratum and trait (the plan, for the gallery page), so they can be reviewed before
    they're wired into wings.js, traits.js and lines.js. Nothing in the game reads NEW_MON.
-   Tick-Tockus and Slimelipsis wait here for problems of their own (time, patterns); the six that
-   use problems the game already has (or small sets of its own) are in MON below, after it. */
+   Every one drawn so far is in the game now (MON); the list stays for the next ones. */
 const CREAM = '#f3efe4', GOLD = '#ffc93c', CORAL = '#ff5a4e';
 const thin = (w) => `stroke="${DK}" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round"`;
 // Points on a circle, for the Centipede's coil and Tick-Tockus's clock.
@@ -111,28 +111,6 @@ const CENTI = { cx: 102, cy: 98, r: 60 };
 const rodAt = (i) => 194 - i * 23.6;
 
 export const NEW_MON=[
- {n:'Tick-Tockus',op:'mix',sym:'🕒',stratum:'hall, mines, tower',c:'#e8679f',hits:4,
-  trait:{icon:'⏰',name:'Tell the time',text:'Hours and half hours, then 5 minutes, then the minute'},
-  quip:'runs out of time and wriggles away.',
-  d:c=>{const legs=[[58,118,'q-26 10 -34 36 q-4 14 8 14'],[74,128,'q-12 24 -6 44 q4 10 12 2'],[92,132,'q-4 26 -16 42'],[108,132,'q4 26 16 42'],[126,128,'q12 24 6 44 q-4 10 -12 2'],[142,118,'q26 10 34 36 q4 14 -8 14']];
-   const ticks=[0,30,60,90,120,150,180,210,240,270,300,330].map((a)=>{const big=a%90===0,[x0,y0]=at(100,72,big?34:37,a-90),[x1,y1]=at(100,72,42,a-90);return `<path d="M${f1(x0)} ${f1(y0)} L${f1(x1)} ${f1(y1)}" ${thin(big?4:2.5)}/>`;}).join('');
-   return line(legs.map(([x,y,p])=>`<path d="M${x} ${y} ${p}"/>`).join(''),c,13)
-   +legs.map(([x,y],i)=>`<circle cx="${x+(i<3?-6:6)}" cy="${y+16}" r="2.5" fill="#ffd0e3"/>`).join('')
-   +solid(`<path d="M50 34 a22 22 0 0 1 30 -22 Z" transform="rotate(-10 62 24)"/><path d="M150 34 a22 22 0 0 0 -30 -22 Z" transform="rotate(10 138 24)"/>`,GOLD)
-   +solid(`<circle cx="100" cy="76" r="60"/>`,c)
-   +`<circle cx="100" cy="72" r="45" fill="${CREAM}" stroke="${DK}" stroke-width="4"/>${ticks}`
-   +line(`<path d="M100 72 Q88 64 80 50 M100 72 Q118 60 128 58"/>`,c,8)+`<circle cx="100" cy="72" r="5" fill="${GOLD}" stroke="${DK}" stroke-width="3"/>`
-   +`${eye(86,94,8)}${eye(114,94,8)}<path d="M94 106 Q100 111 106 106" ${ds} stroke-width="3"/>`}},
- {n:'Slimelipsis',op:'mix',sym:'…',stratum:'mines',c:'#3fd6d0',hits:3,
-  trait:{icon:'🫧',name:'What comes next',text:'Skip counting: 15, 20, 25, □'},
-  quip:'slide off one, two, three, leaving a sticky trail.',
-  d:c=>{const X=[30,100,170],B=142,face=(x,i)=>`${eye(x-10,B-34,8)}${eye(x+10,B-34,8)}`+(i===1?`<ellipse cx="${x}" cy="${B-19}" rx="4" ry="4.5" fill="${DK}"/>`:`<path d="M${x-7} ${B-20} Q${x} ${B-14} ${x+7} ${B-20}" ${ds} stroke-width="3"/>`);
-   return line(`<path d="M-4 ${B+4} Q8 ${B-4} 26 ${B+4} Q48 ${B+12} 70 ${B+4} Q86 ${B-4} 104 ${B+4} Q126 ${B+12} 150 ${B+4}"/>`,'#8eeae4',13)
-   +solid(`<path d="M10 ${B+8} q3 10 -1 14 q-5 -4 1 -14z M58 ${B+10} q4 12 -1 17 q-6 -5 1 -17z M128 ${B+10} q3 9 -1 13 q-5 -4 1 -13z"/>`,'#8eeae4')
-   +`<path d="M0 ${B+1} h10 M42 ${B+6} h12 M84 ${B+1} h8 M114 ${B+6} h12" stroke="#fff" stroke-width="2.5" stroke-linecap="round" opacity=".75"/>`
-   +solid(X.map((x)=>slime(x,B,.94,1.06)).join(''),c)
-   +X.map(face).join('')
-   +X.map((x)=>`<circle cx="${x-14}" cy="${B-47}" r="3.5" fill="#fff" opacity=".7"/>`).join('')}},
  {n:'The Centipede',op:'mix',sym:'¢ 100',stratum:'mines',c:'#ff7a45',hits:6,boss:1,
   trait:{icon:'🐛',name:'Hundred legs',text:'At half HP it curls up into a ring'},
   quip:'counts its hundred legs and scuttles off.',
@@ -269,6 +247,24 @@ MON.push(
   if (real && i >= 0) { MON[i] = Object.assign({}, MON[i], { c: real.c, d: real.d, quip: real.quip }); NEW_MON.splice(NEW_MON.indexOf(real), 1); }
 }
 
+// Batch 1 of the strands (DESIGN.md §4.1): Tick-Tockus (time, js/clock.js) and Slimelipsis (what
+// comes next, js/patterns.js) leave NEW_MON. Tick-Tockus is the prototype's clock with its
+// tentacles, showing the time asked (m.at, set by app.js for each problem); the problem's slimes
+// are drawn by patterns.js, and Slimelipsis keeps its own drawing here.
+MON.push(
+ {n:'Tick-Tockus',op:'⌚',sym:'🕒',stratum:'hall, mines, tower',c:TENTACLE,hits:3,
+  quip:'runs out of time and wriggles away.',
+  d:(c,m)=>clockMonster(c,m&&m.at)},
+ {n:'Slimelipsis',op:'…',sym:'…',stratum:'cellar, hall, mines',c:'#3fd6d0',hits:3,
+  quip:'slide off one, two, three, leaving a sticky trail.',
+  d:c=>{const X=[30,100,170],B=142,face=(x,i)=>`${eye(x-10,B-34,8)}${eye(x+10,B-34,8)}`+(i===1?`<ellipse cx="${x}" cy="${B-19}" rx="4" ry="4.5" fill="${DK}"/>`:`<path d="M${x-7} ${B-20} Q${x} ${B-14} ${x+7} ${B-20}" ${ds} stroke-width="3"/>`);
+   return line(`<path d="M-4 ${B+4} Q8 ${B-4} 26 ${B+4} Q48 ${B+12} 70 ${B+4} Q86 ${B-4} 104 ${B+4} Q126 ${B+12} 150 ${B+4}"/>`,'#8eeae4',13)
+   +solid(`<path d="M10 ${B+8} q3 10 -1 14 q-5 -4 1 -14z M58 ${B+10} q4 12 -1 17 q-6 -5 1 -17z M128 ${B+10} q3 9 -1 13 q-5 -4 1 -13z"/>`,'#8eeae4')
+   +`<path d="M0 ${B+1} h10 M42 ${B+6} h12 M84 ${B+1} h8 M114 ${B+6} h12" stroke="#fff" stroke-width="2.5" stroke-linecap="round" opacity=".75"/>`
+   +solid(X.map((x)=>slime(x,B,.94,1.06)).join(''),c)
+   +X.map(face).join('')
+   +X.map((x)=>`<circle cx="${x-14}" cy="${B-47}" r="3.5" fill="#fff" opacity=".7"/>`).join('')}});
+
 /* ---------- looks: the same monster with different extras ----------
    Each regular monster has four more looks with alliterative names (Minustaur's Mom, Mighty
    Minustaur). A look is the same drawing plus accessories placed on its face and head, so kids
@@ -290,11 +286,13 @@ export const ANCHOR = {
   // Judo Judy is a boss (no looks); its anchors are here for its art checks. The top is its top-knot.
   "Judo Judy": { eyes: [[88, 55, 8], [112, 55, 8]], mouth: [100, 66], top: [100, -10], hat: true, neck: [100, 74], ground: 190 },
   // The new monsters. Doublet's are its left twin's face, with both twins' eyes; Slimelipsis's
-  // (NEW_MON, not in the game yet) are its middle slime's.
+  // are its middle slime's.
   Pipsqueak: { eyes: [[66, 82, 11], [124, 140, 11]], mouth: [95, 126], top: [104, 40], neck: [95, 150], ground: 188 },
   Triceraplus: { eyes: [[58, 86, 10], [82, 86, 10]], mouth: [70, 107], top: [70, 38], neck: [70, 124], ground: 182 },
   Doublet: { eyes: [[50, 82, 8], [68, 82, 8], [132, 82, 8], [150, 82, 8]], mouth: [59, 98], top: [59, 36], neck: [59, 116], ground: 166 },
-  "Tick-Tockus": { eyes: [[86, 94, 8], [114, 94, 8]], mouth: [100, 108], top: [100, 16], neck: [100, 134], ground: 190 },
+  // Tick-Tockus's face is the clock, kept clear: its looks wear only things on the case (the top
+  // between its bells, the bottom of the case). Its eyes are where its 10 and 2 are, never used.
+  "Tick-Tockus": { eyes: [[76, 70, 6], [124, 70, 6]], mouth: [100, 120], top: [100, 26], neck: [100, 162], ground: 190 },
   Slimelipsis: { eyes: [[90, 108, 8], [110, 108, 8]], mouth: [100, 123], top: [100, 88], neck: [100, 134], ground: 150 },
   Squaresquatch: { eyes: [[84, 86, 9], [110, 86, 9]], mouth: [97, 110], top: [97, 40], neck: [97, 124], ground: 196 },
   "The Centipede": { eyes: [[34, 62, 9], [58, 62, 9]], mouth: [46, 82], top: [46, 12], hat: true, neck: [46, 92], ground: 200 },
@@ -347,7 +345,10 @@ export const LOOKS = {
   Triceraplus: [["Tricera-tot", ["mini"]], ["Captain Triceraplus", ["bandana", "eyepatch"]], ["Queen Triceraplus", ["crown", "lashes"], "she"], ["Triceracool", ["sunglasses"]]],
   Squaresquatch: [["Baby Squatch", ["mini"]], ["Snowsquatch", ["scarf", "nightcap"]], ["Sir Squarington", ["tophat", "monocle"], "he"], ["Disco Squatch", ["sunglasses", "sparkles"]]],
   Halfling: [["Half Pint", ["mini"]], ["Lady Halfling", ["bow", "lashes"], "she"], ["Dizzy Halfling", ["spiral"]], ["Halfling Hero", ["headband", "medal"]]],
-  "Margot-Rythm": [["Sleep Mode", ["lids"]], ["Glitchy Margot", ["spiral"]], ["Mini Margot", ["mini"]], ["Margot in Shades", ["sunglasses"]]]
+  "Margot-Rythm": [["Sleep Mode", ["lids"]], ["Glitchy Margot", ["spiral"]], ["Mini Margot", ["mini"]], ["Margot in Shades", ["sunglasses"]]],
+  // Batch 1 (time and patterns). Tick-Tockus's extras sit on its case, never its face.
+  "Tick-Tockus": [["Tick-Tock Tot", ["mini"]], ["Grandfather Tockus", ["tophat", "bowtie"], "he"], ["Bedtime Tockus", ["nightcap", "scarf"]], ["Cuckoo Tockus", ["bow", "sparkles"]]],
+  Slimelipsis: [["Slimelets", ["mini"]], ["Slime Time", ["sunglasses"]], ["Snoozelipsis", ["nightcap", "lids"]], ["Gooey Belle", ["bow", "lashes"], "she"]]
 };
 // A monster in look i (0 is itself): the same monster, renamed, with its base name kept for its
 // trait and kind of math.
@@ -360,12 +361,12 @@ export function lookOf(m, i) {
 }
 export const allLooks = () => MON.flatMap((m) => (LOOKS[m.n] || []).map((_, i) => lookOf(m, i + 1)));
 function dress(m) {
-  const a = ANCHOR[m.base], art = m.d(m.c), extras = m.look.filter((k) => KIT[k]).map((k) => KIT[k](a, m.c)).join("");
+  const a = ANCHOR[m.base], art = m.d(m.c, m), extras = m.look.filter((k) => KIT[k]).map((k) => KIT[k](a, m.c)).join("");
   if (!m.look.includes("mini")) return art + extras;
   // Smaller, standing on the same ground.
   return `<g transform="translate(100 ${a.ground}) scale(.72) translate(-100 ${-a.ground})">${art}${extras}</g>`;
 }
-export const svg=(m,cls='')=>`<svg viewBox="-10 -10 220 220" class="${cls}" role="img" aria-label="${m.n}">${defs}${m.look ? dress(m) : m.d(m.c)}</svg>`;
+export const svg=(m,cls='')=>`<svg viewBox="-10 -10 220 220" class="${cls}" role="img" aria-label="${m.n}">${defs}${m.look ? dress(m) : m.d(m.c, m)}</svg>`;
 
 /* ---------- boss forms: mega and Legend (DESIGN.md §14.2) ----------
    Each boss has two more forms, drawn here as data; nothing in the game uses them yet.

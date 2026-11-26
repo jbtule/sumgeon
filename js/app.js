@@ -10,6 +10,8 @@ import { WINGS, wingOf, runFloors, openWings, toOpen, floorStars, wingStars, dep
 import { missingOf, pickBlank, filled, spokenMissing, MISSING_SHARE, canHide } from "./missing.js";
 import { rectSvg } from "./third.js";
 import { arraySvg } from "./arrays.js";
+import { clockSvg, clockFactLine, clockFactHint, clockAnswer, elapsedSvg } from "./clock.js";
+import { patternSvg, oddEvenSvg, patternFactHint } from "./patterns.js";
 import { coinsSvg, pileOf, coinOf } from "./coins.js";
 import { read as readSigil, judge as judgeSigil } from "./sigil.js";
 import { HANDWRITING } from "./handwriting.js";
@@ -295,6 +297,20 @@ function streakUI() {
 function setMsg(t, c = "") { const m = $("msg"); m.textContent = t; m.className = "msg " + c; }
 function ansUI() {
   $("ans").textContent = G.input;
+  // A whole time in two slots (Tick-Tockus): the one being typed glows, the one to come waits,
+  // and Hit! says which: "Hour ✓", then "Minutes!".
+  const go = $("pad").dataset.mode === "num" ? $("pad").querySelector('[data-k="go"]') : null;
+  if (G.cur && G.cur.slots && G.slot) {
+    G.slot.vals.forEach((v, i) => {
+      const b = $("blank" + i);
+      if (!b) return;
+      b.textContent = v || "?";
+      b.classList.toggle("typed", !!v); b.classList.toggle("now", i === G.slot.at); b.classList.toggle("wait", i > G.slot.at && !v);
+    });
+    if (go) { go.textContent = G.slot.at ? "Minutes!" : "Hour ✓"; go.classList.add("longkey"); go.setAttribute("aria-label", G.slot.at ? "Attack with the minutes" : "The hour is done"); }
+  } else if (go && go.textContent !== "Hit!") { go.textContent = "Hit!"; go.classList.remove("longkey"); go.setAttribute("aria-label", "Attack"); }
+  // The slimes (Slimelipsis): the □ slime fills as you type.
+  if (G.cur && G.cur.op === "…") $("prob").innerHTML = slimeRow(G.cur);
   // A missing-number problem fills its □ as you type.
   if ($("blank")) { $("blank").textContent = G.input || "?"; $("blank").classList.toggle("typed", !!G.input); }
 }
@@ -304,7 +320,15 @@ const BLANK = '<span class="blank" id="blank">?</span>';
 const stacked = (t) => t.replace(/(\d+|□)\/(\d+)/g, '<span class="frac"><span>$1</span><span>$2</span></span>');
 function probUI() {
   const p = G.cur, box = $("prob");
-  if (p.blank || p.sym || p.op === "=") box.innerHTML = esc(p.q).replace("□", BLANK);
+  // Time (Tick-Tockus): the clock is the monster itself (clockArt), so here only the line: "□
+  // o'clock", "3:□", or "□:□□" in two slots. Elapsed time shows its two clocks (or one) over it,
+  // and a time asked by another monster (a missed one coming back) a plain clock.
+  if (p.op === "⌚") box.innerHTML = timePicture(p) + `<span class="find tline">${clockFactLine(p).map((x, i, a) => (x !== null ? esc(x) : slotHTML(a.slice(0, i).filter((y) => y === null).length, p))).join("")}</span>`;
+  // What comes next (Slimelipsis): the row of slimes, the □ one glowing and filling as you type.
+  else if (p.op === "…") box.innerHTML = slimeRow(p);
+  // Odd and even: the slimes holding their numbers, and "Even numbers = □" under them.
+  else if (p.op === "◐") box.innerHTML = oddEvenSvg(p, { hint: G.hinted, perRow: p.nums.length <= 6 ? p.nums.length : 4 }) + `<span class="find">${p.ask === "even" ? "Even" : "Odd"} numbers = ${BLANK}</span>`;
+  else if (p.blank || p.sym || p.op === "=") box.innerHTML = esc(p.q).replace("□", BLANK);
   // "7 or 4": which is more (K). The voice asks it; the answer box is the answer.
   else if (p.op === "more") box.innerHTML = `${p.x} <small class="or">or</small> ${p.y}`;
   // Fractions, stacked, with the glowing □ as the hidden numerator: 1/2 = □/4.
@@ -326,17 +350,45 @@ function probUI() {
   // Flipped by Judo Judy: each number in its own box, so the throw can swap them (judoThrow).
   else if (p.flipped) box.innerHTML = `<span class="jn">${p.x}</span> <span class="jop">+</span> <span class="jn">${p.y}</span> =`;
   else box.textContent = p.q + " =";
-  document.querySelector(".game").classList.toggle("missing", !!p.blank || !!p.sym || p.op === "=" || !!p.find || "/≈▭▦".includes(p.op));
+  document.querySelector(".game").classList.toggle("missing", !!p.blank || !!p.sym || p.op === "=" || !!p.find || "/≈▭▦⌚…◐".includes(p.op));
   padUI(p.spell ? "spell" : p.sym ? "cmp" : "num");
   document.querySelector(".game").classList.toggle("cents", p.op === "¢" && !p.find);
-  document.querySelector(".game").classList.toggle("find", !!p.find || p.op === "▭" || p.op === "▦");
+  document.querySelector(".game").classList.toggle("find", !!p.find || p.op === "▭" || p.op === "▦" || p.op === "⌚" || p.op === "◐");
+  document.querySelector(".game").classList.toggle("slimes", p.op === "…" || p.op === "◐");
+  document.querySelector(".game").classList.toggle("hinted", !!G.hinted); // a hint drawn on the picture (iPad keeps it short)
 }
+// Answer slot i of a problem: one slot is the usual glowing □ (#blank); two (a whole time) are
+// #blank0 and #blank1, the hour, then the minutes.
+const slotHTML = (i, p) => (p.slots ? `<span class="blank tslot${i ? " wait" : " now"}" id="blank${i}">?</span>` : BLANK);
+// Is the monster on this floor Tick-Tockus (or one of its looks)? Then the clock is the monster.
+const onClock = () => { const m = G.floors && G.floors[G.floor]; return !!m && (m.base || m.n) === "Tick-Tockus"; };
+// Tick-Tockus showing the problem's time (elapsed time's start), with the hint's layer on it.
+function clockArt(layer) {
+  const p = G.cur;
+  if (!onClock() || !p || p.op !== "⌚") return;
+  $("mon").innerHTML = monsterArt(Object.assign({}, G.floors[G.floor], { at: { h: p.h, m: p.m, layer } }));
+}
+// The picture over a time problem's line: elapsed time's clocks (with the open number line or
+// the sweep once the hint is open), or a plain clock when the monster isn't Tick-Tockus.
+function timePicture(p) {
+  if (p.kind === "long" || p.kind === "add") return elapsedSvg(p, { hint: G.hinted });
+  if (onClock()) return "";
+  return clockSvg(p.h, p.m, { monster: false, hint: G.hinted ? clockFactHint(p, false).layer : null, label: "a clock" }).replace('<svg viewBox="0 0 240 240"', '<svg viewBox="-16 -16 272 272"');
+}
+// The slimes' row (Slimelipsis), with what's typed in the □ and the hint's hops once it's open.
+const slimeRow = (p) => patternSvg(p, { typed: G.input, hops: G.hinted ? patternFactHint(p, false).hops : null, label: p.q });
 // The facts a monster asks: its strand in this stratum (Trollar's coins) or the stratum's band.
 const strandOf = (m) => bandOf(wing(), m);
 // A problem with its answer, for the miss message and the Oops card: "3 + 4 = 7", "3 + 4 = 7"
 // for 3 + □ = 7, and "10 + 5 + 1 = 16¢" for coins (just "16¢" for one coin, "2 dimes" for
 // finding them).
 function shownFact(p, ans) {
+  // Time, patterns, and odd and even show their own answers ("3:35", "2, 4, 6, 8", "3 even
+  // numbers"), in bold on the Oops card.
+  const bold = typeof ans === "string" && ans.startsWith("<b>"), b = (t) => (bold ? `<b>${esc(t)}</b>` : esc(t));
+  if (p.op === "⌚") return p.kind === "long" ? `${esc(p.q)}: ${b(clockAnswer(p))}` : p.kind === "add" ? `${esc(p.q)} = ${b(clockAnswer(p))}` : b(clockAnswer(p));
+  if (p.op === "…") return p.nums.map((n, i) => (i === p.blank ? b(n) : n)).join(", ");
+  if (p.op === "◐") return `${b(p.ans)} ${p.ask} number${p.ans === 1 ? "" : "s"}`;
   if (p.sym) return p.q.replace("□", typeof ans === "string" && ans.startsWith("<b>") ? `<b>${esc(p.sym)}</b>` : p.sym);
   if (p.blank || p.op === "=" || p.op === "/" || p.op === "≈" || p.op === "▦") return filled(p, ans);
   if (p.op === "▭") return p.w + " by " + p.h + ": " + filled(p, ans);
@@ -452,7 +504,9 @@ function newProblem() {
   // The last few spells, across runs while the game is open, so the same one isn't cast fight after fight.
   if (spell) G.spells = [spell].concat(G.spells || []).slice(0, SPELL_MEMORY);
   const probe = !due && !spell && f.on && f.cool <= 0 ? probeKey(bk, recs, null, G.recent, avoidAns, f.leap, kinds) : null;
-  const key = spell || probe || choose(bk, recs, { now: Date.now(), recent: G.recent, retry: due ? due.key : null, op, asks: kinds, like: prefers(m), depth: G.depth, avoidAns,
+  // ?fact=<key> (URL-encoded, "%E2%8C%9At3%3A30" for ⌚t3:30) makes the first problem that fact, for testing.
+  const forced = FACT_AT && !G.solved && !G.tries ? FACT_AT : null;
+  const key = forced || spell || probe || choose(bk, recs, { now: Date.now(), recent: G.recent, retry: due ? due.key : null, op, asks: kinds, like: prefers(m), depth: G.depth, avoidAns,
     // The captain's digit: held back in the first fight, then about a third of problems lean to it
     // until the captain's first moment has happened (captainLean).
     digit: team.captain, digitShare: captainLean() ? CAPTAIN_BIAS : 0, avoidDigitShare: firstFight() ? CAPTAIN_HOLD : 0 });
@@ -483,12 +537,16 @@ function newProblem() {
   if (dice) G.cur = dice;
   G.recent = [key].concat(G.recent).slice(0, RECENT);
   G.input = ""; G.busy = false; G.hinted = false; G.t0 = performance.now();
+  G.slot = G.cur.slots ? { at: 0, vals: ["", ""] } : null;
   probUI();
+  clockArt();
   if (flipped) judoThrow(G.cur);
   if (dice) diceFlash(G.cur);
   // Coins ("How many dimes?") and comparisons can't be read off the screen by a pre-reader, so
   // the voice reads them, after the monster's name. Skipped if it's answered first.
-  if (G.cur.op === "¢" || G.cur.op === "○" || G.cur.op === "more") say("q", spokenProblem(G.cur), false, asked(G.cur));
+  // Time and patterns too: "What time is it?" isn't on the screen, and a row of slimes is read
+  // like counting out loud ("Two, four, six. What comes next?").
+  if ("¢○⌚…◐".includes(G.cur.op) || G.cur.op === "more") say("q", spokenProblem(G.cur), false, asked(G.cur));
   // The first comparison: how the < = > keys work.
   if (G.cur.op === "○" && once("compare")) { say("p", PHRASE.cmpHow, false, asked(G.cur)); say("p", PHRASE.cmpSame, false, asked(G.cur)); }
   if (G.cur.spell) {
@@ -667,10 +725,16 @@ function showHelp(mode) {
 }
 function openHint() {
   const h = hintFor(hintFact(), false), box = $("hint");
-  box.innerHTML = `<div class="model">${h.model}</div><p class="hsay">${esc(h.say)}</p>`;
+  G.hinted = true;
+  // Time and patterns draw the hint on the problem's own picture (Tick-Tockus's clock, the
+  // slimes), so only its words open here.
+  const inline = "⌚…◐".includes(G.cur.op);
+  if (inline) { probUI(); ansUI(); clockArt(h.layer); }
+  // An equation in their words doesn't break across lines ("35 + 2 = ?").
+  box.innerHTML = (inline ? "" : `<div class="model">${h.model}</div>`) + `<p class="hsay">${esc(inline ? h.say.replace(/ ([=+−→]) /g, "\u00a0$1\u00a0") : h.say)}</p>`;
+  box.classList.toggle("words", inline);
   box.hidden = false;
   $("hintBtn").hidden = true;
-  G.hinted = true;
 }
 // After a miss: the worked example as a card over the game, "Oops!" and the right answer with
 // the drawing, until "Got it" (or Enter, on the focused button).
@@ -719,7 +783,8 @@ function submit() {
   if (G.busy || G.input === "") return;
   G.tries++;
   // A comparison's answer is its symbol (<, = or >); everything else is a number.
-  if (G.cur.sym ? G.input === G.cur.sym : Number(G.input) === G.cur.ans) {
+  const right = G.cur.slots ? G.slot.vals.every((v, i) => v !== "" && Number(v) === G.cur.slots[i]) : G.cur.sym ? G.input === G.cur.sym : Number(G.input) === G.cur.ans;
+  if (right) {
     G.busy = true; G.solved++;
     if (!G.hinted) G.streak++;
     G.floorStreak = Math.max(G.floorStreak, G.streak);
@@ -1639,6 +1704,8 @@ function nextWingHint() {
 // them again. The start card falls away as it begins.
 // How long the room shows empty after the descent before the first monster arrives.
 const AFTER_DESCENT_MS = 1300;
+const FACT_AT = new URLSearchParams(location.search).get("fact");
+const FLOOR_AT = Math.max(0, Math.min(5, Number(new URLSearchParams(location.search).get("floor")) || 0)), MONSTER_AT = new URLSearchParams(location.search).get("monster");
 function descend(depth, mode) {
   if (descending()) return;
   const d = depth || deepest(wing(), progress), enter = mode === "enter";
@@ -1669,7 +1736,10 @@ function start(depth, enter, voiced, pause) {
   if (!voiced) { stopSpeech(); openingLines(enter, G.depth); }
   const go = () => {
     if (!G.running) return;
-    loadMonster(0);
+    // ?monster=Tick-Tockus puts that monster on the first floor (or the ?floor= one); ?floor=4
+    // starts on that floor. For testing.
+    if (MONSTER_AT) { const m = MON.find((x) => x.n === MONSTER_AT); if (m) G.floors[FLOOR_AT ? FLOOR_AT - 1 : 0] = m; }
+    loadMonster(FLOOR_AT ? FLOOR_AT - 1 : 0);
     // The player's first fight: how to attack, before the first problem is read (until they answer).
     if (once("hit")) say("p", PHRASE.hitHow, false, () => !G.tries && G.running);
     newProblem();
@@ -1729,6 +1799,7 @@ function press(k) {
     if (k === "clear" || k === "del") { sfx.tick(); sigilReset(); }
     return; // digits wait for the number pad
   }
+  if (G.cur && G.cur.slots && G.slot) return slotPress(k);
   if (k === "go") return submit();
   const cmp = !!(G.cur && G.cur.sym), sym = "<=>".includes(k);
   if (k !== "del" && sym !== cmp) return; // digits for numbers, < = > for comparisons
@@ -1736,6 +1807,25 @@ function press(k) {
   if (k === "del") G.input = G.input.slice(0, -1);
   else if (sym) G.input = k;
   else if (G.input.length < 4) G.input = (G.input === "0" ? "" : G.input) + k;
+  ansUI();
+}
+// A whole time in two slots (Tick-Tockus): digits go in the slot being typed (two at most); Hit!
+// ("Hour ✓") moves on to the minutes, delete in an empty slot goes back, and Hit! ("Minutes!")
+// answers. The first couple of times, the voice says "Now the minutes!".
+function slotPress(k) {
+  const s = G.slot, cur = s.vals[s.at];
+  if (k === "go") {
+    if (s.at === 1) return submit();
+    if (!cur) return;
+    sfx.tick(); s.at = 1; ansUI();
+    if (once("minutes", 2)) say("p", PHRASE.nowMinutes, false, asked(G.cur));
+    return;
+  }
+  if (k !== "del" && !/^[0-9]$/.test(k)) return;
+  sfx.tick();
+  if (k === "del") { if (cur) s.vals[s.at] = cur.slice(0, -1); else if (s.at) s.at--; }
+  else if (cur.length < 2) s.vals[s.at] = (s.at === 0 && cur === "0" ? "" : cur) + k;
+  G.input = s.vals.join("");
   ansUI();
 }
 /* ---------- spell casting ----------
@@ -1906,6 +1996,8 @@ document.addEventListener("keydown", (e) => {
   else if (e.key === ".") press(">");
   else if (e.key === "Backspace") press("del");
   else if (e.key === "Enter") { e.preventDefault(); press("go"); }
+  // ":" after the hour moves on to the minutes, as on a clock.
+  else if (e.key === ":") { if (G.cur && G.slot && G.slot.at === 0) press("go"); }
   // ? opens the hint, like tapping 💡, when this problem has one.
   else if (e.key === "?") { if (!$("hintBtn").hidden) { e.preventDefault(); $("hintBtn").click(); } }
 });

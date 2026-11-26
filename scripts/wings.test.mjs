@@ -11,17 +11,17 @@ assert.deepEqual(WINGS.map((w) => w.after || null), [null, "cellar", "hall", "mi
 assert.equal(mines.name, "The Crystal Mines");
 // Each stratum's monsters, and what they ask there.
 const M = (w) => w.pool.concat([w.boss]);
-assert.deepEqual(M(cellar), ["Plusquito", "Minustaur", "Pipsqueak", "Chompers", "Trollar", "Make-Ten Golem"]);
-assert.deepEqual(M(hall), ["Quizard", "Chompers", "Equal Twins", "Doublet", "Triceraplus", "Judo Judy"]);
-assert.deepEqual(M(mines), ["Haberhasher", "Margot-Rythm", "Trollar", "Squaresquatch", "The Centipede"], "the Mines' own monsters: no more Plusquito and Minustaur standing in");
-assert.deepEqual(M(tower), ["Timesaur", "Divvy", "Starbot", "Halfling", "Sigma Rex"]);
+assert.deepEqual(M(cellar), ["Plusquito", "Minustaur", "Pipsqueak", "Chompers", "Trollar", "Slimelipsis", "Make-Ten Golem"]);
+assert.deepEqual(M(hall), ["Quizard", "Chompers", "Equal Twins", "Doublet", "Triceraplus", "Tick-Tockus", "Slimelipsis", "Judo Judy"]);
+assert.deepEqual(M(mines), ["Haberhasher", "Margot-Rythm", "Trollar", "Squaresquatch", "Slimelipsis", "Tick-Tockus", "The Centipede"], "the Mines' own monsters: no more Plusquito and Minustaur standing in");
+assert.deepEqual(M(tower), ["Timesaur", "Divvy", "Starbot", "Halfling", "Tick-Tockus", "Sigma Rex"]);
 // Depth 1's floors: each stratum keeps its five (the rescue floor third), every named floor is in
 // its pool, and no monster comes twice in a row.
 assert.deepEqual(WINGS.map((w) => w.floors), [
   ["Plusquito", "Pipsqueak", "rescue", "Chompers", "Trollar"],
-  ["Quizard", "Equal Twins", "rescue", "Doublet", "Triceraplus"],
-  ["Haberhasher", "Margot-Rythm", "rescue", "Trollar", "Squaresquatch"],
-  ["Timesaur", "Divvy", "rescue", "Starbot", "Halfling"]]);
+  ["Quizard", "Equal Twins", "rescue", "Tick-Tockus", "Triceraplus"],
+  ["Haberhasher", "Slimelipsis", "rescue", "Margot-Rythm", "Tick-Tockus"],
+  ["Timesaur", "Divvy", "rescue", "Tick-Tockus", "Halfling"]]);
 for (const w of WINGS) {
   assert.ok(w.floors.every((f) => f === "rescue" || f === "pool" || w.pool.includes(f)), `${w.id}: every floor is in the pool`);
   for (const depth of [1, 2, 3, 5, 9]) for (let seed = 1; seed < 40; seed++) {
@@ -38,6 +38,18 @@ const named = (n) => ({ n });
 assert.deepEqual([bandOf(cellar, named("Trollar")), bandOf(mines, named("Trollar")), bandOf(cellar, named("Chompers")), bandOf(hall, named("Chompers")), bandOf(mines, named("Haberhasher"))],
   ["coinsK", "coins", "more", "first", "second"], "Trollar finds coins in the Cellar and counts them in the Mines");
 assert.equal(bandOf(cellar, { n: "Baby Trollar", base: "Trollar" }), "coinsK", "a look asks what its monster does");
+// Batch 1 (time and patterns): Tick-Tockus tells the time of each stratum's grade (hours in the
+// Hall, 5 minutes in the Mines, the minute and elapsed time in the Tower), and Slimelipsis counts
+// in its patterns (on and back in the Cellar, to 120 and by 5s in the Hall, skip counting and odd
+// and even in the Mines), each a strand there; Slimelipsis only visits the Cellar and the Hall.
+assert.deepEqual([cellar, hall, mines].map((w) => bandOf(w, named("Slimelipsis"))), ["patK", "patH", "patM"]);
+assert.deepEqual([hall, mines, tower].map((w) => bandOf(w, named("Tick-Tockus"))), ["timeH", "timeM", "timeT"]);
+assert.equal(bandOf(hall, { n: "Grandfather Tockus", base: "Tick-Tockus" }), "timeH");
+for (const b of ["patK", "patH", "patM", "timeH", "timeM", "timeT"]) assert.ok(BANDS[b].strand && BANDS[b].unlock === 0.5, `${b} is a strand`);
+assert.ok(!cellar.floors.includes("Slimelipsis") && !hall.floors.includes("Slimelipsis"), "Slimelipsis visits the Cellar and the Hall from their pools");
+for (const w of [hall, mines, tower]) assert.ok(w.floors.includes("Tick-Tockus"), `Tick-Tockus has a depth-1 floor in ${w.id}`);
+// Strands don't count toward opening the next stratum: the share is of the stratum's band only.
+assert.equal(learnedShare(hall, Object.fromEntries(pool("timeH").map((f) => [f.key, { b: 4 }]))), 0);
 const run = runFloors(cellar, { captain: 5, rescued: [] }, () => 0);
 assert.equal(run.length, 6);
 assert.equal(run[3].n, "Chompers", "floor 4 is Chompers");

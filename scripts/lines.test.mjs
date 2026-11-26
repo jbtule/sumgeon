@@ -129,6 +129,35 @@ for (const l of spokenLines().filter((l) => l.kind === "h")) assert.ok(words(l.t
   assert.ok(ids.has("q:Three rows of five. How many in all?") && ids.has("q:Three rows of five make fifteen."), "arrays");
   assert.ok(GROUPS.includes("Three numbers") && GROUPS.includes("Arrays"));
 }
+// Batch 1: Tick-Tockus and Slimelipsis (and their looks) in the names sprite; their trait lines;
+// every time and pattern asked and answered, in small sprites by strand, in "Time" and
+// "Patterns"; times said the way a teacher says them ("three oh five").
+{
+  for (const n of ["Tick-Tockus", "Slimelipsis"]) {
+    const m = MON.find((x) => x.n === n);
+    for (const x of [m].concat(allLooks().filter((l) => l.base === n))) assert.ok(names.includes(monsterName(x)) && names.includes(monsterCleared(x)) && names.includes(monsterWon(x)), x.n);
+    assert.ok(ids.has("p:" + traitLine(m)) && words(traitLine(m)) <= 12, traitLine(m));
+  }
+  const SPR = { "time-h": "timeH", "time-m": "timeM", "time-t": "timeT", "pat-k": "patK", "pat-h": "patH", "pat-m": "patM" };
+  const all = spokenLines();
+  for (const [sp, band] of Object.entries(SPR)) {
+    const inSprite = new Set(all.filter((l) => l.sprite === sp).map((l) => l.text));
+    assert.ok(inSprite.size > 30 && inSprite.size < 130, `${sp}: ${inSprite.size} lines, a small sprite`);
+    for (const f of pool(band)) {
+      const p = factOf(f.key);
+      for (const t of [spokenProblem(p), spokenFact(p)]) assert.ok(ids.has("q:" + t), `${f.key}: ${t}`);
+    }
+  }
+  assert.ok(GROUPS.includes("Time") && GROUPS.includes("Patterns"));
+  assert.ok(all.filter((l) => l.group === "Time" || l.group === "Patterns").every((l) => l.kind === "q" && l.sprite));
+  for (const t of ["What hour is it?", "It's three o'clock.", "What time is it? Half past what?", "It's half past three.", "What time is it?", "It's three thirty.",
+    "One, two, three. What comes next?", "Four comes next.", "Two, four, six, eight. What comes next?", "Ten comes next.", "How many even numbers?", "How many odd numbers?"]) assert.ok(ids.has("q:" + t), t);
+  assert.ok([...ids].some((id) => /^q:\w[\w -]*, blank, [\w -]+, [\w -]+\. What's missing\?$/.test(id)), "what's missing");
+  assert.ok(![...ids].some((id) => /^q:.*\b(\d|undefined|NaN)/.test(id) && /comes next|minutes|o'clock|past|even|odd/.test(id)), "numbers in time and pattern lines are words");
+  assert.ok([...ids].some((id) => /^q:It's \w+ oh five\.$/.test(id)), "three oh five, as a teacher says it");
+  assert.ok([...ids].some((id) => /^q:It starts at \w+ [\w-]+ and ends at \w+ [\w-]+\. How many minutes\?$/.test(id)) && [...ids].some((id) => /^q:[A-Z][\w-]+ minutes\.$/.test(id)), "how long");
+  assert.ok(ids.has("p:Now the minutes!"));
+}
 // Keys are stable and unique.
 const plan = planClips();
 assert.equal(new Set(plan.map((c) => c.key)).size, plan.length);

@@ -29,12 +29,24 @@ assert.match(h("×", 9, 7).say, /minus one group/);
 assert.ok(!/finger/.test(h("×", 9, 7).say), "the finger trick isn't taught");
 assert.match(h("÷", 32, 8).say, /^Think multiplication: how many 8s make 32\? 32 ÷ 8 = \?$/, "one ? only");
 
+import { clockAnswer, digital } from "../js/clock.js";
+const TALKS = ["⌚", "◐"];
+// A worked hint says the answer: a time ("3:35", "half past 3", "3 o'clock"), its minutes, or the
+// count of odd or even numbers.
+const saysAnswer = (f, say) => (f.op === "◐" ? say.includes(`${f.ans} ${f.ask}`)
+  : f.kind === "long" ? say.includes(`${f.d} minutes`) : f.kind === "add" ? say.includes(digital(f.h2, f.m2)) : f.kind === "hour" ? say.includes(f.m ? `half past ${f.h}` : `${f.h} o'clock`) || say.includes(`the ${f.h}`) : say.includes(String(f.ans)));
 // Every fact in every band: a drawing, a grown-ups line, and no answer before answering;
 // the worked example after a miss ends with the answer.
 for (const band of Object.keys(BANDS)) {
   for (const p of pool(band)) {
     const f = factOf(p.key, () => 0.9), before = hintFor(f, false), after = hintFor(f, true);
     assert.ok(before.model.startsWith("<svg") && before.grownups, p.key);
+    // Telling time and odd and even talk it through in words ("The short hand shows the hour.",
+    // "Pair up the dots."); worked, they say the answer: the time, or the count.
+    if (TALKS.includes(f.op)) {
+      assert.ok(saysAnswer(f, after.say), `${p.key}: ${after.say}`);
+      continue;
+    }
     // A comparison's answer is its symbol: "3 + 4 ? 8" before, "3 + 4 < 8" after.
     assert.ok(before.say.endsWith(f.sym ? f.l + " ? " + f.r : "= ?"), `${p.key}: ${before.say}`);
     assert.ok(after.say.endsWith(f.sym ? f.l + " " + f.sym + " " + f.r : "= " + f.ans), `${p.key}: ${after.say}`);
@@ -70,6 +82,8 @@ const chain = /[\dX]+(?: [+−×÷] [\dX]+)*(?: = [\dX]+(?: [+−×÷] [\dX]+)*)
 // is the answer, so it's filled in: a hint that states a false equation, like "3 + □ = 7" for
 // □ + 4 = 7, fails. A comparison's "?" is its symbol, so its chains just skip it.
 function checkEquations(say, label, f) {
+  // A time (3:50) is a time, not two numbers: "3:50 + 10 + 25 = 4:25" isn't "50 + 10 + 25 = 4".
+  say = say.replace(/\d+:\d\d/g, "T");
   const filled = f && !f.sym ? say.replace(/□|(?<=^|[\s(])\?(?=$|[\s.,)])/g, String(f.ans)) : say.replace(/[?□]/g, "X");
   for (const m of filled.matchAll(chain)) {
     const parts = m[0].split(" = ").filter((p) => !p.includes("X")).map(value);
@@ -120,14 +134,20 @@ let quiet = 0;
 for (const band of Object.keys(BANDS)) {
   for (const [f, key] of problems(band)) {
     if (f.op === "≈" || (f.op === "¢" && f.q === String(f.ans))) continue;
+    // The hour is on the clock's face for everyone to see (it's reading it that's asked), and odd
+    // and even's rule names the even digits (0, 2, 4, 6 and 8); patterns.test checks its count.
+    if (f.op === "◐" || (f.op === "⌚" && (f.kind === "hour" || (f.kind === "time" && !f.m)))) continue;
     // A comparison's answer is its symbol (its ans is the damage, the bigger number).
     if (f.sym) { const hb = hintFor(f, false); assert.ok(!/[<>]|&[lg]t;/.test(hb.say + hb.model.replace(/<[^>]*>/g, "")), `${key}: ${hb.say}`); continue; }
-    const known = new Set(numbersIn((f.blank ? [f.q] : [f.q, f.l, f.r, f.x, f.y]).filter((v) => v != null).join(" ")));
+    const known = new Set(numbersIn((f.blank && f.op !== "…" ? [f.q] : [f.q, f.l, f.r, f.x, f.y, f.step && Math.abs(f.step)]).filter((v) => v != null).join(" ")));
+    // A clock's face numbers ("from the 2 to the 9") and its 12 are on it.
+    if (f.op === "⌚") [5, 12, f.m / 5, f.m2 / 5].forEach((n) => known.add(n)); // and "count by 5s"
     // and so are their digits and tens (73 is 7 tens and 3 ones).
     for (const n of [...known]) if (n >= 10) for (const part of [n % 10, Math.floor(n / 10) % 10, n - (n % 10), Math.floor(n / 10)]) known.add(part);
     // 10 is every + and − strategy's landmark (make 10, 11 is 10 and 1, back to 10), so it may show.
     if (known.has(f.ans) || (f.ans === 10 && "+-".includes(f.op))) continue;
-    const text = shown(hintFor(f, false));
+    // Times on the number line (1:45) are times, not the answer (45 minutes).
+    const text = shown(hintFor(f, false)).replace(f.op === "⌚" ? /\d+:\d\d/g : /$^/, "");
     assert.ok(!numbersIn(text).includes(f.ans), `${band} ${key}: ${f.q || f.x + f.op + f.y} = ${f.ans} shows in "${text}"`);
     quiet++;
   }
@@ -149,12 +169,18 @@ const opening = { "Ten-frame": /^Put together/, "Draw and cross out": /^Take awa
   "10 and 100 more": /^100 more: the hundreds go up by 1\. 345 \+ 100 = 445$/, "Times zero": /^Zero groups/, "Times tens": /^4 × 3 tens is 12 tens, 120\. 4 × 30 = 120$/,
   "Equal fractions": /^The same amount is shaded\. Count the shaded fourths: □ = 2$/, "Rounding": /^47 is between 40 and 50\. Halfway is 45, and 47 is past halfway, so it rounds up\. □ = 50$/,
   "Area": /^Count the squares, or rows × columns: 3 × 4 = 12$/, "Perimeter": /^Add all four sides: 4 \+ 3 \+ 4 \+ 3 = 14$/,
-  "Three numbers: find the ten": /^Find the ten: 4 \+ 6 = 10\. 10 \+ 3 = 13$/, "Arrays as equal rows": /^Add the rows: 5 \+ 5 \+ 5 = 15$/ };
+  "Three numbers: find the ten": /^Find the ten: 4 \+ 6 = 10\. 10 \+ 3 = 13$/, "Arrays as equal rows": /^Add the rows: 5 \+ 5 \+ 5 = 15$/,
+  "Count on": /^Each slime is 1 more\. 6 \+ 1 = 7$/, "Count back": /^Each slime is 1 less\. 8 − 1 = 7$/, "Skip counting": /^Each slime is 5 more\. 30 \+ 5 = 35$/,
+  "What's missing": /^Each slime is 10 more\. 20 \+ 10 = 30$/, "Odd and even": /^The even ones: 1, 2, 3\. 3 even numbers\.$/,
+  "Telling the hour": /^The short hand points to the 3\. It's 3 o'clock\.$/, "Half past": /^The short hand is between 3 and 4\. It just passed the 3: half past 3\.$/,
+  "Writing the time": /^The short hand just passed the 4\. Count by 5s: 5, 10, 15, 20, 25\. It's 4:25\.$/, "Minutes by 5s": /^Count by 5s from the 12: 5, 10, 15, 20, 25, 30, 35\. 35 minutes past 3\.$/,
+  "To the minute": /^By 5s to 35, then 2 more: 35 \+ 2 = 37\.$/, "How long? Round the clock": /^From the 2 to the 9: 5, 10, 15, 20, 25, 30, 35\. 35 minutes\.$/,
+  "How long? An open number line": /^3:50 → 4:00 is 10, 4:00 → 4:25 is 25\. 10 \+ 25 = 35 minutes\.$/, "Minutes later": /^3:50 \+ 10 \+ 15 = 4:15\.$/ };
 assert.equal(STRATEGIES.length, Object.keys(opening).length);
 for (const s of STRATEGIES) {
   const h = hintFor(s.f, true);
   assert.match(h.say, opening[s.title], s.title);
-  assert.ok(h.grownups && h.say.endsWith(s.f.sym ? s.f.l + " " + s.f.sym + " " + s.f.r : "= " + s.f.ans), s.title);
+  assert.ok(h.grownups && (TALKS.includes(s.f.op) || "…".includes(s.f.op) && h.say.endsWith("= " + s.f.ans) || h.say.endsWith(s.f.sym ? s.f.l + " " + s.f.sym + " " + s.f.r : "= " + s.f.ans)), s.title);
 }
 console.log("✓ hint strategies");
 
@@ -283,3 +309,50 @@ for (const f of [{ op: "×", x: 80, y: 8, ans: 640 }, { op: "×", x: 12, y: 12, 
   assert.ok(vh <= 100 && vw / vh >= 1.1, `${f.q || f.x + f.op + f.y}: ${vw} × ${vh}`);
 }
 console.log("✓ hint drawings are wide and short");
+
+// Arrays (Squaresquatch) count on by rows only partway before answering, the rest dimmed with no
+// total: "Each row has 5: 5, 10, … How many in 4 rows?" Worked, every row has its total.
+import { arrayFact } from "../js/arrays.js";
+{
+  const f = arrayFact(4, 5), b = hintFor(f, false), w = hintFor(f, true);
+  assert.equal(b.say, "Each row has 5: 5, 10, … How many in 4 rows? 5 + 5 + 5 + 5 = ?");
+  const totals = (m) => [...m.matchAll(/<text[^>]*>(\d+)<\/text>/g)].map((x) => Number(x[1]));
+  assert.deepEqual(totals(b.model), [5, 10], "to the halfway row");
+  assert.equal((b.model.match(/opacity="\.35"/g) || []).length, 2, "the two rows to go are dimmed");
+  assert.deepEqual(totals(w.model), [5, 10, 15, 20]);
+  assert.equal(w.say, "Add the rows: 5 + 5 + 5 + 5 = 20");
+  assert.deepEqual(totals(hintFor(arrayFact(3, 4), false).model), [4], "3 rows: just the first");
+  assert.deepEqual(totals(hintFor(arrayFact(2, 3), false).model), [3]);
+  for (const r of [2, 3, 4, 5]) for (const c of [2, 3, 4, 5]) assert.ok(!totals(hintFor(arrayFact(r, c), false).model).includes(r * c), `${r} rows of ${c}`);
+}
+console.log("✓ arrays count partway");
+
+// Time and patterns (batch 1): the hints are the prototype's, through hintFor. Before answering,
+// a clock's count by 5s stops short of the long hand, and elapsed time shows one jump of the
+// number line; the slimes' hop into the □ asks "= ?". Each also gives the drawing for its own
+// picture (the clock's layer, the slimes' hops) so a fight draws it there.
+import { clockFacts, clockFact } from "../js/clock.js";
+import { patternFacts } from "../js/patterns.js";
+{
+  for (const f of clockFacts()) {
+    const b = hintFor(f, false), w = hintFor(f, true);
+    assert.ok(saysAnswer(f, w.say), `${f.key}: ${w.say}`);
+    if (f.kind === "long" || f.kind === "add") continue;
+    assert.ok(b.layer, `${f.key} draws on the clock`);
+    if (f.m && f.kind !== "hour") {
+      assert.ok(b.layer.fives < f.m && b.layer.ask === "?", `${f.key}: the count stops short`);
+      assert.ok(!new RegExp(`\\b${f.m}\\b`).test(b.say), `${f.key}: ${b.say}`);
+    }
+  }
+  assert.equal(hintFor(clockFact("half", "time", 4, 30), false).say, "The short hand shows the hour. Count by 5s from the 12 to the long hand: 5, 10, 15, 20, 25, ?");
+  assert.equal(hintFor(clockFact("half", "time", 4, 0), true).say, "The short hand points to the 4. The long hand is on the 12. It's 4:00.");
+  for (const f of patternFacts().filter((x) => x.op === "…")) {
+    const b = hintFor(f, false);
+    assert.ok(b.hops && b.say.endsWith("= ?") && b.hops.labels.some((l) => l.endsWith("= ?")), f.key);
+  }
+  // Odd and even: the rule before, the count after.
+  const oe = patternFacts().find((x) => x.op === "◐" && x.max === 20);
+  assert.equal(hintFor(oe, false).say, "Pair up the dots. A dot left over means odd.");
+  assert.ok(hintFor(oe, true).say.endsWith(`${oe.ans} ${oe.ask} number${oe.ans === 1 ? "" : "s"}.`) || oe.ans === 0);
+}
+console.log("✓ time and pattern hints");

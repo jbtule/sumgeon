@@ -161,5 +161,19 @@ import { lookOf, LOOKS } from "../js/monsters.js";
   assert.ok(hf.length === 24 && hf.every((f) => f.op === "/"));
   for (let i = 0; i < 100; i++) assert.equal(choose("third", {}, { now: 0, asks: asks(mon("Halfling")) })[0], "/", "fractions from the start");
   assert.ok(LOOKS.Halfling.length === 4);
+
+  // Batch 1: Tick-Tockus asks only the time and Slimelipsis only its patterns (and odd and even),
+  // and no one else asks either.
+  const tt = mon("Tick-Tockus"), sl = mon("Slimelipsis");
+  assert.deepEqual([traitOf(tt).name, traitOf(sl).name], ["Tick Tock", "What's Next"]);
+  for (const b of ["timeH", "timeM", "timeT"]) assert.equal(asked("Tick-Tockus", b).length, poolOf(b).length, b);
+  for (const b of ["patK", "patH", "patM"]) assert.equal(asked("Slimelipsis", b).length, poolOf(b).length, b);
+  assert.ok(asks(tt)("⌚", "⌚h3") && !asks(tt)("+", "+3,4") && !asks(tt)("…", "…2,4,6,□"));
+  assert.ok(asks(sl)("…", "…2,4,6,□") && asks(sl)("◐", "◐e2,3,5,7,8") && !asks(sl)("⌚", "⌚h3"));
+  for (const n of ["Plusquito", "Quizard", "Haberhasher", "Timesaur", "Chompers", "Make-Ten Golem"]) {
+    assert.ok(!asks(mon(n))("⌚", "⌚h3") && !asks(mon(n))("…", "…2,4,6,□") && !asks(mon(n))("◐", "◐e2,3,5,7,8"), `${n} never tells time or counts patterns`);
+  }
+  assert.ok(asks(look("Tick-Tockus"))("⌚", "⌚h3") && asks(look("Slimelipsis"))("◐", "◐e2,3,5,7,8"), "a look asks what its monster does");
+  assert.equal(hitBy(tt, 30, "30", false, factOf("⌚t3:30")).mult, 1, "no damage rule: the trait is what it asks");
 }
 console.log("✓ new monsters' traits");
