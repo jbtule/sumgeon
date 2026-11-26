@@ -305,13 +305,16 @@ export function clockHint(p, worked) {
   }
   const five = m - m % 5, ones = m % 5;
   const tick = Array.from({ length: ones }, (_, i) => five + i + 1);
+  // Before answering, only the first half of the 5s are labeled (35: "5, 10, 15, …"), so the
+  // count is started but never finished: the rest of the sweep shows the way to the long hand.
+  const half = 5 * Math.floor(five / 10), started = half ? `${fivesList(half)}, … ` : "";
   if (!ones) {
     return worked
       ? { layer: { glow: "minute", fives: m }, say: `Count by 5s from the 12: ${fivesList(m)}. ${m} minutes past ${h}.` }
-      : { layer: { glow: "minute", fives: m - 5, ask: "?" }, say: `Count by 5s from the 12 to the long hand: ${fivesList(m - 5)}${m > 5 ? ", " : ""}?` };
+      : { layer: { glow: "minute", fives: half, ask: "?" }, say: `Count by 5s from the 12 to the long hand: ${started}?` };
   }
   if (worked) return { layer: { glow: "minute", fives: five, ones: tick, ask: m }, say: five ? `By 5s to ${five}, then ${ones} more: ${five} + ${ones} = ${m}.` : `Count the little ticks from the 12 by 1s: ${tick.join(", ")}. ${m} minute${m === 1 ? "" : "s"} past ${p.h}.` };
-  return { layer: { glow: "minute", fives: five, ones: tick, ask: "?" }, say: five ? `Count by 5s to ${five}, then the little ticks by 1s: ${five} + ${ones} = ?` : "Count the little ticks from the 12 by 1s." };
+  return { layer: { glow: "minute", fives: half, ask: "?" }, say: five ? `Count by 5s from the top: ${started}then the little ticks by 1s to the long hand.` : "Count the little ticks from the top by 1s." };
 }
 const fivesList = (to) => { const out = []; for (let k = 5; k <= to; k += 5) out.push(k); return out.join(", "); };
 
