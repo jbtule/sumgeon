@@ -391,7 +391,9 @@ function newProblem() {
   // ?spells for every one): a fact already learned with a one-digit answer. It's picked before
   // probing, since a fluent player is probing nearly every problem and would never get one.
   const spellTurn = !due && !m.blank && canSpell() && (SPELLS_ALWAYS || Math.random() < SPELL_SHARE);
-  const spell = spellTurn ? spellKey(bk, recs, { recent: G.recent, avoidAns, op, asks: kinds }) : null;
+  const spell = spellTurn ? spellKey(bk, recs, { recent: G.recent, spells: G.spells, avoidAns, op, asks: kinds }) : null;
+  // The last few spells, across runs while the game is open, so the same one isn't cast fight after fight.
+  if (spell) G.spells = [spell].concat(G.spells || []).slice(0, SPELL_MEMORY);
   const probe = !due && !spell && f.on && f.cool <= 0 ? probeKey(bk, recs, null, G.recent, avoidAns, f.leap, kinds) : null;
   const key = spell || probe || choose(bk, recs, { now: Date.now(), recent: G.recent, retry: due ? due.key : null, op, asks: kinds, like: prefers(m), depth: G.depth, avoidAns,
     // The captain's digit: held back in the first fight, then about a third of problems lean to it
@@ -1520,6 +1522,8 @@ const firstFight = () => !Object.values(seen).some((s) => s.beaten > 0);
 // The lean toward the captain's digit lasts until that captain's first Hero Moment (moments.js
 // saves it in captains), at any depth; a new captain gets it again.
 const captainLean = () => hasCaptain() && !firstFight() && !(MS.captains || []).includes(team.captain);
+// SPELL_MEMORY: how many of the last spells (across runs) aren't cast again (spellKey in learn.js).
+const SPELL_MEMORY = 6;
 const SPELL_SHARE = 1 / 6, SPELLS_ALWAYS = new URLSearchParams(location.search).has("spells");
 const canSpell = () => SPELLS_ALWAYS || matchMedia("(any-pointer: coarse)").matches;
 const spellsOf = () => Object.assign({ templates: {}, reversed: {}, cast: 0 }, store.player(PID).get("spells", {}));
@@ -1615,7 +1619,10 @@ function castSpell() {
 }
 
 // The number pad, or for a comparison (Chompers) the < = > keys, filling the same space.
-const KEY_LABEL = { del: ["⌫", "Delete"], go: ["Hit!", "Attack"], "<": ["<", "Less than"], "=": ["=", "Equal to"], ">": [">", "Greater than"] };
+// Delete is drawn (a ⌫ from a font came out far smaller than the Bungee digits), sized in em so
+// it scales with the pad's digits on every layout.
+const DEL_ICON = `<svg class="del-icon" viewBox="0 0 30 22" aria-hidden="true"><path d="M10 2.5h16a2.5 2.5 0 0 1 2.5 2.5v12a2.5 2.5 0 0 1-2.5 2.5H10L1.8 11z" fill="none" stroke="currentColor" stroke-width="3" stroke-linejoin="round"/><path d="M14 7l8 8M22 7l-8 8" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg>`;
+const KEY_LABEL = { del: [DEL_ICON, "Delete"], go: ["Hit!", "Attack"], "<": ["<", "Less than"], "=": ["=", "Equal to"], ">": [">", "Greater than"] };
 // mode: "num", "cmp" or "spell" (the drawing pad).
 function padUI(mode) {
   const pad = $("pad"), cmp = mode === "cmp";

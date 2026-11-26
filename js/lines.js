@@ -138,8 +138,9 @@ export function reversedLine(d) { return "Your " + spoken(d) + " is facing backw
 // A spell that was right but hard to read (sigil.js judge): "Here's how to write a four.", as
 // the school-style digit (handwriting.js) is drawn over it. For every digit.
 export function howToWriteLine(d) { return "Here's how to write " + aDigit(d) + "."; }
-// "Depth two!", said as a run starts below depth 1. Recorded to depth 20.
-export var DEPTH_MAX_SPOKEN = 20;
+// "Depth two!", said as a run starts below depth 1. Recorded to depth 100, in one audio sprite
+// ("depths"), so a deep run's line plays at once from memory.
+export var DEPTH_MAX_SPOKEN = 100;
 export function depthLine(d) { return "Depth " + spoken(d) + "!"; }
 
 // [{ kind, text }], each once.
@@ -170,7 +171,7 @@ export function spokenLines() {
   });
   Object.keys(TRAIT_LINE).forEach(function (k) { add("p", TRAIT_LINE[k], "Phrases"); });
   Object.keys(BARK).forEach(function (k) { add("p", BARK[k], "Phrases"); });
-  for (var d = 2; d <= DEPTH_MAX_SPOKEN; d++) add("p", depthLine(d), "Phrases");
+  for (var d = 2; d <= DEPTH_MAX_SPOKEN; d++) add("p", depthLine(d), "Phrases", "depths");
   REVERSIBLE.forEach(function (n) { add("p", reversedLine(n), "Phrases"); });
   for (var w = 0; w <= 9; w++) add("p", howToWriteLine(w), "Phrases");
   WINGS.forEach(function (w, i) {

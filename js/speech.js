@@ -149,13 +149,15 @@ var HERO_GAIN = heroQ && heroQ.get("herogain") ? +heroQ.get("herogain") : 1.5;
 var HERO_ECHO = heroQ && heroQ.get("heroecho") ? +heroQ.get("heroecho") : 0.1;
 var heroBufs = {};
 // fx (optional): { gain, echo, delay } instead of the quip's defaults: say()'s fifth argument.
-function playHero(url, fx) {
+// hit (optional): the line in a decoded sprite (spriteOf), played from there instead of
+// fetching the clip ("Depth two!" with the entrance's echo, a cursed hero's arrival).
+function playHero(url, fx, hit) {
   fx = fx || {};
   var G = fx.gain != null ? fx.gain : HERO_GAIN, E = fx.echo != null ? fx.echo : HERO_ECHO, D = fx.delay || 0.13;
   var c = ac();
   if (!c) return Promise.resolve(false);
   var my = epoch;
-  var load = heroBufs[url] || (heroBufs[url] = fetch(url).then(function (r) { if (!r.ok) throw new Error(r.status); return r.arrayBuffer(); })
+  var load = hit ? Promise.resolve(hit.s.buf) : heroBufs[url] || (heroBufs[url] = fetch(url).then(function (r) { if (!r.ok) throw new Error(r.status); return r.arrayBuffer(); })
     .then(function (b) { return new Promise(function (ok, no) { c.decodeAudioData(b, ok, no); }); }));
   return load.then(function (buf) {
     if (my !== epoch) return true;
@@ -171,13 +173,13 @@ function playHero(url, fx) {
       src.connect(gain); gain.connect(lim);
       gain.connect(delay); delay.connect(tone); tone.connect(fb); fb.connect(delay); tone.connect(wet); wet.connect(lim);
       lim.connect(c.destination);
-      var t = setTimeout(function () { end(); }, (buf.duration + 1.5) * 1000);
+      var t = setTimeout(function () { end(); }, ((hit ? hit.len : buf.duration) + 1.5) * 1000);
       function end() { if (done) return; done = true; clearTimeout(t); if (source === src) { source = null; finishClip = null; } setTimeout(function () { try { lim.disconnect(); } catch (e) {} }, 900); resolve(true); }
       src.onended = end;
       source = src; finishClip = function () { try { src.stop(); } catch (e) {} end(); };
-      src.start();
+      if (hit) src.start(0, hit.start, hit.len); else src.start();
     });
-  }).catch(function () { delete heroBufs[url]; return false; });
+  }).catch(function () { if (!hit) delete heroBufs[url]; return false; });
 }
 
 // Resolves true when the clip ends, false if it fails (the caller then uses the device voice).
@@ -217,7 +219,7 @@ export function say(kind, text, cancel, live, fx) {
     if (my !== epoch || (live && !live())) return;
     var key = clips[kind + ":" + text], hit = spriteOf[kind + ":" + text];
     if (!key) return speak(text, RATE[kind], PITCH[kind]);
-    if (fx && ac()) return playHero(clipBase + key + ".mp3", fx).then(function (ok) {
+    if (fx && ac()) return playHero(clipBase + key + ".mp3", fx, hit && hit.s.buf ? hit : null).then(function (ok) {
       if (!ok && my === epoch) return playClip(clipBase + key + ".mp3");
     });
     if (hit && hit.s.buf && ac()) return playSprite(hit).then(function (ok) {

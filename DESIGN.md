@@ -523,6 +523,8 @@ Each milestone should be playable and shippable on its own. Revised 2026-11-25 f
    - the new K–3 monsters: ✅ Pipsqueak (dot flash), Doublet, Triceraplus (three addends), Margot-Rythm, Squaresquatch and Halfling (2026-11-25); still to come: Slimelipsis and Tick-Tockus;
    - the 3rd-grade gaps: fractions, rounding, and area and perimeter (✅ as typed whole numbers in step 1; comparing fractions and number lines wait for Halfling).
    
+   - **Every line in an audio sprite** (decided 2026-11-25): convert the remaining single-clip lines (phrases, problems and facts, coins, quips) into small sprites grouped by related text, each well under 25 MiB. A sprite is loaded only when it can be needed (the phrases and names always; a stratum's problem sprites when its run starts) and dropped after, so the decoded audio on a phone stays small; measure it on the iPhone. Once every line is in a sprite, stop deploying the single clips, so the audio host stays well under Cloudflare Pages' limit on files per deployment.
+   
    A spell reader that handles real handwriting, trained on recorded drawings from the spell check, belongs here too.
 6. **M6 — Grade strata, 4–6.** The new answer keys (−, ., R and the stacked fraction input) and fraction, decimal and percent answers hitting for their percent (§7.2), then:
    - the Fraction Forge;
