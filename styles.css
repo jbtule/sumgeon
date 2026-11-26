@@ -432,6 +432,86 @@ body{transition:background-color .4s;--hint-empty:var(--edge);--hint-line:var(--
 .pause-btns{display:grid;gap:8px;width:100%}
 .pause-btns .small{min-height:48px}
 .pause-btns .danger[data-sure="1"]{background:#ff8a7f;color:var(--dark)}
+/* The pause card's buttons in two columns (📖, ⚙ / 🎒, the purse), Exit across the bottom. */
+.pause-btns{grid-template-columns:1fr 1fr}
+.pause-btns .danger{grid-column:1/-1}
+.pause-btns .small{padding:4px 10px;line-height:1.15}
+/* Chests, money and items (app.js openChest, purseCard, itemsCard, slotsUI; DESIGN.md §6.3) */
+.slots{display:inline-flex;gap:6px;flex:none}
+.slots[hidden]{display:none}
+.slot{position:relative;width:44px;height:44px;padding:0;border-radius:12px;border:2px solid var(--edge);background:var(--btn);display:grid;place-items:center;box-shadow:0 3px 0 var(--dark)}
+.slot .ico{font-size:24px;line-height:1}
+.slot.empty{background:none;border-style:dashed;box-shadow:none;opacity:.55;color:var(--muted);font:400 18px/1 Bungee,sans-serif}
+.armed{display:inline-flex;flex-direction:column;gap:3px;flex:none}
+.armed[hidden]{display:none}
+.armed i{display:grid;place-items:center;min-width:30px;height:24px;padding:0 4px;border-radius:8px;font:400 14px/1 Bungee,sans-serif;font-style:normal;background:var(--dark);border:2px solid var(--gold);box-shadow:0 0 10px #ffc93c88}
+.armed i.on-totem{background:var(--gold);color:var(--dark);border-color:var(--dark)}
+.chest-card{display:grid;grid-template-columns:minmax(0,1fr);justify-items:center;gap:8px;width:100%}
+.chest-card h2{margin:0}
+.chest-box{position:relative;width:min(220px,62vw)}
+.chest-art{display:block;width:100%;height:auto;overflow:visible}
+.chest-card.c-locked .chest-box{animation:chestin .45s cubic-bezier(.3,1.5,.6,1)}
+@keyframes chestin{from{transform:scale(.6) translateY(20px);opacity:0}}
+.lock{position:absolute;left:50%;top:50%;transform:translate(-50%,-8%);min-width:58%;padding:10px 12px 8px;border-radius:16px;background:var(--gold);color:var(--dark);border:4px solid var(--dark);box-shadow:inset 0 6px 0 #fff6,0 4px 0 var(--dark);font:400 clamp(20px,6vw,28px)/1.15 Bungee,sans-serif;white-space:nowrap;text-align:center}
+.lock::before{content:"";position:absolute;left:50%;bottom:100%;width:46%;height:34px;transform:translateX(-50%);border:8px solid var(--dark);border-bottom:0;border-radius:40px 40px 0 0;box-sizing:border-box;background:none}
+.lock::after{content:"";position:absolute;left:50%;bottom:calc(100% - 4px);width:calc(46% - 10px);height:30px;transform:translateX(-50%);border:4px solid #d9d9d0;border-bottom:0;border-radius:36px 36px 0 0;box-sizing:border-box}
+.lock .blank{border-color:var(--dark);color:var(--dark);animation:none;background:#fff8}
+.lock .blank.right{border-color:#b3261e;color:#b3261e;border-style:solid}
+.lock .or{font:900 .55em Nunito,sans-serif}
+.lock .to{display:block;font:900 .45em Nunito,sans-serif}
+.lock .frac{color:var(--dark)}
+.lock.jam{animation:jam .5s}
+@keyframes jam{20%{transform:translate(-56%,-8%) rotate(-6deg)}40%{transform:translate(-44%,-8%) rotate(5deg)}60%{transform:translate(-53%,-8%) rotate(-3deg)}80%{transform:translate(-48%,-8%) rotate(2deg)}}
+.lock.pop{animation:lockpop .38s ease-in forwards}
+@keyframes lockpop{30%{transform:translate(-50%,-20%) scale(1.12)}to{transform:translate(-50%,-60%) scale(.4) rotate(25deg);opacity:0}}
+.lock.shut{filter:grayscale(.7) brightness(.85)}
+.chest-msg{margin:0;min-height:1.3em;font-weight:900}
+.chest-pad{width:100%;--key:46px}
+.chest-card .pad.chest-pad{grid-area:auto;margin:0;padding:0;align-self:auto}
+.chest-pad button{font-size:22px}
+.chest-pad.cmp .sym{font-size:clamp(36px,10vw,52px)}
+.loot-pop{position:absolute;left:50%;bottom:60%;transform:translateX(-50%);display:grid;justify-items:center;gap:4px;animation:lootup .6s cubic-bezier(.3,1.6,.6,1)}
+@keyframes lootup{from{transform:translate(-50%,40px) scale(.4);opacity:0}}
+.loot-coins svg{max-width:min(300px,80vw);height:auto;filter:drop-shadow(0 4px 0 #0008)}
+.loot-amt,.loot-name{display:block;font:400 28px Bungee,sans-serif;color:var(--gold);text-shadow:0 3px 0 var(--dark)}
+.loot-item{display:grid;justify-items:center}
+.loot-item .ico{font-size:64px;line-height:1;filter:drop-shadow(0 4px 0 #0008)}
+.loot-item b{font:400 18px Bungee,sans-serif;color:var(--gold);text-shadow:0 2px 0 var(--dark);white-space:nowrap}
+.chest-card.c-open .chest-box{margin-top:72px}
+@media(prefers-reduced-motion:reduce){.chest-card.c-locked .chest-box,.loot-pop,.lock.jam,.lock.pop{animation:none}}
+.tot{display:inline-grid;place-items:center;font:400 .8em/1 Bungee,sans-serif;color:var(--gold);text-shadow:0 2px 0 var(--dark),0 0 6px #ffc93c88;letter-spacing:-.04em}
+.loot-row{display:flex;gap:8px}
+.purse-btn,.items-btn{display:inline-flex;align-items:center;gap:6px;min-height:52px;padding:0 10px}
+.purse-btn{flex:1 1 auto;min-width:0}
+.items-btn{flex:none}
+.purse-art{width:30px;height:25px;flex:none}
+.wmini{display:inline-flex;align-items:center;gap:5px;flex-wrap:wrap;min-width:0}
+.wm{display:inline-flex;align-items:center;gap:1px;font:400 12px Bungee,sans-serif}
+.wm svg{width:19px;height:19px}
+.wm svg.bill{width:26px;height:14px}
+.items-btn>span:first-child{font-size:22px}
+.imini{display:inline-flex;gap:3px}
+.imini i{display:grid;place-items:center;width:26px;height:26px;border-radius:8px;border:2px dashed var(--edge);font-style:normal;font-size:15px}
+.imini i:not(:empty){border-style:solid;background:var(--dark)}
+.pause-btns .purse-btn{justify-content:center}
+.purse-card{display:grid;justify-items:center;gap:10px;text-align:center}
+.purse-card .purse-art{width:96px;height:80px}
+.wallet{display:grid;justify-items:center;gap:10px}
+.wallet .bills{display:flex;flex-wrap:wrap;justify-content:center;gap:6px}
+.wallet .bill{width:110px;height:auto}
+.wallet .wcoins svg{max-width:100%;height:auto}
+.wtotal{font:400 24px Bungee,sans-serif;color:var(--gold);margin:0}
+.islots{display:flex;gap:12px;justify-content:center}
+.islot{width:76px;height:76px;border-radius:18px;border:3px solid var(--gold);background:var(--dark);padding:0;display:grid;place-items:center}
+.islot .ico{font-size:42px;line-height:1}
+.islot.empty{border:3px dashed var(--edge);background:none}
+.igrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.iitem{position:relative;display:grid;justify-items:center;gap:2px;padding:10px 6px;border-radius:16px;border:2px solid var(--edge);background:var(--btn);box-shadow:0 4px 0 var(--dark)}
+.iitem .ico{font-size:44px;line-height:1.1}
+.iitem small{font-weight:900}
+.iitem .n{position:absolute;right:8px;top:6px;min-width:26px;height:26px;border-radius:13px;background:var(--dark);font:400 14px/26px Bungee,sans-serif;color:var(--gold)}
+.iitem.none{opacity:.45}
+@media (min-width: 760px){.igrid{grid-template-columns:repeat(4,minmax(0,1fr))}}
 /* Settings: lists of rows, like a phone's own settings */
 .players{background:var(--dark);border:2px solid var(--line);border-radius:16px;padding:6px;gap:6px}
 .add-player{margin-top:8px;min-height:44px;width:100%}
@@ -753,3 +833,21 @@ body.on-scene>.top,body.on-scene>.who,body.on-scene>.game,body.on-scene>.badges{
 }
 @media (max-width: 759px) and (max-height: 700px){.scene-gap{min-height:clamp(96px,calc(var(--app-h,100vh)*.18),130px)}}
 @media(prefers-reduced-motion:reduce){.d-star,.d-hero{animation:none}}
+/* Phones: the item slots fit the hero-and-hearts row under the pad, with the hearts and ⏸. The
+   streak flame keeps only its count there. */
+@media (max-width: 759px){
+  .slots{gap:5px}
+  .slot{width:36px;height:36px;border-radius:10px}
+  .slot .ico{font-size:19px}
+  .slots:not([hidden])~.flame span{display:none}
+  .chest-pad{--key:42px;gap:6px}
+  .chest-box{width:min(190px,52vw)}
+  .islot{width:68px;height:68px}
+}
+@media (max-width: 759px) and (max-height: 700px){
+  .slot{width:32px;height:32px}
+  .slot .ico{font-size:17px}
+  .chest-pad{--key:38px}
+  .chest-box{width:min(160px,44vw)}
+  .card.float .chest-card{gap:4px}
+}

@@ -13,6 +13,8 @@ import { QUIPS, FINAL, FINALS, CRIT, TEAM_LINES, TEAM_NUMBERS, CAPTAIN_LINES, ca
 import { createHash } from "node:crypto";
 import { flipOf } from "../js/traits.js";
 import { pool, factOf } from "../js/learn.js";
+import { LOOT, itemName, itemWhat, itemUse, moneyLine, purseLine, PURSE_MAX_SPOKEN } from "../js/lines.js";
+import { ITEMS, MONEY, moneyFor } from "../js/loot.js";
 const app0 = readFileSync(new URL("../js/app.js", import.meta.url), "utf8");
 
 const ids = new Set(spokenLines().map((l) => l.kind + ":" + l.text));
@@ -150,7 +152,28 @@ assert.ok(app0.includes('say("h", quipLine(mo.quip), true)'), "a quip is said in
 const app = readFileSync(new URL("../js/app.js", import.meta.url), "utf8");
 const HELPERS = ["heroName", "heroJoins", "heroCursed", "heroRescue", "heroAlmost", "heroHelps", "traitLine"].join("|");
 for (const [call] of app.matchAll(/say\([^)]*\)/g)) {
-  assert.match(call, new RegExp(String.raw`say\("(p|m|q|h)", (quipLine\(mo\.quip\)|PHRASE\.\w+|BARK\.\w+|BARK\[\w+\]|monsterName\(m\)|monsterCleared\(m\)|monsterWon\(m\)|(${HELPERS})\((HEROES\[[\w.]+\]|\w+)\)|wingCleared\(\w+(\(\))?\)|wingOpened\(\w+\)|depthLine\((G\.depth|d)\)|reversedLine\(\w+\)|howToWriteLine\(\w+\)|spokenProblem\(G\.cur\)|spokenFact\(said\)|spokenMissing\(G\.cur\))`), `${call} says a line that isn't in js/lines.js`);
+  assert.match(call, new RegExp(String.raw`say\("(p|m|q|h)", (quipLine\(mo\.quip\)|PHRASE\.\w+|BARK\.\w+|BARK\[\w+\]|monsterName\(m\)|monsterCleared\(m\)|monsterWon\(m\)|(${HELPERS})\((HEROES\[[\w.]+\]|\w+)\)|wingCleared\(\w+(\(\))?\)|wingOpened\(\w+\)|depthLine\((G\.depth|d)\)|reversedLine\(\w+\)|howToWriteLine\(\w+\)|spokenProblem\(G\.cur\)|spokenFact\(said\)|spokenMissing\(G\.cur\)|LOOT\.\w+|(itemName|itemWhat|itemUse)\([\w.]+\)|moneyLine\(\w+\)|purseLine\(wallet\)|askLine\(C\.p\))`), `${call} says a line that isn't in js/lines.js`);
+}
+// Chests, money and items (DESIGN.md §6.3): every LOOT line and item line is said and recorded,
+// short, in the "loot" sprite with the money found in chests; the purse is recorded to $5.
+for (const k of Object.keys(LOOT)) {
+  assert.ok(app.includes("LOOT." + k), `LOOT.${k} is recorded but never said`);
+  assert.ok(ids.has("p:" + LOOT[k]) && words(LOOT[k]) <= 12, LOOT[k]);
+}
+for (const i of ITEMS) for (const t of [itemName(i.id), itemWhat(i.id), itemUse(i.id)]) assert.ok(ids.has("p:" + t) && words(t) <= 12, t);
+assert.equal(moneyLine(23), "Two dimes and three penny's. Twenty-three cents!", "the fewest coins, pennies said as penny's");
+assert.equal(moneyLine(1), "One penny. One cent!");
+assert.equal(purseLine(77), moneyLine(77), "the purse under a dollar is the same line as money found");
+assert.equal(purseLine(100), "One dollar!");
+assert.equal(purseLine(205), "Two dollars and five cents!");
+{
+  const loot = spokenLines().filter((l) => l.sprite === "loot");
+  for (let c = 1; c < 100; c++) assert.ok(loot.some((l) => l.text === moneyLine(c)), `money ${c} in the loot sprite`);
+  for (const t of Object.values(LOOT)) assert.ok(loot.some((l) => l.text === t), t);
+  for (let c = 100; c <= PURSE_MAX_SPOKEN; c++) assert.ok(ids.has("p:" + purseLine(c)), `purse ${c}`);
+  assert.ok(GROUPS.includes("Chests & items") && GROUPS.includes("Money"));
+  // Every amount a chest can hold is under a dollar, so its line is in the sprite.
+  for (const w of Object.keys(MONEY)) for (const boss of [false, true]) for (const r of [0, 0.5, 0.999]) assert.ok(moneyFor(w, boss, () => r) < 100);
 }
 // Every PHRASE is said somewhere (PHRASE.win is older: a win says wingCleared instead).
 for (const k of Object.keys(PHRASE).filter((k) => k !== "win")) assert.ok(app.includes("PHRASE." + k), `PHRASE.${k} is recorded but never said`);

@@ -361,3 +361,42 @@ export function victory() {
     [72, 76, 79, 84].forEach(function (m) { mallet(m, t + 0.9, 0.16, 1.2); });
   });
 }
+
+/* ---------- chests and items (DESIGN.md §6.3) ---------- */
+// A chest's lock pops and the lid creaks open, into a bright treasure fanfare.
+export function chestOpen() {
+  play(function (t) {
+    noise(t, 0.05, 0.5, "bandpass", 2600); // the shackle snaps up
+    tone("square", 1300, 1700, t, 0.06, 0.08);
+    tone("sawtooth", 180, 260, t + 0.1, 0.35, 0.05); // the lid's creak
+    noise(t + 0.1, 0.3, 0.06, "bandpass", 900);
+    [[79, 0.45], [83, 0.55], [86, 0.65], [91, 0.75]].forEach(function (n) { mallet(n[0], t + n[1], 0.32, 0.5); });
+    [79, 83, 86, 91].forEach(function (m) { mallet(m, t + 0.95, 0.14, 1.3); });
+    noise(t + 0.95, 0.8, 0.08, "highpass", 7000); // a sparkle over it
+  });
+}
+// A lock that jams: a dull metal clunk and a rattle.
+export function clunk() {
+  play(function (t) {
+    tone("square", 140, 90, t, 0.16, 0.22);
+    noise(t, 0.1, 0.45, "lowpass", 700);
+    noise(t + 0.12, 0.06, 0.2, "bandpass", 1800);
+    noise(t + 0.2, 0.05, 0.15, "bandpass", 1600);
+  });
+}
+// Coins dropping into your purse: a few bright clinks (n: how many, up to 6).
+export function coins(n) {
+  play(function (t) {
+    for (var i = 0; i < Math.min(6, Math.max(1, n || 3)); i++) {
+      var at = t + i * 0.07 + Math.random() * 0.02;
+      tone("sine", 2600 + Math.random() * 900, 2500, at, 0.14, 0.1);
+      tone("sine", 4100 + Math.random() * 600, 4000, at, 0.08, 0.04);
+    }
+  });
+}
+// The Shield blocking a miss: Sir Fourtress's metal clang.
+export function clang() { play(MOVE[4]); }
+// An item used: a quick rising shimmer.
+export function powerUp() {
+  play(function (t) { [72, 76, 79, 84].forEach(function (m, i) { mallet(m, t + i * 0.05, 0.18, 0.3); }); noise(t, 0.3, 0.05, "highpass", 6000); });
+}

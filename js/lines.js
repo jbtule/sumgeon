@@ -15,6 +15,8 @@ import { threeFacts } from "./three.js";
 import { arrayFacts } from "./arrays.js";
 import { traitOf } from "./traits.js";
 import { QUIPS, FINALS, CRIT, TEAM_LINES, TEAM_NUMBERS, CAPTAIN_LINES, captainNames } from "./moments.js";
+import { fewest, ITEMS } from "./loot.js";
+import { coinWords } from "./coins.js";
 
 export var PHRASE = {
   enter: "Now entering the Sumgeon!",
@@ -150,7 +152,52 @@ export function bossForms() {
 }
 
 // The groups the listen check (review/listen/) plays lines in.
-export var GROUPS = ["Phrases", "Monsters & heroes", "Add & subtract", "Times & divide", "Missing numbers", "Which is more", "Coins", "Two-digit", "Balance Hall", "Three numbers", "Arrays", "Fractions", "Rounding", "Area & perimeter", "Hero quips", "Team-ups", "Captain lines", "Boss forms"];
+// Chests, money and items (loot.js, DESIGN.md §6.3). In their own audio sprite, "loot", with the
+// money found in chests (moneyLine, under a dollar).
+export var LOOT = {
+  chest: "A treasure chest!",
+  chestHow: "Answer the lock to open it!",
+  chestOpen: "The lock popped open!",
+  chestJam: "The lock jammed!",
+  chestAgain: "Try another lock!",
+  chestShut: "Still locked. Maybe next time!",
+  purseEmpty: "Your purse is empty. Open chests to find coins!",
+  itemsEmpty: "No items yet. Open chests to find some!",
+  itemsHow: "Tap an item to put it in a slot.",
+  itemsClear: "Tap a slot to take it out.",
+  heartsFull: "Your hearts are full!",
+  shieldBlock: "Your shield blocked it!"
+};
+// Each item: its name (found, or tapped on the inventory card), what it does (the first time it's
+// found or used, and on the inventory card), and what's said when it's used.
+export var ITEM_LINE = {
+  pie: { name: "A pie!", what: "Pie heals one heart!", use: "Yum! One heart back!" },
+  shield: { name: "A shield!", what: "The shield blocks one miss!", use: "Shield up!" },
+  totem: { name: "A Times Two Totem!", what: "The totem makes your next hit double!", use: "Double power!" },
+  magnet: { name: "A Hero Magnet!", what: "The magnet calls a hero on your next hit!", use: "Hero Magnet on!" }
+};
+export function itemName(id) { return ITEM_LINE[id].name; }
+export function itemWhat(id) { return ITEM_LINE[id].what; }
+export function itemUse(id) { return ITEM_LINE[id].use; }
+// Money, counted the fewest coins: "Two dimes and three pennies. Twenty-three cents!" (found in a
+// chest, and the purse under a dollar). "pennies" is said "penny's", as in the coin problems.
+function capital(t) { return t[0].toUpperCase() + t.slice(1); }
+function cents(c) { return spoken(c) + (c === 1 ? " cent" : " cents"); }
+export function moneyLine(c) {
+  return capital(coinWords(fewest(c)).replace(/\bpennies\b/g, "penny's")) + ". " + capital(cents(c)) + "!";
+}
+// The purse, said aloud: the coins under a dollar (moneyLine), the total past it ("Two dollars and
+// five cents!"). Recorded to PURSE_MAX_SPOKEN; more than that is said by the device voice.
+export var PURSE_MAX_SPOKEN = 500;
+export function purseLine(c) {
+  if (c < 100) return moneyLine(c);
+  var b = Math.floor(c / 100), r = c % 100;
+  return capital(spoken(b)) + (b === 1 ? " dollar" : " dollars") + (r ? " and " + cents(r) : "") + "!";
+}
+
+// [{ kind, text }], each once.
+// The groups the listen check (review/listen/) plays lines in.
+export var GROUPS = ["Phrases", "Monsters & heroes", "Add & subtract", "Times & divide", "Missing numbers", "Which is more", "Coins", "Two-digit", "Balance Hall", "Three numbers", "Arrays", "Fractions", "Rounding", "Area & perimeter", "Hero quips", "Team-ups", "Captain lines", "Boss forms", "Chests & items", "Money"];
 
 // [{ kind, text, group, sprite? }], each once.
 export function spokenLines() {
@@ -233,6 +280,11 @@ export function spokenLines() {
   // hero's four name lines, said on picking a captain ("Captain Toodini, reporting for duty!").
   CAPTAIN_LINES.forEach((q) => add("h", quipLine(q), "Captain lines"));
   HEROES.forEach((h) => captainNames(h.d).forEach((q) => add("h", quipLine(q), "Captain lines")));
+  // Chests, money and items, in the "loot" sprite; the purse's dollar amounts as single clips.
+  Object.keys(LOOT).forEach(function (k) { add("p", LOOT[k], "Chests & items", "loot"); });
+  ITEMS.forEach(function (i) { [itemName, itemWhat, itemUse].forEach(function (f) { add("p", f(i.id), "Chests & items", "loot"); }); });
+  for (var c = 1; c < 100; c++) add("p", moneyLine(c), "Money", "loot");
+  for (c = 100; c <= PURSE_MAX_SPOKEN; c++) add("p", purseLine(c), "Money");
   var seen = {};
   return out.filter(function (l) { var k = l.kind + ":" + l.text; if (seen[k]) return false; seen[k] = true; return true; });
 }

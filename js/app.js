@@ -21,6 +21,9 @@ import { say, stopSpeech, setVoice, speaking, cutOff } from "./speech.js";
 import { freshState as freshMoments, freshRun, decide as decideMoment, joined, heardOf, nameLine } from "./moments.js";
 import { playMoment } from "./slowmo.js";
 import { playDescent, descending, surfaceHTML } from "./descent.js";
+import { chestAfter, lockKey, lockOf, contents, moneyFor, fewest, ITEMS, itemOf, SLOTS, freshItems, countOf, gain, putInSlot, clearSlot, useSlot, eatPie, arm, blockMiss, totemMult, magnetSpent } from "./loot.js";
+import { LOOT, askLine, itemName, itemWhat, itemUse, moneyLine, purseLine } from "./lines.js";
+import { chestSvg, purseSvg, walletSvg, walletMini } from "./chest.js";
 
 const $ = (id) => document.getElementById(id);
 const reduced = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -105,7 +108,8 @@ store.upgrade();
 // team: { captain: digit or null, color: chalk color, rescued: [digits] } (DESIGN.md §6.6).
 // progress: { [wingId]: { boss: wins, best: floors } }.
 // seen: the Bestiary, { [monster]: { met, beaten } }.
-let PID, st, recs, team, progress, seen;
+// wallet: money in cents; inv: the items (loot.js freshItems: counts and the 3 quick-use slots).
+let PID, st, recs, team, progress, seen, wallet = 0, inv = freshItems();
 const band = () => BANDS[st.band] || BANDS.kinder;
 const wingFor = (b) => WINGS.find((w) => w.band === b) || WINGS[0];
 const wing = () => wingFor(st.band);
@@ -146,6 +150,8 @@ function loadPlayer() {
   progress = store.player(PID).get("wings", {}) || {};
   seen = store.player(PID).get("bestiary", {}) || {};
   MS = freshMoments(store.player(PID).get("moments", null));
+  wallet = Math.max(0, Math.floor(Number(store.player(PID).get("wallet", 0)) || 0));
+  inv = freshItems(store.player(PID).get("items", null));
   // A captain picked before heroes could change stays on the team.
   if (team.captain != null && !team.rescued.includes(team.captain)) { team.rescued.push(team.captain); saveTeam(); }
   // Bands saved before the grade strata (dungeon version 5) become a grade's: a player who picked a
@@ -163,6 +169,8 @@ function loadPlayer() {
   whoUI(); captainUI();
 }
 function saveTeam() { store.player(PID).set("heroes", team); }
+function saveWallet() { store.player(PID).set("wallet", wallet); }
+function saveItems() { store.player(PID).set("items", inv); }
 // The voice explains a thing only the first time or first few (`times`): true while it still
 // should, counting this time. Saved per player as told: { tag: count }.
 function once(tag, times = 1) {
@@ -208,7 +216,9 @@ function whoUI() {
 // retry: missed facts waiting to come back ({ key, after: problems to go }); recent: the last few
 // keys, so a fact doesn't repeat right away; hinted: a hint is open for this problem.
 let G = { floor: 0, hearts: 5, hp: 0, max: 0, streak: 0, solved: 0, tries: 0, cur: null, input: "", busy: true, running: false,
-  retry: [], recent: [], hinted: false, t0: 0, next: false };
+  retry: [], recent: [], hinted: false, t0: 0, next: false,
+  // Items (loot.js): fx: the Shield, Totem and Magnet armed.
+  fx: {}, chest: null };
 
 function heartsUI(cracking) {
   const h = $("hearts");
@@ -222,6 +232,53 @@ function heartsUI(cracking) {
     h.appendChild(s);
   }
   h.setAttribute("aria-label", `${G.hearts} of ${max} hearts`);
+}
+/* ---------- items in a fight (loot.js, DESIGN.md §6.3) ----------
+   Three quick-use slots by the hearts, each holding one item. Tap one to use it (not while busy;
+   mid-problem is fine). Each item is one use: the slot empties and stays empty; it never refills
+   by itself. An empty slot is a dim outline with a "+" that opens 🎒 Items (as pausing to it
+   does), the only place slots are filled. An armed Shield, Totem or Magnet shows by the problem
+   until it's used (the Totem as a gold ×2). Hidden for a player with no items. */
+// An item's icon: its emoji, but the Times Two Totem is a gold "×2" (the ✖️ emoji is a thin grey
+// cross on the dark slots).
+const itemIcon = (id) => (id === "totem" ? '<span class="tot">×2</span>' : itemOf(id).icon);
+function slotsUI() {
+  const box = $("slots");
+  const any = inv.slots.some(Boolean) || ITEMS.some((i) => countOf(inv, i.id));
+  // What's on, by the problem: a gold ×2 (the Totem), 🛡️ and 🧲, until each is used.
+  const on = ["totem", "shield", "magnet"].filter((id) => G.fx[id]);
+  $("armed").hidden = !on.length;
+  $("armed").innerHTML = on.map((id) => `<i class="on-${id}" title="${esc(itemOf(id).name)}">${id === "totem" ? "×2" : itemOf(id).icon}</i>`).join("");
+  box.hidden = !any;
+  if (!any) return;
+  box.innerHTML = inv.slots.map((id, k) => !id
+    ? `<button type="button" class="slot empty" data-k="${k}" aria-label="Empty slot: open your items"><span aria-hidden="true">+</span></button>`
+    : `<button type="button" class="slot" data-k="${k}" aria-label="Use ${esc(itemOf(id).name)}"><span class="ico" aria-hidden="true">${itemIcon(id)}</span></button>`).join("");
+}
+function useItem(k) {
+  if (!G.running || G.busy || G.paused || G.next || !$("ov").hidden) return;
+  const id = inv.slots[k];
+  // An empty slot opens 🎒 Items, as pausing to it does: Done goes back to the pause screen.
+  if (!id) { pause(); if (G.paused) itemsCard(true); return; }
+  if (id === "pie") {
+    const r = eatPie(G.hearts, band().hearts);
+    if (!r.used) { say("p", LOOT.heartsFull, true); return; }
+    G.hearts = r.hearts; heartsUI();
+  } else if (G.fx[id]) return; // already on: a second isn't wasted
+  useSlot(inv, k); saveItems();
+  if (id !== "pie") arm(G.fx, id);
+  sfx.powerUp();
+  say("p", itemUse(id), true);
+  // What it does, the first time it's used.
+  if (once("use:" + id)) say("p", itemWhat(id));
+  slotsUI();
+}
+$("slots").addEventListener("click", (e) => { const b = e.target.closest(".slot"); if (b) useItem(Number(b.dataset.k)); });
+// Unused armed effects (a Shield never needed) go back in the inventory when a run ends.
+function refundArmed() {
+  ["shield", "totem", "magnet"].forEach((id) => { if (G.fx[id]) gain(inv, id); });
+  G.fx = {};
+  saveItems();
 }
 function hpUI() { $("hpBar").style.width = Math.max(0, G.hp / G.max * 100) + "%"; $("hpTxt").textContent = `${Math.max(0, G.hp)} / ${G.max} HP`; }
 
@@ -365,7 +422,7 @@ function loadMonster(i, quiet) {
   G.onFloor = 0; G.halved = false; G.floorLost = 0; G.floorStreak = 0; G.floorSlow = false; G.barked = {};
   if (!quiet) setMsg(t ? `${t.icon} ${t.name}: ${t.text}` : "Your answer is your attack.");
   $("floorLbl").textContent = (G.depth > 1 ? `Depth ${G.depth} · ` : "") + (m.boss ? "Boss floor" : m.cursed != null ? "Rescue floor" : `Floor ${i + 1} / ${G.floors.length}`);
-  hpUI(); heartsUI(); streakUI();
+  hpUI(); heartsUI(); streakUI(); slotsUI();
   if (quiet) return;
   meet(seen, m, Date.now()); store.player(PID).set("bestiary", seen);
   sfx.appear(m.boss);
@@ -557,7 +614,10 @@ let MS = freshMoments(), MR = freshRun();
 function momentFor(typed, critStart, bossFinish) {
   const sp = G.cur.spell ? (G.cur.reversed ? "backwards" : G.cur.howTo ? "show" : "good") : null;
   const first = firstFight(); // nothing beaten yet: the first fight
-  const mo = decideMoment(MS, MR, { typed, team, hinted: G.hinted, spell: sp, first, floor: G.floor, n: G.tries, bossFinish, critStart, always: MOMENTS_ALWAYS, teamup: TEAMUP_ALWAYS });
+  // The Hero Magnet (an item, loot.js): the next qualifying hit with a team hero's digit is a
+  // moment; it waits for one.
+  const mo = decideMoment(MS, MR, { typed, team, hinted: G.hinted, spell: sp, first, floor: G.floor, n: G.tries, bossFinish, critStart, always: MOMENTS_ALWAYS || !!G.fx.magnet, teamup: TEAMUP_ALWAYS });
+  if (magnetSpent(G.fx, mo)) slotsUI();
   if (mo) store.player(PID).set("moments", MS);
   return mo;
 }
@@ -668,7 +728,10 @@ function submit() {
     // The monster's trait: Lucky Number, Ten Smash, Armor, Carry the One (traits.js).
     const trait = hitBy(m, G.cur.ans, typed, G.halved, G.cur);
     // A spell drawn backwards fizzles at half damage.
-    let dmg = Math.max(1, Math.round(G.cur.ans * (crit ? 2 : 1) * trait.mult * bonus.mult * (G.cur.reversed ? 0.5 : 1)));
+    // The Times Two Totem (an item, loot.js): the next right answer hits double, once.
+    const totem = totemMult(G.fx);
+    let dmg = Math.max(1, Math.round(G.cur.ans * (crit ? 2 : 1) * trait.mult * bonus.mult * totem * (G.cur.reversed ? 0.5 : 1)));
+    if (totem > 1) slotsUI();
     const level = learnFrom(true);
     G.input = ""; ansUI();
     $("hint").hidden = true; $("hintBtn").hidden = true;
@@ -688,7 +751,7 @@ function submit() {
       pop((boost ? "Hero! " : bonus.power ? "Power! " : crit ? "Crit! " : "") + "−" + dmg, crit || bonus.power || !!boost);
       restartAnim($("mon"), "hit");
       if (crit && !mo) restartAnim($("arena"), "shake");
-      setMsg(G.cur.reversed ? `Your ${G.cur.ans} is facing backwards. It faces this way → Half damage: ${dmg}` : G.cur.howTo ? `Here's how to write it. Hit for ${dmg}!` : level ? level : trait.note ? `${trait.note}: ${dmg}!` : boost ? `${momentName} hero hit for ${dmg}!` : bonus.power ? `${HEROES[team.captain].n} power hit for ${dmg}!` : crit ? `Critical hit for ${dmg}!` : `Hit for ${dmg}!`, "good");
+      setMsg(totem > 1 ? `Times Two Totem! Double hit for ${dmg}!` : G.cur.reversed ? `Your ${G.cur.ans} is facing backwards. It faces this way → Half damage: ${dmg}` : G.cur.howTo ? `Here's how to write it. Hit for ${dmg}!` : level ? level : trait.note ? `${trait.note}: ${dmg}!` : boost ? `${momentName} hero hit for ${dmg}!` : bonus.power ? `${HEROES[team.captain].n} power hit for ${dmg}!` : crit ? `Critical hit for ${dmg}!` : `Hit for ${dmg}!`, "good");
       hpUI(); streakUI();
       // Half HP: Divvy splits in two, Sigma Rex armors up (traits.js).
       const half = !G.halved && G.hp > 0 && G.hp <= G.max / 2 ? atHalf(m) : null;
@@ -714,22 +777,28 @@ function submit() {
 function miss(why) {
   G.busy = true; G.streak = 0;
   // A charged problem (Minustaur) costs 2 hearts.
-  const cost = G.charged ? 2 : 1;
+  // The Shield (an item, loot.js) blocks it: no heart lost, even on a charged miss. The fact still
+  // counts as missed for learning, and still comes back.
+  const charge = G.charged ? 2 : 1, cost = blockMiss(G.fx, charge), blocked = cost === 0;
   G.hearts = Math.max(0, G.hearts - cost);
   G.floorLost += cost;
   const lost = G.hearts;
   learnFrom(false);
   // after counts down at each new problem, so 3–5 means 2–4 other problems in between.
   G.retry = G.retry.filter((r) => r.key !== G.cur.key).concat([{ key: G.cur.key, after: 3 + Math.floor(Math.random() * 3) }]);
-  if (cost > 1) sfx.thunder(); else sfx.miss(); // a charged miss is a thunder strike
+  if (blocked) sfx.clang(); else if (cost > 1) sfx.thunder(); else sfx.miss(); // a charged miss is a thunder strike
   restartAnim($("mon"), "lunge");
   streakUI();
-  setMsg(`${why} ${shownFact(G.cur, G.cur.ans)}${cost > 1 ? " ⚡ −2 hearts" : ""}`, "bad");
+  if (blocked) slotsUI();
+  setMsg(`${why} ${shownFact(G.cur, G.cur.ans)}${blocked ? " 🛡️ Blocked!" : cost > 1 ? " ⚡ −2 hearts" : ""}`, "bad");
   say("p", PHRASE.oops, true);
+  if (blocked) say("p", LOOT.shieldBlock);
   // The whole fact, said out loud: "three plus four is seven".
   const said = G.cur.fact || G.cur;
   say("q", spokenFact(said));
   if (cost > 1) say("p", PHRASE.chargedMiss);
+  if (blocked) setTimeout(() => { G.next = true; openWorked(); }, 600);
+  if (blocked) return;
   setTimeout(() => {
     sfx.crack();
     heartsUI(lost);
@@ -769,8 +838,11 @@ function earnStars() {
   const labels = ["Cleared", "No hearts lost", "All fast"];
   return `<div class="stars" aria-label="${n} of 3 stars">${got.map((on, i) => `<span class="star${on ? " on" : ""}" style="--i:${i}"><b>★</b><small>${labels[i]}</small></span>`).join("")}</div>`;
 }
-function cleared() {
+// A floor's monster beaten. First, now and then, a chest (every boss has one; never the rescue
+// floor): chestDone is set when it's been opened, or left shut.
+function cleared(chestDone) {
   const m = G.floors[G.floor];
+  if (!chestDone && (chestAfter(m) || (CHEST_ALWAYS !== null && m.cursed == null))) return openChest(m, () => cleared(true));
   if (G.floor === G.floors.length - 1) return end(true);
   const stars = earnStars();
   beat(seen, m, Date.now()); store.player(PID).set("bestiary", seen);
@@ -819,6 +891,7 @@ function cleared() {
 }
 function end(win) {
   G.running = false;
+  refundArmed();
   const w = wing(), before = openWings(progress, recs, st.start);
   if (win) { progress[w.id] = progress[w.id] || { boss: 0, best: 0 }; progress[w.id].boss++; }
   const stars = win ? earnStars() : "";
@@ -880,6 +953,173 @@ function show(h, kind = "page") {
 }
 function hide() { $("ov").hidden = true; }
 
+/* ---------- chests (DESIGN.md §6.3, loot.js) ----------
+   After the floor's monster, about 1 floor in 3, and after every boss: a chest with a padlock that
+   holds a learned fact, said aloud and answered on the card's own number pad (or < = >). Right:
+   the lock pops and the lid opens with a fanfare, and what's inside is yours. Wrong: the lock jams
+   (a clunk, the right answer shown and said, the fact to the retry queue) and a second lock is
+   tried; a second miss leaves it shut. A lock costs nothing: no heart, no streak, no star. It
+   records the fact like any answer, with no damage. */
+// ?chest puts a chest after every floor (but the rescue floor), for testing; ?chest=money or
+// ?chest=item picks what's inside.
+const CHEST_ALWAYS = new URLSearchParams(location.search).get("chest");
+function openChest(m, done) {
+  G.busy = true;
+  const C = G.chest = { done, boss: !!m.boss, tries: 0, key: null };
+  say("p", LOOT.chest, true);
+  if (once("chest", 3)) say("p", LOOT.chestHow);
+  nextLock(C);
+}
+function nextLock(C) {
+  C.key = lockKey(st.band, recs, { recent: G.recent, not: C.key });
+  C.p = lockOf(C.key); C.input = ""; C.busy = false;
+  chestShow(C, "locked");
+  C.t0 = performance.now();
+  say("q", askLine(C.p));
+}
+// The lock's problem: "4 + 3 = ?", or with the glowing ? in place of the □ ("7 + ? = 10").
+function lockHTML(p) {
+  const B = '<span class="blank" id="lockAns">?</span>';
+  let t = p.op === "more" ? `${p.x} <small class="or">or</small> ${p.y}` : p.op === "/" ? stacked(esc(p.q)) : esc(p.q);
+  if (t.includes("□")) t = t.replace("□", B);
+  else t += (p.op === "more" ? "<br>" : " = ") + B;
+  if (p.op === "≈") t += `<small class="to">nearest ${p.to}</small>`;
+  return t;
+}
+const CHEST_TITLE = { locked: "A treasure chest!", open: "It's open!", shut: "Still locked" };
+function chestShow(C, state, msg) {
+  const cmp = !!(C.p && C.p.sym), art = state === "open" ? "open" : "locked";
+  const inside = state === "open" ? `<div class="loot-pop">${C.lootHTML}</div>`
+    : `<div class="lock${state === "shut" ? " shut" : ""}" id="lock"><div class="lockq">${lockHTML(C.p)}</div></div>`;
+  show(`<div class="chest-card c-${state}">
+    <h2>${CHEST_TITLE[state]}</h2>
+    <div class="chest-box">${chestSvg(art)}${inside}</div>
+    <p class="chest-msg" id="chestMsg">${msg || (state === "locked" ? (C.tries ? "Try this lock." : "Answer the lock to open it.") : "")}</p>
+    ${state === "locked" ? `<div class="pad chest-pad${cmp ? " cmp" : ""}" id="chestPad">${padKeysHTML(cmp ? "cmp" : "num", "Open!")}</div>`
+      : `<div class="btns"><button class="big" id="chestNext">Next</button></div>`}</div>`, "float chest");
+  if ($("chestPad")) $("chestPad").onclick = (e) => { const b = e.target.closest("button"); if (b) chestPress(b.dataset.k); };
+  if ($("chestNext")) $("chestNext").onclick = () => { const d = C.done; G.chest = null; d(); };
+}
+function chestPress(k) {
+  const C = G.chest;
+  if (!C || C.busy || !C.p) return;
+  if (k === "go") return chestSubmit(C);
+  const cmp = !!C.p.sym, sym = "<=>".includes(k);
+  if (k !== "del" && sym !== cmp) return;
+  sfx.tick();
+  if (k === "del") C.input = C.input.slice(0, -1);
+  else if (sym) C.input = k;
+  else if (C.input.length < 4) C.input = (C.input === "0" ? "" : C.input) + k;
+  const a = $("lockAns");
+  if (a) { a.textContent = C.input || "?"; a.classList.toggle("typed", !!C.input); }
+}
+function chestSubmit(C) {
+  if (C.input === "") return;
+  const p = C.p, ok = p.sym ? C.input === p.sym : Number(C.input) === p.ans;
+  C.busy = true;
+  // Recorded like any answer (learn.js record), with no damage.
+  const ms = performance.now() - C.t0, limit = fluentTime(BANDS[st.band].fluentMs, p.sym || p.ans);
+  recs[C.key] = recordAnswer(recs[C.key], { ok, ms, hinted: false, now: Date.now(), fluentMs: limit });
+  store.player(PID).set("facts", recs);
+  if (ok) {
+    sfx.chestOpen();
+    say("p", LOOT.chestOpen, true);
+    if (!reduced()) $("lock").classList.add("pop");
+    setTimeout(() => { C.lootHTML = takeLoot(C); chestShow(C, "open", C.lootMsg); }, reduced() ? 0 : 380);
+    return;
+  }
+  // Jammed: the right answer, shown and said, and back in a few problems (the retry queue).
+  C.tries++;
+  G.retry = G.retry.filter((r) => r.key !== C.key).concat([{ key: C.key, after: 3 + Math.floor(Math.random() * 3) }]);
+  sfx.clunk();
+  const a = $("lockAns"); if (a) { a.textContent = p.sym || p.ans; a.classList.add("right"); }
+  if (!reduced()) restartAnim($("lock"), "jam");
+  $("chestMsg").innerHTML = `The lock jammed! ${shownFact(p, p.ans)}`;
+  say("p", LOOT.chestJam, true);
+  const said = p.fact || p;
+  say("q", spokenFact(said));
+  setTimeout(() => {
+    if (G.chest !== C) return;
+    if (C.tries < 2) { say("p", LOOT.chestAgain); nextLock(C); }
+    else { say("p", LOOT.chestShut); chestShow(C, "shut", "Maybe next time!"); }
+  }, 2200);
+}
+// What's inside (loot.js contents): money, counted aloud, or an item. Saved at once.
+function takeLoot(C) {
+  let what = contents();
+  if (CHEST_ALWAYS === "money") what = { kind: "money" };
+  if (CHEST_ALWAYS === "item" && what.kind !== "item") what = { kind: "item", item: ITEMS[Math.floor(Math.random() * ITEMS.length)].id };
+  if (what.kind === "item") {
+    const it = itemOf(what.item);
+    gain(inv, it.id);
+    saveItems();
+    say("p", itemName(it.id));
+    if (once("found:" + it.id)) say("p", itemWhat(it.id));
+    C.lootMsg = `<b class="loot-name">${esc(it.name)}</b>It's in your 🎒 items.`;
+    return `<div class="loot-item"><span class="ico" aria-hidden="true">${itemIcon(it.id)}</span></div>`;
+  }
+  const c = moneyFor(wing().id, C.boss), f = fewest(c);
+  wallet += c; saveWallet();
+  sfx.coins(f.q + f.d + f.n + f.p);
+  say("p", moneyLine(c));
+  C.lootMsg = `<b class="loot-amt">+${c}¢</b>Into your purse!`;
+  return `<div class="loot-coins">${coinsSvg({ q: f.q, d: f.d, n: f.n, p: f.p })}</div>`;
+}
+
+/* ---------- the purse and the items (DESIGN.md §6.3) ----------
+   On the start screen (and the pause screen): the purse, the wallet always as coins (the fewest
+   of each, $1 bills past a dollar), and 🎒 Items, where the 3 quick-use slots are set. */
+function lootRowHTML() {
+  return `<div class="loot-row">
+    <button type="button" class="small purse-btn" id="openPurse" aria-label="Your purse">${purseSvg()}<span class="wmini">${walletMini(wallet) || "<small>Empty</small>"}</span></button>
+    <button type="button" class="small items-btn" id="openItems" aria-label="Items"><span aria-hidden="true">🎒</span><span class="imini">${inv.slots.map((id) => `<i>${id ? itemIcon(id) : ""}</i>`).join("")}</span></button>
+  </div>`;
+}
+// fromPause: Back returns to the pause screen; otherwise to the start screen.
+function purseCard(fromPause) {
+  if (!fromPause) G.onMenu = false;
+  const dollars = Math.floor(wallet / 100), cents = wallet % 100;
+  const total = wallet >= 100 ? `$${dollars}.${String(cents).padStart(2, "0")}` : `${wallet}¢`;
+  show(`<div class="cardhead"><h2>Your purse</h2></div>
+  <div class="purse-card">${purseSvg()}
+    ${wallet ? `<div class="wallet">${walletSvg(wallet)}</div><p class="wtotal">${total}</p>` : "<p>Your purse is empty. Open chests to find coins!</p>"}</div>
+  <div class="btns"><button class="big" id="purseBack">Back</button></div>`, fromPause ? "float" : "page");
+  if (wallet) say("p", purseLine(wallet), true); else say("p", LOOT.purseEmpty, true);
+  $("purseBack").onclick = () => (fromPause ? pause() : menu());
+}
+function itemsCard(fromPause, quiet) {
+  if (!fromPause) G.onMenu = false;
+  const slots = inv.slots.map((id, k) => id
+    ? `<button type="button" class="islot" data-k="${k}" aria-label="Slot ${k + 1}: ${esc(itemOf(id).name)}. Tap to take it out."><span class="ico" aria-hidden="true">${itemIcon(id)}</span></button>`
+    : `<button type="button" class="islot empty" data-k="${k}" aria-label="Slot ${k + 1}: empty" disabled></button>`).join("");
+  const grid = ITEMS.map((it) => {
+    const n = countOf(inv, it.id);
+    return `<button type="button" class="iitem${n ? "" : " none"}" data-id="${it.id}" aria-label="${esc(it.name)}, ${n}"><span class="ico" aria-hidden="true">${itemIcon(it.id)}</span><b class="n">${n}</b><small>${esc(it.name)}</small></button>`;
+  }).join("");
+  show(`<div class="cardhead"><h2>🎒 Items</h2></div>
+  <div class="grp"><span>Quick-use slots</span><div class="islots">${slots}</div></div>
+  <div class="grp"><span>Your items</span><div class="igrid">${grid}</div></div>
+  <div class="btns"><button class="big" id="itemsDone">Done</button></div>`, fromPause ? "float" : "page");
+  const redraw = () => { const top = $("ov").scrollTop; itemsCard(fromPause, true); $("ov").scrollTop = top; };
+  // Mid-run (from the pause screen) a slot set fills right away from the inventory.
+  const changed = () => saveItems(); // a slot set from the pause screen is there to tap when the fight resumes
+  $("card").querySelectorAll(".iitem").forEach((b) => b.onclick = () => {
+    const id = b.dataset.id;
+    say("p", itemName(id), true); say("p", itemWhat(id));
+    const k = putInSlot(inv, id);
+    if (k < 0) return;
+    sfx.tick(); changed(k);
+    if (once("itemsClear")) say("p", LOOT.itemsClear);
+    redraw();
+  });
+  $("card").querySelectorAll(".islot:not(.empty)").forEach((b) => b.onclick = () => { const k = Number(b.dataset.k); clearSlot(inv, k); sfx.tick(); changed(k); redraw(); });
+  $("itemsDone").onclick = () => (fromPause ? pause() : menu());
+  if (!quiet) {
+    if (!ITEMS.some((i) => countOf(inv, i.id))) say("p", LOOT.itemsEmpty, true);
+    else if (once("itemsHow", 3)) say("p", LOOT.itemsHow, true);
+  }
+}
+
 /* ---------- pausing ----------
    ⏸ by the hearts (or Escape) pauses mid-problem: Keep fighting, Monsters & Heroes,
    Settings, or Exit to
@@ -894,15 +1134,17 @@ function pause() {
   if (justPaused && once("pause", 3)) say("p", PHRASE.paused);
   show(`<h2>Paused</h2>
   <p>Floor ${G.floor + 1} of ${G.floors.length}: <strong>${esc(G.floors[G.floor].n)}</strong></p>
-  <div class="pause-btns"><button class="small" type="button" id="pBook">📖 Monsters &amp; Heroes</button><button class="small" type="button" id="pSettings">⚙ Settings</button><button class="small danger" type="button" id="pExit">Exit the dungeon</button></div>
+  <div class="pause-btns"><button class="small" type="button" id="pBook">📖 Monsters &amp; Heroes</button><button class="small" type="button" id="pSettings">⚙ Settings</button><button class="small" type="button" id="pItems">🎒 Items</button><button class="small purse-btn" type="button" id="pPurse" aria-label="Your purse">${purseSvg()}<span class="wmini">${walletMini(wallet)}</span></button><button class="small danger" type="button" id="pExit">Exit the dungeon</button></div>
   <div class="btns"><button class="big" id="resume">Keep fighting</button></div>`, "float");
   $("resume").onclick = resume;
   $("pBook").onclick = bookPage;
+  $("pItems").onclick = () => itemsCard(true);
+  $("pPurse").onclick = () => purseCard(true);
   $("pSettings").onclick = () => settings(true);
   $("pExit").onclick = () => {
     const b = $("pExit");
     if (b.dataset.sure !== "1") { b.dataset.sure = "1"; b.textContent = "Exit? This run ends"; say("p", PHRASE.exitSure, true); return; }
-    G.paused = null; G.running = false; record();
+    G.paused = null; G.running = false; record(); refundArmed();
     newRun(); loadMonster(0, true);
     menu();
   };
@@ -912,6 +1154,7 @@ function resume() {
   const p = G.paused; if (!p) return;
   G.paused = null; hide(); G.busy = false;
   G.t0 += performance.now() - p.at;
+  slotsUI(); // slots set from the pause screen's 🎒 Items
 }
 $("pauseBtn").onclick = pause;
 // Where ⏸ sits: on phones at the right of the hero-and-hearts row (under the thumb); on iPad and
@@ -1044,6 +1287,7 @@ function menu() {
   }
   show(`${head}
   ${captainHTML()}
+  ${lootRowHTML()}
   <div class="grp"><span>Pick a stratum</span><div class="wings strata"><div class="surface" aria-hidden="true"></div>${wingsHTML()}</div></div>
   <div class="btns"><p class="warn" id="warn" role="status"></p><button class="big" id="go">Enter the dungeon</button></div>`, "page scene");
   drawScene();
@@ -1060,6 +1304,8 @@ function menu() {
   wireCaptain();
   $("openSettings").onclick = () => settings();
   if ($("switchPlayer")) $("switchPlayer").onclick = () => settings();
+  $("openPurse").onclick = () => purseCard(false);
+  $("openItems").onclick = () => itemsCard(false);
   $("go").onclick = () => {
     if (!hasCaptain()) { $("warn").textContent = freePick(team, fresh()) ? "Pick your hero first." : "Pick who leads first."; $("captain").scrollIntoView({ block: "center", behavior: "smooth" }); say("p", PHRASE.heroFirst, true); return; }
     descend(null, "enter");
@@ -1416,7 +1662,8 @@ function start(depth, enter, voiced, pause) {
   G.onMenu = false;
   hide(); hideScene();
   newRun(depth);
-  Object.assign(G, { hearts: band().hearts, streak: 0, solved: 0, tries: 0, running: true, retry: [], recent: [], next: false, paused: null, runStars: 0 });
+  Object.assign(G, { hearts: band().hearts, streak: 0, solved: 0, tries: 0, running: true, retry: [], recent: [], next: false, paused: null, runStars: 0,
+    fx: {}, chest: null });
   MR = freshRun();
   if (!voiced) { stopSpeech(); openingLines(enter, G.depth); }
   const go = () => {
@@ -1633,14 +1880,24 @@ function padUI(mode) {
     sigilSetup();
     return;
   }
-  const keys = cmp ? ["<", "=", ">", "del", "go"] : ["1", "2", "3", "4", "5", "6", "7", "8", "9", "del", "0", "go"];
-  pad.innerHTML = keys.map((k) => { const [t, a] = KEY_LABEL[k] || [k, k];
+  pad.innerHTML = padKeysHTML(mode);
+}
+// The keys, for the game's pad and a chest's (whose go key says goLabel, "Open!").
+function padKeysHTML(mode, goLabel) {
+  const keys = mode === "cmp" ? ["<", "=", ">", "del", "go"] : ["1", "2", "3", "4", "5", "6", "7", "8", "9", "del", "0", "go"];
+  return keys.map((k) => { const [t, a] = k === "go" && goLabel ? [goLabel, goLabel] : KEY_LABEL[k] || [k, k];
     return `<button type="button" data-k="${k}" class="${k === "go" ? "go" : k === "del" ? "del" : "<=>".includes(k) ? "sym" : ""}" aria-label="${a}">${t}</button>`; }).join("");
 }
 padUI("num");
 $("pad").addEventListener("click", (e) => { const b = e.target.closest("button"); if (b) press(b.dataset.k); });
 document.addEventListener("keydown", (e) => {
   if (e.key === "Escape") { if (G.paused) { if ($("resume")) resume(); } else if ($("ov").hidden) pause(); return; }
+  // A chest's lock takes the keyboard while its pad is up.
+  if (G.chest && $("chestPad") && !$("ov").hidden) {
+    const k = /^[0-9]$/.test(e.key) || (e.key && "<=>".includes(e.key)) ? e.key : { ",": "<", ".": ">", Backspace: "del", Enter: "go" }[e.key];
+    if (k) { e.preventDefault(); chestPress(k); }
+    return;
+  }
   if (!$("ov").hidden) return;
   if (/^[0-9]$/.test(e.key)) press(e.key);
   else if ("<=>".includes(e.key) && e.key) press(e.key);

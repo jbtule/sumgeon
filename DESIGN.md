@@ -252,6 +252,12 @@ Stars unlock cosmetics, so they give replay goals without grinding. Wings unlock
 ### 6.3 Chests, money and Trollar's shop (planned 2026-11-25)
 Replaces the between-floor choice. Clearing a floor still heals 1 heart.
 
+**Built (2026-11-25):** step 1 (math-locked chests, money and the purse) and step 2 (items, the inventory and the 3 quick-use slots, set from the start screen or the pause screen). Clothing (chests hold money in its place for now) and Trollar's shop are still to come. Details as built in CLAUDE.md, "Chests, money and items"; the rules in `js/loot.js`.
+- As built: the Cellar's chests hold one coin, its boss's two; the Hall's 2–50¢; the Mines' and the Tower's 6–75¢; a boss's 40–99¢, so every amount found is under a dollar and its line is recorded. The purse says the coins under a dollar and the total past it.
+- The Times Two Totem shows as a gold "×2" rather than the ✖️ emoji, which reads as a thin grey cross.
+- An unused Shield, Totem or Magnet still armed when a run ends goes back in the inventory.
+- **No automatic refill** (changed after the iPhone test, 2026-11-25; replaces "fills it at the next floor" below): each item is one use. A used slot empties and stays empty; the player fills slots only from 🎒 Items (start screen or pause screen). An empty slot shows as a dim outline with a "+" that opens 🎒 Items. A slot holds one item, so it shows no count; the inventory card shows the counts.
+
 **Math-locked chests.**
 - **When:** after the floor's monster is beaten, about 1 floor in 3 has a chest, and every boss does. Never the rescue floor, where freeing the hero is the reward.
 - **The lock** is a problem with a padlock drawn round it ("7 + 5"), answered on the number pad like any other.
@@ -555,7 +561,7 @@ Each milestone should be playable and shippable on its own. Revised 2026-11-25 f
    - the Fraction Forge;
    - the Parenthesis Pyramid (Shoutandcomma with *Unwrap*);
    - Pirate Cavern (π Pirate).
-7. **M7 — Replay.** Hero Moments, the slow-motion hero close-ups with quips in a second voice (§8.4; small enough to build any time). Achievements (§14, revised 2026-11-25: mostly secret, each with coins or an item, shown before the next descent, with spoken and share cards), math-locked chests with money, items and clothing, and Trollar's shop (§6.3; next, decided 2026-11-25), Endless Descent (the Endless Specter) and Daily Dungeon.
+7. **M7 — Replay.** Hero Moments, the slow-motion hero close-ups with quips in a second voice (§8.4; small enough to build any time). Achievements (§14, revised 2026-11-25: mostly secret, each with coins or an item, shown before the next descent, with spoken and share cards), math-locked chests with money and items (§6.3, built 2026-11-25), then clothing and Trollar's shop, Endless Descent (the Endless Specter) and Daily Dungeon.
 8. **M8 — Grown-ups' corner and offline.** Progress heat-maps, custom practice, export, offline play with saved voice clips (the manifest and Home Screen icon are done), and device linking and sync (§15.2–15.4).
 
 ---
