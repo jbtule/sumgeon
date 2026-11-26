@@ -24,7 +24,7 @@ const v = "?v=" + short;
 const root = fileURLToPath(new URL("..", import.meta.url));
 const out = join(root, "_site");
 // Every file the site serves. New top-level site files go here.
-const SITE = ["index.html", "LICENSE.md", "styles.css", "js", "listen", "spell", "moments",
+const SITE = ["index.html", "LICENSE.md", "styles.css", "js", "listen", "spell", "moments", "gallery",
   "manifest.webmanifest", "favicon.svg", "apple-touch-icon.png", "icon-192.png", "icon-512.png", "social.png"];
 // Written by scripts/audio/build.mjs in the deploy; without it the game uses the device voice.
 const OPTIONAL = ["audio.json"];
@@ -42,7 +42,7 @@ writeFileSync(join(out, "index.html"), stampGame(readFileSync(join(root, "index.
 // What's deployed, for the game's update check (app.js checkUpdate).
 writeFileSync(join(out, "version.json"), JSON.stringify({ sha: short }));
 
-// The grown-up pages (the listen check, the spell check and the Hero Moments review): the same
-// badge, their script stamped, and an import map that stamps the game's modules they read.
+// The grown-up pages (the listen check, the spell check, the Hero Moments review and the monster
+// gallery): the same badge, their script stamped, and an import map that stamps the game's modules they read.
 for (const [dir] of PAGES) writeFileSync(join(out, dir, "index.html"), stampPage(readFileSync(join(root, dir, "index.html"), "utf8"), root, dir, short, short));
 console.log(`✓ _site/ stamped with ${short}`);

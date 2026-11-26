@@ -9,9 +9,10 @@ import { join } from "node:path";
 // browsers, Safari most of all, keep an icon long after it changes, but fetch a new address.
 export const STAMPED = ['href="styles.css"', 'src="js/app.js"', 'href="manifest.webmanifest"', 'href="favicon.svg"', 'href="apple-touch-icon.png"'];
 // The grown-up pages: [folder, script]. Each loads the game's modules through its own import map.
-export const PAGES = [["listen", "listen.js"], ["spell", "spell.js"], ["moments", "moments.js"]];
-// Other local files a grown-up page loads (the moments page uses the game's stylesheet).
-const PAGE_EXTRA = { moments: ['href="../styles.css"'] };
+export const PAGES = [["listen", "listen.js"], ["spell", "spell.js"], ["moments", "moments.js"], ["gallery", "gallery.js"]];
+// Other local files a grown-up page loads (the moments page and the gallery use the game's
+// stylesheet).
+const PAGE_EXTRA = { moments: ['href="../styles.css"'], gallery: ['href="../styles.css"'] };
 
 const modules = (root) => readdirSync(join(root, "js")).filter((f) => f.endsWith(".js"));
 
@@ -38,7 +39,7 @@ export function stampGame(html, root, v, badge) {
   return swapOnce(html, '<span id="buildSha">dev</span>', `<span id="buildSha">${badge}</span>`, "index.html");
 }
 
-// A grown-up page's index.html (dir: "listen", "spell" or "moments"), stamped the same way.
+// A grown-up page's index.html (dir: "listen", "spell", "moments" or "gallery"), stamped the same way.
 export function stampPage(page, root, dir, v, badge) {
   const q = "?v=" + v, where = `${dir}/index.html`, script = (PAGES.find((p) => p[0] === dir) || [])[1];
   const map = { imports: {} };
