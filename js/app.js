@@ -1270,6 +1270,9 @@ function takeLoot(C) {
 // and each coin in the Cellar, counting coins in the Mines), a grade past kindergarten (1st grade
 // learns coin values), or coins already in the purse. Until then a kindergartner's chests hold
 // items and clothing, and the purse, the shop and Trollar's stall don't show.
+// Trollar's shop (its button and his stall) shows only while there's money in the purse: with
+// none, there's nothing to buy with.
+const shopOK = () => wallet > 0;
 function moneyOK() {
   if (wallet > 0 || (st.grade != null && st.grade >= 1)) return true;
   return Object.keys(recs).some((k) => k[0] === "¢" && recs[k] && recs[k].c > 0);
@@ -1287,7 +1290,7 @@ function lootRowHTML() {
   return `<div class="loot-row${money ? "" : " no-money"}">
     ${money ? `<button type="button" class="small purse-btn" id="openPurse" aria-label="Your purse">${purseSvg()}<span class="wmini">${walletMini(wallet) || "<small>Empty</small>"}</span></button>` : ""}
     <button type="button" class="small items-btn" id="openItems" aria-label="Items"><span aria-hidden="true">🎒</span><span class="imini">${inv.slots.map((id) => `<i>${id ? itemIcon(id) : ""}</i>`).join("")}</span></button>
-    ${money ? `<button type="button" class="small shop-btn" id="openShop" aria-label="Trollar's shop"><span class="shop-mini" aria-hidden="true">${STALL}</span></button>` : ""}
+    ${shopOK() ? `<button type="button" class="small shop-btn" id="openShop" aria-label="Trollar's shop"><span class="shop-mini" aria-hidden="true">${STALL}</span></button>` : ""}
   </div>`;
 }
 
@@ -1709,7 +1712,7 @@ function drawScene() {
     card.style.setProperty("--sheet", sheet + "px");
     sceneHz = card.getBoundingClientRect().top + $("ov").scrollTop + sheet - 16;
   }
-  sc.innerHTML = surfaceHTML({ W, H, hz: sceneHz || H * 0.4, heroes: sceneHeroes(), stall: moneyOK() ? STALL : "" });
+  sc.innerHTML = surfaceHTML({ W, H, hz: sceneHz || H * 0.4, heroes: sceneHeroes(), stall: shopOK() ? STALL : "" });
   // Trollar's stall opens the shop: the scene is under the card, so a see-through button in the
   // card's window (the scene-gap) sits over it. Only on the start screen proper (#stallTap is
   // there), never mid-run.
@@ -1723,7 +1726,7 @@ function drawScene() {
 }
 const STALL = stallSvg();
 const sceneOn = () => !$("scene").hidden;
-const sceneNow = () => (sceneOn() ? { hz: sceneHz, heroes: sceneHeroes(), stall: moneyOK() ? STALL : "" } : null);
+const sceneNow = () => (sceneOn() ? { hz: sceneHz, heroes: sceneHeroes(), stall: shopOK() ? STALL : "" } : null);
 function hideScene() { $("scene").hidden = true; $("scene").innerHTML = ""; document.body.classList.remove("on-scene"); }
 let sceneFrame = 0;
 const redrawScene = () => { if (!sceneOn() || descending()) return; cancelAnimationFrame(sceneFrame); sceneFrame = requestAnimationFrame(drawScene); };
