@@ -2,6 +2,8 @@ import { coinsSvg, coinFact, findFact, coinOf, pileOf, COINS } from "./coins.js"
 import { unitName, fractionFact, roundFact, rectFact } from "./third.js";
 import { hiddenFact } from "./missing.js";
 import { moreFact } from "./balance.js";
+import { threeFact, tenOf } from "./three.js";
+import { arrayFact } from "./arrays.js";
 
 // Hints (DESIGN.md §5.3): the models classrooms use now, with the classroom's words, and a line
 // for grown-ups who learned it another way. No DOM: returns { model, say, grownups } where model
@@ -482,8 +484,34 @@ function rectHint(f, worked) {
     grownups: "Perimeter: the distance all the way around, every side added. A rectangle's opposite sides are the same." };
 }
 
+// Three numbers (1st grade): find the two that make 10, then add the one left. Two ten-frames:
+// the ten (its two numbers in gold and coral), then the rest.
+function threeHint(f, worked) {
+  const { ten: [a, b], rest } = tenOf(f), end = worked ? f.ans : "?";
+  return { model: svg(FRAME_W * 2 + 10, FRAME_H, tenFrame(0, 0, fill(a, C.a).concat(fill(b, C.b))) + tenFrame(FRAME_W + 10, 0, fill(rest, C.a)), `ten-frames: ${a} and ${b} make 10, and ${rest} more`),
+    say: `Find the ten: ${a} + ${b} = 10. 10 + ${rest} = ${end}`,
+    grownups: "Three numbers: kids look for two that make 10 (4 + 3 + 6: the 4 and the 6), then add the third. Numbers can be added in any order, so the ten can come first." };
+}
+// Arrays (2nd grade): the rows, each ringed, with the total so far at the end of each row; the
+// last total is "?" before answering.
+function arrayHint(f, worked) {
+  const G = 16, w = f.c * G + 4;
+  let s = "";
+  for (let r = 0; r < f.r; r++) {
+    const y = 9 + r * G;
+    s += `<rect x="2" y="${y - 7}" width="${w - 4}" height="14" rx="7" fill="none" stroke="${C.line}" stroke-width="1.5"/>`;
+    for (let c = 0; c < f.c; c++) s += `<circle cx="${10 + c * G}" cy="${y}" r="5" fill="${r % 2 ? C.b : C.a}"/>`;
+    s += txt(w + 6, y + 5, r === f.r - 1 && !worked ? "?" : (r + 1) * f.c, 13, C.ink, "start");
+  }
+  return { model: svg(w + 34, f.r * G + 4, s, `${f.r} rows of ${f.c}`),
+    say: `Add the rows: ${Array(f.r).fill(f.c).join(" + ")} = ${worked ? f.ans : "?"}`,
+    grownups: "Arrays: things in equal rows and columns. 2nd graders add the equal rows (3 rows of 5 is 5 + 5 + 5, or 5, 10, 15), the step before multiplication." };
+}
+
 export function hintFor(f, worked) {
   if (f.op === "¢") return coinHint(f, worked);
+  if (f.op === "Σ") return threeHint(f, worked);
+  if (f.op === "▦") return arrayHint(f, worked);
   if (f.op === "○" || f.op === "=") return balanceHint(f, worked);
   if (f.op === "more") return moreHint(f, worked);
   if (f.op === "/") return fractionHint(f, worked);
@@ -661,6 +689,7 @@ export const STRATEGIES = [
   { title: "Make 10", grade: "1st", f: { op: "+", x: 8, y: 5 } },
   { title: "Doubles", grade: "1st", f: { op: "+", x: 8, y: 8 } },
   { title: "Doubles plus one", grade: "1st", f: { op: "+", x: 6, y: 7 } },
+  { title: "Three numbers: find the ten", grade: "1st", f: threeFact(4, 3, 6) },
   { title: "Take away from 10 and some more", grade: "1st", f: { op: "-", x: 15, y: 3 } },
   { title: "Count back through 10", grade: "1st", f: { op: "-", x: 13, y: 4 } },
   { title: "Doubles to subtract", grade: "1st", f: { op: "-", x: 16, y: 8 } },
@@ -677,6 +706,7 @@ export const STRATEGIES = [
   { title: "Naming coins", grade: "K", f: findFact("q", { q: 2, d: 1, n: 1, p: 0 }) },
   { title: "What each coin is worth", grade: "K", f: coinFact({ q: 0, d: 1, n: 0, p: 0 }, true) },
   { title: "Counting coins", grade: "1st", f: coinFact({ q: 0, d: 1, n: 1, p: 2 }) },
+  { title: "Arrays as equal rows", grade: "2nd", f: arrayFact(3, 5) },
   { title: "Tens and ones", grade: "2nd", f: { op: "+", x: 38, y: 25 } },
   { title: "Take away tens and ones", grade: "2nd", f: { op: "-", x: 69, y: 26 } },
   { title: "Back to a ten", grade: "2nd", f: { op: "-", x: 52, y: 7 } },

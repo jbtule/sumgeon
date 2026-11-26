@@ -11,6 +11,8 @@ import { coinFacts } from "./coins.js";
 import { twoDigitFacts } from "./twodigit.js";
 import { balanceFacts, moreFacts, moreFact } from "./balance.js";
 import { timesTens, fractionFacts, roundFacts, rectFacts } from "./third.js";
+import { threeFacts } from "./three.js";
+import { arrayFacts } from "./arrays.js";
 import { traitOf } from "./traits.js";
 import { QUIPS, FINALS, CRIT, TEAM_LINES, TEAM_NUMBERS, CAPTAIN_LINES, captainNames } from "./moments.js";
 
@@ -59,8 +61,12 @@ var SAY_AS = [[/\bTwodini\b/g, "Toodini"], [/\bJr\./g, "Junior"], [/\bMr\./g, "M
   [/\bPlusington\b/g, "Plussington"], [/\bChompette\b/g, "Chomp-ette"], [/\bNine-ja\b/g, "Nine-jah"],
   [/Six, seven, gone\./g, "Six... seven! Gone."], [/^Six, seven!$/g, "Six... seven!"],
   [/\bBon appe-eight!/g, "Bon appa-eight!"],
-  // Margot-Rythm (NEW_MON, not said in the game yet) rhymes with "algorithm": MAR-go-rith-um, the t silent.
-  [/\bMargot-Rythm\b/g, "Margo-rithm"]];
+  // Margot-Rythm rhymes with "algorithm": MAR-go-rith-um, the t silent, and so is plain "Margot"
+  // in its looks' names (Glitchy Margot).
+  [/\bMargot-Rythm\b/g, "Margo-rithm"], [/\bMargot\b/g, "Margo"],
+  // Kokoro reads "Triceraplus" as try-ser-AP-lus; "Tricera-plus" keeps the plus (TRY-ser-uh-plus),
+  // and its look Triceracool is "Tricera-cool" the same way.
+  [/\bTriceraplus\b/g, "Tricera-plus"], [/\bTriceracool\b/g, "Tricera-cool"]];
 function sayAs(t) { return SAY_AS.reduce(function (s, r) { return s.replace(r[0], r[1]); }, t); }
 // A Hero Moment's quip (moments.js), as the voice says it.
 export function quipLine(q) { return sayAs(q); }
@@ -96,7 +102,13 @@ export var TRAIT_LINE = {
   "Stripes": "Lots of fives and tens!",
   "Ten Smash": "Ten or more smashes for double!",
   "Second wind": "Halfway down, this boss puts on armor!",
-  "Hundred Legs": "A hundred or more hits double!"
+  "Hundred Legs": "A hundred or more hits double!",
+  "Flash": "Count the dots on the dice!",
+  "Doubles": "Doubles! Look for two of the same.",
+  "Three horns": "Three numbers! Find two that make ten.",
+  "Carry the One": "If you have to regroup, you hit double!",
+  "Arrays": "Count the rows! Every row is the same.",
+  "Halves": "Fractions! Find the one that's the same size."
 };
 export function luckyLine(d) { return "Answers with " + aDigit(d) + " hit double!"; }
 // The line for monster m's trait, or null (Plusquito has none).
@@ -132,7 +144,7 @@ export function depthLine(d) { return "Depth " + spoken(d) + "!"; }
 
 // [{ kind, text }], each once.
 // The groups the listen check (listen/) plays lines in.
-export var GROUPS = ["Phrases", "Monsters & heroes", "Add & subtract", "Times & divide", "Missing numbers", "Which is more", "Coins", "Two-digit", "Balance Hall", "Fractions", "Rounding", "Area & perimeter", "Hero quips", "Team-ups", "Captain lines"];
+export var GROUPS = ["Phrases", "Monsters & heroes", "Add & subtract", "Times & divide", "Missing numbers", "Which is more", "Coins", "Two-digit", "Balance Hall", "Three numbers", "Arrays", "Fractions", "Rounding", "Area & perimeter", "Hero quips", "Team-ups", "Captain lines"];
 
 // [{ kind, text, group, sprite? }], each once.
 export function spokenLines() {
@@ -183,8 +195,9 @@ export function spokenLines() {
   moreFacts().forEach(function (f) {
     [f, moreFact(f.y, f.x)].forEach(function (g) { add("q", spokenProblem(g), "Which is more"); add("q", spokenFact(g), "Which is more"); });
   });
-  // 3rd grade: fractions, rounding, and area and perimeter.
-  [[fractionFacts, "Fractions"], [roundFacts, "Rounding"], [rectFacts, "Area & perimeter"]].forEach(function (set) {
+  // 1st grade's three numbers (Triceraplus), 2nd grade's arrays (Squaresquatch), and 3rd grade's
+  // fractions, rounding, and area and perimeter.
+  [[threeFacts, "Three numbers"], [arrayFacts, "Arrays"], [fractionFacts, "Fractions"], [roundFacts, "Rounding"], [rectFacts, "Area & perimeter"]].forEach(function (set) {
     set[0]().forEach(function (f) { add("q", spokenProblem(f), set[1]); add("q", spokenFact(f), set[1]); });
   });
   // Coins (Trollar): "two dimes and three pennies. How many cents?", and the answer.

@@ -5,7 +5,8 @@ import { pool } from "../js/learn.js";
 import { WINGS, cursedMonster } from "../js/wings.js";
 
 const r = roster();
-assert.deepEqual(r.map((x) => x.m.n), ["Plusquito", "Minustaur", "Chompers", "Trollar", "Make-Ten Golem", "Quizard", "Equal Twins", "Judo Judy", "Haberhasher", "The Centipede", "Timesaur", "Divvy", "Starbot", "Sigma Rex"]);
+assert.deepEqual(r.map((x) => x.m.n), ["Plusquito", "Minustaur", "Pipsqueak", "Chompers", "Trollar", "Make-Ten Golem", "Quizard", "Equal Twins", "Doublet", "Triceraplus", "Judo Judy",
+  "Haberhasher", "Margot-Rythm", "Squaresquatch", "The Centipede", "Timesaur", "Divvy", "Starbot", "Halfling", "Sigma Rex"]);
 assert.ok(r.every((x) => x.m && x.wing));
 assert.equal(new Set(r.map((x) => x.m.n)).size, r.length, "a monster in two strata is listed once, in the first");
 
@@ -14,9 +15,18 @@ assert.equal(mastery(plus.m, plus.wing, recs), 0);
 pool("kinder").filter((f) => f.op === "+").forEach((f) => (recs[f.key] = { b: 3, n: 3, c: 3, ms: 2000, t: 0 }));
 assert.equal(mastery(plus.m, plus.wing, recs), 1, "every + fact learned fills Plusquito's ring");
 assert.equal(mastery(r[1].m, r[1].wing, recs), 0, "Minustaur's ring is subtraction");
-const golem = r[4];
+const golem = r.find((x) => x.m.n === "Make-Ten Golem");
 // Chompers is listed in the Cellar, measured on its "which is more?" strand there.
-assert.equal(mastery(r[2].m, r[2].wing, recs), 0);
+const chompers = r.find((x) => x.m.n === "Chompers");
+assert.equal(mastery(chompers.m, chompers.wing, recs), 0);
+// The new monsters' rings are what they ask: Pipsqueak's dice sums (all + facts are learned
+// here), Doublet's doubles, Triceraplus's three numbers, Squaresquatch's arrays, Halfling's fractions.
+const ring = (n) => { const x = r.find((y) => y.m.n === n); return mastery(x.m, x.wing, recs); };
+assert.equal(ring("Pipsqueak"), 1);
+for (const n of ["Doublet", "Triceraplus", "Squaresquatch", "Halfling"]) assert.equal(ring(n), 0, n);
+pool("three").forEach((f) => (recs[f.key] = { b: 3, n: 3, c: 3, ms: 2000, t: 0 }));
+assert.equal(ring("Triceraplus"), 1, "every three-number fact learned fills Triceraplus's ring");
+assert.equal(ring("Doublet"), 0, "Doublet's ring is doubles");
 assert.ok(mastery(golem.m, golem.wing, recs) > 0 && mastery(golem.m, golem.wing, recs) <= 1);
 
 const seen = {};

@@ -10,18 +10,18 @@ const mon = (n) => MON.find((m) => m.n === n);
 
 // floors: a monster's name, "rescue" (a cursed digit, or a pool monster once all are free) or
 // "pool" (any pool monster). The boss is always last. strands: monsters that ask a strand of their
-// own here instead of the band (learn.js BANDS: Trollar's coins, Chompers' "which is more?").
+// own here instead of the band (learn.js BANDS: Trollar's coins, Chompers' "which is more?",
+// Triceraplus's three numbers, Squaresquatch's arrays). Depth 1's floors bring each monster in
+// once; deeper, every floor but the rescue floor comes from the pool (runFloors).
 export const WINGS = [
   { id: "cellar", name: "The Counting Cellar", band: "kinder", strands: { Trollar: "coinsK", Chompers: "more" },
-    pool: ["Plusquito", "Minustaur", "Chompers", "Trollar"], floors: ["Plusquito", "Minustaur", "rescue", "Chompers", "Trollar"], boss: "Make-Ten Golem" },
-  { id: "hall", name: "The Balance Hall", band: "first", after: "cellar",
-    pool: ["Quizard", "Chompers", "Equal Twins", "Minustaur"], floors: ["Quizard", "Chompers", "rescue", "Equal Twins", "pool"], boss: "Judo Judy" },
-  // Plusquito and Minustaur stand in for the Mines' own monsters, and The Centipede is the Golem's
-  // shape for now (build steps 3 and 4, DESIGN.md §4.1).
-  { id: "mines", name: "The Crystal Mines", band: "second", after: "hall", strands: { Trollar: "coins" },
-    pool: ["Haberhasher", "Trollar", "Plusquito", "Minustaur"], floors: ["Haberhasher", "Plusquito", "rescue", "Trollar", "Minustaur"], boss: "The Centipede" },
+    pool: ["Plusquito", "Minustaur", "Pipsqueak", "Chompers", "Trollar"], floors: ["Plusquito", "Pipsqueak", "rescue", "Chompers", "Trollar"], boss: "Make-Ten Golem" },
+  { id: "hall", name: "The Balance Hall", band: "first", after: "cellar", strands: { Triceraplus: "three" },
+    pool: ["Quizard", "Chompers", "Equal Twins", "Doublet", "Triceraplus"], floors: ["Quizard", "Equal Twins", "rescue", "Doublet", "Triceraplus"], boss: "Judo Judy" },
+  { id: "mines", name: "The Crystal Mines", band: "second", after: "hall", strands: { Trollar: "coins", Squaresquatch: "arrays" },
+    pool: ["Haberhasher", "Margot-Rythm", "Trollar", "Squaresquatch"], floors: ["Haberhasher", "Margot-Rythm", "rescue", "Trollar", "Squaresquatch"], boss: "The Centipede" },
   { id: "tower", name: "The Tables Tower", band: "third", after: "mines",
-    pool: ["Timesaur", "Divvy", "Starbot"], floors: ["Timesaur", "Divvy", "rescue", "Starbot", "pool"], boss: "Sigma Rex" }
+    pool: ["Timesaur", "Divvy", "Starbot", "Halfling"], floors: ["Timesaur", "Divvy", "rescue", "Starbot", "Halfling"], boss: "Sigma Rex" }
 ];
 // The band a monster asks in a Wing: its strand there, or the Wing's band.
 export const bandOf = (wing, m) => (wing.strands || {})[m.base || m.n] || wing.band;

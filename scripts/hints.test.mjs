@@ -148,7 +148,8 @@ const opening = { "Ten-frame": /^Put together/, "Draw and cross out": /^Take awa
   "Make 10 partners": /^How many more make 10\? Count the empty spaces\. 7 \+ □ = 10, □ = 3$/, "Number bonds": /^6 is 4 and how many more\? 4 \+ □ = 6, □ = 2$/,
   "10 and 100 more": /^100 more: the hundreds go up by 1\. 345 \+ 100 = 445$/, "Times zero": /^Zero groups/, "Times tens": /^4 × 3 tens is 12 tens, 120\. 4 × 30 = 120$/,
   "Equal fractions": /^The same amount is shaded\. Count the shaded fourths: □ = 2$/, "Rounding": /^47 is between 40 and 50\. Halfway is 45, and 47 is past halfway, so it rounds up\. □ = 50$/,
-  "Area": /^Count the squares, or rows × columns: 3 × 4 = 12$/, "Perimeter": /^Add all four sides: 4 \+ 3 \+ 4 \+ 3 = 14$/ };
+  "Area": /^Count the squares, or rows × columns: 3 × 4 = 12$/, "Perimeter": /^Add all four sides: 4 \+ 3 \+ 4 \+ 3 = 14$/,
+  "Three numbers: find the ten": /^Find the ten: 4 \+ 6 = 10\. 10 \+ 3 = 13$/, "Arrays as equal rows": /^Add the rows: 5 \+ 5 \+ 5 = 15$/ };
 assert.equal(STRATEGIES.length, Object.keys(opening).length);
 for (const s of STRATEGIES) {
   const h = hintFor(s.f, true);

@@ -75,6 +75,10 @@ export function spokenProblem(p) {
   if (p.op === "more") return "Which is more, " + spoken(p.x) + " or " + spoken(p.y) + "?";
   // Fractions: "one half equals what fourths"; "one equals what fourths".
   if (p.op === "/") return fractionWords(p.a, p.b, spoken) + " equals what " + unitName(p.d);
+  // Three numbers (Triceraplus): "four plus three plus six".
+  if (p.op === "Σ") return spoken(p.a) + " plus " + spoken(p.b) + " plus " + spoken(p.c);
+  // An array (Squaresquatch): "Three rows of five. How many in all?"
+  if (p.op === "▦") return capital(spoken(p.r)) + " rows of " + spoken(p.c) + ". How many in all?";
   if (p.op === "≈") return "Round " + spoken(p.n) + " to the nearest " + spoken(p.to).replace("one ", "") + ".";
   if (p.op === "▭") return "What is the " + (p.kind === "a" ? "area" : "perimeter") + " of a " + spoken(p.w) + " by " + spoken(p.h) + " rectangle?";
   if (p.op === "○") return "Compare " + spokenSide(p.l) + " and " + spokenSide(p.r) + ".";
@@ -90,6 +94,7 @@ export function spokenProblem(p) {
 export function spokenFact(p) {
   if (p.op === "more") return capital(spoken(p.ans)) + " is more than " + spoken(Math.min(p.x, p.y)) + ".";
   if (p.op === "/") return fractionWords(p.a, p.b, spoken) + " equals " + fractionWords(p.ans, p.d, spoken);
+  if (p.op === "▦") return capital(spoken(p.r)) + " rows of " + spoken(p.c) + " make " + spoken(p.ans) + ".";
   if (p.op === "≈") return capital(spoken(p.n)) + " rounds to " + spoken(p.ans) + ".";
   if (p.op === "▭") return "A " + spoken(p.w) + " by " + spoken(p.h) + " rectangle has " + (p.kind === "a" ? "an area" : "a perimeter") + " of " + spoken(p.ans) + ".";
   if (p.op === "○") return spokenSide(p.l) + " " + CMP_WORDS[p.sym] + " " + spokenSide(p.r);

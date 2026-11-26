@@ -332,6 +332,11 @@ h1 b{color:var(--coral);font-weight:400}
 .frac>span:last-child{padding-top:.06em}
 .frac .blank{font-size:1em;line-height:1}
 .game.find .prob svg.rectfig{max-width:min(60vw,260px);max-height:min(18vh,170px);width:auto;height:auto}
+/* Pipsqueak's Flash: the numbers as dice, which flip over into the numbers (diceFlash in app.js). */
+.prob .dn{display:inline-block;vertical-align:middle;min-width:1.1em;text-align:center;line-height:1}
+.prob .dn svg.die{display:block;width:1.15em;height:1.15em}
+/* Triceraplus's three numbers, a little smaller so the row fits on an iPhone SE. */
+.prob .sum3{font-size:.8em;white-space:nowrap}
 .game.cents .ans::after{content:"¢";margin-left:2px;font-size:.7em;opacity:.75}
 
 /* Comparisons (Chompers): < = > keys fill the number pad's space, three rows tall, so nothing moves */
@@ -592,6 +597,8 @@ label.switch-row:focus-within{outline-offset:-3px}
   .icon-btn{width:36px;height:36px}
   .mhead{flex-wrap:nowrap;gap:6px}
   .mname{font-size:13px;white-space:nowrap}
+  /* A name that doesn't fit beside its trait badge (Queen Triceraplus, app.js loadMonster) goes smaller, on two lines if it must. */
+  .mname.long{font-size:11px !important;white-space:normal;line-height:1.05;flex:none;width:min-content}
   .hp{flex:1 1 40px;height:10px}
   .hptxt{font-size:11px}
   .prob{font-size:clamp(26px,9vw,34px)}

@@ -93,7 +93,9 @@ function judy(c) {
 /* ---------- new monsters, drawn but not in the game yet ----------
    The grade strata's new monsters (DESIGN.md §4.1). Same shape as MON, plus sym (the symbol its
    body is), stratum and trait (the plan, for the gallery page), so they can be reviewed before
-   they're wired into wings.js, traits.js and lines.js. Nothing in the game reads NEW_MON. */
+   they're wired into wings.js, traits.js and lines.js. Nothing in the game reads NEW_MON.
+   Tick-Tockus and Slimelipsis wait here for problems of their own (time, patterns); the six that
+   use problems the game already has (or small sets of its own) are in MON below, after it. */
 const CREAM = '#f3efe4', GOLD = '#ffc93c', CORAL = '#ff5a4e';
 const thin = (w) => `stroke="${DK}" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round"`;
 // Points on a circle, for the Centipede's coil and Tick-Tockus's clock.
@@ -109,39 +111,6 @@ const CENTI = { cx: 102, cy: 98, r: 60 };
 const rodAt = (i) => 194 - i * 23.6;
 
 export const NEW_MON=[
- {n:'Pipsqueak',op:'+',sym:'⚄',stratum:'cellar',c:'#f6f3ea',hits:3,
-  trait:{icon:'🎲',name:'Flash',text:'Shows dots for a moment: how many? (up to 5)'},
-  quip:'rolls away with a tiny squeak.',
-  // A white die showing five. Two of its pips are eyes, each looking its own way.
-  d:c=>{const pip=(x,y,rx=7.5,ry=7.5)=>`<ellipse cx="${x}" cy="${y}" rx="${rx}" ry="${ry}" fill="${DK}"/>`;
-   const peek=(x,y,dx,dy)=>`<circle cx="${x}" cy="${y}" r="11" fill="#fff" stroke="${DK}" stroke-width="3.5"/><circle cx="${x+dx}" cy="${y+dy}" r="5.5" fill="${DK}"/><circle cx="${x+dx+1.5}" cy="${y+dy-2}" r="1.6" fill="#fff"/>`;
-   return `${foot(74,182,13)}${foot(118,182,13)}<path d="M74 160 V176 M118 160 V176" stroke="${DK}" stroke-width="10" stroke-linecap="round"/>`
-   +line(`<path d="M46 116 Q30 118 26 134 M164 104 Q180 108 184 124"/>`,c,9)
-   +`<path d="M162 146 q14 12 24 2 q6 -6 12 -2" ${ds} stroke-width="4"/>`+solid(`<circle cx="74" cy="38" r="12"/><circle cx="134" cy="38" r="12"/>`,c)+`<circle cx="74" cy="37" r="6" fill="#ffc6de"/><circle cx="134" cy="37" r="6" fill="#ffc6de"/>`
-   +solid(`<path d="M144 62 L166 40 V138 L144 160 Z"/>`,'#d9d3c4')+solid(`<path d="M46 62 L68 40 H166 L144 62 Z"/>`,'#ffffff')
-   +solid(`<rect x="46" y="62" width="98" height="98" rx="16"/>`,c)
-   +pip(106,51,8,4)+pip(151,76,3.5,7)+pip(159,122,3.5,7)
-   +pip(124,82)+pip(95,111)+pip(66,140)
-   +peek(66,82,3.5,1)+peek(124,140,-3,-3)}},
- {n:'Triceraplus',op:'+',sym:'+ + +',stratum:'hall',c:'#ff9a4a',hits:3,
-  trait:{icon:'🦕',name:'Three horns',text:'Adds three numbers: 4 + 3 + 6'},
-  quip:'stomps off to find a bigger sum.',
-  d:c=>{const plus=(x,y,h,w,r=w/2.4)=>`<rect x="${x-w/2}" y="${y-h}" width="${w}" height="${2*h}" rx="${r}"/><rect x="${x-h}" y="${y-w/2}" width="${2*h}" height="${w}" rx="${r}"/>`;
-   return `${foot(114,176,10)}${foot(136,176,10)}${foot(164,176,10)}${foot(190,176,10)}`
-   +line(`<path d="M108 100 Q124 116 150 118 Q174 120 182 116 Q198 110 202 92 M124 112 L114 172 M130 114 L136 172 M170 118 L164 172 M176 117 L190 172"/>`,c,9)
-   +solid(plus(70,90,52,42,14),c)
-   +solid(plus(32,52,13,11,3)+plus(70,22,13,11,3)+plus(108,52,13,11,3),CREAM)
-   +`${eye(58,86,10)}${eye(82,86,10)}<path d="M60 104 Q70 112 80 104" ${ds} stroke-width="3"/>`}},
- {n:'Doublet',op:'+',sym:'+ +',stratum:'hall',c:'#ffd84d',hits:3,
-  trait:{icon:'👯',name:'Doubles',text:'Doubles and halves: 8 + 8 and 16 − 8'},
-  quip:'take a bow together and skip away.',
-  d:c=>{const one=(x)=>solid(`<rect x="${x-17}" y="34" width="34" height="118" rx="15"/>`,c);
-   const tie=(x)=>`<path d="M${x} 116 l-12 -7 v14 z M${x} 116 l12 -7 v14 z" fill="${CORAL}" stroke="${DK}" stroke-width="3" stroke-linejoin="round"/><circle cx="${x}" cy="116" r="4" fill="${CORAL}" stroke="${DK}" stroke-width="3"/>`;
-   const face=(x)=>`${eye(x-9,82,8)}${eye(x+9,82,8)}<path d="M${x-7} 96 Q${x} 102 ${x+7} 96" ${ds} stroke-width="3"/>`;
-   return `${foot(48,160,13)}${foot(70,160,13)}${foot(130,160,13)}${foot(152,160,13)}`
-   +solid(`<rect x="8" y="72" width="94" height="34" rx="15"/><rect x="98" y="72" width="94" height="34" rx="15"/>`,c)+one(59)+one(141)
-   +solid(`<circle cx="94" cy="89" r="12"/><circle cx="106" cy="89" r="12"/>`,c)+`<path d="M100 79 v20" ${ds} stroke-width="3"/>`
-   +face(59)+face(141)+tie(59)+tie(141)}},
  {n:'Tick-Tockus',op:'mix',sym:'🕒',stratum:'hall, mines, tower',c:'#e8679f',hits:4,
   trait:{icon:'⏰',name:'Tell the time',text:'Hours and half hours, then 5 minutes, then the minute'},
   quip:'runs out of time and wriggles away.',
@@ -164,23 +133,6 @@ export const NEW_MON=[
    +solid(X.map((x)=>slime(x,B,.94,1.06)).join(''),c)
    +X.map(face).join('')
    +X.map((x)=>`<circle cx="${x-14}" cy="${B-47}" r="3.5" fill="#fff" opacity=".7"/>`).join('')}},
- {n:'Squaresquatch',op:'×',sym:'²',stratum:'mines',c:'#7f9cff',hits:4,
-  trait:{icon:'🟩',name:'Arrays',text:'Rows and columns up to 5 × 5, as 5 + 5 + 5'},
-  quip:'stomps back into the woods, one square at a time.',
-  d:c=>{const [x0,y0,x1,y1]=SQUATCH,t=8,n=7,w=(x1-x0)/n,h=(y1-y0)/n,pts=[];
-   // A furry square: tufts all along its edges, going round clockwise from the top left.
-   for(let i=0;i<n;i++)pts.push(`L${f1(x0+i*w+w/2)} ${y0-t} L${f1(x0+(i+1)*w)} ${y0}`);
-   for(let i=0;i<n;i++)pts.push(`L${x1+t} ${f1(y0+i*h+h/2)} L${x1} ${f1(y0+(i+1)*h)}`);
-   for(let i=0;i<n;i++)pts.push(`L${f1(x1-i*w-w/2)} ${y1+t} L${f1(x1-(i+1)*w)} ${y1}`);
-   for(let i=0;i<n;i++)pts.push(`L${x0-t} ${f1(y1-i*h-h/2)} L${x0} ${f1(y1-(i+1)*h)}`);
-   return solid(`<path d="M50 166 h36 v20 q0 8 -8 8 h-32 q-14 0 -14 -10 q0 -12 18 -18 Z M108 166 h36 q18 6 18 18 q0 10 -14 10 h-32 q-8 0 -8 -8 Z"/>`,'#5a6fd0')
-   +`<path d="M38 190 v-7 M48 192 v-7 M146 192 v-7 M156 190 v-7" ${ds} stroke-width="2.5"/>`
-   +solid(`<path d="M36 96 l-28 52 l9 -1 l-1 10 l9 -6 l4 9 l8 -14 Z M158 96 l28 52 l-9 -1 l1 10 l-9 -6 l-4 9 l-8 -14 Z"/>`,c)
-   +solid(`<path d="M${x0} ${y0} ${pts.join(' ')} Z"/>`,c)
-   +`<path d="M68 72 Q78 64 90 68 M104 68 Q116 64 126 72" ${ds} stroke-width="5"/>${eye(84,86,9)}${eye(110,86,9)}<ellipse cx="97" cy="99" rx="7" ry="4.5" fill="${DK}"/><path d="M84 108 Q97 116 110 108" ${ds} stroke-width="3"/>`
-   +`<path d="M58 134 q4 8 8 0 q4 8 8 0 M118 140 q4 8 8 0 q4 8 8 0 M86 150 q4 8 8 0 q4 8 8 0" ${ds} stroke-width="3" opacity=".35"/>`
-   +line(`<path d="M156 12 Q156 -2 171 -2 Q186 -2 186 10 Q186 20 158 38 H190"/>`,'#a9bcff',10)
-   +`${eye(166,8,4)}${eye(178,8,4)}`}},
  {n:'The Centipede',op:'mix',sym:'¢ 100',stratum:'mines',c:'#ff7a45',hits:6,boss:1,
   trait:{icon:'🐛',name:'Hundred legs',text:'At half HP it curls up into a ring'},
   quip:'counts its hundred legs and scuttles off.',
@@ -197,9 +149,58 @@ export const NEW_MON=[
    +line(`<path d="M30 22 Q18 2 4 2 M60 22 Q72 0 88 -2"/>`,'#c4532a',5)+`<g fill="#9ef0ff" stroke="${DK}" stroke-width="2.5" stroke-linejoin="round"><path d="M0 -6 l5 8 l-5 8 l-5 -8Z"/><path d="M92 -10 l5 8 l-5 8 l-5 -8Z"/></g>`
    +solid(`<circle cx="46" cy="54" r="34"/>`,c)+solid(`<path d="M10 52 Q10 12 46 12 Q82 12 82 52 Z"/>`,GOLD)
    +`<path d="M55 23 Q46 18 40 25 Q35 32 40 39 Q46 45 55 41 M46 16 V48" ${thin(3.5)} fill="none"/>`
-   +`${eye(34,62,9)}${eye(58,62,9)}<path d="M32 78 Q46 88 60 78" ${ds} stroke-width="3"/><path d="M37 81 l2 7 l3 -6 M55 81 l-2 7 l-3 -6" fill="${CREAM}" stroke="${DK}" stroke-width="2" stroke-linejoin="round"/>`}},
- {n:'Halfling',op:'mix',sym:'½',stratum:'tower',c:'#a47dff',hits:4,
-  trait:{icon:'½',name:'Halves',text:'Unit fractions, on a number line, and equal fractions'},
+   +`${eye(34,62,9)}${eye(58,62,9)}<path d="M32 78 Q46 88 60 78" ${ds} stroke-width="3"/><path d="M37 81 l2 7 l3 -6 M55 81 l-2 7 l-3 -6" fill="${CREAM}" stroke="${DK}" stroke-width="2" stroke-linejoin="round"/>`}}
+];
+// The new monsters in the game (M5 step 3, DESIGN.md §4.1): their traits are in traits.js, and they
+// keep sym and stratum for the gallery.
+MON.push(
+ {n:'Pipsqueak',op:'+',sym:'⚄',stratum:'cellar',c:'#f6f3ea',hits:3,
+  quip:'rolls away with a tiny squeak.',
+  // A white die showing five. Two of its pips are eyes, each looking its own way.
+  d:c=>{const pip=(x,y,rx=7.5,ry=7.5)=>`<ellipse cx="${x}" cy="${y}" rx="${rx}" ry="${ry}" fill="${DK}"/>`;
+   const peek=(x,y,dx,dy)=>`<circle cx="${x}" cy="${y}" r="11" fill="#fff" stroke="${DK}" stroke-width="3.5"/><circle cx="${x+dx}" cy="${y+dy}" r="5.5" fill="${DK}"/><circle cx="${x+dx+1.5}" cy="${y+dy-2}" r="1.6" fill="#fff"/>`;
+   return `${foot(74,182,13)}${foot(118,182,13)}<path d="M74 160 V176 M118 160 V176" stroke="${DK}" stroke-width="10" stroke-linecap="round"/>`
+   +line(`<path d="M46 116 Q30 118 26 134 M164 104 Q180 108 184 124"/>`,c,9)
+   +`<path d="M162 146 q14 12 24 2 q6 -6 12 -2" ${ds} stroke-width="4"/>`+solid(`<circle cx="74" cy="38" r="12"/><circle cx="134" cy="38" r="12"/>`,c)+`<circle cx="74" cy="37" r="6" fill="#ffc6de"/><circle cx="134" cy="37" r="6" fill="#ffc6de"/>`
+   +solid(`<path d="M144 62 L166 40 V138 L144 160 Z"/>`,'#d9d3c4')+solid(`<path d="M46 62 L68 40 H166 L144 62 Z"/>`,'#ffffff')
+   +solid(`<rect x="46" y="62" width="98" height="98" rx="16"/>`,c)
+   +pip(106,51,8,4)+pip(151,76,3.5,7)+pip(159,122,3.5,7)
+   +pip(124,82)+pip(95,111)+pip(66,140)
+   +peek(66,82,3.5,1)+peek(124,140,-3,-3)}},
+ {n:'Doublet',op:'mix',sym:'+ +',stratum:'hall',c:'#ffd84d',hits:3,
+  quip:'bows twice and skips away.',
+  d:c=>{const one=(x)=>solid(`<rect x="${x-17}" y="34" width="34" height="118" rx="15"/>`,c);
+   const tie=(x)=>`<path d="M${x} 116 l-12 -7 v14 z M${x} 116 l12 -7 v14 z" fill="${CORAL}" stroke="${DK}" stroke-width="3" stroke-linejoin="round"/><circle cx="${x}" cy="116" r="4" fill="${CORAL}" stroke="${DK}" stroke-width="3"/>`;
+   const face=(x)=>`${eye(x-9,82,8)}${eye(x+9,82,8)}<path d="M${x-7} 96 Q${x} 102 ${x+7} 96" ${ds} stroke-width="3"/>`;
+   return `${foot(48,160,13)}${foot(70,160,13)}${foot(130,160,13)}${foot(152,160,13)}`
+   +solid(`<rect x="8" y="72" width="94" height="34" rx="15"/><rect x="98" y="72" width="94" height="34" rx="15"/>`,c)+one(59)+one(141)
+   +solid(`<circle cx="94" cy="89" r="12"/><circle cx="106" cy="89" r="12"/>`,c)+`<path d="M100 79 v20" ${ds} stroke-width="3"/>`
+   +face(59)+face(141)+tie(59)+tie(141)}},
+ {n:'Triceraplus',op:'Σ',sym:'+ + +',stratum:'hall',c:'#ff9a4a',hits:3,
+  quip:'stomps off to find a bigger sum.',
+  d:c=>{const plus=(x,y,h,w,r=w/2.4)=>`<rect x="${x-w/2}" y="${y-h}" width="${w}" height="${2*h}" rx="${r}"/><rect x="${x-h}" y="${y-w/2}" width="${2*h}" height="${w}" rx="${r}"/>`;
+   return `${foot(114,176,10)}${foot(136,176,10)}${foot(164,176,10)}${foot(190,176,10)}`
+   +line(`<path d="M108 100 Q124 116 150 118 Q174 120 182 116 Q198 110 202 92 M124 112 L114 172 M130 114 L136 172 M170 118 L164 172 M176 117 L190 172"/>`,c,9)
+   +solid(plus(70,90,52,42,14),c)
+   +solid(plus(32,52,13,11,3)+plus(70,22,13,11,3)+plus(108,52,13,11,3),CREAM)
+   +`${eye(58,86,10)}${eye(82,86,10)}<path d="M60 104 Q70 112 80 104" ${ds} stroke-width="3"/>`}},
+ {n:'Squaresquatch',op:'▦',sym:'²',stratum:'mines',c:'#7f9cff',hits:4,
+  quip:'stomps back into the woods, one square at a time.',
+  d:c=>{const [x0,y0,x1,y1]=SQUATCH,t=8,n=7,w=(x1-x0)/n,h=(y1-y0)/n,pts=[];
+   // A furry square: tufts all along its edges, going round clockwise from the top left.
+   for(let i=0;i<n;i++)pts.push(`L${f1(x0+i*w+w/2)} ${y0-t} L${f1(x0+(i+1)*w)} ${y0}`);
+   for(let i=0;i<n;i++)pts.push(`L${x1+t} ${f1(y0+i*h+h/2)} L${x1} ${f1(y0+(i+1)*h)}`);
+   for(let i=0;i<n;i++)pts.push(`L${f1(x1-i*w-w/2)} ${y1+t} L${f1(x1-(i+1)*w)} ${y1}`);
+   for(let i=0;i<n;i++)pts.push(`L${x0-t} ${f1(y1-i*h-h/2)} L${x0} ${f1(y1-(i+1)*h)}`);
+   return solid(`<path d="M50 166 h36 v20 q0 8 -8 8 h-32 q-14 0 -14 -10 q0 -12 18 -18 Z M108 166 h36 q18 6 18 18 q0 10 -14 10 h-32 q-8 0 -8 -8 Z"/>`,'#5a6fd0')
+   +`<path d="M38 190 v-7 M48 192 v-7 M146 192 v-7 M156 190 v-7" ${ds} stroke-width="2.5"/>`
+   +solid(`<path d="M36 96 l-28 52 l9 -1 l-1 10 l9 -6 l4 9 l8 -14 Z M158 96 l28 52 l-9 -1 l1 10 l-9 -6 l-4 9 l-8 -14 Z"/>`,c)
+   +solid(`<path d="M${x0} ${y0} ${pts.join(' ')} Z"/>`,c)
+   +`<path d="M68 72 Q78 64 90 68 M104 68 Q116 64 126 72" ${ds} stroke-width="5"/>${eye(84,86,9)}${eye(110,86,9)}<ellipse cx="97" cy="99" rx="7" ry="4.5" fill="${DK}"/><path d="M84 108 Q97 116 110 108" ${ds} stroke-width="3"/>`
+   +`<path d="M58 134 q4 8 8 0 q4 8 8 0 M118 140 q4 8 8 0 q4 8 8 0 M86 150 q4 8 8 0 q4 8 8 0" ${ds} stroke-width="3" opacity=".35"/>`
+   +line(`<path d="M156 12 Q156 -2 171 -2 Q186 -2 186 10 Q186 20 158 38 H190"/>`,'#a9bcff',10)
+   +`${eye(166,8,4)}${eye(178,8,4)}`}},
+ {n:'Halfling',op:'/',sym:'½',stratum:'tower',c:'#a47dff',hits:4,
   quip:'splits in half and tiptoes home.',
   d:c=>solid(`<ellipse cx="56" cy="186" rx="24" ry="11"/><ellipse cx="150" cy="186" rx="24" ry="11"/>`,'#f2b483')+`<path d="M38 181 q3 -6 6 0 M48 179 q3 -6 6 0 M150 179 q3 -6 6 0 M160 181 q3 -6 6 0" ${ds} stroke-width="2.5"/>`
    +line(`<path d="M60 142 Q60 120 100 120 Q140 120 140 142 Q140 160 64 180 H146"/>`,c,19)
@@ -208,17 +209,15 @@ export const NEW_MON=[
    +solid(`<rect x="28" y="90" width="144" height="20" rx="10"/>`,'#6b4bc4')
    +solid(`<circle cx="24" cy="100" r="12"/><circle cx="176" cy="100" r="12"/>`,c)
    +`<rect x="88" y="88" width="26" height="24" rx="5" fill="${GOLD}" stroke="${DK}" stroke-width="3.5"/>`
-   +`${eye(93,50,8)}${eye(111,50,8)}<path d="M96 66 Q102 71 108 66" ${ds} stroke-width="3"/>`}
-];
+   +`${eye(93,50,8)}${eye(111,50,8)}<path d="M96 66 Q102 71 108 66" ${ds} stroke-width="3"/>`});
 // Margot-Rythm (the Mines, "algorithm"): an old desktop computer. Its screen shows the stacked
 // algorithm for 27 + 15, the carried 1 glowing gold like a cursor. Digits are strokes in unit
 // coordinates (x, y pairs from 0 to 1), placed in a box by glyph().
 const GLYPH = { 1: "M.15 .22 L.55 0 L.55 1", 2: "M0 .26 Q0 0 .5 0 Q1 0 1 .3 Q1 .52 0 1 L1 1", 4: "M.72 1 L.72 0 L0 .66 L1 .66",
   5: "M.95 0 L.12 0 L.05 .44 Q.5 .3 .85 .5 Q1.05 .75 .8 .94 Q.4 1.08 0 .86", 7: "M0 0 L1 0 L.35 1", "+": "M0 .5 L1 .5 M.5 0 L.5 1" };
 const glyph = (k, x, y, w, h) => { let i = 0; return GLYPH[k].replace(/-?\d*\.?\d+/g, (v) => f1(i++ % 2 ? y + h * v : x + w * v)); };
-NEW_MON.push(
+MON.push(
  {n:'Margot-Rythm',op:'+',sym:'¹+',stratum:'mines',c:'#e6d29e',hits:4,
-  trait:{icon:'🔁',name:'Carry the One',text:'Problems that need regrouping hit double'},
   quip:'carries the one and shuts down for the night.',
   d:c=>{const SCR='#173a2e',PH='#7dffa0',CAB='#b49a5e',dig=(k,x,y,w=12,h=17)=>`<path d="${glyph(k,x,y,w,h)}"/>`;
    // Drawn a little big, then shrunk to fit the frame with its waving plug and the CRT's back.
@@ -266,8 +265,8 @@ export const ANCHOR = {
   Haberhasher: { eyes: [[88, 66, 7], [112, 66, 7]], mouth: [100, 78], top: [104, -22], hat: true, neck: [100, 100], ground: 194 },
   // Judo Judy is a boss (no looks); its anchors are here for its art checks. The top is its top-knot.
   "Judo Judy": { eyes: [[88, 55, 8], [112, 55, 8]], mouth: [100, 66], top: [100, -10], hat: true, neck: [100, 74], ground: 190 },
-  // NEW_MON, ready for looks once they're in the game. Doublet's are its left twin's face, with
-  // both twins' eyes; Slimelipsis's are its middle slime's.
+  // The new monsters. Doublet's are its left twin's face, with both twins' eyes; Slimelipsis's
+  // (NEW_MON, not in the game yet) are its middle slime's.
   Pipsqueak: { eyes: [[66, 82, 11], [124, 140, 11]], mouth: [95, 126], top: [104, 40], neck: [95, 150], ground: 188 },
   Triceraplus: { eyes: [[58, 86, 10], [82, 86, 10]], mouth: [70, 107], top: [70, 38], neck: [70, 124], ground: 182 },
   Doublet: { eyes: [[50, 82, 8], [68, 82, 8], [132, 82, 8], [150, 82, 8]], mouth: [59, 98], top: [59, 36], neck: [59, 116], ground: 166 },
@@ -315,7 +314,14 @@ export const LOOKS = {
   Timesaur: [["Timesaur Tot", ["mini"]], ["The Ringmaster", ["tophat"]], ["Karate Kross", ["headband"]], ["Snoozasaur", ["nightcap", "lids"]]],
   Divvy: [["Lord Divington", ["tophat", "bowtie"], "he"], ["Dizzy Divvy", ["spiral"]], ["Captain Split", ["bandana", "eyepatch"]], ["Divvy Belle", ["bow", "lashes"], "she"]],
   Starbot: [["Glitterbot", ["sparkles"]], ["Low Battery", ["lids"]], ["Super Starbot", ["scarf", "medal"]], ["Turbo Starbot", ["headband"]]],
-  Haberhasher: [["Jolly Hasher", ["blush", "sparkles"]], ["DJ Hashtag", ["sunglasses"]], ["Sir Hashalot", ["monocle", "mustache"]], ["Snoozehash", ["lids"]]]
+  Haberhasher: [["Jolly Hasher", ["blush", "sparkles"]], ["DJ Hashtag", ["sunglasses"]], ["Sir Hashalot", ["monocle", "mustache"]], ["Snoozehash", ["lids"]]],
+  // The grade strata's new monsters (M5 step 3).
+  Pipsqueak: [["Lucky Pipsqueak", ["sparkles", "blush"]], ["High Roller", ["tophat", "bowtie"]], ["Teeny Pipsqueak", ["mini"]], ["Sleepy Squeak", ["nightcap", "lids"]]],
+  Doublet: [["Double Trouble", ["headband", "sunglasses"]], ["Twinkle Twins", ["sparkles", "blush"]], ["Little Doublet", ["mini"]], ["The Snooze Twins", ["lids"]]],
+  Triceraplus: [["Tricera-tot", ["mini"]], ["Captain Triceraplus", ["bandana", "eyepatch"]], ["Queen Triceraplus", ["crown", "lashes"], "she"], ["Triceracool", ["sunglasses"]]],
+  Squaresquatch: [["Baby Squatch", ["mini"]], ["Snowsquatch", ["scarf", "nightcap"]], ["Sir Squarington", ["tophat", "monocle"], "he"], ["Disco Squatch", ["sunglasses", "sparkles"]]],
+  Halfling: [["Half Pint", ["mini"]], ["Lady Halfling", ["bow", "lashes"], "she"], ["Dizzy Halfling", ["spiral"]], ["Halfling Hero", ["headband", "medal"]]],
+  "Margot-Rythm": [["Sleep Mode", ["lids"]], ["Glitchy Margot", ["spiral"]], ["Mini Margot", ["mini"]], ["Margot in Shades", ["sunglasses"]]]
 };
 // A monster in look i (0 is itself): the same monster, renamed, with its base name kept for its
 // trait and kind of math.
