@@ -60,7 +60,7 @@ What changes:
 | A miss costs a heart and shows the answer | Keep. Also **queue the missed problem** to come back 2–4 problems later (see §5). Getting it right the second time shows a small "Got it!" moment. |
 | The answer pops up as a number | **Your answer summons its digits**: each digit is a hero that attacks (§6.6). |
 | One monster per floor | Floors can sometimes have **two weak minions** or **an elite** variant, such as a gold-outlined Plusquito with more HP and a special rule. |
-| Clearing a floor heals 1 heart | Keep, and add **a choice between floors** (§6.3) so the player decides something besides "next". |
+| Clearing a floor heals 1 heart | Keep, and add **math-locked chests** (§6.3) with money, items and clothing; the player decides something besides "next". |
 | 7 fixed floors | A run becomes a trip through one **Wing** (§4) with 5–7 floors and a boss. Wings unlock as you clear them. |
 
 ### Monster abilities (light, readable, math-based)
@@ -249,15 +249,40 @@ Stars unlock cosmetics, so they give replay goals without grinding. Wings unlock
 - Undiscovered monsters appear as chalk silhouettes. Curiosity is the hook.
 - Rescued heroes have their own page beside it (§6.6).
 
-### 6.3 Between-floor choices
-After each floor, pick **one of two** rewards:
-- ♥ Heal 1 heart
-- 🧪 **Potion** (heal 2, used anytime)
-- 🛡️ **Shield** (blocks the next miss)
-- 💡 **Hint scroll** (shows a hint on any problem, no streak penalty)
-- ⏭️ **Skip stone** (swap the current problem; the fact goes to the retry queue, so it isn't dodged forever)
+### 6.3 Chests, money and Trollar's shop (planned 2026-11-25)
+Replaces the between-floor choice. Clearing a floor still heals 1 heart.
 
-Inventory holds 3 items. This adds a small strategic layer without making math optional, because every item helps you *get to* math and none replaces it.
+**Math-locked chests.**
+- **When:** after the floor's monster is beaten, about 1 floor in 3 has a chest, and every boss does. Never the rescue floor, where freeing the hero is the reward.
+- **The lock** is a problem with a padlock drawn round it ("7 + 5"), answered on the number pad like any other.
+  - It's a quick win, not a test: a learned fact from the stratum's band, said aloud for a pre-reader.
+  - Right: the lock pops and the lid opens with a fanfare.
+  - Wrong: the lock jams (a clunk, the fact goes to the retry queue), and the chest tries a second lock. A missed lock never costs anything (no heart, no streak), so a chest is always a happy moment. A second miss leaves it shut until next time.
+  - A lock counts as practice: it records the fact like any answer, with no damage.
+- **What's inside**, one thing a chest:
+  - **Money**, about half the time: a few coins, shown as a pile (`coins.js`), and counted aloud ("Two dimes and three pennies. Twenty-three cents!"). The Cellar's chests hold single coins, the Mines' and the Tower's more.
+  - **An item**, about a third of the time.
+  - **Clothing**, the rest: always a piece you don't have yet (money instead once you have every piece).
+
+**Money.**
+- Kept per player in cents (`wallet`), never lost, not even on a loss.
+- Shown as a coin purse: the fewest coins for the amount (quarters, dimes, nickels, pennies; dollar bills past a dollar, §4.1 2nd grade), never just a number, so it's coin practice every time you look.
+
+**Items.** Every item found or bought goes into your inventory, with no limit, kept between runs. **Three quick-use slots** sit by the hearts in a fight: tap one to use it. You fill the slots from the inventory before a run (on the start screen), and when a slot is used, the next of that item from the inventory fills it at the next floor. The voice says what an item does the first time ("The shield blocks one miss!"). Each helps you get to the math and none replaces it:
+- 🥧 **Pie:** heals a heart.
+- 🛡️ **Shield:** blocks the next miss.
+- ✖️ **Times Two Totem:** the next right answer hits double.
+- 🧲 **Hero Magnet:** the next right answer with a team hero's digit is a Hero Moment (§8.4).
+- Later: √ Shrink Ray (the monster loses a quarter of its HP), 0️⃣ Nullifier (no monster trait this floor), 💡 Hint scroll.
+
+**Clothing.** Hats, glasses, bows and the like from the looks kit (`KIT` in `monsters.js`). A piece from a chest or the shop goes into your clothing bag (no limit). No piece comes twice until you have every piece: a chest picks from the ones you don't have yet, and the shop only sells those. Once you have them all, chests that would hold clothing hold money instead (and later perhaps new colors of pieces you have). You dress your **captain** from it, one piece per spot (head, face, neck), in a wardrobe on the start screen. A hero keeps what they're wearing after they stop being captain, and wears it on the start scene, in fights and in Hero Moments, so the team slowly gets its own looks. Saved per player (`wardrobe`: the bag, and what each hero wears).
+
+**Trollar's shop.** Trollar keeps a stall by the Sumgeon's door on the start screen, open outside a run.
+- Items and clothing with prices in coins, read aloud: "The pie costs thirty-five cents."
+- **Paying is the math:** you tap coins in your purse to put them on the counter (tap one on the counter to take it back) until there's enough. The game never pays for you. No dragging: taps are easier for a kindergartner. Trollar gives change if you put down too much ("Here's ten cents back!"). A K player pays with single coins (prices are one coin); a 2nd grader counts mixed coins.
+- Prices are set so a few runs buy an item and clothing takes saving up.
+
+**Saved per player:** `wallet` (cents), `items` (the inventory's counts and the 3 quick-use slots), `wardrobe` (what's found and what each hero wears). Each goes in `OWN_KEYS`.
 
 ### 6.4 Endless Descent
 - Unlocked after you clear any Wing once.
@@ -530,7 +555,7 @@ Each milestone should be playable and shippable on its own. Revised 2026-11-25 f
    - the Fraction Forge;
    - the Parenthesis Pyramid (Shoutandcomma with *Unwrap*);
    - Pirate Cavern (π Pirate).
-7. **M7 — Replay.** Hero Moments, the slow-motion hero close-ups with quips in a second voice (§8.4; small enough to build any time). Achievements with spoken cards, the 🏆 sheet and share cards (§14), between-floor item choices, Endless Descent (the Endless Specter), Daily Dungeon, and captain cosmetics.
+7. **M7 — Replay.** Hero Moments, the slow-motion hero close-ups with quips in a second voice (§8.4; small enough to build any time). Achievements with spoken cards, the 🏆 sheet and share cards (§14), math-locked chests with money, items and clothing, and Trollar's shop (§6.3; next, decided 2026-11-25), Endless Descent (the Endless Specter) and Daily Dungeon.
 8. **M8 — Grown-ups' corner and offline.** Progress heat-maps, custom practice, export, offline play with saved voice clips (the manifest and Home Screen icon are done), and device linking and sync (§15.2–15.4).
 
 ---
