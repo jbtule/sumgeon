@@ -378,6 +378,11 @@ h1 b{color:var(--coral);font-weight:400}
   .game.slimes .prob svg.pattern{width:min(calc(100vw - 84px),400px)}
   .game.pic.find .prob svg.tf,.game.pic.find .prob svg.pv,.game.pic.find .prob svg.money,.game.pic.find .prob svg.nl{width:min(calc(100vw - 84px),340px)}
 }
+/* The dot flash (Pipsqueak): the card of dots, face down after a moment with "Show me again" on it. */
+.prob .dotcard{position:relative;display:block;margin:0 auto}
+.prob svg.dots{display:block;width:min(calc(100vw - 110px),240px);height:auto;max-height:18dvh;margin:0 auto}
+.prob .peek{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);white-space:nowrap;border:2px solid var(--gold);border-radius:999px;background:var(--btn);color:var(--ink);font:800 16px Nunito,sans-serif;padding:8px 14px;box-shadow:0 3px 0 var(--dark);cursor:pointer}
+.prob .peek:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 /* A hint drawn on the problem's own picture (the clock, the slimes) opens with only its words. */
 .hint.words .model{display:none}
 

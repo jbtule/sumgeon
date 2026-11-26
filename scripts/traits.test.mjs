@@ -159,7 +159,10 @@ import { lookOf, LOOKS } from "../js/monsters.js";
   // Halfling (Tower): fractions only, even before the fractions levels are open: the number line
   // first (batch 2), as the school teaches it.
   const hf = asked("Halfling", "third");
-  assert.ok(hf.length === 24 + 35 && hf.every((f) => "/↔".includes(f.op)));
+  assert.ok(hf.length === 24 + 35 + 24 && hf.every((f) => "/↔".includes(f.op) || (f.op === "○" && f.key.includes("/"))));
+  // Chompers visiting the Tower compares fractions, and only them.
+  const cf = asked("Chompers", "third");
+  assert.ok(cf.length === 24 && cf.every((f) => f.op === "○" && f.key.includes("/")));
   for (let i = 0; i < 100; i++) assert.equal(choose("third", {}, { now: 0, asks: asks(mon("Halfling")) })[0], "↔", "fractions from the start");
   assert.ok(asks(mon("Halfling"))("/", "/1,2,4") && !asks(mon("Halfling"))("×", "×3,4"));
   assert.ok(LOOKS.Halfling.length === 4);

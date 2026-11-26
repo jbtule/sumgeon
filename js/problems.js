@@ -7,6 +7,7 @@ import { spokenLine, spokenLineAnswer } from "./numberline.js";
 import { spokenPV, spokenPVAnswer } from "./placevalue.js";
 import { spokenDollars, spokenDollarAnswer } from "./dollars.js";
 import { spokenShape, spokenShapeAnswer } from "./shapes.js";
+import { spokenFlash, spokenFlashAnswer } from "./flash.js";
 
 // Problem generation and spoken text. No DOM: runs in Node for the tests and, later, the
 // audio build (which records the same spoken text the app asks for).
@@ -69,6 +70,8 @@ var OP_WORDS = { "+": "plus", "-": "minus", "×": "times", "÷": "divided by" };
 
 // A side of a Balance Hall problem, spoken: "3 + □" → "three plus what".
 function spokenSide(side) { return side.split(" + ").map(function (t) { return t === "□" ? "what" : spoken(Number(t)); }).join(" plus "); }
+// "3/8" → "three eighths".
+function spokenFrac(t) { var nd = t.split("/").map(Number); return fractionWords(nd[0], nd[1], spoken); }
 var CMP_WORDS = { "<": "is less than", ">": "is greater than", "=": "is equal to" };
 
 // The voice reads "pennies" as "PEN-iz", close to "penne's"; spelled "penny's" it says
@@ -92,6 +95,8 @@ export function spokenProblem(p) {
   if (p.op === "$") return spokenDollars(p);
   // Shapes (Polly-Gon): "Draw a triangle!", "How many sides does this hexagon have?"
   if (p.op === "◇") return spokenShape(p);
+  // The dot flash (Pipsqueak): "How many dots?"
+  if (p.op === "⁙") return spokenFlash(p);
   // Which is more (K): "Which is more, seven or four?"
   if (p.op === "more") return "Which is more, " + spoken(p.x) + " or " + spoken(p.y) + "?";
   // Fractions: "one half equals what fourths"; "one equals what fourths".
@@ -103,6 +108,8 @@ export function spokenProblem(p) {
   if (p.op === "▦") return capital(spoken(p.r)) + " rows of " + spoken(p.c) + ". How many in all?";
   if (p.op === "≈") return "Round " + spoken(p.n) + " to the nearest " + spoken(p.to).replace("one ", "") + ".";
   if (p.op === "▭") return "What is the " + (p.kind === "a" ? "area" : "perimeter") + " of a " + spoken(p.w) + " by " + spoken(p.h) + " rectangle?";
+  // Comparing fractions (the Tower): "Compare three eighths and five eighths."
+  if (p.op === "○" && p.frac) return "Compare " + spokenFrac(p.l) + " and " + spokenFrac(p.r) + ".";
   if (p.op === "○") return "Compare " + spokenSide(p.l) + " and " + spokenSide(p.r) + ".";
   if (p.op === "=") return spokenSide(p.l) + " equals " + spokenSide(p.r);
   if (p.op === "¢" && p.find) return sayPennies("How many " + coinOf(p.find).names + "?");
@@ -121,11 +128,13 @@ export function spokenFact(p) {
   if (p.op === "#") return spokenPVAnswer(p);
   if (p.op === "$") return spokenDollarAnswer(p);
   if (p.op === "◇") return spokenShapeAnswer(p);
+  if (p.op === "⁙") return spokenFlashAnswer(p);
   if (p.op === "more") return capital(spoken(p.ans)) + " is more than " + spoken(Math.min(p.x, p.y)) + ".";
   if (p.op === "/") return fractionWords(p.a, p.b, spoken) + " equals " + fractionWords(p.ans, p.d, spoken);
   if (p.op === "▦") return capital(spoken(p.r)) + " rows of " + spoken(p.c) + " make " + spoken(p.ans) + ".";
   if (p.op === "≈") return capital(spoken(p.n)) + " rounds to " + spoken(p.ans) + ".";
   if (p.op === "▭") return "A " + spoken(p.w) + " by " + spoken(p.h) + " rectangle has " + (p.kind === "a" ? "an area" : "a perimeter") + " of " + spoken(p.ans) + ".";
+  if (p.op === "○" && p.frac) return spokenFrac(p.l) + " " + CMP_WORDS[p.sym] + " " + spokenFrac(p.r);
   if (p.op === "○") return spokenSide(p.l) + " " + CMP_WORDS[p.sym] + " " + spokenSide(p.r);
   if (p.op === "=") return spokenSide(p.l.replace("□", p.ans)) + " equals " + spokenSide(p.r.replace("□", p.ans));
   if (p.op === "¢" && p.find) return sayPennies((p.ans === 1 ? "There is one " + coinOf(p.find).name : "There are " + spoken(p.ans) + " " + coinOf(p.find).names) + ".");

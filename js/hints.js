@@ -1,5 +1,5 @@
 import { coinsSvg, coinFact, findFact, coinOf, pileOf, COINS } from "./coins.js";
-import { unitName, fractionFact, roundFact, rectFact } from "./third.js";
+import { unitName, fractionFact, roundFact, rectFact, fracCompareFact } from "./third.js";
 import { hiddenFact } from "./missing.js";
 import { moreFact } from "./balance.js";
 import { threeFact, tenOf, tenPairOf, sumFact } from "./three.js";
@@ -11,6 +11,7 @@ import { lineSvg, lineHint, lineFactOf } from "./numberline.js";
 import { pvSvg, pvHint, pvFactOf } from "./placevalue.js";
 import { dollarSvg, dollarHint, dollarFactOf } from "./dollars.js";
 import { countSvg, countHint, drawHintSvg, drawHint, shapeFactOf } from "./shapes.js";
+import { flashSvg, flashHint, flashFactOf } from "./flash.js";
 
 // Hints (DESIGN.md §5.3): the models classrooms use now, with the classroom's words, and a line
 // for grown-ups who learned it another way. No DOM: returns { model, say, grownups } where model
@@ -588,6 +589,30 @@ function fractionHint(f, worked) {
     grownups: "Equal fractions with fraction bars: two bars the same length, cut into different pieces. 1/2 and 2/4 shade the same amount, so they're equal. A whole is all its pieces: 4/4 = 1." };
 }
 
+// Comparing fractions (3rd grade, 3.NF.A.3d): the two fractions as fraction bars of the same whole,
+// one over the other, each labeled and shaded, so they line up. Same denominator: same size
+// pieces, more pieces is more; same numerator: the same number of pieces, bigger pieces is more;
+// equal fractions: line them up. Before answering, no symbol and no ring; worked, the bigger bar
+// ringed in gold (both for =) and the comparison written under them.
+export const FRAC_RULE = { den: "Same size pieces: more pieces is more.", num: "Same number of pieces: bigger pieces is more.", eq: "Line up the bars. Which shades more?" };
+function fracCompareHint(f, worked) {
+  const X0 = 44, W = 200, rows = [[f.l, 4, C.a], [f.r, 38, C.b]];
+  let s = "";
+  rows.forEach(([t, y, color]) => {
+    const [n, d] = t.split("/").map(Number);
+    s += txt(X0 - 8, y + 19, t, 15, color, "end");
+    for (let i = 0; i < d; i++) s += `<rect x="${f1(X0 + i * W / d)}" y="${y}" width="${f1(W / d)}" height="26" fill="${i < n ? color : "none"}" stroke="${C.ink}" stroke-width="2"/>`;
+  });
+  if (worked) {
+    const big = f.sym === "=" ? [0, 1] : f.sym === ">" ? [0] : [1];
+    big.forEach((i) => { s += `<rect x="${X0 - 4}" y="${rows[i][1] - 4}" width="${W + 8}" height="34" rx="6" fill="none" stroke="${C.a}" stroke-width="3"/>`; });
+    s += compareLine(X0 + W / 2, 90, f);
+  }
+  const model = svg(250, worked ? 98 : 70, s, `fraction bars: ${f.l} and ${f.r}`);
+  return { model, say: `${FRAC_RULE[f.frac]} ${worked ? f.l + " " + f.sym + " " + f.r : f.l + " ? " + f.r}`,
+    grownups: "Comparing fractions: with the same bottom number the pieces are the same size, so more pieces is more (5/8 > 3/8). With the same top number there are as many pieces, so bigger pieces is more: halves are bigger than sixths, so 2/3 > 2/6. Fraction bars of the same whole show it; the open side of < or > faces the bigger one." };
+}
+
 // Rounding (3rd grade): where the number sits on a number line between two tens (or hundreds).
 function roundHint(f, worked) {
   const lo = Math.floor(f.n / f.to) * f.to, hi = lo + f.to, mid = lo + f.to / 2, x = (n) => 14 + (n - lo) / f.to * 232;
@@ -746,7 +771,20 @@ function shapeHintFor(f, worked) {
   return { model: fitted(pic, h > w * 1.2 ? 80 : 130, "the shape, with the hint on it"), say: countHint(f, worked).say, grownups: SHAPE_WHY[f.kind === "corners" ? "sides" : f.kind] };
 }
 
+// The dot flash (Pipsqueak, js/flash.js): the dots back, colored by group ("2 and 2 make ?"). In a
+// fight they come back on the problem's own card (app.js); here for the Oops card and the grown-ups' page.
+const FLASH_WHY = {
+  d: "How many at a glance: kids learn the dice patterns as pictures and see small groups inside them (a 5 is the 4 corners and 1 in the middle), so they know how many without counting one by one.",
+  f: "Five-frames: 5 boxes in a row. Kids see how many are full, and how many empty, so 4 is \"one less than 5\" at a glance.",
+  o: "Dominoes: each half is a small group seen at a glance, and the two halves put together make the whole: 3 and 2 make 5.",
+  s: "Small groups: kids spot each little group without counting it (2, 2 and 1), then put them together."
+};
+function flashHintFor(f, worked) {
+  return { model: fitted(flashSvg(f, { hint: true }), 90, "the dots, in groups"), say: flashHint(f, worked).say, grownups: FLASH_WHY[f.kind] };
+}
+
 export function hintFor(f, worked) {
+  if (f.op === "⁙") return flashHintFor(f, worked);
   if (f.op === "◇") return shapeHintFor(f, worked);
   if (f.op === "✓" || f.op === "✎") return tfHintFor(f, worked);
   if (f.op === "↔") return lineHintFor(f, worked);
@@ -756,6 +794,7 @@ export function hintFor(f, worked) {
   if (f.op === "…" || f.op === "◐") return patternHintFor(f, worked);
   if (f.op === "¢") return coinHint(f, worked);
   if (f.op === "Σ") return f.nums && Math.max(...f.nums) >= 10 ? sumsHint(f, worked) : threeHint(f, worked);
+  if (f.op === "○" && f.frac) return fracCompareHint(f, worked);
   if (f.op === "○" && Math.max(Number(f.l), Number(f.r)) >= 100) return compare1000Hint(f, worked);
   if (f.op === "▦") return arrayHint(f, worked);
   if (f.op === "○" || f.op === "=") return balanceHint(f, worked);
@@ -925,6 +964,9 @@ export function hintFor(f, worked) {
 // The strategies, one sample problem each, for the "How the hints work" page in Settings, where
 // the grown-ups lines live (the hints in play show only the drawing and its words).
 export const STRATEGIES = [
+  { title: "How many at a glance", grade: "K", f: flashFactOf("⁙d5") },
+  { title: "Five-frames", grade: "K", f: flashFactOf("⁙f4") },
+  { title: "Dominoes", grade: "K", f: flashFactOf("⁙o3,2") },
   { title: "Ten-frame", grade: "K", f: { op: "+", x: 3, y: 4 } },
   { title: "Adding zero", grade: "K", f: { op: "+", x: 4, y: 0 } },
   { title: "Which is more", grade: "K", f: moreFact(7, 4) },
@@ -997,6 +1039,8 @@ export const STRATEGIES = [
   { title: "Rows and columns of squares", grade: "2nd", f: shapeFactOf("◇squares:3,4") },
   { title: "Unit fractions", grade: "3rd", f: shapeFactOf("◇unit:circle4") },
   { title: "Equal fractions", grade: "3rd", f: fractionFact(1, 2, 4) },
+  { title: "Compare fractions: same size pieces", grade: "3rd", f: fracCompareFact("3/8", "5/8") },
+  { title: "Compare fractions: same number of pieces", grade: "3rd", f: fracCompareFact("2/3", "2/6") },
   { title: "Rounding", grade: "3rd", f: roundFact(47, 10) },
   { title: "Area", grade: "3rd", f: rectFact("a", 4, 3) },
   { title: "Perimeter", grade: "3rd", f: rectFact("p", 4, 3) }

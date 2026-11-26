@@ -75,7 +75,7 @@ Each monster gets one simple trait that changes *how* you do math, never anythin
 - **Trollar**: 🪙 *Toll*. Asks only coin problems: count the coins, type the cents.
 - **Quizard**: ❓ *Mystery*. Every problem hides a number (3 + □ = 7); the hidden number is the damage. Its body is a big question mark in a wizard hat.
 - **Sigma Rex**: 👑 *Second wind*. At half HP it armors up like Timesaur.
-- **Pipsqueak** (the Cellar): 🎲 *Flash*. A sum of two small numbers comes as two dice to count by sight, and after a moment each die flips over into its number.
+- **Pipsqueak** (the Cellar): 🎲 *Flash*. Dots flash for a moment (a die, a five-frame, a domino, small groups): how many? Then a sum of two small numbers comes as two dice to count by sight, and after a moment each die flips over into its number.
 - **Doublet** (the Hall): 👯 *Doubles*. Asks only doubles and taking half away (8 + 8, 16 − 8).
 - **Triceraplus** (the Hall): 🦕 *Three horns*. Adds three numbers, two of which make 10 (4 + 3 + 6: find the ten first).
 - **Margot-Rythm** (the Mines): 🔁 *Carry the One*. Problems that need regrouping hit double.
@@ -108,7 +108,7 @@ One stratum per grade, in a **straight chain**: each opens only the next. The le
 | **The Counting Cellar** (built, by grade) | K | Within 5, with zero (4 + 0, 4 − 4) → within 10 → make 10 (7 + □ = 10) and number bonds → teen numbers as 10 and some more (10 + 4, 14 − 4); counting on from a number and back from 10 throughout | Plusquito (+), Minustaur (−), Trollar ($: find the coin, each coin's worth), Chompers in a K form (which is more, 7 or 4? type 7: comparing without symbols), Slimelipsis visiting (count on, count back), Pipsqueak (dice: how many at a glance, then the numbers), Polly-Gon visiting (draw and count circles, squares, triangles, rectangles, hexagons) | **Make-Ten Golem** |
 | **The Balance Hall** (built, by grade) | 1st | Within 20 without crossing 10 → crossing 10 (make a ten, use a ten, doubles) → missing numbers and the equal sign → ± tens (34 + 20, 10 more, 10 less); counting to 120 and by 5s throughout | Quizard (?), Chompers (< = >), Equal Twins (=, balancing and true or false), Doublet (doubles), Slimelipsis visiting (to 120, by 5s), Triceraplus (three numbers, 4 + 3 + 6: find the ten), Tick-Tockus (hours and half hours), Polly-Gon visiting (sides and corners; halves and fourths) | **Judo Judy** (replaced The Unknown) |
 | **The Crystal Mines** (built) | 2nd | Two-digit ± within 100, adding and subtracting mixed → with regrouping → three-digit place value (34 tens is 340) → ± 10 and 100 within 1000 → ± within 1000 without, then with regrouping (built); adding up to four two-digit numbers and comparing three-digit numbers as strands (built); odd and even | Haberhasher (tens and ones), Trollar (counting coins with ¢ and $), Slimelipsis (skip counting by 2s, 5s and 10s; odd and even), Squaresquatch (²: arrays up to 5 × 5 as 5 + 5 + 5), Margot-Rythm (¹+: carry the one, regrouping hits double; visiting), Tick-Tockus (to 5 minutes), Polly-Gon (⬡: sides, corners and faces, equal shares, rows and columns of squares) | **The Centipede** |
-| **The Tables Tower** (built, by grade) | 3rd | ×0, 1, 2, 5, 10 and their ÷ → ×3, 4, 6 and ÷ → ×7, 8, 9 and ÷ → × tens (4 × 30) → fractions: unit fractions, on a number line, simple equivalents, comparing (1/2 ○ 1/3) → rounding to the nearest 10 and 100 → area and perimeter → ×÷ 11 and 12, kept as an extra bottom level | Timesaur (×), Divvy (÷), Starbot (*), Halfling (½: the fractions), Tick-Tockus (to the minute, and elapsed time), Polly-Gon visiting (quadrilaterals, unit fractions) | **Sigma Rex** |
+| **The Tables Tower** (built, by grade) | 3rd | ×0, 1, 2, 5, 10 and their ÷ → ×3, 4, 6 and ÷ → ×7, 8, 9 and ÷ → × tens (4 × 30) → fractions: unit fractions, on a number line, simple equivalents, comparing (1/2 ○ 1/3) → rounding to the nearest 10 and 100 → area and perimeter → ×÷ 11 and 12, kept as an extra bottom level | Timesaur (×), Divvy (÷), Starbot (*), Halfling (½: the fractions), Tick-Tockus (to the minute, and elapsed time), Polly-Gon visiting (quadrilaterals, unit fractions), Chompers visiting (comparing fractions) | **Sigma Rex** |
 | **The Fraction Forge** | 4th | ×10, 100, 1000; 2-digit × 1-digit, then 2-digit × 2-digit (area model); multi-digit ± and rounding to any place; factors (6 × □ = 48); remainders (29 ÷ 4 = 7 R1); equivalent fractions (3/4 = □/8); adding and subtracting like denominators and mixed numbers (2 1/8 + 3/8); whole × fraction; decimals in tenths and hundredths, and comparing them; area and perimeter formulas | Quarterjack (¼), Dotty (.), Boomainder (R) | **The Denominator** |
 | **The Parenthesis Pyramid** (new) | 5th | Unlike denominators (1/2 + 1/4 = □/4); fraction × fraction (1/2 × 3/4); a fraction of a number (1/2 of 12); dividing by a unit fraction (3 ÷ 1/2); adding and subtracting decimals; decimals × and ÷ 10, 100, 1000; rounding decimals; long division with 2-digit divisors; powers of ten; order of operations; volume (l × w × h) | Parenthesaurus (( ), order of operations), Exponent-tron (^, a cube-bodied robot: volume, "cubed"), a fraction monster (to design) | **Shoutandcomma** (!), the mummy in the deepest chamber |
 | **Pirate Cavern** (stretch) | 6th, for 5th graders who finish the Pyramid | GCF and LCM (GCF of 12 and 18; 12 + 20 = 4 × (3 + □)) and dividing fractions (3/4 ÷ 1/8) → ratios (2:3 = □:12) and unit rates (12 for $3, so □ for $1) → percent (25% of 80; 3/4 = □%) → opposites, absolute value and comparing negatives (\|−7\| = □; −3 ○ −8) → expressions and one-step equations (3x + 2 when x = 4; x + 7 = 15; 4x = 28) → mean, median and range of a few numbers → area of triangles | Rootling (√: GCF and LCM, with factor trees for roots), Slashbuckler (/, dividing fractions), Colon-el Ratio (:, ratios and rates), % Gremlin (percent), Negasicle (−) and Absolutely (\|x\|) (negatives), an x monster for equations (to design, Quizard's grown-up cousin) | **π Pirate**, the cavern's captain |
@@ -118,7 +118,7 @@ One stratum per grade, in a **straight chain**: each opens only the next. The le
 - **Tick-Tockus** asks time the way Trollar asks coins: one monster whose problems follow the stratum's grade.
 - **Saved progress:** a dungeon version bump starts runs over and keeps what's been learned. (Done: version 5. No fact's key changed meaning.)
 - **Built in step 2 (2026-11-25), with today's input and monsters:**
-  - **K (Cellar):** within 5 with zero (4 + 0, 4 − 4) → within 10 → make 10 (7 + □ = 10) and number bonds of 5–9 as □ problems → 10 and some more (10 + 4, 14 − 4, 10 + □ = 14). Chompers asks "which is more, 7 or 4?" (type the bigger number), Trollar finds coins and says what each is worth, Plusquito and Minustaur ask the rest. Not yet: counting on and back, the dot flash, Slimelipsis.
+  - **K (Cellar):** within 5 with zero (4 + 0, 4 − 4) → within 10 → make 10 (7 + □ = 10) and number bonds of 5–9 as □ problems → 10 and some more (10 + 4, 14 − 4, 10 + □ = 14). Chompers asks "which is more, 7 or 4?" (type the bigger number), Trollar finds coins and says what each is worth, Plusquito and Minustaur ask the rest. Not yet: counting on and back, the dot flash, Slimelipsis (all built since).
   - **1st (Hall):** within 20 not crossing 10 → crossing 10 → missing numbers and the equal sign (8 + □ = 13, balance both sides) → ± tens (40 + 30, 10 more, 10 less, 34 + 20), with comparing at each step (to 10, sums, to 100). Quizard, Chompers, the Equal Twins and Minustaur. Not yet: counting to 120, three addends, true or false, hours.
   - **2nd (Mines):** two-digit ± mixed without regrouping → with regrouping → 10 and 100 more or less within 1000; counting coins with ¢. Haberhasher and Trollar, with Plusquito and Minustaur standing in, and The Centipede as its boss. Not yet: four addends, three-digit place value (34 tens), odd and even, $, arrays.
   - **3rd (Tower):** × and ÷ only, in the school's order (× 0, 1, 2, 5, 10 and ÷ → × 3, 4, 6 and ÷ → × 7, 8, 9 and ÷), then × tens, fractions as a hidden whole number (1/2 = □/4, 2/4 = □/2, 1 = □/4), rounding to the nearest 10 and 100, area and perimeter of a drawn rectangle, and × ÷ 11 and 12 last. Not yet: fractions on a number line and comparing them (Halfling), time.
@@ -128,7 +128,7 @@ One stratum per grade, in a **straight chain**: each opens only the next. The le
   - **Triceraplus** (Hall, 🦕 Three horns): one small new set, 20 sums of three one-digit numbers with a make-ten pair (1.OA.A.2, 1.OA.B.3), as its own strand, so the Hall's 60% doesn't wait on it. Hint: find the ten, then add the rest.
   - **Margot-Rythm** (Mines, 🔁 Carry the One): the Mines' + and −, and a problem that needs regrouping (in any place) hits double.
   - **Squaresquatch** (Mines, 🟩 Arrays): one small new set, 2 to 5 rows of 2 to 5 dots (2.OA.C.4), added as equal rows, as its own strand with keys of its own, so it never counts as the Tower's times tables.
-  - **Halfling** (Tower, ½ Halves): only the Tower's fractions, from the start. Fractions on a number line and comparing fractions still wait for new input.
+  - **Halfling** (Tower, ½ Halves): only the Tower's fractions, from the start. Fractions on a number line (batch 2) and comparing fractions (2026-11-26) came later.
   - The Mines no longer borrow Plusquito and Minustaur, and the Hall's pool drops Minustaur. Tick-Tockus and Slimelipsis waited for problems of their own (time, patterns; built in batch 1, below). No dungeon version bump: floor counts and rescue floors are unchanged, and no fact's key changed meaning.
 - **Built in batch 1 (2026-11-25): Tick-Tockus and Slimelipsis**, from the prototypes (review/proto/), each a strand per stratum (fixed samples, every problem recorded, not counted toward a stratum's 60%):
   - **Tick-Tockus** (🕒 Tick Tock: asks the time; js/clock.js): the clock is the monster, showing each problem's time. Hall (1st): hours, then half hours, with the whole time typed in two slots (□:□□, the hour, then the minutes). Mines (2nd): to 5 minutes, then the whole time. Tower (3rd): to the minute, then elapsed time, "how long?" and "minutes later", in the hour and across it. Hints: the hour hand glowing, the long hand's sweep counted by 5s round the rim (never to the end before answering), the open number line across the hour (3.MD.1).
@@ -151,6 +151,15 @@ One stratum per grade, in a **straight chain**: each opens only the next. The le
   - **Damage:** a drawing hits for its strand's typical answer (the mean of its counts: 4, 4, 6, 5), so a circle (no sides) isn't a wasted turn and fights last the same; a count hits for the count.
   - **Count it:** sides, corners, faces, equal parts, squares in all, and 3rd grade's "each part = 1/□", typed. Hints count partway (about half, or the first rows), never to the end before answering; a drawing's hint is its corners as dots to join, the first sides drawn.
   - **Floors by priority standards:** shapes aren't a priority in the K, 1st or 3rd grade guides, so Polly-Gon visits the Cellar, the Hall and the Tower from their pools; 2nd grade's equal shares are, so it has a depth-1 floor in the Mines, for Margot-Rythm (whose ± within 1000 is the Mines' own band, asked by Haberhasher and the boss too), who moves to the pool.
+- **Built (2026-11-26): comparing fractions** (3.NF.A.3d, a priority standard): 24 fixed facts in js/third.js, "3/8 ○ 5/8" (the same denominator: same size pieces, more pieces is more), "2/3 ○ 2/6" (the same numerator: the same number of pieces, bigger pieces is more), and 4 equal fractions (2/4 ○ 1/2) so = is sometimes right; denominators 2, 3, 4, 6, 8, shown stacked, answered on the < = > keys. A level of the Tower's band after Equal fractions, since a priority standard counts toward the 60%.
+  - **Who asks:** Chompers visits the Tower's pool (decided with the user: he has the flip and chomp for < = >, and eats the bigger fraction, which shrinks into his mouth; a right = is his happy bounce). With no strand in the Tower he asks the band's comparisons, which there are only fractions. Halfling, the fractions monster and a depth-1 floor, asks them too. The Tower's other monsters never compare.
+  - **Damage:** a comparison hits for the bigger number; for fractions, the bigger fraction's numerator (its pieces), as the Tower's other fractions hit for a numerator.
+  - **Hint:** two fraction bars of the same whole, one over the other, shaded, with the rule in words; never the symbol (or a ring round the bigger) before answering; worked, the bigger bar ringed in gold and the comparison written.
+- **Built (2026-11-26): the dot flash** (K.NS.B.8; the K guide's subitizing, 1–5: dot cards, dice, five-frames, dominoes), with Pipsqueak: "How many dots?" 22 fixed facts (keys "⁙d4" a die, "⁙f3" a five-frame, "⁙o3,2" a domino, "⁙s2,2,1" small groups).
+  - **Pipsqueak's strand in the Cellar** (`flashK`): dice and five-frames to 3 → to 5 → dots any way (dominoes and small groups) → his dice sums (the band's facts within 10, the same keys), so it's how many at a glance first, then the numbers, the K guide's order. A strand, like which is more (the other half of the Cellar's first step), because a monster asks one strand or its band, and a level at the front of the Cellar's band would close levels a returning player has open until the flash was learned; it doesn't count toward the Cellar's 60% (the progression plan, §4.3, would count it as a priority step).
+  - **A brief look, not a test of speed:** the dots show for 1.5 s, then the card turns face down; "Show me again" peeks once more (a hint). The answer is typed, and hits for the count.
+  - **Hint and miss:** the dots come back, colored by the groups they're seen in ("2 and 2 make ?"); worked, "2 and 2 make 4." Never the count before answering.
+  - **Voice:** "How many dots?" as it appears; the first time, "Look quick! How many dots?".
 - **Build order** (stacked PRs): (1) this plan; (2) restructure K–3 into grade strata with today's monsters (the levels in the school's order, zero facts, make-10 partners, ×0 and ×1, × tens, monsters moved), with a stand-in wall and boss for the Mines; (3) the Crystal Mines' wall, palette, the Centipede and voice lines; (4) the new K–3 monsters: Doublet, Slimelipsis, dot flash, three addends, arrays, Tick-Tockus; (5) the Fraction Forge; (6) the Parenthesis Pyramid.
 
 ### 4.2 Retired: strata past 6th grade
@@ -233,7 +242,7 @@ Left out everywhere, as before: graphs and data, measuring length, word problems
 **The paths** (★ = a priority standard in the school's guide; the monster in brackets; *new* = a gap to build). Chapters (every 5 depths) group the steps about 3–4 at a time, in this order; the exact cut is set when it's built, with the balance sim.
 
 **The Counting Cellar (K)**
-1. ★ How many, and which is more, to 5: the dot flash, how many at a glance up to 5 (*new*, Pipsqueak), and which is more to 5 (Chompers). Ongoing.
+1. ★ How many, and which is more, to 5: the dot flash, how many at a glance up to 5 (built 2026-11-26, Pipsqueak), and which is more to 5 (Chompers). Ongoing.
 2. ★ Add and subtract within 5, with zero (Plusquito, Minustaur).
 3. Count on by 1s, back by 1s from 10 (Slimelipsis). Ongoing.
 4. ★ Within 10 (Plusquito, Minustaur); dice sums (Pipsqueak); which is more to 10 (Chompers).
@@ -277,20 +286,20 @@ Left out everywhere, as before: graphs and data, measuring length, word problems
 3. ★ × 3, 4, 6; then × 7, 8, 9 (Timesaur).
 4. ★ Division: ÷ 1, 2, 5, 10, then 3, 4, 6, then 7, 8, 9 (Divvy). The guide's topic list puts all × before ÷ ("Understand the meaning of division" after × 7, 8, 9); today's levels alternate. *To confirm with the class's order.*
 5. ★ × tens (4 × 30); rounding to 10 and 100.
-6. ★ Fractions: on a number line, then equal fractions, then **comparing fractions** with < = > (*new*, Halfling or Chompers visiting).
+6. ★ Fractions: on a number line, then equal fractions, then **comparing fractions** with < = > (built 2026-11-26: Chompers visiting, and Halfling).
 7. Time to the minute, then elapsed time (Tick-Tockus).
 8. ★ Area and perimeter.
 9. Shapes: quadrilaterals (rhombus, rectangle, square), shapes cut into equal parts as unit fractions (*shapes batch*, Polly-Gon).
 10. × and ÷ 11 and 12 (an extra, kept last).
 
 **The gaps, all placed above:**
-- the dot flash (K 1);
+- the dot flash (K 1; ✅ built 2026-11-26);
 - shapes (K 8, 1st 10, 2nd 10, 3rd 9);
 - count back from 20 (1st 2);
 - two-digit adding moved to 1st (1st 9);
 - coin values in the Hall (1st 12);
 - the within-20 review (2nd 1);
-- comparing fractions (3rd 6).
+- comparing fractions (3rd 6; ✅ built 2026-11-26).
 
 Three-digit numbers (2nd 5–9) and four addends are done (PR #111).
 
@@ -362,6 +371,7 @@ The game should **teach first, then fade the help out** as a fact gets learned, 
 | Divide | **Think multiplication**: 32 ÷ 8 → "how many 8s make 32?" | 3.RA.A.5, 3.RA.C.1 |
 | Multi-digit × and ÷ | **Area model** (23 × 4 as 20 × 4 + 3 × 4) and partial quotients | 4.NBT.A.6–7 |
 | Fractions | Fraction bars, pies and number lines | 3.NF, 4.NF |
+| Compare fractions | Two fraction bars of the same whole, lined up: "Same size pieces: more pieces is more", "Same number of pieces: bigger pieces is more" | 3.NF.A.3d |
 | Shapes | Drawing: the corners as dots to join, the first sides drawn. Counting sides, corners and equal parts: number each going round from the top, about halfway, then "How many?"; a cube's 3 faces you see and 3 behind; squares in rows, counted on by rows; a unit fraction as one of n equal parts, 1/n | K.GM.A, 1.GM.A, 2.GM.A, 3.G.A |
 
 **"How the hints work" page for grown-ups** (⚙ Settings): how the game teaches, then each strategy with a sample problem, the game's drawing, and one plain line on why it works ("Make 10: kids split the 5 into 2 + 3 so 8 becomes an easy 10"), so a parent who learned the old way can follow along and use the same words. Multi-digit strategies (the area model, plus the familiar standard algorithm) join it with the Adept band. The notes used to sit on every hint; they moved to this page so the kids see only the drawing and its words.
@@ -699,10 +709,10 @@ Each milestone should be playable and shippable on its own. Revised 2026-11-25 f
 5. **M5 — Grade strata, K–3** (next; §4.1). One stratum per grade for the kids playing now:
    - ✅ restructure into grade bands with today's monsters, the levels in the school's order, zero facts, make-10 partners, ×0 and ×1, × tens, and monsters moved (2026-11-25; with a stand-in wall, palette and boss for the Mines);
    - ✅ the Crystal Mines' wall, palette and the Centipede (2026-11-25; the wall: blue rock that recedes and red-violet crystals that seem to jut out, by chromostereopsis);
-   - the new K–3 monsters: ✅ Pipsqueak (dot flash), Doublet, Triceraplus (three addends), Margot-Rythm, Squaresquatch and Halfling (2026-11-25); ✅ Slimelipsis (patterns, odd and even) and Tick-Tockus (time) in batch 1 (2026-11-26);
+   - the new K–3 monsters: ✅ Pipsqueak (dice sums; the dot flash itself 2026-11-26), Doublet, Triceraplus (three addends), Margot-Rythm, Squaresquatch and Halfling (2026-11-25); ✅ Slimelipsis (patterns, odd and even) and Tick-Tockus (time) in batch 1 (2026-11-26);
    - ✅ batch 2 (2026-11-26): true or false and fix it (the Equal Twins), place value with base-ten blocks (Haberhasher), dollars and cents (Trollar), fractions on a number line (Halfling), and stacked two- and three-digit sums;
    - ✅ three-digit numbers (2026-11-26): adding and subtracting within 1000 (the Mines, and Margot-Rythm visiting the Tower for 3rd grade), comparing three-digit numbers (Chompers in the Mines) and adding up to four two-digit numbers (Triceraplus in the Mines);
-   - the 3rd-grade gaps: fractions, rounding, and area and perimeter (✅ as typed whole numbers in step 1; ✅ number lines in batch 2; comparing fractions waits for Halfling).
+   - the 3rd-grade gaps: fractions, rounding, and area and perimeter (✅ as typed whole numbers in step 1; ✅ number lines in batch 2; ✅ comparing fractions, 2026-11-26: Chompers visiting the Tower, and Halfling).
    
    - **Every line in an audio sprite** (decided 2026-11-25): convert the remaining single-clip lines (phrases, problems and facts, coins, quips) into small sprites grouped by related text, each well under 25 MiB. A sprite is loaded only when it can be needed (the phrases and names always; a stratum's problem sprites when its run starts) and dropped after, so the decoded audio on a phone stays small; measure it on the iPhone. Once every line is in a sprite, stop deploying the single clips, so the audio host stays well under Cloudflare Pages' limit on files per deployment.
      - *Done (2026-11-25):* every line is in a sprite (`spriteFor` in `lines.js`; about 125 sprites, none over 3 minutes or 1.4 MB), loaded per stratum (`runSprites`) and let go on a change. A sprite is now the clips' bytes joined, held compressed (about 8 KB a second of speech) and decoded a line at a time when it's said, since decoding whole sprites would have held over 100 MB a stratum: about 16 MB is held in a new player's run. Sound check shows it.

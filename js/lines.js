@@ -10,7 +10,7 @@ import { missingOf, spokenMissing, canHide } from "./missing.js";
 import { coinFacts } from "./coins.js";
 import { twoDigitFacts, TWO_LEVELS } from "./twodigit.js";
 import { balanceFacts, moreFacts, moreFact, compare1000Facts } from "./balance.js";
-import { timesTens, fractionFacts, roundFacts, rectFacts } from "./third.js";
+import { timesTens, fractionFacts, roundFacts, rectFacts, fracCompareFacts } from "./third.js";
 import { threeFacts, sumFacts } from "./three.js";
 import { arrayFacts } from "./arrays.js";
 import { clockFacts, TIME_LEVELS } from "./clock.js";
@@ -20,6 +20,7 @@ import { lineFacts } from "./numberline.js";
 import { pvFacts } from "./placevalue.js";
 import { dollarFacts } from "./dollars.js";
 import { shapeFacts, squawkLine } from "./shapes.js";
+import { flashFacts, spokenFlash } from "./flash.js";
 import { traitOf } from "./traits.js";
 import { QUIPS, FINALS, CRIT, TEAM_LINES, TEAM_NUMBERS, CAPTAIN_LINES, captainNames } from "./moments.js";
 import { fewest, ITEMS } from "./loot.js";
@@ -51,6 +52,8 @@ export var PHRASE = {
   // a counting problem takes its place.
   drawHow: "Draw the shape with your finger, then tap Cast!",
   countInstead: "Let's count instead!",
+  // The dot flash (Pipsqueak): the first time, before "How many dots?" is said by itself.
+  flashHow: "Look quick! How many dots?",
   deeper: "Go deeper for tougher monsters, or play again!",
   paused: "Paused. Tap the big button to keep fighting.",
   exitSure: "Tap again to leave the dungeon.",
@@ -259,7 +262,7 @@ export function changeLine(c) { return "Here's " + cents(c) + " back!"; }
 
 // [{ kind, text }], each once.
 // The groups the listen check (review/listen/) plays lines in.
-export var GROUPS = ["Phrases", "Monsters & heroes", "Add & subtract", "Times & divide", "Missing numbers", "Which is more", "Coins", "Two-digit", "Three-digit", "Balance Hall", "Compare to 1000", "Three numbers", "Up to four numbers", "Arrays", "Time", "Patterns", "True or false", "Place value", "Dollars", "Number line", "Shapes", "Fractions", "Rounding", "Area & perimeter", "Hero quips", "Team-ups", "Captain lines", "Boss forms", "Chests & items", "Money", "Shop", "Clothing"];
+export var GROUPS = ["Phrases", "Monsters & heroes", "Add & subtract", "Times & divide", "Missing numbers", "Which is more", "Coins", "Two-digit", "Three-digit", "Balance Hall", "Compare to 1000", "Three numbers", "Up to four numbers", "Arrays", "Time", "Patterns", "True or false", "Place value", "Dollars", "Number line", "Shapes", "Fractions", "Compare fractions", "Rounding", "Area & perimeter", "Dot flash", "Hero quips", "Team-ups", "Captain lines", "Boss forms", "Chests & items", "Money", "Shop", "Clothing"];
 
 // [{ kind, text, group, sprite? }], each once.
 export function spokenLines() {
@@ -338,6 +341,9 @@ export function spokenLines() {
   // Shapes (Polly-Gon): "Draw a triangle!", "How many sides does this hexagon have?", and what the
   // shape is or how many after a miss; and its squawks, in its monster sprite ("names").
   shapeFacts().forEach(function (f) { add("q", spokenProblem(f), "Shapes"); add("q", spokenFact(f), "Shapes"); add("m", squawk(f), "Shapes", "names"); });
+  // The dot flash (Pipsqueak in the Cellar): "How many dots?", and "Two and two make four."
+  add("q", spokenFlash(), "Dot flash");
+  flashFacts().forEach(function (f) { add("q", spokenFact(f), "Dot flash"); });
   // Coins (Trollar): "two dimes and three pennies. How many cents?", and the answer.
   coinFacts().forEach(function (f) { add("q", spokenProblem(f), "Coins"); add("q", spokenFact(f), "Coins"); });
   // The two-digit problems (Haberhasher): "thirty-eight plus twenty-five", and "… is sixty-three";
@@ -350,6 +356,9 @@ export function spokenLines() {
   // Comparing three-digit numbers (Chompers in the Mines): "Compare three hundred forty-five and
   // three hundred fifty-four.", and adding up to four two-digit numbers (Triceraplus there).
   compare1000Facts().forEach(function (f) { add("q", spokenProblem(f), "Compare to 1000"); add("q", spokenFact(f), "Compare to 1000"); });
+  // Comparing fractions (Chompers and Halfling in the Tower): "Compare three eighths and five
+  // eighths.", "three eighths is less than five eighths".
+  fracCompareFacts().forEach(function (f) { add("q", spokenProblem(f), "Compare fractions"); add("q", spokenFact(f), "Compare fractions"); });
   sumFacts().forEach(function (f) { add("q", spokenProblem(f), "Up to four numbers"); add("q", spokenFact(f), "Up to four numbers"); });
   // The Balance Hall: "Compare three plus four and eight.", "three plus four is less than eight".
   balanceFacts().forEach(function (f) { add("q", spokenProblem(f), "Balance Hall"); add("q", spokenFact(f), "Balance Hall"); });
@@ -395,7 +404,7 @@ export function estSeconds(text) { return text.length / CHARS_PER_S + SPRITE_GAP
 // (runSprites).
 export var ALWAYS = ["phrases-start", "phrases-fight", "phrases-explain", "heroes", "quips", "captains", "bosses", "loot", "money", "depths", "shop", "change", "clothes"];
 var slug = function (t) { return t.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, ""); };
-var KIND = { "+": "add", "-": "sub", "×": "mul", "÷": "div", "□": "bonds", "○": "cmp", "=": "bal", "¢": "coins", "M": "more", "/": "frac", "≈": "round", "▭": "rect", "Σ": "three", "▦": "arrays", "✓": "tf", "✎": "fix", "↔": "line", "#": "pv", "$": "dollars", "◇": "shapes" };
+var KIND = { "+": "add", "-": "sub", "×": "mul", "÷": "div", "□": "bonds", "○": "cmp", "=": "bal", "¢": "coins", "M": "more", "/": "frac", "≈": "round", "▭": "rect", "Σ": "three", "▦": "arrays", "✓": "tf", "✎": "fix", "↔": "line", "#": "pv", "$": "dollars", "◇": "shapes", "⁙": "flash" };
 var memo = null;
 function index() {
   if (memo) return memo;
@@ -409,7 +418,7 @@ function index() {
   // Phrases by when they're said: the start screen and a run's end, explanations, and the fight.
   [PHRASE.enter, PHRASE.pickGrade, PHRASE.pickHero, PHRASE.heroFirst, PHRASE.deeper, PHRASE.exitSure, PHRASE.unlocked, PHRASE.win]
     .concat(WINGS.map(wingCleared), WINGS.map(wingOpened)).forEach(function (t) { phrases[t] = "phrases-start"; });
-  [PHRASE.hitHow, PHRASE.cmpHow, PHRASE.cmpSame, PHRASE.spellHow, PHRASE.paused, PHRASE.tfHow, PHRASE.drawHow]
+  [PHRASE.hitHow, PHRASE.cmpHow, PHRASE.cmpSame, PHRASE.spellHow, PHRASE.paused, PHRASE.tfHow, PHRASE.drawHow, PHRASE.flashHow]
     .concat(Object.values(TRAIT_LINE), HEROES.map(function (h) { return luckyLine(h.d); }), REVERSIBLE.map(reversedLine), [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map(howToWriteLine))
     .forEach(function (t) { phrases[t] = "phrases-explain"; });
   // Problems: every line a band can say, found from its facts the way the game asks them (both

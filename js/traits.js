@@ -22,12 +22,12 @@ export const TRAITS = {
   "The Centipede": { icon: "💯", name: "Hundred Legs", text: "Answers of 100 or more hit double" },
   // The grade strata's new monsters (DESIGN.md §4.1, M5 step 3).
   // Each fits on one line with its icon and name under the monster on an iPhone (about 36 letters).
-  "Pipsqueak": { icon: "🎲", name: "Flash", text: "Dice that turn into numbers" },
+  "Pipsqueak": { icon: "🎲", name: "Flash", text: "Dots that flash, dice that add" },
   "Doublet": { icon: "👯", name: "Doubles", text: "Only doubles: 8 + 8, 16 − 8" },
   "Triceraplus": { icon: "🦕", name: "Three horns", text: "Add three: find a ten" },
   "Margot-Rythm": { icon: "🔁", name: "Carry the One", text: "Regroup: double hit" },
   "Squaresquatch": { icon: "🟩", name: "Arrays", text: "Add up the equal rows" },
-  "Halfling": { icon: "½", name: "Halves", text: "Fractions on a line, and equal ones" },
+  "Halfling": { icon: "½", name: "Halves", text: "Fractions on a line, equal, compared" },
   // Batch 1 of the strands (time and patterns): each asks only its own strand.
   "Tick-Tockus": { icon: "🕒", name: "Tick Tock", text: "Asks the time" },
   "Slimelipsis": { icon: "🫧", name: "What's Next", text: "Counts in patterns" },
@@ -59,11 +59,12 @@ export function asks(m) {
   // Judo Judy, the Hall's boss, asks the Hall's whole mix: adding (and flipping it), taking
   // away, comparing, balancing and missing numbers.
   if (k === "Judo Judy") return () => true;
-  if (k === "Pipsqueak") return isDice;
+  // Pipsqueak: the dot flash (how many at a glance, ⁙) and dice sums, its strand in the Cellar.
+  if (k === "Pipsqueak") return (op, key) => op === "⁙" || isDice(op, key);
   if (k === "Doublet") return isDouble;
   if (k === "Triceraplus") return (op) => op === "Σ";
-  // Halfling: fractions, on the number line too.
-  if (k === "Halfling") return (op) => op === "/" || op === "↔";
+  // Halfling: fractions, on the number line too, and comparing them (the Tower's only comparisons).
+  if (k === "Halfling") return (op) => op === "/" || op === "↔" || op === "○";
   // Margot-Rythm (Carry the One, always stacked) asks only the Mines' sums and differences, not
   // its place value.
   if (k === "Margot-Rythm") return (op) => op === "+" || op === "-";
@@ -73,8 +74,8 @@ export function asks(m) {
   // Polly-Gon: shapes, drawn and counted (its strand in each stratum).
   if (k === "Polly-Gon") return (op) => op === "◇";
   // True or false and fix it are the Equal Twins' (and Judo Judy's, who asks the Hall's whole mix).
-  if (k === "Quizard") return (op) => !"○Σ⌚…◐✓✎◇".includes(op);
-  return (op) => !"○=Σ⌚…◐✓✎◇".includes(op);
+  if (k === "Quizard") return (op) => !"○Σ⌚…◐✓✎◇⁙".includes(op);
+  return (op) => !"○=Σ⌚…◐✓✎◇⁙".includes(op);
 }
 
 // A monster's trait, or null. Cursed digits have Lucky Number (DESIGN.md §6.6).

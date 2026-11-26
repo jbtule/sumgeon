@@ -9,7 +9,7 @@ import { coinFacts, coinFactOf, COIN_LEVELS } from "./coins.js";
 import { twoDigitFacts, twoLevel } from "./twodigit.js";
 import { balanceFacts, balanceFactOf, inSet, moreFacts, moreFactOf, MORE_LEVELS, compare1000Facts } from "./balance.js";
 import { hiddenFactOf, kinderHidden, firstHidden } from "./missing.js";
-import { timesTens, fractionFacts, fractionFactOf, roundFacts, roundFactOf, rectFacts, rectFactOf } from "./third.js";
+import { timesTens, fractionFacts, fractionFactOf, roundFacts, roundFactOf, rectFacts, rectFactOf, fracCompareFacts } from "./third.js";
 import { threeFacts, threeFactOf, sumFacts, SUM_LEVELS } from "./three.js";
 import { arrayFacts, arrayFactOf, ARRAY_LEVELS } from "./arrays.js";
 import { clockFacts, clockFactOf, TIME_LEVELS } from "./clock.js";
@@ -19,6 +19,7 @@ import { lineFacts, lineFactOf } from "./numberline.js";
 import { pvFacts, pvFactOf, PV_GAME_LEVELS } from "./placevalue.js";
 import { dollarFacts, dollarFactOf, DOLLAR_GAME_LEVELS } from "./dollars.js";
 import { shapeFacts, shapeFactOf, SHAPE_STRANDS, isDrawKey } from "./shapes.js";
+import { flashFacts, flashFactOf, FLASH_LEVELS } from "./flash.js";
 import { asks as asksOf } from "./traits.js";
 
 // One band per grade, K to 3rd (DESIGN.md §2, §4.1), each the facts of one stratum, with its
@@ -92,7 +93,7 @@ export const BANDS = {
   // The Tables Tower: × and ÷ only, in the school's order, then the rest of 3rd grade.
   third: {
     label: "3rd grade", grade: 3, hearts: 5, fluentMs: 4000,
-    facts: () => facts().concat(timesTens(), fractionFacts(), roundFacts(), rectFacts(), lineFacts()),
+    facts: () => facts().concat(timesTens(), fractionFacts(), roundFacts(), rectFacts(), lineFacts(), fracCompareFacts()),
     levels: [
       { name: "× 0, 1, 2, 5 and 10", has: times([0, 1, 2, 5, 10]) },
       { name: "÷ 1, 2, 5 and 10", has: divide([1, 2, 5, 10]) },
@@ -106,6 +107,10 @@ export const BANDS = {
       // whole numbers as fractions.
       { name: "Fractions on a number line", has: onLine("where", "parts") },
       { name: "Equal fractions", has: any(is("/"), onLine("past1")) },
+      // Comparing fractions (3.NF.A.3d, a priority standard, so it's in the band and counts
+      // toward the 60%): Chompers visiting the Tower, and Halfling, on the < = > keys. The
+      // Tower's only comparisons.
+      { name: "Compare fractions", has: is("○") },
       { name: "Rounding", has: is("≈") },
       { name: "Area and perimeter", has: is("▭") },
       { name: "× and ÷ 11 and 12", has: big }
@@ -120,6 +125,14 @@ export const BANDS = {
   coins: { label: "Counting coins", strand: true, unlock: 0.5, hearts: 5, fluentMs: 5000, facts: () => coinFacts().concat(dollarFacts()),
     levels: COIN_LEVELS.slice(2).map((l) => ({ name: l.name, has: (f) => f.op === "¢" && !f.find && !COIN_LEVELS[1].has(f) && l.has(f) }))
       .concat(DOLLAR_GAME_LEVELS.map((l) => ({ name: l.name, has: (f) => f.op === "$" && f.set === l.set }))) },
+  // The dot flash (K.NS.B.8): Pipsqueak in the Cellar. How many dots at a glance, on dice and
+  // five-frames to 3, then to 5, then dominoes and small groups; then his dice sums (3 + 5 as two
+  // dice: the band's facts, the same keys, within 10), the numbers after the dots, as the K
+  // guide's subitizing leads into adding. A strand (like which is more), so it doesn't hold up
+  // the Cellar's 60% and nobody's open levels change; fluent at 5 s.
+  flashK: { label: "Dot flash", strand: true, unlock: 0.5, hearts: 7, fluentMs: 5000,
+    facts: () => flashFacts().concat(facts().filter((f) => f.op === "+" && f.x >= 1 && f.x <= 6 && f.y >= 1 && f.y <= 6 && f.ans <= 10)),
+    levels: FLASH_LEVELS.map((l) => ({ name: l.name, has: (f) => l.keys.includes(f.key) })).concat([{ name: "Dice sums", has: is("+") }]) },
   // Which is more (K): Chompers in the Cellar.
   more: { label: "Which is more", strand: true, unlock: 0.5, hearts: 7, fluentMs: 4000, facts: moreFacts, levels: MORE_LEVELS },
   // Three numbers (1st grade): Triceraplus in the Hall, 4 + 3 + 6 with a ten to find. A second more
@@ -190,7 +203,7 @@ export function keyOf(f) {
 }
 // A problem for a key, turned around half the time for + and ×.
 export function factOf(key, rnd) {
-  const own = { "¢": coinFactOf, "○": balanceFactOf, "=": balanceFactOf, "□": hiddenFactOf, "M": moreFactOf, "/": fractionFactOf, "≈": roundFactOf, "▭": rectFactOf, "Σ": threeFactOf, "▦": arrayFactOf, "⌚": clockFactOf, "…": patternFactOf, "◐": oddEvenFactOf, "✓": tfFactOf, "✎": tfFactOf, "↔": lineFactOf, "#": pvFactOf, "$": dollarFactOf, "◇": shapeFactOf }[key[0]];
+  const own = { "¢": coinFactOf, "○": balanceFactOf, "=": balanceFactOf, "□": hiddenFactOf, "M": moreFactOf, "/": fractionFactOf, "≈": roundFactOf, "▭": rectFactOf, "Σ": threeFactOf, "▦": arrayFactOf, "⌚": clockFactOf, "…": patternFactOf, "◐": oddEvenFactOf, "✓": tfFactOf, "✎": tfFactOf, "↔": lineFactOf, "#": pvFactOf, "$": dollarFactOf, "◇": shapeFactOf, "⁙": flashFactOf }[key[0]];
   if (own) return own(key, rnd);
   const op = key[0], [a, b] = key.slice(1).split(",").map(Number);
   const flip = (op === "+" || op === "×") && (rnd || Math.random)() < 0.5;

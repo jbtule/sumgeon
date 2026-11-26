@@ -12,6 +12,7 @@ import { WINGS, wingOf, runFloors, openWings, toOpen, floorStars, wingStars, dep
 import { missingOf, pickBlank, filled, spokenMissing, MISSING_SHARE, canHide } from "./missing.js";
 import { rectSvg } from "./third.js";
 import { arraySvg } from "./arrays.js";
+import { flashSvg, FLASH_DOTS_MS } from "./flash.js";
 import { clockSvg, clockFactLine, clockFactHint, clockAnswer, elapsedSvg } from "./clock.js";
 import { patternSvg, oddEvenSvg, patternFactHint } from "./patterns.js";
 import { tfSvg, tiltOf, fixParts } from "./truefalse.js";
@@ -360,6 +361,9 @@ function probUI() {
   // Shapes (Polly-Gon): "Draw a triangle" over the drawing pad, or the shape to count over its
   // line ("Sides = □", "Each part = 1/□"), the hint drawn on the shape.
   else if (p.op === "◇") box.innerHTML = shapeHTML(p);
+  // The dot flash (Pipsqueak): the dots for a moment, then face down with "Show me again" (once),
+  // and "Dots = □" under them. The hint (or a miss) brings them back, grouped.
+  else if (p.op === "⁙") box.innerHTML = flashHTML(p);
   // A two- or three-digit sum or difference, stacked in columns (G.cur.stacked): ones under ones,
   // a line, and the answer filling in under it, right-aligned.
   else if (p.stacked) box.innerHTML = stackHTML(p);
@@ -372,7 +376,8 @@ function probUI() {
   // Odd and even: the slimes holding their numbers, and "Even numbers = □" under them.
   else if (p.op === "◐") box.innerHTML = oddEvenSvg(p, { hint: G.hinted, perRow: p.nums.length <= 6 ? p.nums.length : 4 }) + `<span class="find">${p.ask === "even" ? "Even" : "Odd"} numbers = ${BLANK}</span>`;
   // A comparison: each side in its own box, so Chompers can eat the bigger one (chompAct).
-  else if (p.sym && p.op === "○") box.innerHTML = `${side("l", esc(p.l))} ${BLANK} ${side("r", esc(p.r))}`;
+  // Fractions (the Tower) stacked, as the Tower shows them: 3/8 ○ 5/8.
+  else if (p.sym && p.op === "○") box.innerHTML = `${side("l", p.frac ? stacked(esc(p.l)) : esc(p.l))} ${BLANK} ${side("r", p.frac ? stacked(esc(p.r)) : esc(p.r))}`;
   else if (p.blank || p.sym || p.op === "=") box.innerHTML = esc(p.q).replace("□", BLANK);
   // "7 or 4": which is more (K). The voice asks it; the answer box is the answer.
   else if (p.op === "more") box.innerHTML = `${side("l", p.x)} <small class="or">or</small> ${side("r", p.y)}`;
@@ -399,19 +404,24 @@ function probUI() {
   // Three-digit numbers on one line ("287 + 359 ="), a little smaller so it fits an iPhone SE.
   else if ((p.op === "+" || p.op === "-") && Math.max(p.x, p.y) >= 100) box.innerHTML = `<span class="wide3">${esc(p.q)} =</span>`;
   else box.textContent = p.q + " =";
-  document.querySelector(".game").classList.toggle("missing", !!p.blank || !!p.sym || p.op === "=" || !!p.find || !!p.stacked || "/≈▭▦⌚…◐✓✎↔#$◇".includes(p.op));
+  document.querySelector(".game").classList.toggle("missing", !!p.blank || !!p.sym || p.op === "=" || !!p.find || !!p.stacked || "/≈▭▦⌚…◐✓✎↔#$◇⁙".includes(p.op));
   padUI(p.spell ? "spell" : p.draw ? "draw" : p.op === "✓" ? "tf" : p.sym ? "cmp" : "num");
   document.querySelector(".game").classList.toggle("cents", p.op === "¢" && !p.find);
-  document.querySelector(".game").classList.toggle("find", !!p.find || "▭▦⌚◐✓✎↔#$".includes(p.op) || (p.op === "◇" && !p.draw));
+  document.querySelector(".game").classList.toggle("find", !!p.find || "▭▦⌚◐✓✎↔#$⁙".includes(p.op) || (p.op === "◇" && !p.draw));
   document.querySelector(".game").classList.toggle("shape", p.op === "◇" && !p.draw);
   document.querySelector(".game").classList.toggle("stack", !!p.stacked);
   // A wide picture over its line (batch 2's): on phones the 🔊 and 💡 buttons stack beside it.
-  document.querySelector(".game").classList.toggle("pic", "✓✎↔#$".includes(p.op));
+  document.querySelector(".game").classList.toggle("pic", "✓✎↔#$⁙".includes(p.op));
   document.querySelector(".game").classList.toggle("slimes", p.op === "…" || p.op === "◐");
   document.querySelector(".game").classList.toggle("hinted", !!G.hinted); // a hint drawn on the picture (iPad keeps it short)
 }
 // Answer slot i of a problem: one slot is the usual glowing □ (#blank); two (a whole time) are
 // #blank0 and #blank1, the hour, then the minutes.
+function flashHTML(p) {
+  const F = G.flash || {}, hidden = !F.shown && !F.grouped;
+  const peek = hidden && !F.peeked ? '<button type="button" class="peek" id="peek">👀 Show me again</button>' : "";
+  return `<span class="dotcard${hidden ? " down" : ""}">${flashSvg(p, { hidden, hint: F.grouped })}${peek}</span><span class="find">Dots = ${BLANK}</span>`;
+}
 const slotHTML = (i, p) => (p.slots ? `<span class="blank tslot${i ? " wait" : " now"}" id="blank${i}">?</span>` : BLANK);
 // Fix it's line: the false equation, its wrong number in place for a moment, then (G.fix.swapped)
 // crossed out and lifted above its place, small and red, the □ taking its place, so the line
@@ -476,6 +486,8 @@ function shownFact(p, ans) {
   if (p.op === "↔") return p.kind === "parts" ? `${b(p.d)} equal parts` : `${b(p.n)}/${p.d}`;
   if (p.op === "#") return pvLine(p).map((x) => (x !== null ? esc(x) : b(p.ans))).join("");
   if (p.op === "$") return b(moneyText(p));
+  // The dot flash: "2 + 2 = 4", or "1 dot".
+  if (p.op === "⁙") return p.groups.length > 1 ? `${p.groups.join(" + ")} = ${b(p.ans)}` : `${b(p.ans)} dot`;
   // Shapes: "Here's a triangle." (a drawing), "A hexagon has 6 sides", "Corners = 5",
   // "Each part = 1/4".
   if (p.op === "◇") {
@@ -663,6 +675,8 @@ function newProblem() {
   G.input = ""; G.busy = false; G.hinted = false; G.t0 = performance.now();
   G.slot = G.cur.slots ? { at: 0, vals: ["", ""] } : null;
   G.tfDone = false;
+  // The dot flash: shown, then hidden after FLASH_DOTS_MS (flashHide).
+  G.flash = G.cur.op === "⁙" ? { shown: true, peeked: false, grouped: false } : null;
   // Fix it: the false equation shows whole for a second, then its wrong number lifts out of the
   // way (at once with reduced motion, or as soon as anything's typed).
   G.fix = G.cur.op === "✎" ? { swapped: reduced(), done: false } : null;
@@ -672,6 +686,7 @@ function newProblem() {
   if (onChompers() && G.chomp !== G.chompFace) chompTurn(G.chompFace);
   if (flipped) judoThrow(G.cur);
   if (dice) diceFlash(G.cur);
+  if (G.flash) flashHide(G.cur);
   // Polly-Gon squawks the shape as its body flashes it (🦜 Squawk Back), before it's asked.
   squawkFlash(G.cur);
   // Coins ("How many dimes?") and comparisons can't be read off the screen by a pre-reader, so
@@ -680,7 +695,9 @@ function newProblem() {
   // like counting out loud ("Two, four, six. What comes next?").
   // Batch 2's too: an equation to judge, a number line, blocks, and money are read out; and
   // shapes ("Draw a triangle!", "How many sides?").
-  if ("¢○⌚…◐✓✎↔#$◇".includes(G.cur.op) || G.cur.op === "more") say("q", spokenProblem(G.cur), false, asked(G.cur));
+  // The dot flash: "How many dots?", and the first time "Look quick! How many dots?".
+  if (G.cur.op === "⁙" && once("flash")) say("p", PHRASE.flashHow, false, asked(G.cur));
+  else if ("¢○⌚…◐✓✎↔#$◇⁙".includes(G.cur.op) || G.cur.op === "more") say("q", spokenProblem(G.cur), false, asked(G.cur));
   // Drawing a shape: how, the first few times.
   if (G.cur.draw) { setMsg(`Draw ${article(G.cur.shape)}${G.cur.shape}!`, "good"); if (once("draw", 3)) say("p", PHRASE.drawHow, false, asked(G.cur)); }
   // The first true or false problems: how the two big keys work.
@@ -736,6 +753,23 @@ function diceFlash(p) {
     });
   }, FLASH_MS);
 }
+// The dot flash (Pipsqueak): the dots show for FLASH_DOTS_MS, then turn face down. It's a look,
+// not a race: the clock isn't touched, "Show me again" peeks once more (a hint: G.hinted), and the
+// hint or a miss brings them back for good, grouped.
+function flashHide(p) {
+  setTimeout(() => {
+    if (G.cur !== p || !G.flash || !G.flash.shown || G.flash.grouped) return;
+    G.flash.shown = false; probUI(); ansUI();
+  }, FLASH_DOTS_MS);
+}
+$("prob").addEventListener("click", (e) => {
+  if (!e.target.closest("#peek") || !G.flash || G.busy || G.flash.peeked) return;
+  sfx.tick();
+  Object.assign(G.flash, { peeked: true, shown: true });
+  G.hinted = true; // a second look counts as a hint
+  probUI(); ansUI();
+  flashHide(G.cur);
+});
 function pop(t, crit) {
   const s = document.createElement("span");
   s.className = "pop" + (crit ? " crit" : "");
@@ -867,10 +901,11 @@ function openHint() {
   // Time and patterns draw the hint on the problem's own picture (Tick-Tockus's clock, the
   // slimes), so only its words open here.
   // (A shape to count too; a shape to draw shows its dots to join in the hint.)
-  const inline = "⌚…◐✓✎↔#$".includes(G.cur.op) || (G.cur.op === "◇" && !G.cur.draw);
+  const inline = "⌚…◐✓✎↔#$⁙".includes(G.cur.op) || (G.cur.op === "◇" && !G.cur.draw);
+  if (G.flash) G.flash.grouped = true; // the dots come back, grouped
   if (inline) { probUI(); ansUI(); clockArt(h.layer); }
   // An equation in their words doesn't break across lines ("35 + 2 = ?").
-  box.innerHTML = (inline ? "" : `<div class="model">${h.model}</div>`) + `<p class="hsay">${esc(inline ? h.say.replace(/ ([=+−→]) /g, "\u00a0$1\u00a0") : h.say)}</p>`;
+  box.innerHTML = (inline ? "" : `<div class="model">${h.model}</div>`) + `<p class="hsay">${esc(inline ? h.say.replace(/ ([=+−→]) /g, "\u00a0$1\u00a0") : h.say.replace(/ \? (\S+)$/, "\u00a0?\u00a0$1"))}</p>`; // nor a comparison ("2/3 ? 2/6")
   box.classList.toggle("words", inline);
   box.hidden = false;
   $("hintBtn").hidden = true;
@@ -879,6 +914,7 @@ function openHint() {
 // the drawing, until "Got it" (or Enter, on the focused button).
 function openWorked() {
   const h = hintFor(hintFact(), true);
+  if (G.flash && !G.flash.grouped) { G.flash.grouped = true; probUI(); ansUI(); } // the dots come back
   $("hint").hidden = true; $("hintBtn").hidden = true;
   show(`<div class="worked"><h2>Oops!</h2>
     <p class="worked-fact">${shownFact(G.cur, `<b>${G.cur.ans}</b>`)}</p>
@@ -1206,7 +1242,7 @@ function nextLock(C) {
 // The lock's problem: "4 + 3 = ?", or with the glowing ? in place of the □ ("7 + ? = 10").
 function lockHTML(p) {
   const B = '<span class="blank" id="lockAns">?</span>';
-  let t = p.op === "more" ? `${p.x} <small class="or">or</small> ${p.y}` : p.op === "/" ? stacked(esc(p.q)) : esc(p.q);
+  let t = p.op === "more" ? `${p.x} <small class="or">or</small> ${p.y}` : p.op === "/" || p.frac ? stacked(esc(p.q)) : esc(p.q);
   if (t.includes("□")) t = t.replace("□", B);
   else t += (p.op === "more" ? "<br>" : " = ") + B;
   if (p.op === "≈") t += `<small class="to">nearest ${p.to}</small>`;

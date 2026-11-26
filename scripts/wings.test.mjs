@@ -14,7 +14,7 @@ const M = (w) => w.pool.concat([w.boss]);
 assert.deepEqual(M(cellar), ["Plusquito", "Minustaur", "Pipsqueak", "Chompers", "Trollar", "Slimelipsis", "Polly-Gon", "Make-Ten Golem"]);
 assert.deepEqual(M(hall), ["Quizard", "Chompers", "Equal Twins", "Doublet", "Triceraplus", "Tick-Tockus", "Slimelipsis", "Polly-Gon", "Judo Judy"]);
 assert.deepEqual(M(mines), ["Haberhasher", "Margot-Rythm", "Trollar", "Squaresquatch", "Slimelipsis", "Tick-Tockus", "Chompers", "Triceraplus", "Polly-Gon", "The Centipede"], "the Mines' own monsters, with Chompers and Triceraplus visiting");
-assert.deepEqual(M(tower), ["Timesaur", "Divvy", "Starbot", "Halfling", "Tick-Tockus", "Margot-Rythm", "Polly-Gon", "Sigma Rex"], "Margot-Rythm visits the Tower");
+assert.deepEqual(M(tower), ["Timesaur", "Divvy", "Starbot", "Halfling", "Tick-Tockus", "Margot-Rythm", "Polly-Gon", "Chompers", "Sigma Rex"], "Margot-Rythm and Chompers visit the Tower");
 // Three-digit numbers: Chompers compares them in the Mines and Triceraplus adds up to four
 // two-digit numbers there; Margot-Rythm brings 3rd grade's adding and subtracting to the Tower.
 assert.deepEqual([bandOf(mines, named0("Chompers")), bandOf(mines, named0("Triceraplus")), bandOf(tower, named0("Margot-Rythm")), bandOf(mines, named0("Margot-Rythm"))], ["cmpM", "sumsM", "addT", "second"]);
@@ -35,9 +35,10 @@ for (const w of WINGS) {
   }
 }
 // The new monsters' strands and bands: Squaresquatch asks arrays in the Mines and Triceraplus
-// three numbers in the Hall; the rest their stratum's band.
+// three numbers in the Hall, Pipsqueak the dot flash (and his dice sums) in the Cellar; the rest
+// their stratum's band.
 assert.deepEqual([bandOf(mines, { n: "Squaresquatch" }), bandOf(mines, { n: "Margot-Rythm" }), bandOf(hall, { n: "Doublet" }), bandOf(tower, { n: "Halfling" }), bandOf(cellar, { n: "Pipsqueak" }), bandOf(hall, { n: "Triceraplus" })],
-  ["arrays", "second", "first", "third", "kinder", "three"]);
+  ["arrays", "second", "first", "third", "flashK", "three"]);
 const named = (n) => ({ n });
 assert.deepEqual([bandOf(cellar, named("Trollar")), bandOf(mines, named("Trollar")), bandOf(cellar, named("Chompers")), bandOf(hall, named("Chompers")), bandOf(mines, named("Haberhasher"))],
   ["coinsK", "coins", "more", "first", "second"], "Trollar finds coins in the Cellar and counts them in the Mines");
