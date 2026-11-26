@@ -6,8 +6,12 @@
 // Marks live in localStorage ("sumgeon:gallery"), keyed by name: { s: "bad", tags, note, t }.
 // Boss forms: each boss beside its mega and Legend forms (monsters.js BOSS_FORMS, not in the game
 // yet), with their names, traits and lines, always at the small sizes too.
+// Clothing (clothes.js, not in the game yet): every piece on its own, then all ten heroes in one
+// outfit, picked with three selects (head, face, neck) or stepped through sample outfits, big and
+// at the small sizes.
 import { MON, NEW_MON, RETIRED, svg, bossForm } from "../../js/monsters.js";
-import { HEROES, heroSvg } from "../../js/heroes.js";
+import { HEROES, heroSvg, dressed } from "../../js/heroes.js";
+import { CLOTHES, SPOTS, pieceSvg } from "../../js/clothes.js";
 import { TRAITS } from "../../js/traits.js";
 import { monsterName, monsterCleared, monsterWon } from "../../js/lines.js";
 
@@ -161,5 +165,34 @@ $("issueBtn").onclick = () => {
   const body = "Monster art flagged on the gallery page:\n\n" + r;
   window.open("https://github.com/jbtule/sumgeon/issues/new?title=" + encodeURIComponent("Monster art: to fix") + "&body=" + encodeURIComponent(body.slice(0, 6000)), "_blank", "noopener");
 };
+
+/* ---------- clothing ---------- */
+const TIER = { common: "Common", fancy: "Fancy", special: "★ Special" };
+$("piecesGrid").innerHTML = CLOTHES.map((p) => `<div class="c-piece${p.tier === "special" ? " c-special" : ""}">${pieceSvg(p.id)}<b>${esc(p.name)}</b>
+  <small>${esc(p.spot)} · ${TIER[p.tier]}${p.price ? ` · ${p.price}¢` : ""}</small></div>`).join("");
+const SAMPLES = [
+  { head: "partyhat", face: "glasses", neck: "bowtie" }, { head: "tophat", face: "monocle", neck: "necktie" },
+  { head: "wizardhat", face: "starglasses", neck: "cape" }, { head: "crown", face: "sunglasses", neck: "medal" },
+  { head: "piratehat", face: "eyepatch", neck: "bandana" }, { head: "beanie", face: "mask", neck: "scarf" },
+  { head: "cowboyhat", face: "mustache", neck: "bandana" }, { head: "propellercap", face: "glasses", neck: "scarf" },
+  { head: "bunnyears", face: "starglasses", neck: "bowtie" }, { head: "flowercrown", face: "sunglasses", neck: "medal" },
+  { head: "chefhat", face: "mustache", neck: "necktie" }, { head: "headband", face: "mask", neck: "cape" },
+  { head: "legend-cellar", neck: "badge-cellar" }, { head: "legend-hall", neck: "badge-hall" },
+  { head: "legend-mines", neck: "badge-mines" }, { head: "legend-tower", neck: "champcape" }
+];
+const SEL = { head: $("wearHead"), face: $("wearFace"), neck: $("wearNeck") };
+for (const s of SPOTS) SEL[s].innerHTML = `<option value="">None</option>` + CLOTHES.filter((p) => p.spot === s).map((p) => `<option value="${p.id}">${esc(p.name)}${p.tier === "special" ? " ★" : ""}</option>`).join("");
+let sample = 0;
+const wearing = () => Object.fromEntries(SPOTS.map((s) => [s, SEL[s].value]).filter(([, v]) => v));
+function dressUI() {
+  const w = wearing();
+  $("dressGrid").innerHTML = HEROES.map((h) => `<div>${dressed(h.d, w)}<span>${esc(h.n)}</span></div>`).join("");
+  $("dressSmall").innerHTML = HEROES.map((h) => `<span><i class="s72">${dressed(h.d, w)}</i><i class="s40">${dressed(h.d, w)}</i></span>`).join("");
+}
+function setWear(w) { for (const s of SPOTS) SEL[s].value = (w && w[s]) || ""; dressUI(); }
+for (const s of SPOTS) SEL[s].onchange = dressUI;
+$("wearNext").onclick = () => { sample = (sample + 1) % SAMPLES.length; setWear(SAMPLES[sample]); };
+$("wearNone").onclick = () => setWear(null);
+setWear(SAMPLES[0]);
 
 render(); reportUI();
