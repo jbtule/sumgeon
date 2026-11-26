@@ -30,8 +30,8 @@ const mon = (n) => MON.find((m) => m.n === n);
 export const WINGS = [
   { id: "cellar", name: "The Counting Cellar", band: "kinder", strands: { Trollar: "coinsK", Chompers: "more", Slimelipsis: "patK", "Polly-Gon": "shapesK", Pipsqueak: "flashK" },
     pool: ["Plusquito", "Minustaur", "Pipsqueak", "Chompers", "Trollar", "Slimelipsis", "Polly-Gon"], floors: ["Plusquito", "Pipsqueak", "rescue", "Chompers", "Trollar"], boss: "Make-Ten Golem" },
-  { id: "hall", name: "The Balance Hall", band: "first", after: "cellar", strands: { Triceraplus: "three", "Tick-Tockus": "timeH", Slimelipsis: "patH", "Polly-Gon": "shapesH" },
-    pool: ["Plusquito", "Minustaur", "Quizard", "Chompers", "Equal Twins", "Doublet", "Triceraplus", "Haberhasher", "Tick-Tockus", "Slimelipsis", "Polly-Gon"], floors: ["Quizard", "Equal Twins", "rescue", "Tick-Tockus", "Triceraplus"], boss: "Judo Judy" },
+  { id: "hall", name: "The Balance Hall", band: "first", after: "cellar", strands: { Triceraplus: "three", "Tick-Tockus": "timeH", Slimelipsis: "patH", "Polly-Gon": "shapesH", Trollar: "coinsH" },
+    pool: ["Plusquito", "Minustaur", "Quizard", "Chompers", "Equal Twins", "Doublet", "Triceraplus", "Haberhasher", "Tick-Tockus", "Slimelipsis", "Polly-Gon", "Trollar"], floors: ["Quizard", "Equal Twins", "rescue", "Tick-Tockus", "Triceraplus"], boss: "Judo Judy" },
   { id: "mines", name: "The Crystal Mines", band: "second", after: "hall", strands: { Trollar: "coins", Squaresquatch: "arrays", Slimelipsis: "patM", "Tick-Tockus": "timeM", Chompers: "cmpM", Triceraplus: "sumsM", "Polly-Gon": "shapesM" },
     pool: ["Haberhasher", "Margot-Rythm", "Trollar", "Squaresquatch", "Slimelipsis", "Tick-Tockus", "Chompers", "Triceraplus", "Polly-Gon"], floors: ["Haberhasher", "Squaresquatch", "rescue", "Trollar", "Polly-Gon"], boss: "The Centipede" },
   { id: "tower", name: "The Tables Tower", band: "third", after: "mines", strands: { "Tick-Tockus": "timeT", "Margot-Rythm": "addT", "Polly-Gon": "shapesT" },
@@ -75,6 +75,8 @@ export const PATHS = {
     step("Add and subtract tens", [["first", "Add and subtract tens"]], ["Haberhasher"], 2, P),
     step("Shapes", [["shapesH", "Sides and corners"], ["shapesH", "Halves and fourths"]], ["Polly-Gon"], 3, P),
     step("Time to the hour and half hour", [["timeH", "Hours"], ["timeH", "Half hours"]], ["Tick-Tockus"], 3, P),
+    // Coin values (1.GM.C.9, new in the Hall): Trollar visits with the Cellar's "each coin".
+    step("Coin values", [["coinsH", "Each coin"]], ["Trollar"], 3, P),
     step("Count by 5s", [["patH", "Count by 5s"]], ["Slimelipsis"], 3)
   ],
   mines: [

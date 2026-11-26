@@ -126,6 +126,9 @@ export const BANDS = {
   },
   // Coins in the Cellar (K): find the coin, and what each is worth.
   coinsK: { label: "Coins", strand: true, hearts: 7, fluentMs: 5000, facts: coinFacts, levels: COIN_LEVELS.slice(0, 2) },
+  // Coin values in the Hall (1st grade, 1.GM.C.9: each coin's worth): Trollar visits with the
+  // Cellar's "each coin" (the same keys, so what was learned there counts here).
+  coinsH: { label: "Coin values", strand: true, hearts: 7, fluentMs: 5000, facts: coinFacts, levels: [COIN_LEVELS[1]] },
   // Counting coins in the Mines (2nd grade; 1st grade's counting comes along).
   // Then dollars (2.GM.D.12): bills alone, then bills and coins, typed as dollars and cents.
   coins: { label: "Counting coins", strand: true, hearts: 5, fluentMs: 5000, facts: () => coinFacts().concat(dollarFacts()),

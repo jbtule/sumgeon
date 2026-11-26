@@ -12,7 +12,9 @@ assert.equal(mines.name, "The Crystal Mines");
 // Each stratum's monsters, and what they ask there.
 const M = (w) => w.pool.concat([w.boss]);
 assert.deepEqual(M(cellar), ["Plusquito", "Minustaur", "Pipsqueak", "Chompers", "Trollar", "Slimelipsis", "Polly-Gon", "Make-Ten Golem"]);
-assert.deepEqual(M(hall), ["Plusquito", "Minustaur", "Quizard", "Chompers", "Equal Twins", "Doublet", "Triceraplus", "Haberhasher", "Tick-Tockus", "Slimelipsis", "Polly-Gon", "Judo Judy"], "the Hall gets Plusquito and Minustaur (within 20, crossing 10) and Haberhasher visiting (tens)");
+assert.deepEqual(M(hall), ["Plusquito", "Minustaur", "Quizard", "Chompers", "Equal Twins", "Doublet", "Triceraplus", "Haberhasher", "Tick-Tockus", "Slimelipsis", "Polly-Gon", "Trollar", "Judo Judy"], "the Hall gets Plusquito and Minustaur (within 20, crossing 10), Haberhasher visiting (tens) and Trollar (coin values)");
+assert.equal(bandOf(hall, { n: "Trollar" }), "coinsH", "Trollar says what each coin is worth in the Hall");
+assert.deepEqual(pool("coinsH").map((f) => f.key).sort(), pool("coinsK").filter((f) => f.level === 1).map((f) => f.key).sort(), "the Cellar's each coin, the same keys");
 assert.deepEqual(M(mines), ["Haberhasher", "Margot-Rythm", "Trollar", "Squaresquatch", "Slimelipsis", "Tick-Tockus", "Chompers", "Triceraplus", "Polly-Gon", "The Centipede"], "the Mines' own monsters, with Chompers and Triceraplus visiting");
 assert.deepEqual(M(tower), ["Timesaur", "Divvy", "Starbot", "Halfling", "Tick-Tockus", "Margot-Rythm", "Polly-Gon", "Chompers", "Sigma Rex"], "Margot-Rythm and Chompers visit the Tower");
 // Three-digit numbers: Chompers compares them in the Mines and Triceraplus adds up to four
