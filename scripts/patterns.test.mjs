@@ -1,7 +1,7 @@
 // What comes next (Slimelipsis, js/patterns.js, the prototype page): every row's answer, the
 // levels' ranges, the words, the hint, and that every number fits in its slime.
 import assert from "node:assert/strict";
-import { PATTERN_LEVELS, allPatterns, patternProblem, spokenPattern, spokenPatternAnswer, patternText, patternSvg, patternHint, fontFor, textWidth, rowWidth, INNER, BLOB } from "../js/patterns.js";
+import { PATTERN_LEVELS, allPatterns, patternProblem, spokenPattern, spokenPatternAnswer, patternText, patternSvg, patternHint, fontFor, textWidth, rowWidth, INNER, BLOB, ODD_LEVELS, oddEvenProblem, oddEvenSvg, oddEvenHint, spokenOddEven } from "../js/patterns.js";
 
 const STEP = { ones: 1, tens: 10, back: -1, to120: 1, fives: 5, twos: 2, hundreds: 100 };
 for (const { id } of PATTERN_LEVELS) {
@@ -90,4 +90,32 @@ assert.equal(patternHint(twos, false).say, "Each slime is 2 more. 6 + 2 = ?");
 assert.equal(patternHint({ nums: [10, 9, 8, 7], blank: 3, ans: 7, step: -1 }, true).say, "Each slime is 1 less. 8 − 1 = 7");
 assert.deepEqual(patternHint(mid, false).hops.labels, ["+2 = ?", "+2", "+2"]);
 
-console.log("✓ patterns: rows, answers, hints and sizes");
+// Odd and even: the count is right, varies, and is never all of them.
+for (const lv of ODD_LEVELS) {
+  const answers = new Set(), share = [];
+  for (let i = 0; i < 600; i++) {
+    const p = oddEvenProblem(lv.id, rnd);
+    const want = p.ask === "even" ? 0 : 1;
+    assert.equal(p.ans, p.nums.filter((n) => n % 2 === want).length, `${lv.id}: the count`);
+    assert.ok(p.nums.length >= 5 && p.nums.length <= 8);
+    assert.ok(p.ans < p.nums.length, `${lv.id}: never all of them (${p.nums}, ${p.ask})`);
+    assert.equal(new Set(p.nums).size, p.nums.length, "different numbers");
+    assert.ok(p.nums.every((n) => n >= 1 && n <= lv.max));
+    answers.add(p.ans); share.push(p.ans / p.nums.length);
+    for (const opt of [{}, { hint: true }, { hint: true, worked: true }]) {
+      const s = oddEvenSvg(p, opt);
+      assert.ok(!/NaN|undefined/.test(s));
+      // Worked, exactly the asked kind are numbered.
+      if (opt.worked) assert.equal((s.match(/font-size="15" fill="#0c171c">\d+</g) || []).length, p.ans);
+    }
+    assert.ok(!/\d+ (even|odd) number/.test(oddEvenHint(p, false).say), "the hint before answering is the rule, not the count");
+    assert.ok(oddEvenHint(p, true).say.includes(`${p.ans} ${p.ask}`));
+  }
+  assert.ok(answers.has(0) && answers.has(1) && answers.size >= 6, `${lv.id}: counts vary (${[...answers]})`);
+  const far = share.filter((x) => x < 0.3 || x > 0.7).length / share.length;
+  assert.ok(far > 0.25, `${lv.id}: often not about half (${far.toFixed(2)})`);
+}
+assert.equal(spokenOddEven({ ask: "even" }), "How many even numbers?");
+
+console.log("✓ patterns: rows, answers, hints and sizes; odd and even");
+

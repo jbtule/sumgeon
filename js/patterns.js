@@ -155,3 +155,67 @@ export function patternHint(p, worked) {
   const sum = `${from} ${sign} ${k} = ${worked ? p.ans : "?"}`;
   return { hops: { labels, strong }, say: `Each slime is ${more}. ${sum}` };
 }
+
+/* ---------- odd and even (2.OA.C.3) ---------- */
+// A group of 5 to 8 slimes, each holding a number, and "How many even numbers?" (or odd). The
+// answer is the count, typed. The count is spread out (from none up to all but one), so it isn't
+// always about half, and it's never all of them.
+export const ODD_LEVELS = [
+  { id: "oddeven20", name: "Odd & even to 20", grade: "2nd", stratum: "mines", max: 20 },
+  { id: "oddeven100", name: "Odd & even to 100", grade: "2nd", stratum: "mines", max: 100 }
+];
+export const isOddEven = (id) => ODD_LEVELS.some((l) => l.id === id);
+const isEven = (n) => n % 2 === 0;
+export function oddEvenProblem(id, rnd = Math.random) {
+  const lv = ODD_LEVELS.find((l) => l.id === id) || ODD_LEVELS[0];
+  const n = 5 + Math.floor(rnd() * 4), ask = rnd() < 0.5 ? "even" : "odd";
+  // How many of the asked kind: 0 to n − 1, the ends a little less often than the middle.
+  const k = Math.min(n - 1, Math.floor(rnd() * n * 0.6 + rnd() * n * 0.5));
+  const pool = (want) => Array.from({ length: lv.max }, (_, i) => i + 1).filter((v) => isEven(v) === want);
+  const take = (list, m) => { const out = [], src = list.slice(); for (let i = 0; i < m && src.length; i++) out.push(src.splice(Math.floor(rnd() * src.length), 1)[0]); return out; };
+  const nums = take(pool(ask === "even"), k).concat(take(pool(ask !== "even"), n - k));
+  for (let i = nums.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [nums[i], nums[j]] = [nums[j], nums[i]]; }
+  return { level: lv.id, kind: "oddeven", ask, nums, max: lv.max, ans: nums.filter((v) => isEven(v) === (ask === "even")).length };
+}
+export const spokenOddEven = (p) => `How many ${p.ask} numbers?`;
+// The slimes in rows of up to 4. Under each, room for the hint (the same room shown or not, so
+// opening it doesn't move them): for numbers to 20, the number's dots in pairs (two rows), a dot
+// left over glowing coral; past 20, the ones digit, since a number is odd or even as its ones are.
+// Worked, the asked kind glow gold and are numbered 1, 2, 3 ….
+export const ODD_ROW = 4;
+export function oddEvenSvg(p, opt = {}) {
+  const n = p.nums.length, rows = Math.ceil(n / ODD_ROW), under = 30, rowH = BLOB_H + under + 12;
+  const W = rowWidth(Math.min(ODD_ROW, n));
+  let s = `<defs><linearGradient id="pbsh" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".38"/><stop offset=".55" stop-color="#fff" stop-opacity="0"/></linearGradient></defs>`;
+  let count = 0;
+  p.nums.forEach((num, i) => {
+    const r = Math.floor(i / ODD_ROW), inRow = Math.min(ODD_ROW, n - r * ODD_ROW), c = i % ODD_ROW;
+    const x0 = (W - rowWidth(inRow)) / 2, x = x0 + c * (BLOB + GAP) + BLOB / 2, base = r * rowH + BLOB_H + 4;
+    const asked = isEven(num) === (p.ask === "even"), glow = opt.worked && asked;
+    if (glow) s += `<ellipse cx="${x}" cy="${base - BLOB_H * 0.45}" rx="${BLOB * 0.62}" ry="${BLOB_H * 0.62}" fill="${GOLD}" opacity=".35"/>`;
+    s += slime(x, base, glow ? GOLD : SLIME) + eyes(x, base - BLOB_H * 0.74);
+    s += `<text x="${x}" y="${f1(base - BLOB_H * 0.36)}" dy=".36em" text-anchor="middle" font-family="Bungee, sans-serif" font-size="${fontFor(num)}" fill="${DK}">${num}</text>`;
+    if (opt.hint) {
+      const y = base + 10;
+      if (p.max <= 20) {
+        // Pairs: columns of two dots; one left over sits alone, coral.
+        const pairs = Math.floor(num / 2), odd = num % 2, cols = pairs + odd, step = Math.min(11, (BLOB + GAP - 4) / Math.max(1, cols));
+        const dx0 = x - (cols - 1) * step / 2, rad = Math.min(4, step * 0.4);
+        for (let k = 0; k < pairs; k++) s += `<circle cx="${f1(dx0 + k * step)}" cy="${y - 1}" r="${f1(rad)}" fill="#8eeae4"/><circle cx="${f1(dx0 + k * step)}" cy="${y + 9}" r="${f1(rad)}" fill="#8eeae4"/>`;
+        if (odd) s += `<circle cx="${f1(dx0 + pairs * step)}" cy="${y + 4}" r="${f1(rad + 0.8)}" fill="${CORAL}"/>`;
+      } else {
+        // The ones digit, in a little box: even ones in the slime's color, odd ones coral.
+        const ones = num % 10;
+        s += `<rect x="${x - 11}" y="${y - 7}" width="22" height="20" rx="5" fill="${DK}" stroke="${isEven(ones) ? "#8eeae4" : CORAL}" stroke-width="2"/><text x="${x}" y="${y + 3}" dy=".36em" text-anchor="middle" font-family="Bungee, sans-serif" font-size="13" fill="${isEven(ones) ? "#8eeae4" : CORAL}">${ones}</text>`;
+      }
+    }
+    if (glow) { count++; s += `<circle cx="${x + BLOB * 0.38}" cy="${base - BLOB_H * 0.85}" r="12" fill="${GOLD}" stroke="${DK}" stroke-width="2.5"/><text x="${x + BLOB * 0.38}" y="${base - BLOB_H * 0.85}" dy=".36em" text-anchor="middle" font-family="Nunito, sans-serif" font-weight="900" font-size="15" fill="${DK}">${count}</text>`; }
+  });
+  return `<svg viewBox="-6 -10 ${W + 12} ${rows * rowH + 4}" class="pattern" role="img" aria-label="${p.nums.join(", ")}">${s}</svg>`;
+}
+export function oddEvenHint(p, worked) {
+  const kind = p.ask, rule = p.max <= 20 ? "Pair up the dots. A dot left over means odd." : "Look at the ones. Even numbers end in 0, 2, 4, 6 or 8.";
+  if (!worked) return { say: rule };
+  const list = Array.from({ length: p.ans }, (_, i) => i + 1);
+  return { say: p.ans ? `The ${kind} ones: ${list.join(", ")}. ${p.ans} ${kind} number${p.ans === 1 ? "" : "s"}.` : `None of them is ${kind}. 0 ${kind} numbers.` };
+}

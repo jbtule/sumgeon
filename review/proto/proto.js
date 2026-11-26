@@ -10,7 +10,7 @@
 // drawing (shapes).
 import { NEW_MON, MON as GAME_MON, svg } from "../../js/monsters.js";
 import { CLOCK_LEVELS, clockProblem, clockLine, clockQuestion, spokenClock, spokenTime, clockSvg, clockHint, digital } from "../../js/clock.js";
-import { PATTERN_LEVELS, patternProblem, spokenPattern, spokenPatternAnswer, patternSvg, patternHint } from "../../js/patterns.js";
+import { PATTERN_LEVELS, patternProblem, spokenPattern, spokenPatternAnswer, patternSvg, patternHint, ODD_LEVELS, isOddEven, oddEvenProblem, oddEvenSvg, oddEvenHint, spokenOddEven } from "../../js/patterns.js";
 import { DOLLAR_LEVELS, dollarProblem, dollarSvg, dollarHint, spokenDollars, sayMoney } from "../../js/dollars.js";
 import { SHAPE_LEVELS, shapeLevel, isDraw, countProblem, countSvg, countHint, spokenCount, spokenDraw, readShape, judgeShape, cleanShape, article, CORNERS, COUNT_LINE } from "../../js/shapes.js";
 
@@ -32,11 +32,14 @@ const TYPES = {
     hint: clockHint, spoken: spokenClock, missed: (p) => spokenTime(p.h, p.m), answer: (p) => digital(p.h, p.m)
   },
   pattern: {
-    icon: "🫧", label: "Patterns", mon: "Slimelipsis", big: true, levels: PATTERN_LEVELS,
-    problem: (lv, rnd) => patternProblem(lv.id, rnd),
-    picture: (p, st) => patternSvg(p, { typed: st.typed[0], state: st.done, hops: st.hint && st.hint.hops }),
-    line: (p) => (p.blank === p.nums.length - 1 ? "What comes next?" : "What's missing?"), words: true,
-    hint: patternHint, spoken: spokenPattern, missed: spokenPatternAnswer, answer: (p) => p.ans
+    icon: "🫧", label: "Patterns", mon: "Slimelipsis", big: true, levels: [...PATTERN_LEVELS, ...ODD_LEVELS],
+    problem: (lv, rnd) => (isOddEven(lv.id) ? oddEvenProblem(lv.id, rnd) : patternProblem(lv.id, rnd)),
+    picture: (p, st) => (p.kind === "oddeven" ? oddEvenSvg(p, { hint: !!st.hint, worked: st.hint && st.worked })
+      : patternSvg(p, { typed: st.typed[0], state: st.done, hops: st.hint && st.hint.hops })),
+    line: (p, slot) => (p.kind === "oddeven" ? `${cap(p.ask)} numbers: ${slot(0)}` : p.blank === p.nums.length - 1 ? "What comes next?" : "What's missing?"), words: true,
+    hint: (p, worked) => (p.kind === "oddeven" ? oddEvenHint(p, worked) : patternHint(p, worked)),
+    spoken: (p) => (p.kind === "oddeven" ? spokenOddEven(p) : spokenPattern(p)),
+    missed: (p) => (p.kind === "oddeven" ? `It's ${p.ans}.` : spokenPatternAnswer(p)), answer: (p) => p.ans
   },
   shape: {
     icon: "🔷", label: "Shapes", mon: null, monLabel: "Shape monster (to design)", levels: SHAPE_LEVELS, stratum: () => "hall",
