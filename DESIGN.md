@@ -198,9 +198,18 @@ Every Wing also has one **rescue floor** holding a cursed digit (§6.6). The pro
 
 ---
 
-### 4.3 Progression within a stratum (plan, 2026-11-26)
+### 4.3 Progression within a stratum (plan, 2026-11-26; built 2026-11-26)
 
-_Decided with the user: each stratum follows its grade's teaching order, opened by mastery, and the gaps still open are placed in it. Built after this plan; nothing here is in the game yet._
+_Decided with the user: each stratum follows its grade's teaching order, opened by mastery, and the gaps still open are placed in it._
+
+**Built (2026-11-26)** as planned, with these choices (details in CLAUDE.md "Paths"; `PATHS` in wings.js, `openSteps` in learn.js, `scripts/paths.test.mjs`, `scripts/mega.test.mjs`):
+- **Steps** are named levels of today's bands and strands, so no key changed. To keep each band's levels in its path's order (so skipping ahead climbs the path), the Hall's band is cut along its steps (within 20, crossing 10, doubles and near doubles, the equal sign, comparing, tens, two-digit adding), the Tower does all of × before ÷, and the pattern levels are reordered. A plan item that names two steps' worth (3rd grade's "× 3, 4, 6; then × 7, 8, 9") is two steps.
+- **The window** counts new steps: a step stops being new at 40% learned and the next joins, so there are never more than three; a step already known joins and is done at once (strictly waiting on the oldest would let one slow strand, coins on one floor a run, hold back the rest). The most steps that ever joined stay open.
+- **Chapter cuts** (new steps; ongoing and review steps are in chapter 1): Cellar [within 5, within 10, coins] [make 10, teens, shapes]; Hall [within 20, three numbers, crossing 10, doubles] [equal sign, compare, tens, two-digit adding] [shapes, time, coin values, by 5s]; Mines [two-digit ±, money, time, place value] [compare to 1000, 10 and 100 more, ± within 1000, four numbers] [shapes, arrays, odd and even]; Tower [× 0 1 2 5 10, × 3 4 6, × 7 8 9, ÷] [× tens and rounding, fractions, time] [area and perimeter, shapes, × ÷ 11 and 12].
+- **Review steps** are never new: learned facts come back as due reviews to the monsters asking the stratum's band, and for a player who never learned them they're placed when a fluent player skips ahead (rather than spending a new player's first runs on facts they mostly know).
+- **Monsters**: a first run in a stratum meets them in the path's order (Pipsqueak and Plusquito first, not Trollar's coins); after that, newest first. The Hall gained Plusquito, Minustaur, Haberhasher and Trollar.
+- **Mega bosses**, the boss powering up, the big chest, the crowns, and the gaps (count back from 20, coin values in the Hall, two-digit adding in the Hall; the Mines keep two-digit adding too, the same keys) as planned.
+- **Saved progress:** decided with the user to reset runs instead (dungeon version 6): everyone starts at chapter 1 of their grade's stratum, and what's been learned is kept, so skipping ahead carries them along.
 
 **Where the order comes from.** The school teaches from i-Ready, and its curriculum guides give the lessons' order:
 - **2nd grade:** the guide numbers all 32 lessons.
@@ -713,6 +722,7 @@ Each milestone should be playable and shippable on its own. Revised 2026-11-25 f
    - ✅ batch 2 (2026-11-26): true or false and fix it (the Equal Twins), place value with base-ten blocks (Haberhasher), dollars and cents (Trollar), fractions on a number line (Halfling), and stacked two- and three-digit sums;
    - ✅ three-digit numbers (2026-11-26): adding and subtracting within 1000 (the Mines, and Margot-Rythm visiting the Tower for 3rd grade), comparing three-digit numbers (Chompers in the Mines) and adding up to four two-digit numbers (Triceraplus in the Mines);
    - the 3rd-grade gaps: fractions, rounding, and area and perimeter (✅ as typed whole numbers in step 1; ✅ number lines in batch 2; ✅ comparing fractions, 2026-11-26: Chompers visiting the Tower, and Halfling).
+   - ✅ the progression within each stratum (§4.3, 2026-11-26): one path per stratum, a window of three new steps, chapters every 5 depths guarded by mega bosses (powering up on the two depths before, with their second traits and a big chest), monsters arriving as their step opens, the review steps, and the gaps it placed (count back from 20 and coin values in the Hall, two-digit adding moved into the Hall).
    
    - **Every line in an audio sprite** (decided 2026-11-25): convert the remaining single-clip lines (phrases, problems and facts, coins, quips) into small sprites grouped by related text, each well under 25 MiB. A sprite is loaded only when it can be needed (the phrases and names always; a stratum's problem sprites when its run starts) and dropped after, so the decoded audio on a phone stays small; measure it on the iPhone. Once every line is in a sprite, stop deploying the single clips, so the audio host stays well under Cloudflare Pages' limit on files per deployment.
      - *Done (2026-11-25):* every line is in a sprite (`spriteFor` in `lines.js`; about 125 sprites, none over 3 minutes or 1.4 MB), loaded per stratum (`runSprites`) and let go on a change. A sprite is now the clips' bytes joined, held compressed (about 8 KB a second of speech) and decoded a line at a time when it's said, since decoding whole sprites would have held over 100 MB a stratum: about 16 MB is held in a new player's run. Sound check shows it.
@@ -782,7 +792,7 @@ _Revised with the user on 2026-11-25. Sumgeon already rewards play in many ways 
 ### 14.2 The big ones: each stratum's Champion and Legend, won against its mega and Legend bosses
 The strata are deep, so these are the game's biggest moments, with the biggest card (the stratum's wall behind it, a fanfare, the boss and the captain), always shown, never secret. Each is won in a fight, not quietly:
 - **The boss** ends every run, as now.
-- **The mega boss** takes its place on every 5th depth (5, 10, 15 …; revised 2026-11-26 with §4.3's chapters, the boss powering up on the two depths before): a bigger, crowned form of the stratum's boss with its own name and line ("Mega Golem!"), more HP, and the boss's trait plus a second one (the Golem's Ten Smash with Second Wind armor, say). The depth map marks those depths with a crown, and the descent says "Mega boss ahead!". Each one beaten gives a big chest (§6.3).
+- **The mega boss** (built 2026-11-26 with §4.3) takes its place on every 5th depth (5, 10, 15 …; revised 2026-11-26 with §4.3's chapters, the boss powering up on the two depths before): a bigger, crowned form of the stratum's boss with its own name and line ("Mega Golem!"), more HP, and the boss's trait plus a second one (the Golem's Ten Smash with Second Wind armor, say). The depth map marks those depths with a crown, and the descent says "Mega boss ahead!". Each one beaten gives a big chest (§6.3).
 - **The Legend boss** appears once every fact in the stratum's band is mastered (box 4): the next run in that stratum, at any depth, ends with the boss's golden form ("A legend awaits!"). It's a final exam: every kind of problem the stratum asks, weighted to the facts that took longest to learn, no fact twice, with the boss's trait and its mega trait. Lost, it's there again on the next run until it's beaten. Afterwards the boss shows golden in Monsters & Heroes and the stratum's layer on the depth map gets a gold edge.
 
 | Achievement | Icon | Earned by | Reward |
@@ -793,16 +803,16 @@ The strata are deep, so these are the game's biggest moments, with the biggest c
 
 The mega and Legend forms are looks of the four bosses (new art and lines, no new monsters): Make-Ten Golem, Judo Judy, The Centipede and Sigma Rex, and each later stratum's boss.
 
-**Drawn, not wired yet** (`BOSS_FORMS` in `monsters.js`, shown on the gallery page; names, beaten and won lines recorded in the "bosses" sprite):
+**The mega forms are in the game** (2026-11-26, §4.3: every 5th depth, with their second traits working and a big chest); **the Legend forms are drawn, not wired yet** (`BOSS_FORMS` in `monsters.js`, shown on the gallery page; names, beaten and won lines recorded in the "bosses" sprite):
 
-| Boss | Mega form (every 5th depth) | Its second trait (planned) | Legend form (after mastery) |
+| Boss | Mega form (every 5th depth) | Its second trait (built) | Legend form (after mastery, to do) |
 |---|---|---|---|
 | Make-Ten Golem | **Mega-Ten Golem**: crystal armor, its whole ten-frame lit gold, a crown | 👑 Second wind (Sigma Rex's): armors up at half HP | **Golden Golem**, smiling |
 | Judo Judy | **Mega Judy**: a power burst, the black belt glowing gold, fierce brows, a crown | ⚡ Black Belt (new): every 4th problem is a big throw, a miss costs 2 hearts | **Golden Judy** |
 | The Centipede | **The Megapede**: twelve rods, crystal spikes inside its curl, a crown | 🐛 Curl Up (new): at half HP it curls into a ring, hits under 20 do half damage | **Golden Centipede** |
 | Sigma Rex | **Mega Sigma Rex**: a thicker Σ, a mane of Σ tufts, a gold crown | 🥋 Flip (Judo Judy's): flips times facts, same answer | **Golden Sigma Rex** |
 
-Beaten lines: "Mega-Ten Golem crumbles into a hundred tidy pebbles.", "Mega Judy bows low and hands over the black belt.", "The Megapede drops its crystals and scuttles off.", "Mega Sigma Rex roars once more, then sums to zero."; "Golden Golem shines, bows, and crumbles into gold dust.", "Golden Judy bows to a true math master.", "Golden Centipede waves a hundred golden legs goodbye.", "Golden Sigma Rex bows to the new ruler of the Tower." Still to do when they're wired: the second traits' rules and trait lines, "Mega boss ahead!" and "A legend awaits!".
+Beaten lines: "Mega-Ten Golem crumbles into a hundred tidy pebbles.", "Mega Judy bows low and hands over the black belt.", "The Megapede drops its crystals and scuttles off.", "Mega Sigma Rex roars once more, then sums to zero."; "Golden Golem shines, bows, and crumbles into gold dust.", "Golden Judy bows to a true math master.", "Golden Centipede waves a hundred golden legs goodbye.", "Golden Sigma Rex bows to the new ruler of the Tower." Built with the mega bosses: the second traits' rules and lines, and "Mega boss ahead!". Still to do: the Legend boss and "A legend awaits!".
 
 ### 14.3 Mastery (secret)
 One per kind of math, earned when every fact of it is mastered. They come up as the learning engine fills in, so they're a surprise: "Secret achievement! Table Master: the 7s!"
