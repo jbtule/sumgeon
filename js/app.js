@@ -12,7 +12,7 @@ import { rectSvg } from "./third.js";
 import { coinsSvg, pileOf, coinOf } from "./coins.js";
 import { read as readSigil, judge as judgeSigil } from "./sigil.js";
 import { HANDWRITING } from "./handwriting.js";
-import { traitOf, charged, prefers, hitBy, atHalf, asks } from "./traits.js";
+import { traitOf, charged, prefers, hitBy, atHalf, asks, flipOf } from "./traits.js";
 import { roster, mastery, meet, beat } from "./bestiary.js";
 import { HEROES, CHALK, heroSvg, freePick, pickHero, curseCaptain, crackCurse, CURSE_HITS, resetTeam } from "./heroes.js";
 import * as sfx from "./sfx.js";
@@ -259,6 +259,8 @@ function probUI() {
   // missing number does, under the pile (styles.css .game.find), so it fits a phone.
   else if (p.op === "¢" && p.find) box.innerHTML = coinsSvg(p.pile) + `<span class="find">${coinOf(p.find).names} = <span class="blank" id="blank">?</span></span>`;
   else if (p.op === "¢") box.innerHTML = coinsSvg(p.pile) + " =";
+  // Flipped by Judo Judy: each number in its own box, so the throw can swap them (judoThrow).
+  else if (p.flipped) box.innerHTML = `<span class="jn">${p.x}</span> <span class="jop">+</span> <span class="jn">${p.y}</span> =`;
   else box.textContent = p.q + " =";
   document.querySelector(".game").classList.toggle("missing", !!p.blank || !!p.sym || p.op === "=" || !!p.find || "/≈▭".includes(p.op));
   padUI(p.spell ? "spell" : p.sym ? "cmp" : "num");
@@ -402,9 +404,14 @@ function newProblem() {
   G.spellFails = 0;
   // Coins lie as they fall: sides at random (a single coin shows the side asked), a pile shuffled.
   if (G.cur.op === "¢") G.cur.pile = pileOf(G.cur, Math.random);
+  // Flip (Judo Judy): 3 + 8 is thrown so it shows 8 + 3, the same fact (traits.js flipOf). The
+  // problem is the flipped one from the start, so the 🔊 button, a miss and the hint all read it.
+  const flipped = flipOf(m, G.cur);
+  if (flipped) G.cur = flipped;
   G.recent = [key].concat(G.recent).slice(0, 3);
   G.input = ""; G.busy = false; G.hinted = false; G.t0 = performance.now();
   probUI();
+  if (flipped) judoThrow(G.cur);
   // Coins ("How many dimes?") and comparisons can't be read off the screen by a pre-reader, so
   // the voice reads them, after the monster's name. Skipped if it's answered first.
   if (G.cur.op === "¢" || G.cur.op === "○" || G.cur.op === "more") say("q", spokenProblem(G.cur), false, asked(G.cur));
@@ -417,6 +424,32 @@ function newProblem() {
   ansUI();
   if ($("msg").classList.contains("bad")) setMsg("Your answer is your attack.");
   showHelp(helpFor(recs[key]));
+}
+// Judo Judy's throw (🥋 Flip): the problem comes in as 3 + 8 and the two numbers swap places, the
+// smaller one thrown up and over the + while the bigger slides under it, as Judy twists, in
+// about half a second. The problem is already 8 + 3 underneath (newProblem), so this only animates
+// the swap: the numbers start in each other's places. Answering waits until they land, and the
+// answer time starts then. With reduced motion it's just swapped.
+const THROW_MS = 520;
+function judoThrow(p) {
+  const ns = $("prob").querySelectorAll(".jn");
+  if (reduced() || ns.length !== 2 || !ns[0].animate) return;
+  const [big, small] = ns, dx = small.getBoundingClientRect().left - big.getBoundingClientRect().left;
+  G.busy = true;
+  sfx.whip();
+  restartAnim($("mon"), "throw");
+  small.animate([{ transform: `translate(${-dx}px, 0) rotate(0deg)` }, { transform: `translate(${-dx / 2}px, -0.9em) rotate(-180deg)`, offset: 0.5 },
+    { transform: "translate(0, 0) rotate(-360deg)" }], { duration: THROW_MS, easing: "ease-in-out" });
+  big.animate([{ transform: `translate(${dx}px, 0)` }, { transform: `translate(${dx / 2}px, 0.3em) scale(0.8)`, offset: 0.5 },
+    { transform: "none" }], { duration: THROW_MS, easing: "ease-in-out" });
+  // The + ducks out of the way as they pass.
+  const op = $("prob").querySelector(".jop");
+  if (op) op.animate([{ opacity: 1, transform: "none" }, { opacity: 0.2, transform: "scale(0.6)", offset: 0.5 }, { opacity: 1, transform: "none" }], { duration: THROW_MS, easing: "ease-in-out" });
+  setTimeout(() => {
+    $("mon").classList.remove("throw");
+    if (G.cur !== p || G.paused) return;
+    G.busy = false; G.t0 = performance.now();
+  }, THROW_MS);
 }
 function pop(t, crit) {
   const s = document.createElement("span");
@@ -765,7 +798,7 @@ function end(win) {
   // again on a rescue floor, and pick someone else to lead.
   const fallen = !win && hasCaptain() ? HEROES[team.captain] : null;
   // A stratum cleared: the fanfare for now; it's meant to get something really big (DESIGN.md §8.3).
-  if (win) { sfx.victory(); say("p", wingCleared(w)); } else say("p", monsterWon(m));
+  if (win) { sfx.victory(); say("p", monsterCleared(m)); say("p", wingCleared(w)); } else say("p", monsterWon(m));
   if (fallen) say("p", heroCursed(fallen));
   if (opened) { say("p", PHRASE.unlocked); openedAll.forEach((x) => say("p", wingOpened(x))); }
   // What the win card offers, the first few wins (a new stratum's own offer says it otherwise).
@@ -781,7 +814,7 @@ function end(win) {
   pickOpen = false;
   show(`<h2>${win ? wingCleared(w) : `${m.n} won this round`}</h2>
   ${win || fallen ? "" : `<div class="cardmon">${monsterArt(m)}</div>`}
-  <p>${win ? `${m.n} is beaten. <strong>Depth ${depth + 1}</strong> is open below: tougher monsters, new floors.` : "Every miss shows the right answer, so the next run goes deeper."}</p>
+  <p>${win ? `${esc(m.n)} ${esc(m.quip)} <strong>Depth ${depth + 1}</strong> is open below: tougher monsters, new floors.` : "Every miss shows the right answer, so the next run goes deeper."}</p>
   ${cursedLine}
   ${stars}
   ${left}

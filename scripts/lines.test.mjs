@@ -11,6 +11,8 @@ import { planClips, keyFor } from "./audio/build.mjs";
 import { GROUPS, quipLine } from "../js/lines.js";
 import { QUIPS, FINAL, FINALS, CRIT, TEAM_LINES, TEAM_NUMBERS, CAPTAIN_LINES, captainNames } from "../js/moments.js";
 import { createHash } from "node:crypto";
+import { flipOf } from "../js/traits.js";
+import { pool, factOf } from "../js/learn.js";
 const app0 = readFileSync(new URL("../js/app.js", import.meta.url), "utf8");
 
 const ids = new Set(spokenLines().map((l) => l.kind + ":" + l.text));
@@ -85,6 +87,27 @@ assert.ok(GROUPS.includes("Captain lines") && spokenLines().filter((l) => l.grou
 assert.ok(GROUPS.includes("Hero quips") && spokenLines().filter((l) => l.kind === "h" && !capSaid.has(l.text)).every((l) => l.group === (teamLines.map(quipLine).includes(l.text) && !heroQuips.has(l.text) ? "Team-ups" : "Hero quips")));
 for (const l of spokenLines().filter((l) => l.kind === "h")) assert.ok(words(l.text) <= 8, `a quip is quick: ${l.text}`);
 
+// Judo Judy, the Balance Hall's boss: the name, the beaten quip (said on the win), the won line
+// and the Flip trait's line, all in the names sprite but the trait line. And every problem Judy
+// flips (any + in the Hall with the smaller first) is recorded flipped: it's said in that order.
+{
+  const judy = MON.find((m) => m.n === "Judo Judy");
+  for (const t of ["Judo Judy!"]) assert.ok(ids.has("m:" + t) && names.includes(t), t);
+  for (const t of ["Judo Judy taps out and bows.", "Judo Judy won this round."]) assert.ok(ids.has("p:" + t) && names.includes(t), t);
+  assert.equal(traitLine(judy), "Watch out! Judo Judy flips your problem. Same answer!");
+  assert.ok(ids.has("p:" + traitLine(judy)));
+  assert.ok(!ids.has("p:This boss switches between compare and balance!"), "The Unknown's trait line is retired");
+  for (const m of MON.filter((x) => x.boss)) assert.ok(ids.has("p:" + monsterCleared(m)), `${m.n}'s beaten line is recorded`);
+  const hall = pool("first").map((f) => factOf(f.key, () => 0.9)).filter((p) => p.op === "+");
+  let thrown = 0;
+  for (const p of hall) {
+    const q = flipOf(judy, p);
+    if (!q) continue;
+    thrown++;
+    assert.ok(ids.has("q:" + spokenProblem(q)) && ids.has("q:" + spokenFact(q)), `${q.q} is recorded`);
+  }
+  assert.ok(thrown > 50, `Judo Judy flips ${thrown} of the Hall's sums`);
+}
 // Keys are stable and unique.
 const plan = planClips();
 assert.equal(new Set(plan.map((c) => c.key)).size, plan.length);

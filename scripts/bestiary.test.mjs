@@ -5,7 +5,7 @@ import { pool } from "../js/learn.js";
 import { WINGS, cursedMonster } from "../js/wings.js";
 
 const r = roster();
-assert.deepEqual(r.map((x) => x.m.n), ["Plusquito", "Minustaur", "Chompers", "Trollar", "Make-Ten Golem", "Quizard", "Equal Twins", "The Unknown", "Haberhasher", "The Centipede", "Timesaur", "Divvy", "Starbot", "Sigma Rex"]);
+assert.deepEqual(r.map((x) => x.m.n), ["Plusquito", "Minustaur", "Chompers", "Trollar", "Make-Ten Golem", "Quizard", "Equal Twins", "Judo Judy", "Haberhasher", "The Centipede", "Timesaur", "Divvy", "Starbot", "Sigma Rex"]);
 assert.ok(r.every((x) => x.m && x.wing));
 assert.equal(new Set(r.map((x) => x.m.n)).size, r.length, "a monster in two strata is listed once, in the first");
 
@@ -29,4 +29,10 @@ beat(seen, r[1].m, 8);
 assert.equal(seen.Minustaur.beaten, 1, "beating counts as meeting");
 meet(seen, cursedMonster(3), 9);
 assert.equal(Object.keys(seen).length, 2, "cursed digits belong on the Heroes page, not here");
+// A retired monster (The Unknown, the Hall's old boss) saved in a player's bestiary is kept but not
+// listed: the roster comes from the Wings, so Monsters & Heroes never looks it up.
+assert.ok(!r.some((x) => x.m.n === "The Unknown"), "The Unknown is retired");
+const saved = { "The Unknown": { met: 1, beaten: 2 } };
+beat(saved, r.find((x) => x.m.n === "Judo Judy").m, 3);
+assert.deepEqual(Object.keys(saved), ["The Unknown", "Judo Judy"]);
 console.log("✓ bestiary");

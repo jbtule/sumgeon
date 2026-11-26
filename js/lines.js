@@ -90,7 +90,7 @@ export var TRAIT_LINE = {
   "Tens and ones": "Big numbers! Think tens and ones.",
   "Big Bite": "The bigger number is your hit!",
   "Balance": "Make both sides the same!",
-  "Shapeshift": "This boss switches between compare and balance!",
+  "Flip": "Watch out! Judo Judy flips your problem. Same answer!",
   "Stripes": "Lots of fives and tens!",
   "Ten Smash": "Ten or more smashes for double!",
   "Second wind": "Halfway down, this boss puts on armor!",
@@ -141,7 +141,7 @@ export function spokenLines() {
   var S = "names", N = "Monsters & heroes";
   MON.concat(allLooks()).forEach(function (m) {
     add("m", monsterName(m), N, S);
-    if (!m.boss) add("p", monsterCleared(m), N, S); // beating the boss is the win, said as PHRASE.win
+    add("p", monsterCleared(m), N, S); // a boss's is said on the win, before the stratum cleared
     add("p", monsterWon(m), N, S);
   });
   HEROES.forEach(function (h) {

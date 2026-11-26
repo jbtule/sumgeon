@@ -43,12 +43,43 @@ assert.ok(hits > 650, `Starbot asked ×5/×10 facts ${hits} times in 1000`);
 // The Centipede (a stand-in boss): 100 or more hits double.
 assert.equal(hitBy(mon("The Centipede"), 120, "120", false).mult, 2);
 assert.equal(hitBy(mon("The Centipede"), 99, "99", false).mult, 1);
-// What each monster asks at all: comparing for Chompers, balancing for the Twins, both for The
-// Unknown, never either for the arithmetic monsters; Quizard balances too.
-import { asks } from "../js/traits.js";
+// What each monster asks at all: comparing for Chompers, balancing for the Twins, the Hall's
+// whole mix for Judo Judy, never either for the arithmetic monsters; Quizard balances too.
+import { asks, flipOf } from "../js/traits.js";
+import { factOf, keyOf, record as recordAnswer } from "../js/learn.js";
+import { missingOf } from "../js/missing.js";
+import { balanceFacts } from "../js/balance.js";
 assert.ok(asks(mon("Chompers"))("○") && asks(mon("Chompers"))("more") && !asks(mon("Chompers"))("+"));
 assert.ok(asks(mon("Equal Twins"))("=") && !asks(mon("Equal Twins"))("○"));
-assert.ok(asks(mon("The Unknown"))("=") && asks(mon("The Unknown"))("○"));
+assert.ok(["+", "-", "○", "="].every((op) => asks(mon("Judo Judy"))(op)), "Judo Judy asks the Hall's whole mix");
+assert.equal(mon("The Unknown"), undefined, "The Unknown is retired");
+
+// Flip (Judo Judy): + with the smaller number first is thrown to the bigger first. Same answer,
+// same fact key (turnarounds share one), so the fact's record is the same either way.
+const judy = mon("Judo Judy");
+assert.deepEqual(traitOf(judy), { icon: "🥋", name: "Flip", text: "Judo Judy flips your problem: same answer!" });
+const three8 = factOf("+3,8", () => 0.9); // not turned around: 3 + 8
+assert.equal(three8.q, "3 + 8");
+const thrown = flipOf(judy, three8);
+assert.ok(thrown && thrown.flipped);
+assert.deepEqual([thrown.x, thrown.y, thrown.q, thrown.ans], [8, 3, "8 + 3", 11], "8 + 3, the same answer");
+assert.equal(thrown.key, three8.key);
+assert.equal(keyOf(thrown), keyOf(three8), "the turnaround shares the fact's key");
+assert.equal(three8.q, "3 + 8", "the original problem isn't changed");
+assert.equal(flipOf(judy, factOf("+3,8", () => 0)), null, "already the bigger first (8 + 3)");
+assert.equal(flipOf(judy, factOf("+4,4", () => 0)), null, "a double has nothing to flip");
+assert.equal(flipOf(judy, factOf("-8,3", () => 0)), null, "taking away doesn't turn around");
+assert.equal(flipOf(judy, missingOf(three8, "x")), null, "a hidden number stays where it is");
+for (const f of balanceFacts().slice(0, 40)) assert.equal(flipOf(judy, f), null, "comparing and balancing stay as they are");
+// Two-digit sums in the Hall (add tens, 10 more): 20 + 34 is thrown to 34 + 20.
+assert.equal(flipOf(judy, { op: "+", x: 20, y: 34, ans: 54, q: "20 + 34" }).q, "34 + 20");
+for (const n of ["Plusquito", "Make-Ten Golem", "Equal Twins"]) assert.equal(flipOf(mon(n), three8), null, `${n} doesn't flip`);
+// An answer on the flipped problem lands on the same record.
+const recs2 = {};
+recs2[thrown.key] = recordAnswer(recs2[thrown.key], { ok: true, ms: 1500, hinted: false, now: 1, fluentMs: 4000 });
+assert.ok(recs2["+3,8"] && recs2["+3,8"].n === 1, "the flipped answer counts for +3,8");
+// Judy's hits are plain.
+assert.equal(hitBy(judy, 11, "11", false).mult, 1);
 assert.ok(asks(mon("Quizard"))("=") && asks(mon("Quizard"))("+") && !asks(mon("Quizard"))("○"));
 for (const n of ["Plusquito", "Minustaur", "Timesaur", "Haberhasher"]) assert.ok(asks(mon(n))("+") && !asks(mon(n))("○") && !asks(mon(n))("="), n);
 console.log("✓ traits");

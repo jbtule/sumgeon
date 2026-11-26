@@ -14,7 +14,7 @@ export const TRAITS = {
   "Haberhasher": { icon: "🔢", name: "Tens and ones", text: "Asks two-digit sums and differences" },
   "Chompers": { icon: "🐊", name: "Big Bite", text: "Eats the bigger number: that's your hit" },
   "Equal Twins": { icon: "⚖️", name: "Balance", text: "Both sides must match" },
-  "The Unknown": { icon: "🌀", name: "Shapeshift", text: "Switches between comparing and balancing" },
+  "Judo Judy": { icon: "🥋", name: "Flip", text: "Judo Judy flips your problem: same answer!" },
   "Starbot": { icon: "⭐", name: "Stripes", text: "Loves the ×5 and ×10 tables" },
   "Make-Ten Golem": { icon: "🔟", name: "Ten Smash", text: "Answers of 10 or more smash it for double" },
   "Sigma Rex": { icon: "👑", name: "Second wind", text: "Armors up at half HP" },
@@ -29,7 +29,9 @@ export function asks(m) {
   const k = kind(m);
   if (k === "Chompers") return (op) => op === "○" || op === "more";
   if (k === "Equal Twins") return (op) => op === "=";
-  if (k === "The Unknown") return (op) => op === "○" || op === "=";
+  // Judo Judy, the Hall's boss, asks the Hall's whole mix: adding (and flipping it), taking
+  // away, comparing, balancing and missing numbers.
+  if (k === "Judo Judy") return () => true;
   if (k === "Quizard") return (op) => op !== "○";
   return (op) => op !== "○" && op !== "=";
 }
@@ -38,6 +40,16 @@ export function asks(m) {
 export function traitOf(m) {
   if (m.cursed != null) return { icon: "🍀", name: "Lucky Number", text: `Answers with a ${m.cursed} hit double` };
   return TRAITS[kind(m)] || null;
+}
+
+// Flip (Judo Judy): an addition of two numbers with the smaller first (3 + 8) is thrown, so it
+// shows the bigger first (8 + 3). The turnaround has the same answer and the same fact record
+// (learn.js keyOf: turnarounds share a key). Returns the flipped problem, or null for anything
+// else: doubles, a hidden number (□), comparing, balancing, taking away.
+export function flipOf(m, p) {
+  if (kind(m) !== "Judo Judy" || !p || p.op !== "+" || p.blank || p.sym || p.fact) return null;
+  if (!Number.isInteger(p.x) || !Number.isInteger(p.y) || p.x >= p.y) return null;
+  return Object.assign({}, p, { x: p.y, y: p.x, q: p.y + " + " + p.x, flipped: true });
 }
 
 // Whether this problem is charged (Minustaur): every 4th on the floor. n counts from 0.
