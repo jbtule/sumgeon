@@ -610,13 +610,19 @@ _Revised with the user on 2026-11-25. Sumgeon already rewards play in many ways 
 - **Each comes with a reward:** coins for the wallet, or an item for the inventory (§6.3), shown and said on its card ("You got a shield!"). Stratum Champion and Legend also give a piece of clothing that can't be found or bought (§14.2).
 - **Share card:** a PNG of the achievement (app name, emoji, title, what it took, date, the monsters or heroes involved), shared from its card or the 🏆 sheet through the share sheet. It never includes the player's name.
 
-### 14.2 The big ones: each stratum's Champion and Legend
-The strata are deep, so these are the game's biggest moments, with the biggest card (the stratum's wall behind it, a fanfare, the boss and the captain), always shown, never secret.
+### 14.2 The big ones: each stratum's Champion and Legend, won against its mega and Legend bosses
+The strata are deep, so these are the game's biggest moments, with the biggest card (the stratum's wall behind it, a fanfare, the boss and the captain), always shown, never secret. Each is won in a fight, not quietly:
+- **The boss** ends every run, as now.
+- **The mega boss** takes its place on every 10th depth (10, 20, 30 …): a bigger, crowned form of the stratum's boss with its own name and line ("Mega Golem!"), more HP, and the boss's trait plus a second one (the Golem's Ten Smash with Second Wind armor, say). The depth map marks those depths with a crown, and the descent says "Mega boss ahead!". Each one beaten gives a big chest (§6.3).
+- **The Legend boss** appears once every fact in the stratum's band is mastered (box 4): the next run in that stratum, at any depth, ends with the boss's golden form ("A legend awaits!"). It's a final exam: every kind of problem the stratum asks, weighted to the facts that took longest to learn, no fact twice, with the boss's trait and its mega trait. Lost, it's there again on the next run until it's beaten. Afterwards the boss shows golden in Monsters & Heroes and the stratum's layer on the depth map gets a gold edge.
+
 | Achievement | Icon | Earned by | Reward |
 |---|---|---|---|
-| *Counting Cellar* **Champion** | 🏆 | Beat the stratum's boss | coins and the stratum's champion badge, worn by the captain (a clothing piece only from here) |
-| *Counting Cellar* **Legend** | 🌟 | Every fact in the stratum's band mastered (box 4) | a golden crown for the captain, one per stratum in that stratum's colors |
+| *Counting Cellar* **Champion** | 🏆 | Beat the stratum's mega boss at depth 10 | coins and the stratum's champion badge, worn by the captain (a clothing piece only from here) |
+| *Counting Cellar* **Legend** | 🌟 | Beat the stratum's Legend boss (every fact mastered first) | a golden crown for the captain, one per stratum in that stratum's colors |
 | **Champion of Champions** / **Legend of Legends** | 👑 / 🌠 | Every stratum open to the player | a cape |
+
+The mega and Legend forms are looks of the four bosses (new art and lines, no new monsters): Make-Ten Golem, Judo Judy, The Centipede and Sigma Rex, and each later stratum's boss.
 
 ### 14.3 Mastery (secret)
 One per kind of math, earned when every fact of it is mastered. They come up as the learning engine fills in, so they're a surprise: "Secret achievement! Table Master: the 7s!"
