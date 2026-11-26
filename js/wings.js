@@ -15,7 +15,7 @@ export const WINGS = [
   { id: "cellar", name: "The Counting Cellar", band: "kinder", strands: { Trollar: "coinsK", Chompers: "more" },
     pool: ["Plusquito", "Minustaur", "Chompers", "Trollar"], floors: ["Plusquito", "Minustaur", "rescue", "Chompers", "Trollar"], boss: "Make-Ten Golem" },
   { id: "hall", name: "The Balance Hall", band: "first", after: "cellar",
-    pool: ["Quizard", "Chompers", "Equal Twins", "Minustaur"], floors: ["Quizard", "Chompers", "rescue", "Equal Twins", "pool"], boss: "The Unknown" },
+    pool: ["Quizard", "Chompers", "Equal Twins", "Minustaur"], floors: ["Quizard", "Chompers", "rescue", "Equal Twins", "pool"], boss: "Judo Judy" },
   // Plusquito and Minustaur stand in for the Mines' own monsters, and The Centipede is the Golem's
   // shape for now (build steps 3 and 4, DESIGN.md §4.1).
   { id: "mines", name: "The Crystal Mines", band: "second", after: "hall", strands: { Trollar: "coins" },

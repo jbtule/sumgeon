@@ -12,7 +12,7 @@ assert.equal(mines.name, "The Crystal Mines");
 // Each stratum's monsters, and what they ask there.
 const M = (w) => w.pool.concat([w.boss]);
 assert.deepEqual(M(cellar), ["Plusquito", "Minustaur", "Chompers", "Trollar", "Make-Ten Golem"]);
-assert.deepEqual(M(hall), ["Quizard", "Chompers", "Equal Twins", "Minustaur", "The Unknown"]);
+assert.deepEqual(M(hall), ["Quizard", "Chompers", "Equal Twins", "Minustaur", "Judo Judy"]);
 assert.deepEqual(M(mines), ["Haberhasher", "Trollar", "Plusquito", "Minustaur", "The Centipede"]);
 assert.deepEqual(M(tower), ["Timesaur", "Divvy", "Starbot", "Sigma Rex"]);
 const named = (n) => ({ n });

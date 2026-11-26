@@ -36,15 +36,59 @@ export const MON=[
   d:c=>`<path d="M82 124 V150 M128 146 V170" stroke="${DK}" stroke-width="10" stroke-linecap="round"/>${foot(84,154,14)}${foot(130,174,14)}`+line(`<path d="M172 40 L44 100 L172 160"/>`,c,30)+`<path d="M92 86 l8 12 l6 -16 M120 73 l8 12 l6 -16 M148 60 l8 12 l6 -16 M92 114 l8 -12 l6 16 M120 127 l8 -12 l6 16 M148 140 l8 -12 l6 16" fill="#f3efe4" stroke="${DK}" stroke-width="2.5" stroke-linejoin="round"/>`+solid(`<circle cx="74" cy="72" r="15"/>`,c)+`${eye(76,70,8)}<circle cx="170" cy="38" r="3" fill="${DK}"/><circle cx="162" cy="42" r="3" fill="${DK}"/>`},
  {n:'Equal Twins',op:'=',c:'#ff7ac8',hits:4,quip:'agree, for once, to call it even.',
   d:c=>`${foot(74,176,15)}${foot(126,176,15)}`+solid(`<rect x="26" y="50" width="148" height="40" rx="20"/>`,c)+solid(`<rect x="26" y="112" width="148" height="40" rx="20"/>`,'#8ab4ff')+`${eye(86,68,8)}${eye(110,68,8)}<path d="M92 80 Q98 85 104 80" ${ds}/>${eye(90,130,8)}${eye(114,130,8)}<path d="M96 142 Q102 147 108 142" ${ds}/><path d="M150 46 l14 -12 l2 16 z M150 46 l-14 -12 l-2 16 z" fill="#ffc93c" stroke="${DK}" stroke-width="3" stroke-linejoin="round"/><path d="M30 112 Q40 92 70 104 L70 112 Z" fill="#3a4a8c" stroke="${DK}" stroke-width="3" stroke-linejoin="round"/>`},
- {n:'The Unknown',op:'mix',c:'#7b5cd6',hits:6,boss:1,quip:'is solved at last.',
-  d:c=>`${foot(70,186,18)}${foot(130,186,18)}`+solid(`<path d="M100 10 L176 182 H24 Z"/>`,'#2a2050')+line(`<path d="M46 40 Q130 100 46 166 M154 40 Q70 100 154 166"/>`,c,26)+solid(`<circle cx="100" cy="58" r="22"/>`,'#2a2050')+`<ellipse cx="91" cy="58" rx="6" ry="4" fill="#ffc93c"/><ellipse cx="109" cy="58" rx="6" ry="4" fill="#ffc93c"/>`},
  {n:'Starbot',op:'×',c:'#9fb6c9',hits:4,quip:'powers down with a sparkly fizzle.',
   d:c=>`${foot(78,182,16)}${foot(122,182,16)}<path d="M70 168 V178 M130 168 V178" stroke="${DK}" stroke-width="10" stroke-linecap="round"/>`+line(`<path d="M44 108 L22 132 M156 108 L178 132"/>`,c,12)+solid(`<rect x="50" y="86" width="100" height="84" rx="16"/>`,c)+line(`<path d="M100 8 V72 M72 24 L128 56 M128 24 L72 56"/>`,'#ffc93c',16)+`<rect x="66" y="100" width="68" height="44" rx="10" fill="#0c171c"/><circle cx="86" cy="118" r="7" fill="#45d6e6"/><circle cx="114" cy="118" r="7" fill="#45d6e6"/><path d="M88 132 Q100 139 112 132" stroke="#45d6e6" stroke-width="3" fill="none" stroke-linecap="round"/><circle cx="100" cy="160" r="4" fill="#ff5a4e"/>`}
 ];
+// The Balance Hall's boss: a judo fighter whose body is a big ⇄ (turnaround arrows) in a white
+// gi, with a black belt between the arrows that is a fraction bar. Trait 🥋 Flip (traits.js).
+MON.push({n:'Judo Judy',op:'+',sym:'⇄',c:'#ffa94d',hits:6,boss:1,quip:'taps out and bows.',d:(c)=>judy(c)});
 // The Crystal Mines' boss. Its art comes from NEW_MON's Centipede, swapped in below; this
 // Golem-shaped stand-in is only the fallback.
 MON.push({n:'The Centipede',op:'mix',c:'#a78bfa',hits:6,boss:1,quip:'curls up into a hundred pieces.',
   d:(c)=>MON.find((m)=>m.n==='Make-Ten Golem').d(c)});
+
+// Retired monsters: out of the game, kept so the gallery can show them under "Retired". A saved
+// bestiary entry for one is simply not listed (bestiary.js roster reads the Wings).
+// The Unknown was the Balance Hall's boss (🌀 Shapeshift) until Judo Judy took its place.
+export const RETIRED=[
+ {n:'The Unknown',op:'mix',sym:'x',stratum:'hall',c:'#7b5cd6',hits:6,boss:1,retired:1,trait:{icon:'🌀',name:'Shapeshift',text:'Switched between comparing and balancing'},quip:'is solved at last.',
+  d:c=>`${foot(70,186,18)}${foot(130,186,18)}`+solid(`<path d="M100 10 L176 182 H24 Z"/>`,'#2a2050')+line(`<path d="M46 40 Q130 100 46 166 M154 40 Q70 100 154 166"/>`,c,26)+solid(`<circle cx="100" cy="58" r="22"/>`,'#2a2050')+`<ellipse cx="91" cy="58" rx="6" ry="4" fill="#ffc93c"/><ellipse cx="109" cy="58" rx="6" ry="4" fill="#ffc93c"/>`}
+];
+
+// Judo Judy (MON above): a creature whose body is a big ⇄. The top arrow, pointing right, is the
+// arms in a white gi sleeve, its head an open hand reaching to grab; the bottom arrow, pointing
+// left, is the legs in white gi pants, its head a bare foot sweeping in a throw. Between the two
+// arrows the black belt is a fraction bar, knotted in the middle. On top sits a round head with a
+// top-knot and a red headband.
+function judy(c) {
+  const GI = '#f6f3ea', BELT = '#23232b', HAIR = '#3b2a4d';
+  return foot(100,186,62)
+  // Headband tails flying out behind the head.
+  +line(`<path d="M124 22 Q146 12 158 22 M124 26 Q142 32 152 42"/>`,CORAL,7)
+  // The bottom arrow (←): the legs. White pants, a cuff, and a foot for the arrowhead.
+  +solid(`<rect x="44" y="134" width="148" height="32" rx="14"/>`,GI)
+  +solid(`<path d="M60 118 Q62 112 56 114 L10 144 Q4 150 10 156 L56 186 Q62 188 60 182 Z"/>`,c)
+  +solid(`<circle cx="15" cy="141" r="6"/><circle cx="24" cy="134" r="6.5"/><circle cx="34" cy="127" r="7"/>`,c)
+  +`<path d="M60 134 V166" ${ds} stroke-width="3"/>`
+  // The belt between the arrows: a fraction bar, with its knot and two short tails.
+  +solid(`<rect x="58" y="112" width="88" height="14" rx="4"/>`,BELT)
+  +solid(`<path d="M94 122 L86 146 L95 148 L100 126 Z M106 122 L114 146 L105 148 L100 126 Z"/>`,BELT)
+  +solid(`<rect x="90" y="108" width="20" height="22" rx="5"/>`,BELT)
+  // The top arrow (→): the arms. A white sleeve with the gi's lapels at the neck, a cuff, and an
+  // open hand for the arrowhead.
+  +solid(`<rect x="8" y="72" width="148" height="32" rx="14"/>`,GI)
+  +solid(`<path d="M140 56 Q138 50 144 52 L190 82 Q196 88 190 94 L144 124 Q138 126 140 120 Z"/>`,c)
+  +solid(`<ellipse cx="156" cy="58" rx="8" ry="11" transform="rotate(-30 156 58)"/>`,c)
+  +`<path d="M140 72 V104" ${ds} stroke-width="3"/><path d="M160 82 H180 M160 92 H180 M160 102 H172" ${ds} stroke-width="2.5"/>`
+  +`<path d="M80 72 L100 96 L120 72 M100 96 V104" ${ds} stroke-width="3"/>`
+  // The head: top-knot, face, hair cap, headband.
+  +solid(`<circle cx="100" cy="2" r="12"/>`,HAIR)
+  +solid(`<circle cx="100" cy="40" r="30"/>`,c)
+  +solid(`<path d="M70 38 Q70 10 100 10 Q130 10 130 38 Q115 26 100 26 Q85 26 70 38 Z"/>`,HAIR)
+  +solid(`<path d="M70 32 Q100 20 130 32 L130 40 Q100 28 70 40 Z"/>`,CORAL)
+  +`<path d="M80 46 L94 50 M120 46 L106 50" ${ds} stroke-width="4"/>${eye(88,55,8)}${eye(112,55,8)}`
+  +`<path d="M91 63 Q100 72 109 63 Z" fill="${DK}" stroke="${DK}" stroke-width="3" stroke-linejoin="round"/><ellipse cx="78" cy="63" rx="5.5" ry="3.5" fill="#ff7a6e" opacity=".7"/><ellipse cx="122" cy="63" rx="5.5" ry="3.5" fill="#ff7a6e" opacity=".7"/>`;
+}
 
 /* ---------- new monsters, drawn but not in the game yet ----------
    The grade strata's new monsters (DESIGN.md §4.1). Same shape as MON, plus sym (the symbol its
@@ -191,6 +235,8 @@ export const ANCHOR = {
   Divvy: { eyes: [[89, 50, 8], [111, 50, 8]], mouth: [100, 66], top: [100, 22], neck: [100, 88], ground: 192 },
   Starbot: { eyes: [[86, 118, 7], [114, 118, 7]], mouth: [100, 134], top: [100, 86], neck: [100, 152], ground: 188, lid: DK },
   Haberhasher: { eyes: [[88, 66, 7], [112, 66, 7]], mouth: [100, 78], top: [104, -22], hat: true, neck: [100, 100], ground: 194 },
+  // Judo Judy is a boss (no looks); its anchors are here for its art checks. The top is its top-knot.
+  "Judo Judy": { eyes: [[88, 55, 8], [112, 55, 8]], mouth: [100, 66], top: [100, -10], hat: true, neck: [100, 74], ground: 190 },
   // NEW_MON, ready for looks once they're in the game. Doublet's are its left twin's face, with
   // both twins' eyes; Slimelipsis's are its middle slime's.
   Pipsqueak: { eyes: [[66, 82, 11], [124, 140, 11]], mouth: [95, 126], top: [104, 40], neck: [95, 150], ground: 188 },

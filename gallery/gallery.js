@@ -1,10 +1,10 @@
 // The monster gallery (gallery/, a grown-up page like the listen check): every monster drawn big,
 // the new ones (NEW_MON, not in the game yet) first, then the game's own (MON), then the heroes
-// for comparison. Each can be shown on its stratum's wall, every wall, or plain, and at the small
+// for comparison, then the retired ones (RETIRED, out of the game). Each can be shown on its stratum's wall, every wall, or plain, and at the small
 // sizes the game uses, to judge contrast and readability. Flags like the moments page's: ⚑ marks
 // a drawing with tags and a note, and Report copies the flags or opens a GitHub issue.
 // Marks live in localStorage ("sumgeon:gallery"), keyed by name: { s: "bad", tags, note, t }.
-import { MON, NEW_MON, svg } from "../js/monsters.js";
+import { MON, NEW_MON, RETIRED, svg } from "../js/monsters.js";
 import { HEROES, heroSvg } from "../js/heroes.js";
 import { TRAITS } from "../js/traits.js";
 
@@ -20,7 +20,7 @@ const SHORT = { cellar: "Cellar", hall: "Hall", mines: "Mines*", tower: "Tower" 
 // Kept here rather than read from wings.js, which is being restructured.
 const OLD = {
   Plusquito: ["+", "cellar"], Minustaur: ["−", "cellar"], Trollar: ["$", "cellar, mines"], "Make-Ten Golem": ["10", "cellar"],
-  Quizard: ["?", "hall"], Chompers: ["< >", "hall, cellar"], "Equal Twins": ["=", "hall"], "The Unknown": ["x", "hall"],
+  Quizard: ["?", "hall"], Chompers: ["< >", "hall, cellar"], "Equal Twins": ["=", "hall"], "Judo Judy": ["⇄", "hall"],
   Haberhasher: ["#", "mines"], Timesaur: ["×", "tower"], Divvy: ["÷", "tower"], Starbot: ["*", "tower"], "Sigma Rex": ["Σ", "tower"],
   Sevenstein: ["7", "cursed"], Octoloop: ["8", "cursed"]
 };
@@ -38,7 +38,7 @@ const keepView = () => { try { localStorage.setItem(STORE + ":view", JSON.string
 
 /* ---------- the cards ---------- */
 // One item: { key, name, art: (cls) => svg, isNew, boss, sym, strata, trait, quip, color, sub }.
-const monItem = (m) => ({ key: m.n, name: m.n, art: () => svg(m), isNew: NEW_NAMES.has(m.n), boss: m.boss, sym: m.sym || (OLD[m.n] || [])[0] || m.op,
+const monItem = (m) => ({ key: m.n, name: m.n, art: () => svg(m), isNew: NEW_NAMES.has(m.n), boss: m.boss, retired: m.retired, sym: m.sym || (OLD[m.n] || [])[0] || m.op,
   strata: strataOf(m), home: homeWall(m), trait: traitOf(m), quip: `${m.n} ${m.quip}`, color: m.c });
 const heroItem = (h) => ({ key: "hero:" + h.n, name: h.n, art: () => heroSvg(h), sym: String(h.d), strata: [], home: "plain",
   trait: { icon: "🦸", name: h.cls, text: h.move }, color: h.c });
@@ -53,7 +53,7 @@ function card(it) {
   return `<article class="gcard${k ? " g-bad" : ""}" data-key="${esc(it.key)}">
     <div class="g-stages${walls.length > 1 ? " g-three" : ""}">${walls.map((w) => stage(it, w, walls.length > 1)).join("")}</div>
     <div class="g-info">
-      <div class="g-title"><b>${esc(it.name)}</b>${it.isNew ? `<span class="g-new">New</span>` : ""}${it.boss ? `<span class="g-boss">Boss</span>` : ""}<span class="g-sym" title="Its symbol">${esc(it.sym)}</span></div>
+      <div class="g-title"><b>${esc(it.name)}</b>${it.isNew ? `<span class="g-new">New</span>` : ""}${it.boss ? `<span class="g-boss">Boss</span>` : ""}${it.retired ? `<span class="g-retired">Retired</span>` : ""}<span class="g-sym" title="Its symbol">${esc(it.sym)}</span></div>
       ${where ? `<div class="g-meta">${esc(where)}</div>` : ""}
       ${it.trait ? `<div class="g-trait">${esc(it.trait.icon)} <b>${esc(it.trait.name)}</b>: ${esc(it.trait.text)}</div>` : `<div class="g-trait g-meta">No trait (the tutorial monster)</div>`}
       ${it.quip ? `<div class="g-quip">"${esc(it.quip)}"</div>` : ""}
@@ -62,7 +62,7 @@ function card(it) {
         <span>${k ? `<button type="button" class="flagbtn g-ok" data-act="ok">✓ Fine now</button> ` : ""}<button type="button" class="flagbtn" data-act="flag">⚑ ${k ? "Edit" : "Flag"}</button></span></div>
     </div></article>`;
 }
-const ITEMS = { newGrid: NEW_MON.map(monItem), oldGrid: MON.map(monItem), heroGrid: HEROES.map(heroItem) };
+const ITEMS = { newGrid: NEW_MON.map(monItem), oldGrid: MON.map(monItem), heroGrid: HEROES.map(heroItem), retiredGrid: RETIRED.map(monItem) };
 const byKey = Object.fromEntries(Object.values(ITEMS).flat().map((it) => [it.key, it]));
 function render() {
   for (const [id, items] of Object.entries(ITEMS)) $(id).innerHTML = items.map(card).join("");
