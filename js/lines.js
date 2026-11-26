@@ -4,7 +4,7 @@
 // (see speech.js).
 import { MON, allLooks, bossForm } from "./monsters.js";
 import { HEROES } from "./heroes.js";
-import { WINGS, cursedMonster } from "./wings.js";
+import { WINGS, PATHS, cursedMonster } from "./wings.js";
 import { facts, spokenProblem, spokenFact, spoken } from "./problems.js";
 import { missingOf, spokenMissing, canHide } from "./missing.js";
 import { coinFacts } from "./coins.js";
@@ -27,7 +27,7 @@ import { fewest, ITEMS } from "./loot.js";
 import { clothesById, findable } from "./clothes.js";
 import { allPrices } from "./shop.js";
 import { coinWords } from "./coins.js";
-import { BANDS, pool, factOf } from "./learn.js";
+import { BANDS, pool, factOf, pathBands } from "./learn.js";
 
 export var PHRASE = {
   enter: "Now entering the Sumgeon!",
@@ -486,12 +486,13 @@ function packSprites(lines) {
   return lines;
 }
 // The sprite families a run in a stratum (wings.js WINGS) can need, besides ALWAYS: its monsters'
-// lines and its band's and strands' problems. upto (optional): { band: the last level to load },
-// so a run loads the levels open and the next, not a grade's every fact.
+// lines and the problems of every band its path asks (wings.js PATHS: its band, its strands, and
+// the earlier grades' facts it reviews). upto (optional): { band: the last level to load }, so a
+// run loads the levels its chapter reaches, not a grade's every fact.
 export function runSprites(wing, upto) {
   var I = index(), out = {};
   wing.pool.concat(wing.floors, [wing.boss]).forEach(function (n) { if (n !== "rescue" && n !== "pool") out["m-" + slug(n)] = true; });
-  [wing.band].concat(Object.values(wing.strands || {})).forEach(function (band) {
+  [wing.band].concat(Object.values(wing.strands || {}), pathBands(PATHS[wing.id])).forEach(function (band) {
     var top = upto && upto[band] != null ? upto[band] : Infinity;
     (I.uses[band] || []).forEach(function (fams, level) { if (fams && level <= top) Object.assign(out, fams); });
   });

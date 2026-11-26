@@ -129,7 +129,7 @@ console.log("✓ shapes: templates, drawings, judging and counting");
 // level in the school's order; every key its own fact and back; drawing under half of each level
 // (so a mouse or keyboard, which asks only counting, can still open the next level).
 import { shapeFacts, shapeFactOf, SHAPE_STRANDS, isDrawKey, spokenShape, spokenShapeAnswer, squawkLine, squawkBody, drawHintSvg, drawHint, cleanFor, accepts } from "../js/shapes.js";
-import { BANDS, pool, factOf, choose, openLevel, monsterHP, drawHit } from "../js/learn.js";
+import { BANDS, pool, factOf, choose, monsterHP, drawHit, JOIN_AT } from "../js/learn.js";
 import { asks } from "../js/traits.js";
 import { MON } from "../js/monsters.js";
 import { hintFor } from "../js/hints.js";
@@ -146,14 +146,13 @@ import { spokenProblem, spokenFact } from "../js/problems.js";
   assert.equal(shapeFacts().length, 64, "each fact once, though strands share some");
   assert.equal(new Set(shapeFacts().map((f) => f.key)).size, shapeFacts().length);
   for (const b of STRANDS) {
-    assert.ok(BANDS[b].strand && BANDS[b].unlock === 0.5, `${b} is a strand`);
+    assert.ok(BANDS[b].strand, `${b} is a strand`);
     for (let L = 0; L < BANDS[b].levels.length; L++) {
       const here = pool(b).filter((f) => f.level === L), draws = here.filter((f) => isDrawKey(f.key));
       assert.ok(draws.length / here.length <= 0.4, `${b} level ${L + 1}: ${draws.length} of ${here.length} drawn`);
-      // Every counting fact learned opens the next level without drawing anything.
-      const recs = {};
-      pool(b).filter((f) => f.level <= L && !isDrawKey(f.key)).forEach((f) => (recs[f.key] = { b: 3, n: 1, c: 1, ms: 1000, t: 0 }));
-      assert.equal(openLevel(b, recs), Math.min(L + 1, BANDS[b].levels.length - 1), `${b}: counting alone opens past level ${L + 1}`);
+      // Counting alone (on a mouse or keyboard, nothing is drawn) learns enough of a level for the
+      // path's next step to join (learn.js JOIN_AT).
+      assert.ok(1 - draws.length / here.length >= JOIN_AT, `${b}: counting alone can open the next step`);
     }
     for (const f of pool(b)) {
       const g = factOf(f.key, () => 0.3);

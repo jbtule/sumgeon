@@ -1,6 +1,6 @@
 // Wings: runs with a rescue floor and a boss, rescue order, and mastery opening the next stratum.
 import assert from "node:assert/strict";
-import { WINGS, runFloors, nextRescue, openWings, learnedShare, toOpen, bandOf } from "../js/wings.js";
+import { WINGS, runFloors, nextRescue, openWings, learnedShare, toOpen, bandOf, priorityFacts } from "../js/wings.js";
 import { pool, BANDS } from "../js/learn.js";
 
 const [cellar, hall, mines, tower] = ["cellar", "hall", "mines", "tower"].map((id) => WINGS.find((w) => w.id === id));
@@ -50,7 +50,7 @@ assert.equal(bandOf(cellar, { n: "Baby Trollar", base: "Trollar" }), "coinsK", "
 assert.deepEqual([cellar, hall, mines].map((w) => bandOf(w, named("Slimelipsis"))), ["patK", "patH", "patM"]);
 assert.deepEqual([hall, mines, tower].map((w) => bandOf(w, named("Tick-Tockus"))), ["timeH", "timeM", "timeT"]);
 assert.equal(bandOf(hall, { n: "Grandfather Tockus", base: "Tick-Tockus" }), "timeH");
-for (const b of ["patK", "patH", "patM", "timeH", "timeM", "timeT"]) assert.ok(BANDS[b].strand && BANDS[b].unlock === 0.5, `${b} is a strand`);
+for (const b of ["patK", "patH", "patM", "timeH", "timeM", "timeT"]) assert.ok(BANDS[b].strand, `${b} is a strand`);
 assert.ok(!cellar.floors.includes("Slimelipsis") && !hall.floors.includes("Slimelipsis"), "Slimelipsis visits the Cellar and the Hall from their pools");
 for (const w of [hall, tower]) assert.ok(w.floors.includes("Tick-Tockus"), `Tick-Tockus has a depth-1 floor in ${w.id}`);
 // The Mines' depth-1 floors are 2nd grade's priority standards (the school's guide): place value
@@ -65,9 +65,11 @@ assert.ok(["Tick-Tockus", "Slimelipsis", "Margot-Rythm"].every((n) => mines.pool
 assert.deepEqual(WINGS.map((w) => bandOf(w, named("Polly-Gon"))), ["shapesK", "shapesH", "shapesM", "shapesT"]);
 assert.equal(bandOf(cellar, { n: "Baby Polly", base: "Polly-Gon" }), "shapesK");
 for (const w of [cellar, hall, tower]) assert.ok(w.pool.includes("Polly-Gon") && !w.floors.includes("Polly-Gon"), `Polly-Gon visits ${w.id} from the pool`);
-assert.equal(learnedShare(cellar, Object.fromEntries(pool("shapesK").map((f) => [f.key, { b: 4 }]))), 0, "shapes don't count toward opening the next stratum");
-// Strands don't count toward opening the next stratum: the share is of the stratum's band only.
-assert.equal(learnedShare(hall, Object.fromEntries(pool("timeH").map((f) => [f.key, { b: 4 }]))), 0);
+// Only the path's priority steps (DESIGN.md §4.3) count toward opening the next stratum: not
+// counting on and back in the Cellar, or counting by 5s in the Hall.
+assert.equal(learnedShare(cellar, Object.fromEntries(pool("patK").filter((f) => f.level < 2).map((f) => [f.key, { b: 4 }]))), 0, "counting on and back isn't a priority step");
+assert.equal(learnedShare(hall, Object.fromEntries(pool("patH").filter((f) => f.level === 1).map((f) => [f.key, { b: 4 }]))), 0, "nor counting by 5s");
+assert.ok(learnedShare(cellar, Object.fromEntries(pool("coinsK").map((f) => [f.key, { b: 4 }]))) > 0, "coins are");
 const run = runFloors(cellar, { captain: 5, rescued: [] }, () => 0);
 assert.equal(run.length, 6);
 assert.equal(run[3].n, "Chompers", "floor 4 is Chompers");
@@ -90,7 +92,7 @@ for (const w of WINGS) for (const m of runFloors(w, { captain: 0, rescued: [1, 2
 assert.deepEqual(openWings({}, {}, "kinder"), ["cellar"]);
 assert.deepEqual(openWings({}, {}, "third"), ["cellar", "hall", "mines", "tower"], "starting in 3rd grade opens all four");
 const recs = {};
-const cellarFacts = pool("kinder");
+const cellarFacts = priorityFacts(cellar);
 cellarFacts.slice(0, Math.ceil(cellarFacts.length * 0.6)).forEach((f) => (recs[f.key] = { b: 3, n: 3, c: 3, ms: 2000, t: 0 }));
 assert.ok(learnedShare(cellar, recs) >= 0.6);
 assert.deepEqual(openWings({}, recs, "kinder"), ["cellar"], "learning alone isn't enough: beat the boss too");
@@ -99,10 +101,10 @@ assert.deepEqual(openWings({ cellar: { boss: 1 } }, recs, "kinder"), ["cellar", 
 assert.equal(toOpen(tower, {}, {}).prev.id, "mines", "the Tower comes after the Mines");
 // The chain, one at a time: the Hall opens the Mines, the Mines the Tower.
 {
-  const r = {}, learn = (b) => { const p = pool(b); p.slice(0, Math.ceil(p.length * 0.6)).forEach((f) => (r[f.key] = { b: 3, n: 3, c: 3, ms: 2000, t: 0 })); };
-  learn("kinder"); learn("first");
+  const r = {}, learn = (w) => { const p = priorityFacts(w); p.slice(0, Math.ceil(p.length * 0.6)).forEach((f) => (r[f.key] = { b: 3, n: 3, c: 3, ms: 2000, t: 0 })); };
+  learn(cellar); learn(hall);
   assert.deepEqual(openWings({ cellar: { boss: 1 }, hall: { boss: 1 } }, r, "kinder"), ["cellar", "hall", "mines"]);
-  learn("second");
+  learn(mines);
   assert.deepEqual(openWings({ cellar: { boss: 1 }, hall: { boss: 1 }, mines: { boss: 1 } }, r, "kinder"), ["cellar", "hall", "mines", "tower"]);
   assert.deepEqual(openWings({ cellar: { boss: 1 }, mines: { boss: 1 } }, r, "kinder"), ["cellar", "hall"], "no skipping the Hall's boss");
 }
@@ -210,7 +212,7 @@ console.log("✓ stars");
   // mastery or played stay open.
   const progress = { cellar: { boss: 2, best: 6, depth: 3, depthStars: { 1: 12 }, stars: [3, 3, 2] }, hall: { boss: 1 }, mines: { boss: 1, depth: 2 } };
   const r = {};
-  for (const b of ["kinder", "first", "second"]) { const p = pool(b); p.slice(0, Math.ceil(p.length * 0.6)).forEach((f) => (r[f.key] = { b: 3, n: 3, c: 3, ms: 2000, t: 0 })); }
+  for (const w of [cellar, hall, mines]) { const p = priorityFacts(w); p.slice(0, Math.ceil(p.length * 0.6)).forEach((f) => (r[f.key] = { b: 3, n: 3, c: 3, ms: 2000, t: 0 })); }
   const keep = JSON.stringify([progress, r]);
   const mastered = withGrade({ band: "third", start: "third", grade: 3 }, 0, { progress, recs: r });
   assert.equal(JSON.stringify([progress, r]), keep, "lowering the grade never touches progress");

@@ -33,7 +33,7 @@ console.log("✓ dot flash: facts and keys");
 const cellar = WINGS.find((w) => w.id === "cellar"), mon = (n) => MON.find((m) => m.n === n);
 assert.equal(bandOf(cellar, mon("Pipsqueak")), "flashK");
 const B = BANDS.flashK;
-assert.ok(B.strand && B.unlock === 0.5);
+assert.ok(B.strand);
 assert.deepEqual(B.levels.map((l) => l.name), ["How many dots? To 3", "How many dots? To 5", "Dots any way", "Dice sums"]);
 const p = pool("flashK"), sums = p.filter((f) => f.level === 3);
 assert.equal(p.filter((f) => f.op === "⁙").length, 22);

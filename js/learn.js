@@ -24,12 +24,16 @@ import { asks as asksOf } from "./traits.js";
 
 // One band per grade, K to 3rd (DESIGN.md §2, §4.1), each the facts of one stratum, with its
 // levels in the order the school teaches them (Missouri Learning Standards and the school's
-// curriculum guides). A level opens when 70% of the level before it is learned (box 3 or more).
+// curriculum guides). Which levels are open comes from the stratum's path (wings.js PATHS, DESIGN.md
+// §4.3): its steps are these levels, opened a few at a time (openSteps, below).
 // Strands are small bands a stratum gives one monster (Trollar's coins, Chompers' "which is
-// more?" in the Cellar): asked one floor a run, with their own levels.
+// more?" in the Cellar), asked on its floor, with their own levels. A band's levels are in its
+// path's order, so skipping ahead (tiers) climbs the path.
 const plain = (f) => !f.blank;
 const within = (n) => (f) => plain(f) && ((f.op === "+" && f.ans <= n) || (f.op === "-" && f.x <= n));
 const teen = (f) => plain(f) && ((f.op === "+" && (f.x === 10 || f.y === 10) && f.ans <= 20) || (f.op === "-" && f.x > 10 && f.x <= 20 && f.ans === 10));
+// A double or near double (8 + 8, 7 + 8; 16 − 8, 15 − 7): Doublet's, 1st grade.
+const nearDouble = (f) => plain(f) && ((f.op === "+" && Math.abs(f.x - f.y) <= 1) || (f.op === "-" && Math.abs(f.x - 2 * f.y) <= 1));
 // Crossing 10: the ones make more than a ten (8 + 5, 13 + 9), or taking away needs to break one
 // (13 − 4, 20 − 1). 9 + 1 and 13 + 7 only reach it.
 const crosses = (f) => (f.op === "+" ? (f.x % 10) + (f.y % 10) > 10 : f.x > 10 && f.y % 10 > f.x % 10);
@@ -56,20 +60,24 @@ export const BANDS = {
       { name: "10 and some more", has: any(teen, (f) => hidden(f) && f.x === 10) }
     ]
   },
-  // The Balance Hall.
+  // The Balance Hall, in the order of its path (wings.js PATHS): within 20, crossing 10, doubles,
+  // the equal sign, comparing, then tens.
   first: {
     label: "1st grade", grade: 1, hearts: 7, fluentMs: 4000,
     facts: () => facts().concat(balanceFacts(), firstHidden(), twoDigitFacts(), tfFacts()),
     levels: [
       // Within 10 and 10 and some more (10 + 6, 16 − 6) are the Cellar's: here, the rest of the
       // teens (13 + 4, 17 − 5; a teen take away a teen, 17 − 12, is left out to keep the level short).
-      // True or false (the Equal Twins, 1.OA.D.7) comes in with the level of its numbers, as the
-      // comparing and balancing sets do: to 10 here, to 20 with crossing 10, and fixing a false
-      // one with the missing numbers.
-      { name: "Within 20, not crossing 10", has: any((f) => within(20)(f) && !within(10)(f) && !teen(f) && !crosses(f) && !(f.op === "-" && f.y > 10), inSet("Compare to 10"), inSet("The other side"), inTF("tf10")) },
-      { name: "Crossing 10", has: any((f) => within(20)(f) && crosses(f), inSet("Compare sums"), inTF("tf20")) },
-      { name: "Missing numbers and the equal sign", has: any(hidden, inSet("Balance both sides"), inTF("fix10", "fix20")) },
-      { name: "Add and subtract tens", has: any(twoLevel("Add tens", "Subtract tens", "10 more", "10 less", "Add tens to a number"), inSet("Compare to 100")) }
+      { name: "Within 20, not crossing 10", has: (f) => within(20)(f) && !within(10)(f) && !teen(f) && !crosses(f) && !(f.op === "-" && f.y > 10) },
+      { name: "Crossing 10", has: (f) => within(20)(f) && crosses(f) && !nearDouble(f) },
+      // Doubles and near doubles (Doublet, 1.RA.B.1): 8 + 8, 16 − 8, 7 + 8, 15 − 7.
+      { name: "Doubles and near doubles", has: (f) => within(20)(f) && crosses(f) && nearDouble(f) },
+      // The equal sign (1.OA.D.7): true or false and fix it (the Equal Twins), balancing both
+      // sides, and missing numbers (Quizard).
+      { name: "The equal sign", has: any(hidden, inSet("The other side"), inSet("Balance both sides"), inTF("tf10", "tf20", "fix10", "fix20")) },
+      // Comparing with < = > (Chompers, 1.NBT.B.3): to 10, sums, then two-digit numbers.
+      { name: "Compare with < = >", has: any(inSet("Compare to 10"), inSet("Compare sums"), inSet("Compare to 100")) },
+      { name: "Add and subtract tens", has: twoLevel("Add tens", "Subtract tens", "10 more", "10 less", "Add tens to a number") }
     ]
   },
   // The Crystal Mines: two-digit ± within 100, adding and subtracting mixed, then regrouping,
@@ -90,39 +98,37 @@ export const BANDS = {
       { name: "Subtract within 1000, regrouping", has: twoLevel("Subtract and regroup within 1000") }
     ]
   },
-  // The Tables Tower: × and ÷ only, in the school's order, then the rest of 3rd grade.
+  // The Tables Tower: × and ÷ only, in the school's order (all of × before ÷, confirmed by the
+  // class), then the rest of 3rd grade, as its path goes.
   third: {
     label: "3rd grade", grade: 3, hearts: 5, fluentMs: 4000,
     facts: () => facts().concat(timesTens(), fractionFacts(), roundFacts(), rectFacts(), lineFacts(), fracCompareFacts()),
     levels: [
       { name: "× 0, 1, 2, 5 and 10", has: times([0, 1, 2, 5, 10]) },
-      { name: "÷ 1, 2, 5 and 10", has: divide([1, 2, 5, 10]) },
       { name: "× 3, 4 and 6", has: times([3, 4, 6]) },
-      { name: "÷ 3, 4 and 6", has: divide([3, 4, 6]) },
       { name: "× 7, 8 and 9", has: times([7, 8, 9]) },
+      { name: "÷ 1, 2, 5 and 10", has: divide([1, 2, 5, 10]) },
+      { name: "÷ 3, 4 and 6", has: divide([3, 4, 6]) },
       { name: "÷ 7, 8 and 9", has: divide([7, 8, 9]) },
       { name: "× tens", has: tens },
+      { name: "Rounding", has: is("≈") },
       // Fractions (3.NF.A): on a number line first (where's the dot, how many equal parts;
       // Halfling), then equal fractions, with the line from 0 to 2 (past 1, and 4/4 = 1) as
       // whole numbers as fractions.
       { name: "Fractions on a number line", has: onLine("where", "parts") },
       { name: "Equal fractions", has: any(is("/"), onLine("past1")) },
-      // Comparing fractions (3.NF.A.3d, a priority standard, so it's in the band and counts
-      // toward the 60%): Chompers visiting the Tower, and Halfling, on the < = > keys. The
-      // Tower's only comparisons.
+      // Comparing fractions (3.NF.A.3d, a priority standard): Chompers visiting the Tower, and
+      // Halfling, on the < = > keys. The Tower's only comparisons.
       { name: "Compare fractions", has: is("○") },
-      { name: "Rounding", has: is("≈") },
       { name: "Area and perimeter", has: is("▭") },
       { name: "× and ÷ 11 and 12", has: big }
     ]
   },
-  // Strands open their next level at half learned: they're asked one floor a run, so 70% kept
-  // Trollar on pennies for runs on end.
   // Coins in the Cellar (K): find the coin, and what each is worth.
-  coinsK: { label: "Coins", strand: true, unlock: 0.5, hearts: 7, fluentMs: 5000, facts: coinFacts, levels: COIN_LEVELS.slice(0, 2) },
+  coinsK: { label: "Coins", strand: true, hearts: 7, fluentMs: 5000, facts: coinFacts, levels: COIN_LEVELS.slice(0, 2) },
   // Counting coins in the Mines (2nd grade; 1st grade's counting comes along).
   // Then dollars (2.GM.D.12): bills alone, then bills and coins, typed as dollars and cents.
-  coins: { label: "Counting coins", strand: true, unlock: 0.5, hearts: 5, fluentMs: 5000, facts: () => coinFacts().concat(dollarFacts()),
+  coins: { label: "Counting coins", strand: true, hearts: 5, fluentMs: 5000, facts: () => coinFacts().concat(dollarFacts()),
     levels: COIN_LEVELS.slice(2).map((l) => ({ name: l.name, has: (f) => f.op === "¢" && !f.find && !COIN_LEVELS[1].has(f) && l.has(f) }))
       .concat(DOLLAR_GAME_LEVELS.map((l) => ({ name: l.name, has: (f) => f.op === "$" && f.set === l.set }))) },
   // The dot flash (K.NS.B.8): Pipsqueak in the Cellar. How many dots at a glance, on dice and
@@ -130,37 +136,37 @@ export const BANDS = {
   // dice: the band's facts, the same keys, within 10), the numbers after the dots, as the K
   // guide's subitizing leads into adding. A strand (like which is more), so it doesn't hold up
   // the Cellar's 60% and nobody's open levels change; fluent at 5 s.
-  flashK: { label: "Dot flash", strand: true, unlock: 0.5, hearts: 7, fluentMs: 5000,
+  flashK: { label: "Dot flash", strand: true, hearts: 7, fluentMs: 5000,
     facts: () => flashFacts().concat(facts().filter((f) => f.op === "+" && f.x >= 1 && f.x <= 6 && f.y >= 1 && f.y <= 6 && f.ans <= 10)),
     levels: FLASH_LEVELS.map((l) => ({ name: l.name, has: (f) => l.keys.includes(f.key) })).concat([{ name: "Dice sums", has: is("+") }]) },
   // Which is more (K): Chompers in the Cellar.
-  more: { label: "Which is more", strand: true, unlock: 0.5, hearts: 7, fluentMs: 4000, facts: moreFacts, levels: MORE_LEVELS },
+  more: { label: "Which is more", strand: true, hearts: 7, fluentMs: 4000, facts: moreFacts, levels: MORE_LEVELS },
   // Three numbers (1st grade): Triceraplus in the Hall, 4 + 3 + 6 with a ten to find. A second more
   // than the Hall's time, for reading three numbers.
-  three: { label: "Three numbers", strand: true, unlock: 0.5, hearts: 7, fluentMs: 5000, facts: threeFacts, levels: [{ name: "Three numbers", has: is("Σ") }] },
+  three: { label: "Three numbers", strand: true, hearts: 7, fluentMs: 5000, facts: threeFacts, levels: [{ name: "Three numbers", has: is("Σ") }] },
   // Comparing three-digit numbers (2nd grade, 2.NBT.A.4): Chompers in the Mines, "345 ○ 354".
-  cmpM: { label: "Compare to 1000", strand: true, unlock: 0.5, hearts: 5, fluentMs: 6000, facts: compare1000Facts, levels: [{ name: "Compare three-digit numbers", has: is("○") }] },
+  cmpM: { label: "Compare to 1000", strand: true, hearts: 5, fluentMs: 6000, facts: compare1000Facts, levels: [{ name: "Compare three-digit numbers", has: is("○") }] },
   // Adding up to four two-digit numbers (2nd grade, 2.NBT.B.7): Triceraplus visiting the Mines,
   // three numbers, then four. Reading and adding four numbers takes a while: 9 s.
-  sumsM: { label: "Up to four numbers", strand: true, unlock: 0.5, hearts: 5, fluentMs: 9000, facts: sumFacts, levels: SUM_LEVELS.map((l) => ({ name: l.name, has: (f) => f.op === "Σ" && f.set === l.n })) },
+  sumsM: { label: "Up to four numbers", strand: true, hearts: 5, fluentMs: 9000, facts: sumFacts, levels: SUM_LEVELS.map((l) => ({ name: l.name, has: (f) => f.op === "Σ" && f.set === l.n })) },
   // 3rd grade's fluency adding and subtracting within 1000 (3.NBT.A.2): Margot-Rythm visiting the
   // Tables Tower, which is otherwise × and ÷ only. The Mines' three-digit facts (the same keys,
   // so what was learned there counts here), adding, then subtracting.
-  addT: { label: "Add and subtract to 1000", strand: true, unlock: 0.5, hearts: 5, fluentMs: 6000, facts: twoDigitFacts,
+  addT: { label: "Add and subtract to 1000", strand: true, hearts: 5, fluentMs: 6000, facts: twoDigitFacts,
     levels: [{ name: "Add within 1000", has: twoLevel("Add within 1000", "Add and regroup within 1000") }, { name: "Subtract within 1000", has: twoLevel("Subtract within 1000", "Subtract and regroup within 1000") }] },
   // Arrays (2nd grade): Squaresquatch in the Mines, rows of dots added as equal rows.
-  arrays: { label: "Arrays", strand: true, unlock: 0.5, hearts: 5, fluentMs: 6000, facts: arrayFacts, levels: ARRAY_LEVELS },
+  arrays: { label: "Arrays", strand: true, hearts: 5, fluentMs: 6000, facts: arrayFacts, levels: ARRAY_LEVELS },
   // Telling time (Tick-Tockus, js/clock.js), a strand in each stratum it visits: hours and half
   // hours in the Hall (1st grade), 5 minutes in the Mines (2nd), the minute and elapsed time in
   // the Tower (3rd). Reading a clock takes longer than a sum, so a second or more extra.
-  timeH: { label: "Time: hours", strand: true, unlock: 0.5, hearts: 7, fluentMs: 6000, facts: clockFacts, levels: levelsOf(TIME_LEVELS, "hall") },
-  timeM: { label: "Time: 5 minutes", strand: true, unlock: 0.5, hearts: 5, fluentMs: 7000, facts: clockFacts, levels: levelsOf(TIME_LEVELS, "mines") },
-  timeT: { label: "Time: minutes", strand: true, unlock: 0.5, hearts: 5, fluentMs: 8000, facts: clockFacts, levels: levelsOf(TIME_LEVELS, "tower") },
+  timeH: { label: "Time: hours", strand: true, hearts: 7, fluentMs: 6000, facts: clockFacts, levels: levelsOf(TIME_LEVELS, "hall") },
+  timeM: { label: "Time: 5 minutes", strand: true, hearts: 5, fluentMs: 7000, facts: clockFacts, levels: levelsOf(TIME_LEVELS, "mines") },
+  timeT: { label: "Time: minutes", strand: true, hearts: 5, fluentMs: 8000, facts: clockFacts, levels: levelsOf(TIME_LEVELS, "tower") },
   // What comes next (Slimelipsis, js/patterns.js): counting on and back in the Cellar (K), to 120
   // and by 5s in the Hall (1st), by 2s and 100s, what's missing, and odd and even in the Mines (2nd).
-  patK: { label: "Patterns: count on", strand: true, unlock: 0.5, hearts: 7, fluentMs: 5000, facts: patternFacts, levels: levelsOf(PATTERN_GAME_LEVELS, "cellar") },
-  patH: { label: "Patterns: to 120", strand: true, unlock: 0.5, hearts: 7, fluentMs: 5000, facts: patternFacts, levels: levelsOf(PATTERN_GAME_LEVELS, "hall") },
-  patM: { label: "Patterns: skip counting", strand: true, unlock: 0.5, hearts: 5, fluentMs: 6000, facts: patternFacts, levels: levelsOf(PATTERN_GAME_LEVELS, "mines") },
+  patK: { label: "Patterns: count on", strand: true, hearts: 7, fluentMs: 5000, facts: patternFacts, levels: levelsOf(PATTERN_GAME_LEVELS, "cellar", ["ones", "back", "tens"]) },
+  patH: { label: "Patterns: to 120", strand: true, hearts: 7, fluentMs: 5000, facts: patternFacts, levels: levelsOf(PATTERN_GAME_LEVELS, "hall") },
+  patM: { label: "Patterns: skip counting", strand: true, hearts: 5, fluentMs: 6000, facts: patternFacts, levels: levelsOf(PATTERN_GAME_LEVELS, "mines", ["hundreds", "middle", "twos", "oddeven20", "oddeven100"]) },
   // Shapes (Polly-Gon, js/shapes.js), a strand in each stratum: drawing and naming circles,
   // squares, triangles, rectangles and hexagons, their sides and corners, in the Cellar (K);
   // sides and corners whatever the shape, then halves and fourths, in the Hall (1st); sides,
@@ -168,10 +174,10 @@ export const BANDS = {
   // quadrilaterals and unit fractions in the Tower (3rd, strict: its square and rectangle are told
   // apart more closely). Drawing a shape takes longer than tapping a number: 6 s (7 s in the
   // Mines, where the squares in all are counted by rows).
-  shapesK: { label: "Shapes", strand: true, unlock: 0.5, hearts: 7, fluentMs: 6000, facts: shapeFacts, levels: shapeLevels("shapesK") },
-  shapesH: { label: "Shapes: halves and fourths", strand: true, unlock: 0.5, hearts: 7, fluentMs: 6000, facts: shapeFacts, levels: shapeLevels("shapesH") },
-  shapesM: { label: "Shapes: equal shares", strand: true, unlock: 0.5, hearts: 5, fluentMs: 7000, facts: shapeFacts, levels: shapeLevels("shapesM") },
-  shapesT: { label: "Shapes: quadrilaterals", strand: true, unlock: 0.5, hearts: 5, fluentMs: 6000, strict: true, facts: shapeFacts, levels: shapeLevels("shapesT") }
+  shapesK: { label: "Shapes", strand: true, hearts: 7, fluentMs: 6000, facts: shapeFacts, levels: shapeLevels("shapesK") },
+  shapesH: { label: "Shapes: halves and fourths", strand: true, hearts: 7, fluentMs: 6000, facts: shapeFacts, levels: shapeLevels("shapesH") },
+  shapesM: { label: "Shapes: equal shares", strand: true, hearts: 5, fluentMs: 7000, facts: shapeFacts, levels: shapeLevels("shapesM") },
+  shapesT: { label: "Shapes: quadrilaterals", strand: true, hearts: 5, fluentMs: 6000, strict: true, facts: shapeFacts, levels: shapeLevels("shapesT") }
 };
 // A shape strand's levels (shapes.js SHAPE_STRANDS), each holding its keys.
 function shapeLevels(strand) { return SHAPE_STRANDS[strand].map((l) => ({ name: l.name, has: (f) => l.keys.includes(f.key) })); }
@@ -186,9 +192,15 @@ export function drawHit(bandKey) {
   return (hitCache[bandKey] = Math.max(1, Math.round(counts.reduce((t, f) => t + f.ans, 0) / (counts.length || 1))));
 }
 // A strand's levels from a module's level list (TIME_LEVELS, PATTERN_GAME_LEVELS): the ones for
-// one stratum, each holding the facts of its set.
-function levelsOf(list, stratum) { return list.filter((l) => l.stratum === stratum).map((l) => ({ name: l.name, has: (f) => f.set === l.id })); }
-export const UNLOCK = 0.7;
+// one stratum, each holding the facts of its set; in `order` (their ids) when the path takes them
+// in another order than the list.
+function levelsOf(list, stratum, order) {
+  const ls = list.filter((l) => l.stratum === stratum);
+  if (order) ls.sort((a, b) => order.indexOf(a.id) - order.indexOf(b.id));
+  return ls.map((l) => ({ name: l.name, has: (f) => f.set === l.id }));
+}
+// A tier counts as known for skipping ahead (frontier) at this share learned.
+export const TIER_KNOWN = 0.7;
 const BOX_MAX = 4;
 // Review spacing by box: a box-3 fact comes back after 10 minutes, box 4 after a day.
 const DUE_MS = { 3: 10 * 60e3, 4: 24 * 3600e3 };
@@ -231,18 +243,67 @@ export function pool(bandKey) {
 export function learned(rec) { return !!rec && rec.b >= 3; }
 export function mastered(rec, fluentMs) { return !!rec && rec.b >= BOX_MAX && rec.ms > 0 && rec.ms < fluentMs; }
 
-// The highest open level: each level opens once 70% of the one before is learned.
-export function openLevel(bandKey, recs) {
-  const band = BANDS[bandKey], p = pool(bandKey);
-  let L = 0;
-  while (L < band.levels.length - 1) {
-    const here = p.filter((f) => f.level === L);
-    const done = here.filter((f) => learned(recs[f.key])).length;
-    if (!here.length || done / here.length < (band.unlock || UNLOCK)) break;
-    L++;
-  }
-  return L;
+/* ---------- paths, the window and chapters (DESIGN.md §4.3) ----------
+   A stratum's path (wings.js PATHS) is its steps in teaching order. A step is a few levels of
+   bands or strands ({ parts: [[band, level]] }), so fact keys and records never change, with flags:
+   priority (opens the next stratum), ongoing (open from the start and kept open: counting,
+   comparing), review (an earlier grade's facts, mixed in as reviews, never new), and the chapter
+   it's in. About WINDOW new steps are open at once; the next one joins when the oldest new one is
+   JOIN_AT learned. A step past the player's chapter never opens: chapters open by beating the mega
+   bosses (wings.js). */
+export const WINDOW = 3, JOIN_AT = 0.4;
+// A step's facts, each key once: [{ key, op, ans, level, band }].
+const stepCache = new WeakMap();
+export function stepFacts(step) {
+  if (stepCache.has(step)) return stepCache.get(step);
+  const seen = new Set(), out = [];
+  for (const [band, level] of step.parts) for (const f of pool(band)) if (f.level === level && !seen.has(f.key)) { seen.add(f.key); out.push(Object.assign({ band }, f)); }
+  stepCache.set(step, out);
+  return out;
 }
+// The share of a step's facts learned (box 3+).
+export function stepShare(step, recs) {
+  const fs = stepFacts(step);
+  return fs.length ? fs.filter((f) => learned(recs[f.key])).length / fs.length : 1;
+}
+// The steps open to a player: { open: [step indexes], window: [the new steps, oldest first],
+// joined: how many of the path's new steps have joined so far }.
+// Ongoing and review steps are open from the start. The rest join in order, WINDOW at first; then
+// each time the oldest new one is JOIN_AT learned it stops being new and the next joins. None
+// past `chapter`. `had` (saved): the most that ever joined, so a step stays open after a miss
+// takes a fact back out of learned.
+export function openSteps(path, recs, chapter = 1, had = 0) {
+  const open = [], win = [];
+  path.forEach((s, i) => { if ((s.ongoing || s.review) && s.chapter <= chapter) open.push(i); });
+  const main = path.map((_, i) => i).filter((i) => !path[i].ongoing && !path[i].review);
+  let k = 0;
+  while (k < main.length && path[main[k]].chapter <= chapter) {
+    if (win.length < WINDOW || k < had) { win.push(main[k]); open.push(main[k]); k++; }
+    else if (stepShare(path[win[0]], recs) >= JOIN_AT) win.shift();
+    else break;
+  }
+  while (win.length && stepShare(path[win[0]], recs) >= JOIN_AT) win.shift();
+  return { open: open.sort((a, b) => a - b), window: win, joined: k };
+}
+// How many chapters a path has.
+export const chaptersOf = (path) => Math.max(...path.map((s) => s.chapter));
+// A band's levels open in these steps: { levels: [indexes], review: [the ones open only as a
+// review step's, whose facts are never new] }.
+export function openLevels(path, open, band) {
+  const levels = new Set(), taught = new Set();
+  for (const i of open) for (const [b, L] of path[i].parts) if (b === band) { levels.add(L); if (!path[i].review) taught.add(L); }
+  return { levels: [...levels].sort((a, b) => a - b), review: [...levels].filter((L) => !taught.has(L)) };
+}
+// The last level of a band the player's chapter reaches (probes and skipping ahead go no further),
+// or -1.
+export function reachOf(path, chapter, band) {
+  let top = -1;
+  for (const s of path) if (s.chapter <= chapter) for (const [b, L] of s.parts) if (b === band) top = Math.max(top, L);
+  return top;
+}
+// Every band a path asks.
+export const pathBands = (path) => [...new Set(path.flatMap((s) => s.parts.map(([b]) => b)))];
+const allLevels = (bandKey) => BANDS[bandKey].levels.map((_, i) => i);
 
 // How much help a fact gets (DESIGN.md §5.3): "show" the model automatically for a new fact,
 // a hint "button" while learning, "none" once it's in review.
@@ -305,11 +366,20 @@ export function tiers(bandKey) {
   return (tierCache[bandKey] = out);
 }
 export const tierOf = (bandKey, key) => tiers(bandKey).findIndex((t) => t.includes(key));
-// The first tier not yet mostly learned (UNLOCK of it).
+// The first tier not yet mostly learned (TIER_KNOWN of it).
 export function frontier(bandKey, recs) {
   const t = tiers(bandKey);
-  for (let i = 0; i < t.length; i++) if (t[i].filter((k) => learned(recs[k])).length / t[i].length < UNLOCK) return i;
+  for (let i = 0; i < t.length; i++) if (t[i].filter((k) => learned(recs[k])).length / t[i].length < TIER_KNOWN) return i;
   return t.length;
+}
+// How many tiers lie in levels up to `reach` (all of them when it isn't given).
+function tiersTo(bandKey, reach) {
+  const t = tiers(bandKey);
+  if (reach == null) return t.length;
+  const lv = (k) => pool(bandKey).find((f) => f.key === k).level;
+  let n = 0;
+  while (n < t.length && lv(t[n][0]) <= reach) n++;
+  return n;
 }
 // A probe: a fact not learned yet from `leap` tiers above the frontier (1 by default; the top
 // tier at most), or null when there's none.
@@ -329,10 +399,12 @@ export function notRecent(list, recent, keyOf = (f) => f.key) {
   }
   return list;
 }
-export function probeKey(bandKey, recs, rnd, recent, avoidAns, leap, asks) {
-  const t = tiers(bandKey), fr = frontier(bandKey, recs);
-  if (fr + 1 >= t.length) return null;
-  const i = Math.min(t.length - 1, fr + Math.max(1, leap || 1));
+// reach: the last level the player's chapter reaches (reachOf): probes go no further, so skipping
+// ahead runs a fluent player along the path, but not past a mega boss.
+export function probeKey(bandKey, recs, rnd, recent, avoidAns, leap, asks, reach) {
+  const t = tiers(bandKey), fr = frontier(bandKey, recs), n = tiersTo(bandKey, reach);
+  if (fr + 1 >= n) return null;
+  const i = Math.min(n - 1, fr + Math.max(1, leap || 1));
   const factAt = (k) => pool(bandKey).find((x) => x.key === k) || {};
   const ansOf = (k) => { const f = factAt(k); return f.op + " " + f.ans; };
   let fresh = notRecent(t[i].filter((k) => !learned(recs[k]) && (!asks || asks(factAt(k).op, k))), recent, (k) => k);
@@ -356,14 +428,17 @@ export function skipTo(bandKey, recs, upto, now, fluentMs) {
 // or null, asks: a test on a fact (its operation and key) for the kinds of problem the monster asks at all
 // (traits.js asks: Chompers only compares), op: the monster's operation, preferred 70% of the
 // time when it has facts here, like: a test on a key for facts the monster asks more often (a
-// trait), also 70% }.
+// trait), also 70%; open: the band's open levels (openLevels, every level when not given);
+// review: those of them open only as reviews (never new); reviews: facts from other bands'
+// review steps (stepFacts: the Hall's review of the Cellar), asked only once seen }.
 // About 60% learning facts (seen, box 0–2, weighted to box 0 and the longest unseen), 25%
-// review facts that are due, 15% new ones (from the newest open level first).
+// review facts that are due, 15% new ones (from the first open level that has any).
 export function choose(bandKey, recs, opts) {
   const rnd = opts.rnd || Math.random, now = opts.now, recent = opts.recent || [];
   if (opts.retry) return opts.retry;
-  const L = openLevel(bandKey, recs);
-  let open = notRecent(asked(bandKey, L, opts.asks), recent);
+  const seen = (f) => recs[f.key] && recs[f.key].n;
+  const extra = (opts.reviews || []).filter((f) => seen(f) && (!opts.asks || opts.asks(f.op, f.key)));
+  let open = notRecent(asked(bandKey, recs, opts.open, opts.asks, opts.review).concat(extra), recent);
   // Not the same kind of problem with the same answer as the last couple (opts.avoidAns, as
   // "op ans" like "- 10"), when there's anything else: the teen subtraction facts (17 − 7,
   // 15 − 5, 12 − 2) all equal 10 and came up in a row. A different kind (3 + 7) is fine.
@@ -405,9 +480,10 @@ export function choose(bandKey, recs, opts) {
   let roll = rnd() * groups.reduce((s, [, w]) => s + w, 0), pick = groups[0][0];
   for (const [g, w] of groups) { if (roll < w) { pick = g; break; } roll -= w; }
   if (pick === fresh) {
-    // From the newest level.
-    const newest = Math.max(...fresh.map((f) => f.level));
-    const top = fresh.filter((f) => f.level === newest);
+    // From the first level that has new ones: a step's levels, and the window's steps in one band,
+    // arrive in the path's order (the variety comes from the monsters, each asking its own kind).
+    const first = Math.min(...fresh.map((f) => f.level));
+    const top = fresh.filter((f) => f.level === first);
     return top[Math.floor(rnd() * top.length)].key;
   }
   if (pick === learning) {
@@ -427,8 +503,8 @@ export function spellKey(bandKey, recs, opts) {
   // Spells are a treat, not practice: never one that's come up lately (the fight's recent
   // problems, and opts.spells, the last few spells across runs). With nothing else left, no
   // spell: a stratum with few one-digit answers (the Mines' 76 − 73) kept casting the same one.
-  const rnd = opts.rnd || Math.random, L = openLevel(bandKey, recs), skip = (opts.recent || []).concat(opts.spells || []);
-  let ok = asked(bandKey, L, opts.asks).filter((f) => "+-×÷".includes(f.key[0]) && f.ans >= 0 && f.ans <= 9 && learned(recs[f.key]) && !skip.includes(f.key));
+  const rnd = opts.rnd || Math.random, skip = (opts.recent || []).concat(opts.spells || []);
+  let ok = asked(bandKey, recs, opts.open, opts.asks, opts.review).filter((f) => "+-×÷".includes(f.key[0]) && f.ans >= 0 && f.ans <= 9 && learned(recs[f.key]) && !skip.includes(f.key));
   const varied = ok.filter((f) => !(opts.avoidAns || []).includes(f.op + " " + f.ans));
   if (varied.length) ok = varied;
   // The monster's operation, when that still leaves a few to vary between.
@@ -440,9 +516,9 @@ export function spellKey(bandKey, recs, opts) {
 // Monster HP (DESIGN.md §5.5): the average answer of what this player is actually being asked
 // (the open levels, with the monster's operation preferred) × its hits. app.js scales it by depth.
 // A few big answers (rounding to 100, 7 × 90) would make every fight long, so each answer counts
-// at most 3 times the middle one.
-export function monsterHP(m, bandKey, recs) {
-  const L = openLevel(bandKey, recs), open = asked(bandKey, L, asksOf(m));
+// at most 3 times the middle one. levels: the band's open levels (openLevels; all when not given).
+export function monsterHP(m, bandKey, recs, levels) {
+  const open = asked(bandKey, recs, levels, asksOf(m));
   const mine = open.filter((f) => f.op === m.op);
   // A monster that hides a number (m.blank, Quizard) is hit by the hidden number: on average,
   // the mean of the fact's two numbers.
@@ -452,11 +528,14 @@ export function monsterHP(m, bandKey, recs) {
   const mean = mine.length ? avg(mine) * 0.7 + avg(open) * 0.3 : avg(open);
   return Math.max(10, Math.round(mean * m.hits));
 }
-// The facts open to a monster: the open levels' facts of the kinds it asks. With none open (the
-// Equal Twins before any balancing is), its kind from the lowest level that has it; with none at
-// all, everything open.
-function asked(bandKey, L, asks) {
-  const open = pool(bandKey).filter((f) => f.level <= L);
+// The facts open to a monster: the open levels' facts of the kinds it asks (a review level's only
+// once seen: never new). With none open (a monster put on a floor for testing, ?monster=), its
+// kind from the lowest level that has it; with none at all, everything open.
+function asked(bandKey, recs, levels, asks, review) {
+  const lv = new Set(levels || allLevels(bandKey)), rv = new Set(review || []);
+  let open = pool(bandKey).filter((f) => lv.has(f.level) && (!rv.has(f.level) || (recs[f.key] && recs[f.key].n)));
+  if (!open.length) open = pool(bandKey).filter((f) => lv.has(f.level));
+  if (!open.length) open = pool(bandKey).filter((f) => f.level === 0);
   if (!asks) return open;
   const mine = open.filter((f) => asks(f.op, f.key));
   if (mine.length) return mine;

@@ -4,8 +4,8 @@
 // depth and floor, crits after 3 in a row), and prints how many runs it takes to learn 60% of the
 // stratum (which, with the boss beaten, opens the next one). Target: about 5 for a fluent player;
 // a learner should never skip. Run: node scripts/balance-sim.mjs [stratum]
-import { BANDS, pool, choose, factOf, record, probeKey, tierOf, skipTo, SKIP_PROBES, SKIP_WINDOW, MAX_LEAP, fluentTime, learned, monsterHP, openLevel, RECENT, drawHit } from "../js/learn.js";
-import { WINGS, depthHP, depthScale, runFloors, bandOf, learnedShare, OPEN_AT } from "../js/wings.js";
+import { BANDS, pool, choose, factOf, record, probeKey, tierOf, skipTo, SKIP_PROBES, SKIP_WINDOW, MAX_LEAP, fluentTime, learned, monsterHP, RECENT, drawHit, openLevels, reachOf } from "../js/learn.js";
+import { WINGS, depthHP, depthScale, runFloors, bandOf, learnedShare, OPEN_AT, PATHS, stepsOpen } from "../js/wings.js";
 import { asks } from "../js/traits.js";
 
 function trial(wing, seed, { slip = 0.05, think = [1.2, 2.6], tap = [0.5, 0.9], missing = 1.0 } = {}) {
@@ -17,12 +17,13 @@ function trial(wing, seed, { slip = 0.05, think = [1.2, 2.6], tap = [0.5, 0.9], 
     let streak = 0;
     const floors = runFloors(wing, { captain: 5, rescued: [] }, rnd, run);
     floors.forEach((m, i) => {
-      const bk = bandOf(wing, m), B = BANDS[bk].fluentMs, f = flowOf(bk), kinds = asks(m);
-      let hp = Math.round(monsterHP(m, bk, recs) * depthScale(i, floors.length) * depthHP(run));
+      const bk = bandOf(wing, m), B = BANDS[bk].fluentMs, f = flowOf(bk), kinds = asks(m), ch = 1 + Math.floor((run - 1) / 5), prog = { [wing.id]: { megas: ch - 1 } };
+      const lv = () => openLevels(PATHS[wing.id], stepsOpen(wing, prog, recs).open, bk);
+      let hp = Math.round(monsterHP(m, bk, recs, lv().levels) * depthScale(i, floors.length) * depthHP(run));
       for (let guard = 0; hp > 0 && guard < 80; guard++) {
         const op = m.op === "mix" || bk !== wing.band ? null : m.op;
-        const probe = f.on && f.cool <= 0 ? probeKey(bk, recs, rnd, recent, avoid, f.leap, kinds) : null;
-        const key = probe || choose(bk, recs, { now, rnd, recent, op, asks: kinds, avoidAns: avoid, depth: run });
+        const probe = f.on && f.cool <= 0 ? probeKey(bk, recs, rnd, recent, avoid, f.leap, kinds, reachOf(PATHS[wing.id], ch, bk)) : null;
+        const o = lv(), key = probe || choose(bk, recs, { now, rnd, recent, op, asks: kinds, avoidAns: avoid, depth: run, open: o.levels, review: o.review });
         const fact = factOf(key, rnd), digits = String(fact.ans).length, hid = m.blank || fact.blank;
         const ms = 1000 * (think[0] + rnd() * (think[1] - think[0]) + (hid ? missing : 0) + digits * (tap[0] + rnd() * (tap[1] - tap[0])) + 0.3);
         const ok = rnd() > slip, limit = fluentTime(B, fact.sym || fact.ans), fluent = ok && ms < limit;
@@ -40,9 +41,9 @@ function trial(wing, seed, { slip = 0.05, think = [1.2, 2.6], tap = [0.5, 0.9], 
         else streak = 0;
       }
     });
-    if (learnedShare(wing, recs) >= OPEN_AT) return { run, level: openLevel(wing.band, recs) };
+    if (learnedShare(wing, recs) >= OPEN_AT) return { run };
   }
-  return { run: 99, level: openLevel(wing.band, recs) };
+  return { run: 99 };
 }
 const PLAYERS = {
   "fluent": {},

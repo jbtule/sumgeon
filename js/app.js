@@ -3,12 +3,12 @@
 import { MON, svg, LOOKS, lookOf, allLooks, CHOMP_SHUT } from "./monsters.js";
 import { chompPose, morePose, mouthOf, SNAP, FLIP_MS, SNAP_MS, EAT_MS } from "./chomp.js";
 import { spokenProblem, spokenFact } from "./problems.js";
-import { BANDS, choose, factOf, record as recordAnswer, helpFor, openLevel, monsterHP, probeKey, tierOf, skipTo, SKIP_PROBES, SKIP_WINDOW, MAX_LEAP, fluentTime, spellKey, RECENT, pool, drawHit } from "./learn.js";
+import { BANDS, choose, factOf, record as recordAnswer, helpFor, monsterHP, probeKey, tierOf, skipTo, SKIP_PROBES, SKIP_WINDOW, MAX_LEAP, fluentTime, spellKey, RECENT, pool, drawHit, openLevels, reachOf, chaptersOf, pathBands } from "./learn.js";
 import { countSvg, readShape, judgeShape, cleanFor, squawkBody, isDrawKey, SHAPE_LINE, SHAPE_CODE, article } from "./shapes.js";
 import { hintFor, STRATEGIES } from "./hints.js";
 import { openStore, displayName } from "./store.js";
 import { PHRASE, monsterName, monsterCleared, monsterWon, heroJoins, heroCursed, heroRescue, heroAlmost, heroHelps, traitLine, BARK, wingCleared, wingOpened, depthLine, DEPTH_MAX_SPOKEN, reversedLine, howToWriteLine, quipLine, squawk } from "./lines.js";
-import { WINGS, wingOf, runFloors, openWings, toOpen, floorStars, wingStars, depthScale, depthHP, deepest, MAP_DEPTHS, GRADES, gradeLabel, gradeName, withGrade, bandOf, gradeBand, OLD_BANDS } from "./wings.js";
+import { WINGS, wingOf, runFloors, openWings, toOpen, floorStars, wingStars, depthScale, depthHP, deepest, MAP_DEPTHS, GRADES, gradeLabel, gradeName, withGrade, bandOf, gradeBand, OLD_BANDS, PATHS, chapterOf, stepsOpen } from "./wings.js";
 import { missingOf, pickBlank, filled, spokenMissing, MISSING_SHARE, canHide } from "./missing.js";
 import { rectSvg } from "./third.js";
 import { arraySvg } from "./arrays.js";
@@ -469,6 +469,17 @@ function timePicture(p) {
 const slimeRow = (p) => patternSvg(p, { typed: G.input, hops: G.hinted ? patternFactHint(p, false).hops : null, label: p.q });
 // The facts a monster asks: its strand in this stratum (Trollar's coins) or the stratum's band.
 const strandOf = (m) => bandOf(wing(), m);
+// The stratum's path (wings.js PATHS, DESIGN.md §4.3): the chapter reached (?chapter=N tries
+// another, for testing; not saved), the steps open now, and a band's open levels in them.
+const CHAPTER_AT = Number(new URLSearchParams(location.search).get("chapter")) || 0;
+const chapterNow = (w = wing()) => (CHAPTER_AT ? Math.min(CHAPTER_AT, chaptersOf(PATHS[w.id])) : chapterOf(w, progress));
+const stepsNow = (w = wing()) => stepsOpen(w, progress, recs, chapterNow(w));
+const levelsFor = (bk, w = wing()) => openLevels(PATHS[w.id], stepsNow(w).open, bk);
+// A step that joined stays open: the most that ever joined is saved with the stratum's progress.
+function keepSteps(w = wing()) {
+  const n = stepsNow(w).joined, p = progress[w.id] || (progress[w.id] = { boss: 0, best: 0 });
+  if (n > (p.steps || 0)) { p.steps = n; store.player(PID).set("wings", progress); }
+}
 // A problem with its answer, for the miss message and the Oops card: "3 + 4 = 7", "3 + 4 = 7"
 // for 3 + □ = 7, and "10 + 5 + 1 = 16¢" for coins (just "16¢" for one coin, "2 dimes" for
 // finding them).
@@ -548,8 +559,9 @@ function newRun(depth) {
 // ones every stratum needs, its monsters' lines, and its band's and strands' problems up to the
 // level after the newest open one (a probe or a skip can reach it). Other strata's are let go.
 function spritesFor(w) {
-  const upto = {};
-  [w.band].concat(Object.values(w.strands || {})).forEach((b) => { upto[b] = openLevel(b, recs) + 1; });
+  // Each band's levels as far as the chapter reaches: a probe or a skip can reach any of them.
+  const upto = {}, ch = chapterNow(w);
+  pathBands(PATHS[w.id]).forEach((b) => { upto[b] = reachOf(PATHS[w.id], ch, b); });
   needSprites(ALWAYS.concat(runSprites(w, upto)));
   voicePlan();
 }
@@ -581,7 +593,7 @@ function loadMonster(i, quiet) {
   G.floor = i;
   roarSoon();
   // Deeper floors are tougher: about 80% of the usual HP on floor 1, up to 130% for the boss.
-  G.max = G.hp = Math.round(monsterHP(m, strandOf(m), recs) * depthScale(i, G.floors.length) * depthHP(G.depth));
+  G.max = G.hp = Math.round(monsterHP(m, strandOf(m), recs, levelsFor(strandOf(m)).levels) * depthScale(i, G.floors.length) * depthHP(G.depth));
   const el = $("mon");
   el.className = "mon";
   el.innerHTML = monsterArt(m);
@@ -624,17 +636,19 @@ function newProblem() {
   // never asked, and the shape strands' counting problems carry on (shapes.js keeps drawing under
   // half of every level, so each can still open the next).
   const bk = strandOf(m), f = flowOf(bk), avoidAns = G.recentAns || [], op = m.op === "mix" || bk !== st.band ? null : m.op, kinds = drawable(asks(m));
+  // What's open (the path's window, DESIGN.md §4.3): this band's levels in the open steps.
+  const lv = levelsFor(bk);
   // Spell casting: about 1 problem in 6 is drawn as a sigil instead of typed (touch screens;
   // ?spells for every one): a fact already learned with a one-digit answer. It's picked before
   // probing, since a fluent player is probing nearly every problem and would never get one.
   const spellTurn = !due && !m.blank && canSpell() && (SPELLS_ALWAYS || Math.random() < SPELL_SHARE);
-  const spell = spellTurn ? spellKey(bk, recs, { recent: G.recent, spells: G.spells, avoidAns, op, asks: kinds }) : null;
+  const spell = spellTurn ? spellKey(bk, recs, { recent: G.recent, spells: G.spells, avoidAns, op, asks: kinds, open: lv.levels, review: lv.review }) : null;
   // The last few spells, across runs while the game is open, so the same one isn't cast fight after fight.
   if (spell) G.spells = [spell].concat(G.spells || []).slice(0, SPELL_MEMORY);
-  const probe = !due && !spell && f.on && f.cool <= 0 ? probeKey(bk, recs, null, G.recent, avoidAns, f.leap, kinds) : null;
+  const probe = !due && !spell && f.on && f.cool <= 0 ? probeKey(bk, recs, null, G.recent, avoidAns, f.leap, kinds, reachOf(PATHS[wing().id], chapterNow(), bk)) : null;
   // ?fact=<key> (URL-encoded, "%E2%8C%9At3%3A30" for ⌚t3:30) makes the first problem that fact, for testing.
   const forced = FACT_AT && !G.solved && !G.tries ? FACT_AT : null;
-  const key = forced || spell || probe || choose(bk, recs, { now: Date.now(), recent: G.recent, retry: due ? due.key : null, op, asks: kinds, like: prefers(m), depth: G.depth, avoidAns,
+  const key = forced || spell || probe || choose(bk, recs, { now: Date.now(), recent: G.recent, retry: due ? due.key : null, op, asks: kinds, like: prefers(m), depth: G.depth, avoidAns, open: lv.levels, review: lv.review,
     // The captain's digit: held back in the first fight, then about a third of problems lean to it
     // until the captain's first moment has happened (captainLean).
     digit: team.captain, digitShare: captainLean() ? CAPTAIN_BIAS : 0, avoidDigitShare: firstFight() ? CAPTAIN_HOLD : 0 });
@@ -932,7 +946,7 @@ function learnFrom(ok) {
   const bk = strandOf(G.floors[G.floor]), b = BANDS[bk], key = G.cur.key, ms = performance.now() - G.t0;
   // Fluent: right, unhinted and quick, with a second more for each extra digit to tap.
   const limit = fluentTime(b.fluentMs, G.cur.sym || G.cur.ans);
-  const before = openLevel(bk, recs), fluent = ok && !G.hinted && ms < limit, f = flowOf(bk);
+  const before = stepsNow().open, fluent = ok && !G.hinted && ms < limit, f = flowOf(bk);
   recs[key] = recordAnswer(recs[key], { ok, ms, hinted: G.hinted, now: Date.now(), fluentMs: limit });
   // Skipping ahead: SKIP_PROBES fluent of the last SKIP_WINDOW probes, and everything below the
   // probe's tier is known. Two slips in that window pause probing for a few problems.
@@ -947,10 +961,11 @@ function learnFrom(ok) {
   if (!fluent) G.floorSlow = true; // the "all fast" star (wings.js floorStars)
   f.cool--;
   store.player(PID).set("facts", recs);
-  const after = openLevel(bk, recs);
-  if (after > before) spritesFor(wing()); // the next level's problems come into reach
+  // A step joins the path's window (DESIGN.md §4.3) when the oldest new one is partly learned.
+  const after = stepsNow().open, joined = after.filter((i) => !before.includes(i));
+  if (joined.length) keepSteps();
   if (skipped) { say("p", PHRASE.skip); return "Skipping ahead! You already know these."; }
-  if (after > before) { say("p", BARK.level); return `New level: ${b.levels[after].name}!`; }
+  if (joined.length) { say("p", BARK.level); return `New level: ${PATHS[wing().id][joined[0]].name}!`; }
   return null;
 }
 
@@ -1682,10 +1697,11 @@ function setGrade(g) {
 function wireGrades(after) {
   $("card").querySelectorAll(".gpick").forEach((b) => b.onclick = () => { setGrade(Number(b.dataset.g)); after(); });
 }
-// "Level 2 of 4: Within 10", from the player's own fact records.
+// "Chapter 1 of 2: Within 10, Coins", the path's new steps open now (DESIGN.md §4.3), from the
+// player's own fact records.
 function levelLine() {
-  const L = openLevel(st.band, recs);
-  return `Level ${L + 1} of ${band().levels.length}: ${band().levels[L].name}`;
+  const w = wing(), path = PATHS[w.id], s = stepsNow(w), now = (s.window.length ? s.window : s.open.slice(-1)).map((i) => path[i].name);
+  return `Chapter ${chapterNow(w)} of ${chaptersOf(path)}: ${now.join(", ")}`;
 }
 // A stratum's depths on the map, as a shaft going down: depths cleared (filled), the deepest
 // reached ("you are here"), and the ones still below. It starts at MAP_DEPTHS rows and grows as
@@ -2503,8 +2519,8 @@ const drawable = (kinds) => (canSpell() ? kinds : (o, key) => kinds(o, key) && !
 // A counting problem in place of a drawing: the shape's own sides or corners when its strand has
 // them open, else any counting problem open there.
 function countFor(p, bk) {
-  const code = Object.keys(SHAPE_CODE).find((c) => SHAPE_CODE[c] === p.shape), L = openLevel(bk, recs);
-  const counts = pool(bk).filter((f) => f.op === "◇" && !isDrawKey(f.key)), open = counts.filter((f) => f.level <= L);
+  const code = Object.keys(SHAPE_CODE).find((c) => SHAPE_CODE[c] === p.shape), lv = levelsFor(bk).levels;
+  const counts = pool(bk).filter((f) => f.op === "◇" && !isDrawKey(f.key)), open = counts.filter((f) => lv.includes(f.level));
   const own = open.filter((f) => f.key === "◇sides:" + code || f.key === "◇corners:" + code);
   const list = own.length ? own : open.length ? open : counts.length ? counts : pool("shapesK").filter((f) => !isDrawKey(f.key));
   return list[Math.floor(Math.random() * list.length)].key;
@@ -2631,6 +2647,10 @@ document.addEventListener("keydown", (e) => {
   // ? opens the hint, like tapping 💡, when this problem has one.
   else if (e.key === "?") { if (!$("hintBtn").hidden) { e.preventDefault(); $("hintBtn").click(); } }
 });
+
+// ?debug lets a test script read the game's state (window.sumgeonState()): the problem, the floor,
+// the open steps. For testing only; nothing reads it otherwise.
+if (new URLSearchParams(location.search).has("debug")) window.sumgeonState = () => ({ G, steps: stepsNow(), chapter: chapterNow(), progress });
 
 loadPlayer();
 newRun();
