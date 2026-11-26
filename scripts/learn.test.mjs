@@ -30,7 +30,7 @@ for (const band of Object.keys(BANDS)) {
 const names = (b) => BANDS[b].levels.map((l) => l.name);
 const at = (b, L) => pool(b).filter((p) => p.level === L).map((p) => factOf(p.key, () => 0.9));
 assert.deepEqual(names("kinder"), ["Within 5, with zero", "Within 10", "Make 10 and number bonds", "10 and some more"]);
-assert.deepEqual(names("first"), ["Within 20, not crossing 10", "Crossing 10", "Doubles and near doubles", "The equal sign", "Compare with < = >", "Add and subtract tens"]);
+assert.deepEqual(names("first"), ["Within 20, not crossing 10", "Crossing 10", "Doubles and near doubles", "The equal sign", "Compare with < = >", "Add and subtract tens", "Add two-digit numbers", "Add two-digit numbers, regrouping"]);
 assert.deepEqual(names("second"), ["Add and subtract, no regrouping", "Add and subtract, regrouping", "Hundreds, tens and ones", "Tens in a number", "10 and 100 more or less",
   "Add within 1000", "Add within 1000, regrouping", "Subtract within 1000", "Subtract within 1000, regrouping"]);
 assert.deepEqual(names("third"), ["× 0, 1, 2, 5 and 10", "× 3, 4 and 6", "× 7, 8 and 9", "÷ 1, 2, 5 and 10", "÷ 3, 4 and 6", "÷ 7, 8 and 9", "× tens", "Rounding", "Fractions on a number line", "Equal fractions", "Compare fractions", "Area and perimeter", "× and ÷ 11 and 12"]);
@@ -73,9 +73,12 @@ assert.ok([0, 1, 2].every((L) => at("third", L).every((f) => f.op === "×")) && 
 assert.ok(at("third", 0).some((f) => f.x === 0 || f.y === 0) && at("third", 0).some((f) => f.x === 1 || f.y === 1), "× 0 and × 1 come first");
 assert.ok(pool("third").some((p) => p.key === "×11,12" && p.level === BANDS.third.levels.length - 1), "11s and 12s at the bottom");
 assert.ok(pool("third").some((p) => p.key === "÷0,5") && !pool("third").some((p) => /^÷\d+,0$/.test(p.key)), "0 ÷ 5, never ÷ 0");
-// No two strata share a fact (but the Cellar's within 10, which the Hall builds on, isn't the Hall's).
-const owner = {};
-for (const b of ["kinder", "first", "second", "third"]) for (const p of pool(b)) { assert.ok(!owner[p.key], `${p.key} in ${owner[p.key]} and ${b}`); owner[p.key] = b; }
+// No two strata share a fact (but the Cellar's within 10, which the Hall builds on, isn't the Hall's),
+// except two-digit adding: taught in the Hall (moved from the Mines, DESIGN.md §4.3) and kept in
+// the Mines for 2nd grade's fluency within 100, the same keys.
+const owner = {}, movedToHall = new Set(pool("first").filter((p) => p.level >= 6).map((p) => p.key));
+assert.ok(movedToHall.size === 78 && [...movedToHall].every((k) => k[0] === "+"), "two-digit adding: 24 + 24 + 30");
+for (const b of ["kinder", "first", "second", "third"]) for (const p of pool(b)) { assert.ok(!owner[p.key] || (b === "second" && movedToHall.has(p.key)), `${p.key} in ${owner[p.key]} and ${b}`); owner[p.key] = owner[p.key] || b; }
 
 // Records.
 const fast = { ok: true, ms: 1500, hinted: false, now: 1, fluentMs: 3000 };

@@ -74,6 +74,9 @@ export const PATHS = {
     step("The equal sign", [["first", "The equal sign"]], ["Equal Twins", "Quizard"], 2, P),
     step("Compare with < = >", [["first", "Compare with < = >"]], ["Chompers"], 2, P),
     step("Add and subtract tens", [["first", "Add and subtract tens"]], ["Haberhasher"], 2, P),
+    // Two-digit plus one-digit, then plus two-digit, with and without regrouping (moved from the
+    // Mines' first levels; the same keys).
+    step("Add two-digit numbers", [["first", "Add two-digit numbers"], ["first", "Add two-digit numbers, regrouping"]], ["Haberhasher", "Plusquito"], 2, P),
     step("Shapes", [["shapesH", "Sides and corners"], ["shapesH", "Halves and fourths"]], ["Polly-Gon"], 3, P),
     step("Time to the hour and half hour", [["timeH", "Hours"], ["timeH", "Half hours"]], ["Tick-Tockus"], 3, P),
     // Coin values (1.GM.C.9, new in the Hall): Trollar visits with the Cellar's "each coin".

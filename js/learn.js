@@ -77,7 +77,13 @@ export const BANDS = {
       { name: "The equal sign", has: any(hidden, inSet("The other side"), inSet("Balance both sides"), inTF("tf10", "tf20", "fix10", "fix20")) },
       // Comparing with < = > (Chompers, 1.NBT.B.3): to 10, sums, then two-digit numbers.
       { name: "Compare with < = >", has: any(inSet("Compare to 10"), inSet("Compare sums"), inSet("Compare to 100")) },
-      { name: "Add and subtract tens", has: twoLevel("Add tens", "Subtract tens", "10 more", "10 less", "Add tens to a number") }
+      { name: "Add and subtract tens", has: twoLevel("Add tens", "Subtract tens", "10 more", "10 less", "Add tens to a number") },
+      // Two-digit plus one-digit, then two-digit plus two-digit (1.NBT.C.4), without regrouping and
+      // then with it: moved here from the Mines' first levels (DESIGN.md §4.3, the Hall's step 9).
+      // The same facts and keys, so what's learned here counts in the Mines, which keeps them for
+      // 2nd grade's fluency within 100.
+      { name: "Add two-digit numbers", has: twoLevel("Add ones", "Add tens and ones") },
+      { name: "Add two-digit numbers, regrouping", has: twoLevel("Add and regroup") }
     ]
   },
   // The Crystal Mines: two-digit ± within 100, adding and subtracting mixed, then regrouping,
