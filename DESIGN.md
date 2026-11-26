@@ -206,7 +206,7 @@ _Decided with the user: each stratum follows its grade's teaching order, opened 
 - **2nd grade:** the guide numbers all 32 lessons.
 - **1st grade:** the topics are numbered, and some lesson numbers are given (data is lesson 13; shapes, time, length and coins are 22–27).
 - **Kindergarten:** the units are "ongoing", so the order below follows what builds on what.
-- **3rd grade:** the guide lists topics without lesson numbers, so its order is the least certain (marked "to confirm").
+- **3rd grade:** the guide lists topics without lesson numbers. Its multiplication-before-division order is confirmed by the class (2026-11-26: no division yet this year, after the × facts).
 
 Left out everywhere, as before: graphs and data, measuring length, word problems, and the K calendar unit (days of the week, seasons, birthdays). None of them is a quick typed number.
 
@@ -280,11 +280,11 @@ Left out everywhere, as before: graphs and data, measuring length, word problems
 11. ★ Arrays (31; Squaresquatch).
 12. Even and odd; count by 2s (32; Slimelipsis).
 
-**The Tables Tower (3rd)** (to confirm: the guide gives topics, not lesson numbers)
+**The Tables Tower (3rd)** (the guide gives topics, not lesson numbers; the × before ÷ order is confirmed by the class)
 1. Review: add and subtract within 1000 (Margot-Rythm).
 2. ★ × 0, 1, 2, 5, 10 (Timesaur, Starbot).
 3. ★ × 3, 4, 6; then × 7, 8, 9 (Timesaur).
-4. ★ Division: ÷ 1, 2, 5, 10, then 3, 4, 6, then 7, 8, 9 (Divvy). The guide's topic list puts all × before ÷ ("Understand the meaning of division" after × 7, 8, 9); today's levels alternate. *To confirm with the class's order.*
+4. ★ Division: ÷ 1, 2, 5, 10, then 3, 4, 6, then 7, 8, 9 (Divvy), after all of × (the guide's topic list: "Understand the meaning of division" after × 7, 8, 9). **Confirmed** with the class on 2026-11-26: no division yet this year. Today's levels alternate × and ÷ and change to this order with the progression. A player already good at division is carried past it by placement and skipping ahead (§5).
 5. ★ × tens (4 × 30); rounding to 10 and 100.
 6. ★ Fractions: on a number line, then equal fractions, then **comparing fractions** with < = > (built 2026-11-26: Chompers visiting, and Halfling).
 7. Time to the minute, then elapsed time (Tick-Tockus).
