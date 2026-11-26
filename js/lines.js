@@ -369,8 +369,11 @@ export function spriteFor(l) {
   if (l.kind === "h") return l.group === "Captain lines" ? "captains" : "quips";
   if (l.sprite === "names") return I.names[l.text] || "names";
   if (l.sprite === "loot") return l.group === "Money" ? "money" : "loot";
+  // A problem's lines go by its band and level, even when they were given a sprite name of their
+  // own (batch 1's "time-h", "pat-k"…), so a run loads them with the rest of its stratum.
+  if (l.kind === "q" && I.q[l.text]) return I.q[l.text].family;
   if (l.sprite) return l.sprite;
-  if (l.kind === "q") return I.q[l.text] ? I.q[l.text].family : "q-" + slug(l.group);
+  if (l.kind === "q") return "q-" + slug(l.group);
   if (l.group === "Money") return "purse";
   if (l.group === "Phrases") return I.phrases[l.text] || "phrases-fight";
   return slug(l.group);
