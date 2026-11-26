@@ -424,6 +424,8 @@ body{transition:background-color .4s;--hint-empty:var(--edge);--hint-line:var(--
 /* Settings: lists of rows, like a phone's own settings */
 .players{background:var(--dark);border:2px solid var(--line);border-radius:16px;padding:6px;gap:6px}
 .add-player{margin-top:8px;min-height:44px;width:100%}
+.soundcheck{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:10px 12px;border:2px solid var(--line);border-radius:16px;background:var(--dark)}
+.soundcheck pre{margin:0;flex:1;min-width:0;font:12px/1.4 ui-monospace,monospace;color:var(--muted);white-space:pre-wrap}
 .pcards{display:grid;gap:8px;margin:0;padding:0;list-style:none}
 .pcard{border:2px solid var(--line);border-radius:16px;background:var(--dark);overflow:hidden}
 .pcard.me{border-color:var(--gold)}
