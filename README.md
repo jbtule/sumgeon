@@ -26,6 +26,11 @@ licenses:
   the US government: "2006 Quarter Proof.png", "Dime Obverse 13.png",
   "Jefferson-Nickel-Unc-Obv.jpg" and "US One Cent Obv.png". The coin backs are drawn for the
   game.
+- The dollar bills in `js/dollars.js` (the prototype page so far) reuse two of those traces,
+  Washington (the quarter's) on the $1 and Lincoln (the penny's) on the $5; the $10 and $20 show
+  a plain stand-in bust. The bills are drawn for the game, stylized to stay within the US rules
+  on illustrations of currency: the front only, one green tint, far under real size, and no
+  lettering but the numerals.
 - The recorded voice is made with [Kokoro-82M](https://huggingface.co/hexgrad/Kokoro-82M)
   (Apache License 2.0), voice `af_heart`. The heroes' quips use a second voice from the same
   model, `af_bella` (same license).

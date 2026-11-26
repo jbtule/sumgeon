@@ -11,6 +11,7 @@
 import { NEW_MON, MON as GAME_MON, svg } from "../../js/monsters.js";
 import { CLOCK_LEVELS, clockProblem, clockLine, clockQuestion, spokenClock, spokenTime, clockSvg, clockHint, digital } from "../../js/clock.js";
 import { PATTERN_LEVELS, patternProblem, spokenPattern, spokenPatternAnswer, patternSvg, patternHint } from "../../js/patterns.js";
+import { DOLLAR_LEVELS, dollarProblem, dollarSvg, dollarHint, spokenDollars, sayMoney } from "../../js/dollars.js";
 import { SHAPE_LEVELS, shapeLevel, isDraw, countProblem, countSvg, countHint, spokenCount, spokenDraw, readShape, judgeShape, cleanShape, article, CORNERS, COUNT_LINE } from "../../js/shapes.js";
 
 const $ = (id) => document.getElementById(id);
@@ -46,6 +47,18 @@ const TYPES = {
     hint: (p, worked) => (p.draw ? { say: `${cap(article(p.shape))}${p.shape} has ${CORNERS[p.shape] ? `${CORNERS[p.shape]} sides and ${CORNERS[p.shape]} corners` : "no corners: it's round all the way"}.` } : countHint(p, worked)),
     spoken: (p) => (p.draw ? spokenDraw(p.shape) : spokenCount(p)),
     missed: (p) => `It's ${p.ans}.`, answer: (p) => p.ans
+  },
+  dollars: {
+    icon: "💵", label: "Dollars", mon: "Trollar", levels: DOLLAR_LEVELS,
+    problem: (lv, rnd) => dollarProblem(lv.id, rnd),
+    picture: (p, st) => dollarSvg(p, { hint: !!st.hint, worked: st.worked }),
+    // Dollars and cents are two slots, typed in order: "$□ and □¢" (or "$□.□□" to compare).
+    line: (p, slot) => (p.kind === "bills" ? `$${slot(0)}` : view.money === "dot" ? `$${slot(0)}.${slot(1)}` : `$${slot(0)} <small>and</small> ${slot(1)}¢`),
+    shown: (p, i) => (p.kind === "bills" ? p.ans : i === 1 && view.money === "dot" ? String(p.ans[1]).padStart(2, "0") : p.ans[i]),
+    nextLabel: "Cents ›",
+    hint: dollarHint, spoken: spokenDollars,
+    missed: (p) => (p.kind === "bills" ? sayMoney(p.ans) : sayMoney(p.ans[0], p.ans[1])),
+    answer: (p) => (p.kind === "bills" ? `$${p.ans}` : view.money === "dot" ? `$${p.ans[0]}.${String(p.ans[1]).padStart(2, "0")}` : `$${p.ans[0]} and ${p.ans[1]}¢`)
   }
 };
 const cap = (t) => t[0].toUpperCase() + t.slice(1);
@@ -55,7 +68,9 @@ const STORE = "sumgeon:proto";
 // The clock's numbers default to school-style handwriting (an open 4, a 1 that's one line), as on
 // a classroom clock; "bungee" is the game's font. Its hands are straight arrows by default;
 // "tentacle" tries Tick-Tockus's tentacles as hands.
-const view = { type: "clock", clock: "hours", pattern: "ones", shape: "drawK", numbers: "hand", hands: "arrow" };
+// Money reads "$□ and □¢" by default (2nd grade writes $ and ¢ apart; decimals come in 4th);
+// "dot" tries "$□.□□".
+const view = { type: "clock", clock: "hours", pattern: "ones", shape: "drawK", dollars: "bills", numbers: "hand", hands: "arrow", money: "and" };
 try { Object.assign(view, JSON.parse(localStorage.getItem(STORE)) || {}); } catch (e) { /* defaults */ }
 if (!TYPES[view.type]) view.type = "clock";
 const keep = () => { try { localStorage.setItem(STORE, JSON.stringify(view)); } catch (e) { /* this visit only */ } };
@@ -65,6 +80,7 @@ if (TYPES[q.get("type")]) view.type = q.get("type");
 if (q.get("level")) view[view.type] = q.get("level");
 if (q.get("numbers")) view.numbers = q.get("numbers") === "hand" ? "hand" : "bungee";
 if (q.get("hands")) view.hands = q.get("hands") === "tentacle" ? "tentacle" : "arrow";
+if (q.get("money")) view.money = q.get("money") === "dot" ? "dot" : "and";
 // ?seed=<n> makes the problems the same each time (for screenshots).
 let seed = Number(q.get("seed")) || 0;
 const rnd = seed ? () => ((seed = (seed * 9301 + 49297) % 233280) / 233280) : Math.random;
@@ -99,7 +115,10 @@ function drawChrome() {
   $("mName").classList.toggle("placeholder", !m);
   $("types").innerHTML = Object.entries(TYPES).map(([id, x]) => `<button type="button" data-type="${id}" aria-pressed="${id === view.type}" aria-label="${x.label}" title="${x.label}">${x.icon}</button>`).join("");
   $("level").innerHTML = t.levels.map((l) => `<option value="${l.id}"${l.id === lv.id ? " selected" : ""}>${esc(l.name)} · ${l.grade}</option>`).join("");
-  $("tools").hidden = view.type !== "clock";
+  $("tools").hidden = view.type !== "clock" && view.type !== "dollars";
+  for (const id of ["numStyle", "handStyle"]) $(id).hidden = view.type !== "clock";
+  $("moneyStyle").hidden = view.type !== "dollars";
+  $("moneyStyle").textContent = view.money === "dot" ? "$3.25" : "$3 and 25¢";
   $("numStyle").textContent = view.numbers === "hand" ? "Handwritten" : "Bungee";
   $("handStyle").textContent = view.hands === "tentacle" ? "Tentacles" : "Arrows";
 }
@@ -139,7 +158,7 @@ function draw() {
   $("said").textContent = t.spoken(p);
   padUI(p.draw ? "spell" : "num");
   const go = $("pad").querySelector('[data-k="go"]');
-  go.textContent = S.done ? "Next ›" : p.draw ? "Cast!" : S.at < S.typed.length - 1 ? "Next ›" : "Hit!";
+  go.textContent = S.done ? "Next ›" : p.draw ? "Cast!" : S.at < S.typed.length - 1 ? t.nextLabel || "Next ›" : "Hit!";
   go.classList.toggle("next", !!S.done);
   go.setAttribute("aria-label", S.done ? "Next problem" : p.draw ? "Cast the drawing" : "Attack");
   document.querySelector(".pp").classList.toggle("drawing", !!p.draw);
@@ -283,6 +302,7 @@ $("types").addEventListener("click", (e) => {
 });
 $("level").addEventListener("change", () => { view[view.type] = $("level").value; keep(); drawChrome(); next(spoke); });
 $("handStyle").addEventListener("click", () => { view.hands = view.hands === "tentacle" ? "arrow" : "tentacle"; keep(); drawChrome(); draw(); });
+$("moneyStyle").addEventListener("click", () => { view.money = view.money === "dot" ? "and" : "dot"; keep(); drawChrome(); draw(); });
 $("numStyle").addEventListener("click", () => { view.numbers = view.numbers === "hand" ? "bungee" : "hand"; keep(); drawChrome(); draw(); });
 // After the first tap anywhere, new problems are read aloud as they appear, as the game reads coin
 // and comparing problems for a pre-reader.

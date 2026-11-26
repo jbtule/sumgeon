@@ -57,6 +57,10 @@
   .pp.drawing .pad{flex:1;min-height:0;grid-template-rows:minmax(0,1fr) auto}
   .pp.drawing .pad.spell .sigil{grid-row:auto;height:100%;min-height:180px}
   .pp .blank.now{box-shadow:0 0 0 3px var(--gold)}
+  .pp-tools button[hidden]{display:none}
+  #moneyStyle::before{content:"⇄"}
+  .pp-pic svg.money{width:100%;max-height:100cqh;display:block}
+  .pp .prob small{font:900 .5em Nunito,sans-serif;color:var(--muted);vertical-align:middle}
   .pp-pic .pb-blank{animation:pbglow 1.2s ease-in-out infinite alternate}
   @keyframes pbglow{to{filter:drop-shadow(0 0 8px #ffc93c)}}
   @media(prefers-reduced-motion:reduce){.pp-pic .pb-blank{animation:none}}
@@ -97,7 +101,7 @@
     <select class="pp-level" id="level" aria-label="Level"></select>
   </div>
   <section class="pp-box" id="box">
-    <div class="pp-head"><span class="pp-mon" id="mon"></span><span class="mname" id="mName"></span><span class="pp-tools" id="tools"><button type="button" id="handStyle" aria-label="Clock hands">Arrows</button><button type="button" id="numStyle" aria-label="Clock numbers">Bungee</button></span></div>
+    <div class="pp-head"><span class="pp-mon" id="mon"></span><span class="mname" id="mName"></span><span class="pp-tools" id="tools"><button type="button" id="handStyle" aria-label="Clock hands">Arrows</button><button type="button" id="numStyle" aria-label="Clock numbers">Bungee</button><button type="button" id="moneyStyle" aria-label="How money is written">$3 and 25¢</button></span></div>
     <div class="pp-pic" id="pic"></div>
   </section>
   <!-- One line between the box and the problem: the hint's words, or after an answer ✓ or Oops
