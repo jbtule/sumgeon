@@ -64,8 +64,9 @@ assert.equal(coinWords({ q: 0, d: 2, n: 0, p: 3 }), "two dimes and three pennies
 assert.equal(spokenProblem(dimeNickel3), "one dime, one nickel and three penny's. How many cents?", "spoken as penny's: PEN-eez, not penne's");
 assert.equal(spokenFact(dimeNickel3), "one dime, one nickel and three penny's make eighteen cents");
 // Hints: values before, the count-on after.
-assert.equal(hintFor(dimeNickel3, false).say, "Count on from the biggest coin: 10 + 5 + 1 + 1 + 1 = ?");
-assert.equal(hintFor(dimeNickel3, true).say, "Count on from the biggest coin: 10, 15, 16, 17, 18. 10 + 5 + 1 + 1 + 1 = 18");
+assert.equal(hintFor(dimeNickel3, false).say, "Count on from the biggest coin. Total = ?");
+assert.equal(hintFor(dimeNickel3, true).say, "Count on from the biggest coin. Total = 18");
+assert.ok(hintFor(dimeNickel3, false).model.includes(">17<") && !hintFor(dimeNickel3, false).model.includes(">18<"), "the running count, its last \"?\" until worked");
 assert.match(hintFor(coinFact({ q: 0, d: 1, n: 0, p: 0 }), false).say, /^Penny 1¢, nickel 5¢, dime 10¢, quarter 25¢\. This coin = \?$/);
 assert.equal(hintFor(q2, false).say, "A quarter is big and silver. Look for both sides! Quarters = ?");
 assert.equal(hintFor(dimeBack, true).say, "A dime is small and silver. It's worth 10¢. This coin = 10");
