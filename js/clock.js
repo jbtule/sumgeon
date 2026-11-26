@@ -306,3 +306,111 @@ export function clockHint(p, worked) {
   return { layer: { glow: "minute", fives: five, ones: tick, ask: "?" }, say: five ? `Count by 5s to ${five}, then the little ticks by 1s: ${five} + ${ones} = ?` : "Count the little ticks from the 12 by 1s." };
 }
 const fivesList = (to) => { const out = []; for (let k = 5; k <= to; k += 5) out.push(k); return out.join(", "); };
+
+/* ---------- elapsed time (3rd grade, 3.GM.B.5–6: elapsed time, adding minutes) ---------- */
+// - long: two clocks, the start and the end, "How many minutes?" (under an hour). Level A stays
+//   in the hour in 5s; B crosses the hour in 5s; C crosses or not, to the minute.
+// - add: "It's 3:15. What time is it 20 minutes later?" A stays in the hour, answered in the
+//   "3:□" slot (minutes only); B crosses it, answered "□:□□", the hour then the minutes.
+// The hint is 3rd grade's open number line: jumps from the start to a friendly time (the next
+// quarter hour, or the hour), then on to the end.
+export const ELAPSED_LEVELS = [
+  { id: "longA", name: "How long? in the hour", grade: "3rd", stratum: "tower" },
+  { id: "longB", name: "How long? across the hour", grade: "3rd", stratum: "tower" },
+  { id: "longC", name: "How long? to the minute", grade: "3rd", stratum: "tower" },
+  { id: "addA", name: "Minutes later, in the hour", grade: "3rd", stratum: "tower" },
+  { id: "addB", name: "Minutes later, across the hour", grade: "3rd", stratum: "tower" }
+];
+export const isElapsed = (id) => ELAPSED_LEVELS.some((l) => l.id === id);
+// Minutes since 12:00, and back.
+const toMin = (h, m) => (h % 12) * 60 + m;
+export const fromMin = (t) => { const x = ((t % 720) + 720) % 720; return { h: Math.floor(x / 60) || 12, m: x % 60 }; };
+export function elapsedProblem(id, rnd = Math.random) {
+  const h = 1 + Math.floor(rnd() * 12);
+  for (;;) {
+    if (id === "longA" || id === "addA") {
+      const m0 = 5 * Math.floor(rnd() * 11), d = 5 * (2 + Math.floor(rnd() * 10));
+      if (m0 + d > 55) continue;
+      return id === "longA" ? { kind: "long", h, m: m0, h2: h, m2: m0 + d, d, ans: d } : { kind: "add", h, m: m0, d, h2: h, m2: m0 + d, ans: m0 + d };
+    }
+    if (id === "longB" || id === "addB") {
+      const m0 = 30 + 5 * Math.floor(rnd() * 6), d = 5 * (1 + Math.floor(rnd() * 11)), end = fromMin(toMin(h, m0) + d);
+      if (m0 + d <= 60 || d >= 60) continue;
+      return id === "longB" ? { kind: "long", h, m: m0, h2: end.h, m2: end.m, d, ans: d } : { kind: "add", cross: true, h, m: m0, d, h2: end.h, m2: end.m, ans: [end.h, end.m] };
+    }
+    // To the minute: any start, 6 to 59 minutes, crossing the hour or not.
+    const m0 = Math.floor(rnd() * 60), d = 6 + Math.floor(rnd() * 54), end = fromMin(toMin(h, m0) + d);
+    if (d % 5 === 0 && m0 % 5 === 0) continue;
+    return { kind: "long", h, m: m0, h2: end.h, m2: end.m, d, ans: d };
+  }
+}
+// "three ten", "three o'clock", "three oh five".
+export const timeWords = (h, m) => (!m ? `${spoken(h)} o'clock` : `${spoken(h)} ${m < 10 ? "oh " + spoken(m) : spoken(m)}`);
+export function spokenElapsed(p) {
+  if (p.kind === "long") return `It starts at ${timeWords(p.h, p.m)} and ends at ${timeWords(p.h2, p.m2)}. How many minutes?`;
+  return `It's ${timeWords(p.h, p.m)}. What time is it ${spoken(p.d)} minutes later?`;
+}
+export const spokenElapsedAnswer = (p) => (p.kind === "long" ? `${spoken(p.d)[0].toUpperCase() + spoken(p.d).slice(1)} minutes.` : `It's ${timeWords(p.h2, p.m2)}.`);
+// The stops on the open number line, in minutes since 12:00: the start, a friendly time (the
+// next quarter hour, and the hour when it's crossed), the end. There are always two jumps or
+// more, so the first never shows the whole answer.
+export function elapsedStops(p) {
+  const a = toMin(p.h, p.m), b = a + p.d, stops = [a];
+  const q = Math.ceil((a + 1) / 15) * 15, hour = Math.ceil((a + 1) / 60) * 60;
+  if (a % 15 && q < b) stops.push(q);
+  if (hour < b && !stops.includes(hour)) stops.push(hour);
+  if (stops.length === 1) stops.push(a + 15 < b ? a + 15 : a + 5 < b ? a + 5 : a + 1);
+  stops.push(b);
+  return stops;
+}
+const hm = (t) => { const { h, m } = fromMin(t); return digital(h, m); };
+// The words: before answering, the first jump and "then to 3:45?" (or "then 20 more?"); worked,
+// every jump and the sum.
+export function elapsedHint(p, worked) {
+  const s = elapsedStops(p), jumps = s.slice(1).map((t, i) => t - s[i]);
+  if (p.kind === "long") {
+    if (!worked) return { say: `${hm(s[0])} → ${hm(s[1])} is ${jumps[0]}, then to ${hm(s[s.length - 1])}?` };
+    return { say: `${s.slice(1).map((t, i) => `${hm(s[i])} → ${hm(t)} is ${jumps[i]}`).join(", ")}. ${jumps.join(" + ")} = ${p.d} minutes.` };
+  }
+  if (!worked) return { say: `${hm(s[0])} + ${jumps[0]} is ${hm(s[1])}, then ${p.d - jumps[0]} more: ?` };
+  return { say: `${hm(s[0])} + ${jumps.join(" + ")} = ${hm(s[s.length - 1])}.` };
+}
+// The picture. long: the two clocks side by side with their times under them, an arrow between;
+// add: the start clock and its time. With the hint, the open number line under them: a hop for
+// each jump, labeled with its minutes, the stops' times under the line; before answering only
+// the first hop is labeled, the end time shown (long) or "?" (add), the rest "?".
+export function elapsedSvg(p, opt = {}) {
+  const W = 300, C = 118, gold = "#ffc93c", ink = "#f3efe4", line = 26;
+  const clockAt = (h, m, x) => clockSvg(h, m, { monster: false }).replace('<svg viewBox="0 0 240 240"', `<svg x="${x}" y="0" width="${C}" height="${C}" viewBox="-6 -6 252 252"`);
+  const label = (x, t) => `<text x="${x + C / 2}" y="${C + 22}" text-anchor="middle" font-family="Bungee, sans-serif" font-size="20" fill="${ink}">${t}</text>`;
+  let s = "";
+  if (p.kind === "long") {
+    s += clockAt(p.h, p.m, 8) + label(8, digital(p.h, p.m)) + clockAt(p.h2, p.m2, W - C - 8) + label(W - C - 8, digital(p.h2, p.m2));
+    s += `<path d="M${W / 2 - 14} ${C / 2} H${W / 2 + 12} M${W / 2 + 4} ${C / 2 - 8} L${W / 2 + 13} ${C / 2} L${W / 2 + 4} ${C / 2 + 8}" fill="none" stroke="${gold}" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>`;
+  } else {
+    s += clockAt(p.h, p.m, (W - C) / 2) + label((W - C) / 2, digital(p.h, p.m));
+  }
+  let H = C + 32;
+  if (opt.hint) {
+    const st = elapsedStops(p), y = H + 58, x0 = 18, x1 = W - 18, span = st[st.length - 1] - st[0];
+    const X = (t) => x0 + (x1 - x0) * (t - st[0]) / span;
+    s += `<line x1="${x0 - 6}" y1="${y}" x2="${x1 + 6}" y2="${y}" stroke="${ink}" stroke-width="3" stroke-linecap="round"/>`;
+    st.forEach((t, i) => {
+      const last = i === st.length - 1, hide = last && p.kind === "add" && !opt.worked;
+      s += `<line x1="${X(t)}" y1="${y - 7}" x2="${X(t)}" y2="${y + 7}" stroke="${ink}" stroke-width="2.5"/><text x="${X(t)}" y="${y + 22}" text-anchor="middle" font-family="Nunito, sans-serif" font-weight="900" font-size="12" fill="${ink}" class="stop">${hide ? "?" : hm(t)}</text>`;
+      if (i) {
+        const a = X(st[i - 1]), b = X(t), m = (a + b) / 2, show = opt.worked || i === 1;
+        s += `<path d="M${a + 2} ${y - 6} Q${m} ${y - line - 14} ${b - 2} ${y - 6}" fill="none" stroke="${i === 1 ? gold : "#8eeae4"}" stroke-width="2.5"/>`;
+        s += `<text x="${m}" y="${y - line - 10}" text-anchor="middle" font-family="Nunito, sans-serif" font-weight="900" font-size="13" fill="${i === 1 ? gold : "#8eeae4"}" class="jump">${show ? "+" + (t - st[i - 1]) : "?"}</text>`;
+      }
+    });
+    H = y + 30;
+  }
+  return `<svg viewBox="0 0 ${W} ${H}" class="elapsed" role="img" aria-label="${p.kind === "long" ? `from ${digital(p.h, p.m)} to ${digital(p.h2, p.m2)}` : `${digital(p.h, p.m)}, ${p.d} minutes later`}">${s}</svg>`;
+}
+// The question on screen, in parts with null for each slot.
+export function elapsedLine(p) {
+  if (p.kind === "long") return ["Minutes: ", null];
+  if (p.cross) return [null, ":", null];
+  return [`${p.h2}:`, null];
+}

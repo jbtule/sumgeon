@@ -41,7 +41,8 @@
   /* The clock is Tick-Tockus: its tentacles spill out of the drawing into the room beside and
      under it (proto.js measures it and tells clockSvg how far they can reach). Where width is
      short, the clock leaves a little room on each side for them. */
-  .pp-pic svg.clock{--s:min(100cqw / 1.36,100cqh);width:var(--s);height:var(--s);display:block;overflow:visible}
+  .pp-pic > svg.elapsed{width:100%;height:100%;max-height:100cqh;display:block}
+  .pp-pic > svg.clock{--s:min(100cqw / 1.36,100cqh);width:var(--s);height:var(--s);display:block;overflow:visible}
   .pp-head .pp-mon[hidden]{display:none}
   .pp-pic svg.pattern{width:100%;max-height:100cqh;display:block;overflow:visible}
   .pp-pic svg.shape{width:100%;height:100%;max-height:100cqh;display:block;overflow:visible}

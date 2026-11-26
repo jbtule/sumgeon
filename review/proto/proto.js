@@ -9,7 +9,7 @@
 // and say it. An answer is one or more slots typed in order (dollars and cents are two), or a
 // drawing (shapes).
 import { NEW_MON, MON as GAME_MON, svg } from "../../js/monsters.js";
-import { CLOCK_LEVELS, clockProblem, clockLine, clockQuestion, spokenClock, spokenTime, clockSvg, clockHint, digital } from "../../js/clock.js";
+import { CLOCK_LEVELS, ELAPSED_LEVELS, isElapsed, elapsedProblem, elapsedSvg, elapsedLine, elapsedHint, spokenElapsed, spokenElapsedAnswer, clockProblem, clockLine, clockQuestion, spokenClock, spokenTime, clockSvg, clockHint, digital } from "../../js/clock.js";
 import { PATTERN_LEVELS, patternProblem, spokenPattern, spokenPatternAnswer, patternSvg, patternHint, ODD_LEVELS, isOddEven, oddEvenProblem, oddEvenSvg, oddEvenHint, spokenOddEven } from "../../js/patterns.js";
 import { TF_LEVELS, tfProblem, tfSvg, tfHint, spokenTF, spokenTFAnswer, fixParts } from "../../js/truefalse.js";
 import { LINE_LEVELS, lineProblem, lineSvg, lineHint, spokenLine, spokenLineAnswer } from "../../js/numberline.js";
@@ -26,13 +26,21 @@ const pick = (list, rnd) => list[Math.floor(rnd() * list.length)];
 // slot(i) draws answer slot i (a glowing ?, filling as it's typed); st is the problem's state.
 const TYPES = {
   clock: {
-    icon: "🕒", label: "Time", mon: "Tick-Tockus", big: true, levels: CLOCK_LEVELS,
-    problem: (lv, rnd) => clockProblem(lv.id, rnd),
-    picture: (p, st) => clockSvg(p.h, p.m, { numbers: view.numbers, hands: view.hands, hint: st.hint && st.hint.layer, reach: reach() }),
-    line: (p, slot) => clockLine(p).map((part) => (part === null ? slot(0) : esc(part))).join(""),
-    question: clockQuestion,
-    shown: (p) => (p.ask === "minutes" ? String(p.ans).padStart(2, "0") : p.ans),
-    hint: clockHint, spoken: spokenClock, missed: (p) => spokenTime(p.h, p.m), answer: (p) => digital(p.h, p.m)
+    // Telling time on Tick-Tockus himself; elapsed time (kind "long" or "add") on two plain clocks
+    // (or one), with the open number line as the hint.
+    icon: "🕒", label: "Time", mon: "Tick-Tockus", big: true, levels: [...CLOCK_LEVELS, ...ELAPSED_LEVELS],
+    problem: (lv, rnd) => (isElapsed(lv.id) ? elapsedProblem(lv.id, rnd) : clockProblem(lv.id, rnd)),
+    picture: (p, st) => (p.kind ? elapsedSvg(p, { hint: !!st.hint, worked: st.worked })
+      : clockSvg(p.h, p.m, { numbers: view.numbers, hands: view.hands, hint: st.hint && st.hint.layer, reach: reach() })),
+    line: (p, slot) => { let i = 0; return (p.kind ? elapsedLine(p) : clockLine(p)).map((part) => (part === null ? slot(i++) : esc(part))).join(""); },
+    question: (p) => (p.kind ? spokenElapsed(p) : clockQuestion(p)),
+    words: (p) => p.kind === "long",
+    shown: (p, i) => (p.kind === "add" ? (p.cross ? (i ? String(p.m2).padStart(2, "0") : p.h2) : String(p.ans).padStart(2, "0")) : p.kind ? p.ans : p.ask === "minutes" ? String(p.ans).padStart(2, "0") : p.ans),
+    nextLabel: "Minutes ›",
+    hint: (p, worked) => (p.kind ? elapsedHint(p, worked) : clockHint(p, worked)),
+    spoken: (p) => (p.kind ? spokenElapsed(p) : spokenClock(p)),
+    missed: (p) => (p.kind ? spokenElapsedAnswer(p) : spokenTime(p.h, p.m)),
+    answer: (p) => (p.kind === "long" ? `${p.d} minutes` : p.kind === "add" ? digital(p.h2, p.m2) : digital(p.h, p.m))
   },
   pattern: {
     icon: "🫧", label: "Patterns", mon: "Slimelipsis", big: true, levels: [...PATTERN_LEVELS, ...ODD_LEVELS],
@@ -301,7 +309,7 @@ function next(speak) {
   }
   // ?time=3:37 shows that time first (asking the minutes, or the hour on the hour); ?shape=hexagon
   // asks for that shape first.
-  const tm = !S && view.type === "clock" && /^(\d{1,2}):(\d\d)$/.exec(q.get("time") || "");
+  const tm = !S && view.type === "clock" && !p.kind && /^(\d{1,2}):(\d\d)$/.exec(q.get("time") || "");
   if (tm) { const h = Number(tm[1]), m = Number(tm[2]); p = { level: lv.id, h, m, ask: m && q.get("ask") !== "hour" ? "minutes" : "hour", ans: m && q.get("ask") !== "hour" ? m : h }; }
   if (!S && p.draw && q.get("shape")) p.shape = q.get("shape");
   // ?frac=5/8 puts the number line's dot there first.
