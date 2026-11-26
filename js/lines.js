@@ -2,7 +2,7 @@
 // build (scripts/audio/build.mjs) records exactly these. No DOM, runs in Node.
 // Kinds: "p" phrase, "m" monster line, "q" problem, "h" a hero's quip, said in its own voice
 // (see speech.js).
-import { MON, allLooks } from "./monsters.js";
+import { MON, allLooks, bossForm } from "./monsters.js";
 import { HEROES } from "./heroes.js";
 import { WINGS, cursedMonster } from "./wings.js";
 import { facts, spokenProblem, spokenFact, spoken } from "./problems.js";
@@ -143,9 +143,14 @@ export function howToWriteLine(d) { return "Here's how to write " + aDigit(d) + 
 export var DEPTH_MAX_SPOKEN = 100;
 export function depthLine(d) { return "Depth " + spoken(d) + "!"; }
 
-// [{ kind, text }], each once.
+// The bosses' mega and Legend forms, as monsters (monsters.js bossForm): Mega-Ten Golem, Golden
+// Golem, and so on. Drawn and recorded, not in the game yet (DESIGN.md §14.2).
+export function bossForms() {
+  return MON.filter(function (m) { return m.boss; }).flatMap(function (m) { return [bossForm(m, "mega"), bossForm(m, "legend")]; }).filter(Boolean);
+}
+
 // The groups the listen check (review/listen/) plays lines in.
-export var GROUPS = ["Phrases", "Monsters & heroes", "Add & subtract", "Times & divide", "Missing numbers", "Which is more", "Coins", "Two-digit", "Balance Hall", "Three numbers", "Arrays", "Fractions", "Rounding", "Area & perimeter", "Hero quips", "Team-ups", "Captain lines"];
+export var GROUPS = ["Phrases", "Monsters & heroes", "Add & subtract", "Times & divide", "Missing numbers", "Which is more", "Coins", "Two-digit", "Balance Hall", "Three numbers", "Arrays", "Fractions", "Rounding", "Area & perimeter", "Hero quips", "Team-ups", "Captain lines", "Boss forms"];
 
 // [{ kind, text, group, sprite? }], each once.
 export function spokenLines() {
@@ -158,6 +163,13 @@ export function spokenLines() {
     add("m", monsterName(m), N, S);
     add("p", monsterCleared(m), N, S); // a boss's is said on the win, before the stratum cleared
     add("p", monsterWon(m), N, S);
+  });
+  // The bosses' mega and Legend forms: each one's name, beaten and won lines, in a small sprite
+  // of their own, "bosses", since only one form comes up in a run.
+  bossForms().forEach(function (m) {
+    add("m", monsterName(m), "Boss forms", "bosses");
+    add("p", monsterCleared(m), "Boss forms", "bosses");
+    add("p", monsterWon(m), "Boss forms", "bosses");
   });
   HEROES.forEach(function (h) {
     add("m", heroName(h), N, S);

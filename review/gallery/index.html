@@ -68,6 +68,15 @@
   .tags button[aria-pressed="true"]{background:var(--coral);border-color:var(--coral);color:#fff}
   textarea{width:100%;min-height:64px;border-radius:10px;border:2px solid var(--edge);background:var(--panel);color:var(--ink);font:inherit;padding:8px}
   .formbtns{display:flex;gap:8px;justify-content:flex-end;margin-top:8px}
+  .g-forms{display:grid;gap:14px}
+  .g-formrow{display:grid;grid-template-columns:repeat(3,1fr);border-radius:18px;background:var(--panel);border:2px solid var(--line);overflow:hidden}
+  .g-form{display:grid;grid-template-rows:auto 1fr;min-width:0;border-left:2px solid var(--line)}
+  .g-form:first-child{border-left:0}
+  .g-form.g-bad{outline:2px solid var(--coral);outline-offset:-2px}
+  .g-mega{font:400 11px Bungee,sans-serif;background:#45d6e6;color:#0c171c;border-radius:999px;padding:2px 8px}
+  .g-legend{font:400 11px Bungee,sans-serif;background:linear-gradient(#fff2b0,#ffc93c 60%,#e0a222);color:#0c171c;border-radius:999px;padding:2px 8px;box-shadow:0 0 8px #ffc93c88}
+  .g-lines{display:grid;gap:2px}
+  @media(max-width:700px){.g-form .g-stage{padding:10px 3px 6px}.g-form .g-info{padding:8px 6px 10px;font-size:12px}.g-form .g-title b{font-size:13px}.g-form .g-trait,.g-form .g-quip{font-size:12px}.g-form .g-smalls{gap:5px}.g-form .flagbtn{padding:0 8px}}
   [hidden]{display:none !important}
   @media(max-width:420px){.g-grid{grid-template-columns:1fr}.g-stages.g-three .g-stage{padding:10px 4px 6px}}
 </style>
@@ -107,6 +116,9 @@
   <div class="g-grid" id="newGrid"></div>
   <h2>In the game</h2>
   <div class="g-grid" id="oldGrid"></div>
+  <h2>Boss forms</h2>
+  <p class="g-meta">Each boss beside its mega form (every 10th depth: crowned, with a second trait) and its Legend form (in gold, once every fact in its stratum is mastered). Drawn and recorded, not in the game yet.</p>
+  <div class="g-forms" id="formsGrid"></div>
   <h2>Heroes</h2>
   <div class="g-grid" id="heroGrid"></div>
   <h2>Retired</h2>
