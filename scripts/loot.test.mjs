@@ -1,7 +1,8 @@
 // Chests, money and items (js/loot.js, DESIGN.md §6.3).
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { chestAfter, CHEST_SHARE, lockKey, lockOf, lockable, contents, moneyFor, fewest, ONE_COIN, CELLAR_BOSS, ITEMS, freshItems, countOf, gain, putInSlot, clearSlot, useSlot, eatPie, arm, blockMiss, totemMult, magnetSpent, SLOTS } from "../js/loot.js";
+import { chestAfter, CHEST_SHARE, lockKey, lockOf, lockable, contents, moneyFor, fewest, ONE_COIN, CELLAR_BOSS, ITEMS, freshItems, countOf, gain, putInSlot, clearSlot, useSlot, eatPie, arm, blockMiss, totemMult, magnetSpent, SLOTS, freshWardrobe, addPiece, putOn, wearOf, ownedFor, unowned } from "../js/loot.js";
+import { CLOTHES, clothesById, findable } from "../js/clothes.js";
 import { pool, learned } from "../js/learn.js";
 import { seeded, decide, freshState, freshRun } from "../js/moments.js";
 import { WINGS, runFloors } from "../js/wings.js";
@@ -54,13 +55,59 @@ assert.ok(!lockable("¢0,1,0,0") && !lockable("▭a4,3") && lockable("+3,4") && 
   assert.ok(/G\.retry/.test(body) && /recordAnswer/.test(body), "a lock records the fact, and a jam sends it to the retry queue");
 }
 
-// Contents: money about half, an item about a third, money for the rest (until clothing).
+// Contents: money about half, an item about a third, clothing the rest: always a piece not owned
+// (never a special one), and money once every piece is owned.
 {
-  const t = { money: 0, item: 0 }, items = {};
+  const t = { money: 0, item: 0, clothing: 0 }, items = {};
   for (let k = 0; k < 6000; k++) { const c = contents(r); t[c.kind]++; if (c.item) items[c.item] = (items[c.item] || 0) + 1; }
-  assert.deepEqual(Object.keys(t).sort(), ["item", "money"]);
   assert.ok(Math.abs(t.item / 6000 - 1 / 3) < 0.03, `items about a third (${t.item})`);
+  assert.ok(Math.abs(t.clothing / 6000 - 1 / 6) < 0.03, `clothing about a sixth (${t.clothing})`);
   assert.equal(Object.keys(items).length, ITEMS.length, "every item turns up");
+  // Chests give clothing until the bag is full, each piece once; then money in its place.
+  const w = freshWardrobe();
+  let n = 0;
+  while (unowned(w.owned).length && n < 20000) {
+    n++;
+    const c = contents(r, w.owned);
+    if (c.kind !== "clothing") continue;
+    const p = clothesById[c.piece];
+    assert.ok(p && p.tier !== "special", `a findable piece (${c.piece})`);
+    assert.ok(!w.owned.includes(c.piece), "never one already owned");
+    assert.ok(addPiece(w, c.piece));
+  }
+  assert.equal(w.owned.length, findable().length, "every findable piece, in time");
+  assert.ok(!CLOTHES.some((p) => p.tier === "special" && w.owned.includes(p.id)), "never a special piece");
+  for (let k = 0; k < 2000; k++) assert.notEqual(contents(r, w.owned).kind, "clothing", "with every piece owned, money instead");
+  const all = { money: 0, item: 0 };
+  for (let k = 0; k < 3000; k++) all[contents(r, w.owned).kind]++;
+  assert.ok(Math.abs(all.money / 3000 - 2 / 3) < 0.04, `money takes clothing's share (${all.money})`);
+}
+
+// The wardrobe: owned pieces, worn one per spot by a hero, kept per hero.
+{
+  const w = freshWardrobe({ owned: ["partyhat", "glasses", "bowtie", "partyhat", "nope"], wear: { 3: { head: "partyhat", face: "crown", neck: "tophat" }, 5: { head: "cape" } } });
+  assert.deepEqual(w.owned, ["partyhat", "glasses", "bowtie"], "unknown ids and repeats dropped");
+  assert.deepEqual(w.wear, { 3: { head: "partyhat" } }, "only owned pieces, each in its own spot");
+  assert.equal(addPiece(w, "partyhat"), false, "a piece is never had twice");
+  assert.ok(putOn(w, 3, "glasses") && putOn(w, 3, "bowtie"));
+  assert.deepEqual(wearOf(w, 3), { head: "partyhat", face: "glasses", neck: "bowtie" });
+  assert.equal(putOn(w, 3, "tophat"), false, "only owned pieces can be worn");
+  assert.ok(putOn(w, 7, "partyhat"), "two heroes can wear the same piece");
+  assert.ok(putOn(w, 3, null, "face"));
+  assert.deepEqual(wearOf(w, 3), { head: "partyhat", neck: "bowtie" }, "none takes a spot off");
+  assert.deepEqual(ownedFor(w, "head").map((p) => p.id), ["partyhat"]);
+  assert.deepEqual(wearOf(w, null), {});
+  // Saved and loaded through store.js (OWN_KEYS).
+  assert.ok(OWN_KEYS.includes("wardrobe") && OWN_KEYS.includes("shop"));
+  const m = new Map(), ls = { getItem: (k) => (m.has(k) ? m.get(k) : null), setItem: (k, v) => m.set(k, String(v)), removeItem: (k) => m.delete(k), key: (i) => [...m.keys()][i] ?? null, get length() { return m.size; } };
+  const s = openStore(ls); s.upgrade();
+  s.player("default").set("wardrobe", w);
+  assert.deepEqual(freshWardrobe(s.player("default").get("wardrobe", null)), w, "the wardrobe saves and loads");
+  // The game draws every team hero in their outfit.
+  const app = readFileSync(new URL("../js/app.js", import.meta.url), "utf8");
+  assert.ok(/const heroArt = [^\n]*wear: dressOf\(d\)/.test(app), "heroArt dresses the hero");
+  assert.ok(/wear: dressOf\(mo\.hero\)/.test(app), "Hero Moments wear the outfit");
+  assert.ok(/svg: heroSvg\(HEROES\[d\], Object\.assign\(\{ wear: dressOf\(d\) \}/.test(app), "the start scene and the descent wear it");
 }
 
 // Money per stratum: the Cellar one coin (its boss two), the others a few mixed coins, more from a boss.

@@ -25,9 +25,11 @@ import { byLevel, offlineLine } from "./offline.js";
 import { freshState as freshMoments, freshRun, decide as decideMoment, joined, heardOf, nameLine } from "./moments.js";
 import { playMoment } from "./slowmo.js";
 import { playDescent, descending, surfaceHTML } from "./descent.js";
-import { chestAfter, lockKey, lockOf, contents, moneyFor, fewest, ITEMS, itemOf, SLOTS, freshItems, countOf, gain, putInSlot, clearSlot, useSlot, eatPie, arm, blockMiss, totemMult, magnetSpent } from "./loot.js";
-import { LOOT, askLine, itemName, itemWhat, itemUse, moneyLine, purseLine, ALWAYS, runSprites } from "./lines.js";
-import { chestSvg, purseSvg, walletSvg, walletMini } from "./chest.js";
+import { chestAfter, lockKey, lockOf, contents, moneyFor, fewest, ITEMS, itemOf, SLOTS, freshItems, countOf, gain, putInSlot, clearSlot, useSlot, eatPie, arm, blockMiss, totemMult, magnetSpent, freshWardrobe, addPiece, wearOf, putOn, ownedFor, unowned } from "./loot.js";
+import { kPrices, priceOf, freshShop, restock, forSale, TOKENS, valueOf, empty as emptyCounter, total as counterTotal, left as purseLeft, purseFor, putDown, takeBack, enough, pay, canAfford } from "./shop.js";
+import { CLOTHES, SPOTS, clothesById, pieceSvg } from "./clothes.js";
+import { LOOT, askLine, itemName, itemWhat, itemUse, moneyLine, purseLine, ALWAYS, runSprites, SHOP, clothingName, priceLine, changeLine } from "./lines.js";
+import { chestSvg, purseSvg, walletSvg, walletMini, stallSvg, priceTag, billSvg, pieSvg } from "./chest.js";
 
 const $ = (id) => document.getElementById(id);
 const reduced = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -113,7 +115,7 @@ store.upgrade();
 // progress: { [wingId]: { boss: wins, best: floors } }.
 // seen: the Bestiary, { [monster]: { met, beaten } }.
 // wallet: money in cents; inv: the items (loot.js freshItems: counts and the 3 quick-use slots).
-let PID, st, recs, team, progress, seen, wallet = 0, inv = freshItems();
+let PID, st, recs, team, progress, seen, wallet = 0, inv = freshItems(), wardrobe = freshWardrobe(), shop = freshShop();
 const band = () => BANDS[st.band] || BANDS.kinder;
 const wingFor = (b) => WINGS.find((w) => w.band === b) || WINGS[0];
 const wing = () => wingFor(st.band);
@@ -156,6 +158,9 @@ function loadPlayer() {
   MS = freshMoments(store.player(PID).get("moments", null));
   wallet = Math.max(0, Math.floor(Number(store.player(PID).get("wallet", 0)) || 0));
   inv = freshItems(store.player(PID).get("items", null));
+  wardrobe = freshWardrobe(store.player(PID).get("wardrobe", null));
+  shop = freshShop(store.player(PID).get("shop", null));
+  if (WALLET_AT != null) { wallet = WALLET_AT; saveWallet(); }
   // A captain picked before heroes could change stays on the team.
   if (team.captain != null && !team.rescued.includes(team.captain)) { team.rescued.push(team.captain); saveTeam(); }
   // Bands saved before the grade strata (dungeon version 5) become a grade's: a player who picked a
@@ -175,6 +180,10 @@ function loadPlayer() {
 function saveTeam() { store.player(PID).set("heroes", team); }
 function saveWallet() { store.player(PID).set("wallet", wallet); }
 function saveItems() { store.player(PID).set("items", inv); }
+function saveWardrobe() { store.player(PID).set("wardrobe", wardrobe); }
+function saveShop() { store.player(PID).set("shop", shop); }
+// ?wallet=<cents> sets the wallet, for testing the shop.
+const WALLET_AT = new URLSearchParams(location.search).has("wallet") ? Math.max(0, Math.floor(Number(new URLSearchParams(location.search).get("wallet"))) || 0) : null;
 // The voice explains a thing only the first time or first few (`times`): true while it still
 // should, counting this time. Saved per player as told: { tag: count }.
 function once(tag, times = 1) {
@@ -191,7 +200,10 @@ const hasCaptain = () => team.captain != null;
 const fresh = () => !Object.keys(progress || {}).length;
 // A digit fights as its hero once it has joined: the captain, or a rescued digit.
 const onTeam = (d) => d === team.captain || team.rescued.includes(d);
-const heroArt = (d, cls) => heroSvg(HEROES[d], { color: d === team.captain ? team.color : null, cls });
+// A team hero as drawn everywhere: the captain in your chalk color, each in their outfit (the
+// wardrobe, DESIGN.md §6.3).
+const dressOf = (d) => wearOf(wardrobe, d);
+const heroArt = (d, cls) => heroSvg(HEROES[d], { color: d === team.captain ? team.color : null, cls, wear: dressOf(d) });
 // The captain beside the hearts, and in "Playing as".
 function captainUI() {
   const c = $("captainMini");
@@ -245,7 +257,8 @@ function heartsUI(cracking) {
    until it's used (the Totem as a gold ×2). Hidden for a player with no items. */
 // An item's icon: its emoji, but the Times Two Totem is a gold "×2" (the ✖️ emoji is a thin grey
 // cross on the dark slots).
-const itemIcon = (id) => (id === "totem" ? '<span class="tot">×2</span>' : itemOf(id).icon);
+const itemIcon = (id) => (id === "totem" ? '<span class="tot">×2</span>' : id === "pie" ? PIE : itemOf(id).icon);
+const PIE = `<span class="pie">${pieSvg()}</span>`; // a drawn pie with a π vented in the crust (chest.js)
 function slotsUI() {
   const box = $("slots");
   const any = inv.slots.some(Boolean) || ITEMS.some((i) => countOf(inv, i.id));
@@ -710,7 +723,7 @@ function heroMoment(mo, typed, crit) {
   if (mo.partner != null) rest = rest.replace(String(mo.partner), "");
   const from = $("blank") && $("blank").offsetParent ? $("blank") : $("ans");
   const colorOf = (d) => (d === team.captain ? team.color : null);
-  return playMoment({ hero: mo.hero, partner: mo.partner, color: colorOf(mo.hero), partnerColor: mo.partner != null ? colorOf(mo.partner) : null, quip: mo.quip,
+  return playMoment({ hero: mo.hero, partner: mo.partner, color: colorOf(mo.hero), partnerColor: mo.partner != null ? colorOf(mo.partner) : null, wear: dressOf(mo.hero), partnerWear: mo.partner != null ? dressOf(mo.partner) : null, quip: mo.quip,
     before: () => speaking() ? cutOff(sfx.scratch, sfx.SCRATCH_AT, sfx.SCRATCH) : null,
     speak: () => say("h", quipLine(mo.quip), true), from, to: $("mon"), room: document.querySelector(".game"),
     reduced: reduced(), onSnap: () => { if (rest) fly(rest, crit); } });
@@ -975,7 +988,7 @@ function cleared(chestDone) {
     say("p", heroJoins(h));
     say("p", heroHelps(h));
     show(`<h2>${h.n} is free!</h2>
-    <div class="cardmon rescued">${heroSvg(h)}</div>
+    <div class="cardmon rescued">${heroArt(h.d)}</div>
     <p><strong>${h.n} joins your team.</strong> When your answer has a ${h.d}, ${h.n} jumps in and hits harder.</p>
     ${stars}
     ${next.replace('class="cardmon"', 'class="cardmon small"')}
@@ -1098,8 +1111,13 @@ function chestShow(C, state, msg) {
     <div class="chest-box">${chestSvg(art)}${inside}</div>
     <p class="chest-msg" id="chestMsg">${msg || (state === "locked" ? (C.tries ? "Try this lock." : "Answer the lock to open it.") : "")}</p>
     ${state === "locked" ? `<div class="pad chest-pad${cmp ? " cmp" : ""}" id="chestPad">${padKeysHTML(cmp ? "cmp" : "num", "Open!")}</div>`
-      : `<div class="btns"><button class="big" id="chestNext">Next</button></div>`}</div>`, "float chest");
+      : `<div class="btns">${state === "open" && C.piece ? '<button class="big alt" id="chestWear">👕 Put it on</button>' : ""}<button class="big" id="chestNext">Next</button></div>`}</div>`, "float chest");
   if ($("chestPad")) $("chestPad").onclick = (e) => { const b = e.target.closest("button"); if (b) chestPress(b.dataset.k); };
+  // Clothing found: put it on the captain now (it shows on the hearts row at once), then Next.
+  if ($("chestWear")) $("chestWear").onclick = () => {
+    putOn(wardrobe, team.captain, C.piece); saveWardrobe(); captainUI(); sfx.tick();
+    const b = $("chestWear"); b.disabled = true; b.textContent = "✓ On!";
+  };
   if ($("chestNext")) $("chestNext").onclick = () => { const d = C.done; G.chest = null; d(); };
 }
 function chestPress(k) {
@@ -1148,9 +1166,21 @@ function chestSubmit(C) {
 }
 // What's inside (loot.js contents): money, counted aloud, or an item. Saved at once.
 function takeLoot(C) {
-  let what = contents();
+  let what = contents(Math.random, wardrobe.owned);
   if (CHEST_ALWAYS === "money") what = { kind: "money" };
   if (CHEST_ALWAYS === "item" && what.kind !== "item") what = { kind: "item", item: ITEMS[Math.floor(Math.random() * ITEMS.length)].id };
+  if (CHEST_ALWAYS === "clothing" && what.kind !== "clothing") { const l = unowned(wardrobe.owned); if (l.length) what = { kind: "clothing", piece: l[Math.floor(Math.random() * l.length)].id }; }
+  if (what.kind === "clothing") {
+    // A piece not owned yet, into the bag; shown on the captain, with Put it on beside Next.
+    const p = clothesById[what.piece];
+    addPiece(wardrobe, p.id); saveWardrobe();
+    say("p", clothingName(p.id));
+    C.piece = hasCaptain() ? p.id : null;
+    C.lootMsg = `<b class="loot-name">${esc(p.name)}</b>${hasCaptain() ? "Put it on?" : "It's in your 👕 wardrobe."}`;
+    if (hasCaptain()) say("p", SHOP.putOn);
+    const preview = hasCaptain() ? heroSvg(HEROES[team.captain], { color: team.color, wear: Object.assign({}, dressOf(team.captain), { [p.spot]: p.id }) }) : pieceSvg(p.id);
+    return `<div class="loot-cloth">${preview}</div>`;
+  }
   if (what.kind === "item") {
     const it = itemOf(what.item);
     gain(inv, it.id);
@@ -1175,7 +1205,159 @@ function lootRowHTML() {
   return `<div class="loot-row">
     <button type="button" class="small purse-btn" id="openPurse" aria-label="Your purse">${purseSvg()}<span class="wmini">${walletMini(wallet) || "<small>Empty</small>"}</span></button>
     <button type="button" class="small items-btn" id="openItems" aria-label="Items"><span aria-hidden="true">🎒</span><span class="imini">${inv.slots.map((id) => `<i>${id ? itemIcon(id) : ""}</i>`).join("")}</span></button>
+    <button type="button" class="small shop-btn" id="openShop" aria-label="Trollar's shop"><span class="shop-mini" aria-hidden="true">${STALL}</span></button>
   </div>`;
+}
+
+/* ---------- the wardrobe (DESIGN.md §6.3, loot.js) ----------
+   The captain, big and dressed, over three rows (head, face, neck), each the pieces owned for that
+   spot and "none". Tapping one puts it on the captain at once, and the voice says its name. Only
+   the captain is dressed here; a hero keeps their outfit after they stop being captain. From the
+   start screen (👕 by the hero) and the pause screen; mid-run it shows on the hearts row at once.
+   back: where Done goes (the start screen, the pause screen, or the shop). */
+const SPOT_LABEL = { head: "🎩 Head", face: "👓 Face", neck: "🎀 Neck" };
+function wardrobeCard(back, quiet) {
+  if (!G.paused) G.onMenu = false;
+  const d = team.captain, on = dressOf(d), any = wardrobe.owned.length > 0;
+  const rows = SPOTS.map((sp) => {
+    const list = ownedFor(wardrobe, sp);
+    const none = `<button type="button" class="wpiece none${on[sp] ? "" : " on"}" data-spot="${sp}" aria-pressed="${!on[sp]}" aria-label="No ${sp} piece"><span aria-hidden="true">∅</span></button>`;
+    return `<div class="wrow"><span class="wspot">${SPOT_LABEL[sp]}</span><div class="wpieces">${none}${list.map((p) =>
+      `<button type="button" class="wpiece${on[sp] === p.id ? " on" : ""}" data-id="${p.id}" aria-pressed="${on[sp] === p.id}" aria-label="${esc(p.name)}">${pieceSvg(p.id)}</button>`).join("")}</div></div>`;
+  }).join("");
+  show(`<div class="cardhead"><h2>👕 Wardrobe</h2></div>
+  <div class="wardrobe">
+    <div class="wcap">${hasCaptain() ? heroArt(d) : ""}<b>${hasCaptain() ? esc(HEROES[d].n) : ""}</b></div>
+    ${any ? `<div class="wrows">${rows}</div>` : `<p class="wempty">No clothes yet. Open chests or visit Trollar's shop!</p>`}
+  </div>
+  <div class="btns"><button class="big" id="wardDone">Done</button></div>`, G.paused ? "float" : "page");
+  const redraw = () => { const top = $("ov").scrollTop; wardrobeCard(back, true); $("ov").scrollTop = top; };
+  $("card").querySelectorAll(".wpiece").forEach((b) => b.onclick = () => {
+    const id = b.dataset.id || null;
+    if (!putOn(wardrobe, d, id, b.dataset.spot)) return;
+    saveWardrobe(); sfx.tick();
+    if (id) say("p", clothingName(id), true);
+    captainUI(); whoUI();
+    if (sceneOn()) drawScene();
+    redraw();
+  });
+  $("wardDone").onclick = () => (back ? back() : G.paused ? pause() : menu());
+  if (quiet) return;
+  if (!any) say("p", SHOP.wardrobeEmpty, true);
+  else if (once("wardrobe", 2)) say("p", SHOP.wardrobeHow, true);
+}
+
+/* ---------- Trollar's shop (DESIGN.md §6.3, shop.js) ----------
+   From the start screen only (the stall in the scene, or 🏪 by the purse), never mid-run. It sells
+   the four items, always, and a handful of clothing the player doesn't own (new after each run).
+   Tapping a thing says its price; then paying is the math: the purse's coins (the wallet as the
+   fewest bills and coins) are tapped onto the counter one at a time, and tapped back off, until
+   there's enough, and Buy lights up. The game never pays. Too much: Trollar gives change, as the
+   fewest coins, back into the purse. Can't afford it: Trollar says so, with no counter. */
+const thingName = (t) => (t.kind === "item" ? itemOf(t.id).name : clothesById[t.id].name);
+const thingArt = (t) => (t.kind === "item" ? `<span class="ico" aria-hidden="true">${itemIcon(t.id)}</span>` : pieceSvg(t.id));
+// One coin (or a $1 bill) as art.
+const tokenArt = (k) => (k === "b" ? billSvg() : coinsSvg([{ k }]));
+// The coins as a row of single tokens, biggest first: [{ k, i }] for each one.
+const tokensOf = (c) => TOKENS.flatMap((t) => Array.from({ length: c[t.k] || 0 }, (_, i) => ({ k: t.k, i })));
+function shopRestock() { shop.stock = restock(wardrobe.owned, Math.random, shop.stock); saveShop(); }
+function shopCard(view) {
+  G.onMenu = false;
+  if (!shop.stock.length && unowned(wardrobe.owned).length) shopRestock();
+  const k = kPrices(st.grade), S = G.shopping = G.shopping || {};
+  S.purse = purseFor(wallet, S.purse); // this visit's coins (shop.js purseFor)
+  const troll = MON.find((m) => m.n === "Trollar");
+  const head = (msg) => `<div class="cardhead"><h2>Trollar's shop</h2></div>
+  <div class="shop-top"><div class="shop-troll">${svg(troll)}</div><p class="bubble" id="shopSays">${msg}</p></div>`;
+  const back = () => { G.shopping = null; menu(); };
+  if (!view || view === "stock") {
+    const sale = forSale(shop, wardrobe.owned);
+    const tiles = sale.map((t, i) => {
+      const c = priceOf(t, k), have = t.kind === "item" ? countOf(inv, t.id) : 0;
+      return `<button type="button" class="stile${t.kind === "clothing" ? " cloth" : ""}${wallet < c ? " dear" : ""}" data-i="${i}" aria-label="${esc(thingName(t))}, ${c} cents">
+        <span class="sart">${thingArt(t)}${have ? `<b class="shave">${have}</b>` : ""}</span>${priceTag(c)}</button>`;
+    }).join("");
+    const noClothes = !unowned(wardrobe.owned).length, first = !S.greeted && once("shopHello");
+    show(`${head(S.greeted ? "What will it be?" : first ? "Welcome to my shop!" : "Hello again!")}
+    <div class="sgrid">${tiles}</div>
+    ${noClothes ? `<p class="snote">You have all my clothes!</p>` : ""}
+    <div class="shop-wallet">${purseSvg()}<div class="scoins">${tokensOf(S.purse).map((x) => `<span class="stoken">${tokenArt(x.k)}</span>`).join("") || "<small>Empty</small>"}</div><b class="stotal">${wallet}¢</b></div>
+    <div class="btns"><button class="big" id="shopDone">Done</button></div>`, "page shop");
+    if (!S.greeted) {
+      S.greeted = true;
+      if (first) say("p", SHOP.hello, true); else say("p", SHOP.hi, true);
+      if (once("shopPick", 2)) say("p", SHOP.pick);
+      if (noClothes && once("allClothes")) say("p", SHOP.allClothes);
+    }
+    $("card").querySelectorAll(".stile").forEach((b) => b.onclick = () => {
+      const t = sale[Number(b.dataset.i)], c = priceOf(t, k);
+      sfx.tick();
+      say("p", priceLine(t, c), true);
+      Object.assign(S, { thing: t, price: c, counter: emptyCounter(), paid: null });
+      if (!canAfford(wallet, c)) { say("p", SHOP.need); return shopCard("need"); }
+      if (once("shopHow", 3)) say("p", SHOP.how);
+      shopCard("pay");
+    });
+    $("shopDone").onclick = back;
+    return;
+  }
+  const t = S.thing, c = S.price;
+  const thing = `<div class="sthing"><span class="sart lg">${thingArt(t)}</span><span class="sname"><b>${esc(thingName(t))}</b>${priceTag(c)}</span></div>`;
+  const toShop = () => { S.thing = null; shopCard("stock"); };
+  if (view === "need") {
+    show(`${head("You need more coins. Open chests to find some!")}${thing}
+    <div class="spurse"><span class="slabel">Your purse</span><div class="scoins">${tokensOf(S.purse).map((x) => `<span class="stoken">${tokenArt(x.k)}</span>`).join("") || "<small>Empty</small>"}</div><b class="stotal">${wallet}¢</b></div>
+    <div class="btns"><button class="big" id="shopBack">Back</button></div>`, "page shop");
+    $("shopBack").onclick = toShop;
+    return;
+  }
+  if (view === "pay") {
+    const on = counterTotal(S.counter), ok = enough(S.counter, c), rest = purseLeft(S.purse, S.counter);
+    // The purse as stacks, one per kind, biggest first: tap one to put a coin down.
+    const stacks = TOKENS.filter((x) => rest[x.k] > 0 || S.purse[x.k] > 0).map((x) =>
+      `<button type="button" class="stack${rest[x.k] ? "" : " gone"}" data-k="${x.k}" ${rest[x.k] ? "" : "disabled"} aria-label="Put down ${x.k === "b" ? "a dollar" : "a " + coinOf(x.k).name}, ${rest[x.k]} left">${tokenArt(x.k)}<b>${rest[x.k] > 1 ? "×" + rest[x.k] : ""}</b></button>`).join("");
+    const counter = tokensOf(S.counter).map((x) => `<button type="button" class="ctoken" data-k="${x.k}" aria-label="Take back ${x.k === "b" ? "the dollar" : "a " + coinOf(x.k).name}">${tokenArt(x.k)}</button>`).join("");
+    show(`${head(ok ? "That's enough! Tap Buy!" : "Tap coins to pay me!")}${thing}
+    <div class="counter${ok ? " ok" : ""}"><div class="ccoins">${counter || '<span class="chint">Tap your coins</span>'}</div><p class="ctotal">You put down <b>${on}¢</b></p></div>
+    <div class="spurse"><span class="slabel">Your purse</span><div class="stacks">${stacks}</div></div>
+    <div class="btns"><button class="big alt" id="shopBack">Back</button><button class="big buy" id="shopBuy" ${ok ? "" : "disabled"}>Buy</button></div>`, "page shop");
+    $("card").querySelectorAll(".stack:not([disabled])").forEach((b) => b.onclick = () => {
+      if (!putDown(S.purse, S.counter, b.dataset.k, c)) { if (enough(S.counter, c)) say("p", SHOP.enough, true); return; }
+      sfx.coins(1);
+      if (enough(S.counter, c)) say("p", SHOP.enough, true);
+      shopCard("pay");
+    });
+    $("card").querySelectorAll(".ctoken").forEach((b) => b.onclick = () => { if (takeBack(S.counter, b.dataset.k)) { sfx.tick(); shopCard("pay"); } });
+    $("shopBack").onclick = toShop;
+    $("shopBuy").onclick = () => {
+      const r = pay(S.purse, S.counter, c);
+      if (!r.ok) return; // never pays for you
+      wallet = r.wallet; S.purse = r.purse; saveWallet();
+      if (t.kind === "item") { gain(inv, t.id); saveItems(); } else { addPiece(wardrobe, t.id); saveWardrobe(); }
+      S.paid = r;
+      sfx.chestOpen();
+      if (r.exact) say("p", SHOP.exact, true); else say("p", changeLine(r.change), true);
+      say("p", SHOP.thanks);
+      if (t.kind === "item") say("p", SHOP.inItems); else if (hasCaptain()) say("p", SHOP.putOn);
+      shopCard("bought");
+    };
+    return;
+  }
+  // Bought: the change going back into the purse (or "Exact change!"), then where it went.
+  const r = S.paid, change = r.exact ? `<p class="exact">⭐ Exact change! ⭐</p>`
+    : `<div class="change"><span class="slabel">Here's ${r.change}¢ back!</span><div class="ccoins">${tokensOf(r.changeCoins).map((x, i) => `<span class="ctoken back" style="--i:${i}">${tokenArt(x.k)}</span>`).join("")}</div></div>`;
+  const cloth = t.kind === "clothing" && hasCaptain();
+  show(`${head("Thank you! Come again!")}${thing.replace('class="sthing"', 'class="sthing got"')}
+  ${change}
+  <div class="spurse"><span class="slabel">Your purse</span><div class="scoins">${tokensOf(S.purse).map((x) => `<span class="stoken">${tokenArt(x.k)}</span>`).join("") || "<small>Empty</small>"}</div><b class="stotal">${wallet}¢</b></div>
+  <p class="snote">${t.kind === "item" ? "It's in your 🎒 items." : cloth ? "Put it on?" : "It's in your 👕 wardrobe."}</p>
+  <div class="btns">${cloth ? `<button class="big alt" id="shopBack">Not now</button><button class="big" id="shopWear">👕 Put it on</button>` : `<button class="big" id="shopBack">Back to the shop</button>`}</div>`, "page shop");
+  $("shopBack").onclick = toShop;
+  if ($("shopWear")) $("shopWear").onclick = () => {
+    putOn(wardrobe, team.captain, t.id); saveWardrobe(); captainUI(); whoUI();
+    say("p", clothingName(t.id), true);
+    wardrobeCard(toShop, true);
+  };
 }
 // fromPause: Back returns to the pause screen; otherwise to the start screen.
 function purseCard(fromPause) {
@@ -1236,12 +1418,13 @@ function pause() {
   if (justPaused && once("pause", 3)) say("p", PHRASE.paused);
   show(`<h2>Paused</h2>
   <p>Floor ${G.floor + 1} of ${G.floors.length}: <strong>${esc(G.floors[G.floor].n)}</strong></p>
-  <div class="pause-btns"><button class="small" type="button" id="pBook">📖 Monsters &amp; Heroes</button><button class="small" type="button" id="pSettings">⚙ Settings</button><button class="small" type="button" id="pItems">🎒 Items</button><button class="small purse-btn" type="button" id="pPurse" aria-label="Your purse">${purseSvg()}<span class="wmini">${walletMini(wallet)}</span></button><button class="small danger" type="button" id="pExit">Exit the dungeon</button></div>
+  <div class="pause-btns"><button class="small" type="button" id="pBook">📖 Monsters &amp; Heroes</button><button class="small" type="button" id="pSettings">⚙ Settings</button><button class="small" type="button" id="pItems">🎒 Items</button><button class="small" type="button" id="pWardrobe">👕 Wardrobe</button><button class="small purse-btn pwide" type="button" id="pPurse" aria-label="Your purse">${purseSvg()}<span class="wmini">${walletMini(wallet)}</span></button><button class="small danger" type="button" id="pExit">Exit the dungeon</button></div>
   <div class="btns"><button class="big" id="resume">Keep fighting</button></div>`, "float");
   $("resume").onclick = resume;
   $("pBook").onclick = bookPage;
   $("pItems").onclick = () => itemsCard(true);
   $("pPurse").onclick = () => purseCard(true);
+  $("pWardrobe").onclick = () => wardrobeCard();
   $("pSettings").onclick = () => settings(true);
   $("pExit").onclick = () => {
     const b = $("pExit");
@@ -1289,7 +1472,7 @@ function playersHTML() {
     const me = p.id === PID, open = editId === p.id;
     const g = me ? st.grade : store.settings(p.id).grade;
     const h = me ? team : (store.player(p.id).get("heroes", null) || {});
-    const hero = h.captain != null ? heroSvg(HEROES[h.captain], { color: h.color || null }) : '<span class="pnone" aria-hidden="true">?</span>';
+    const hero = h.captain != null ? heroSvg(HEROES[h.captain], { color: h.color || null, wear: wearOf(me ? wardrobe : freshWardrobe(store.player(p.id).get("wardrobe", null)), h.captain) }) : '<span class="pnone" aria-hidden="true">?</span>';
     const name = esc(displayName(list, p.id));
     return `<li class="pcard${me ? " me" : ""}${open ? " open" : ""}" data-id="${esc(p.id)}">
       <div class="phead">
@@ -1388,7 +1571,7 @@ function menu() {
     if ($("switchPlayer")) $("switchPlayer").onclick = () => settings();
     return;
   }
-  show(`${head}
+  show(`${head.replace('<div class="scene-gap" aria-hidden="true"></div>', '<div class="scene-gap"><button type="button" class="stall-tap" id="stallTap" tabindex="-1" aria-label="Trollar\'s shop" hidden></button></div>')}
   ${captainHTML()}
   ${lootRowHTML()}
   <div class="grp"><span>Pick a stratum</span><div class="wings strata"><div class="surface" aria-hidden="true"></div>${wingsHTML()}</div></div>
@@ -1409,6 +1592,7 @@ function menu() {
   if ($("switchPlayer")) $("switchPlayer").onclick = () => settings();
   $("openPurse").onclick = () => purseCard(false);
   $("openItems").onclick = () => itemsCard(false);
+  $("openShop").onclick = $("stallTap").onclick = () => { G.shopping = null; shopCard(); };
   $("go").onclick = () => {
     if (!hasCaptain()) { $("warn").textContent = freePick(team, fresh()) ? "Pick your hero first." : "Pick who leads first."; $("captain").scrollIntoView({ block: "center", behavior: "smooth" }); say("p", PHRASE.heroFirst, true); return; }
     descend(null, "enter");
@@ -1423,7 +1607,7 @@ function menu() {
 // from this same surface (sceneNow), and start() takes it away.
 let sceneHz = null;
 function sceneHeroes() {
-  const art = (d, role, o) => ({ svg: heroSvg(HEROES[d], o || {}), role });
+  const art = (d, role, o) => ({ svg: heroSvg(HEROES[d], Object.assign({ wear: dressOf(d) }, o)), role });
   const rest = team.rescued.filter((d) => d !== team.captain).sort((a, b) => a - b).map((d) => art(d, "team"));
   if (hasCaptain()) return [art(team.captain, "cap", { color: team.color }), ...rest];
   return rest; // with nobody picked, just the door
@@ -1439,10 +1623,21 @@ function drawScene() {
     card.style.setProperty("--sheet", sheet + "px");
     sceneHz = card.getBoundingClientRect().top + $("ov").scrollTop + sheet - 16;
   }
-  sc.innerHTML = surfaceHTML({ W, H, hz: sceneHz || H * 0.4, heroes: sceneHeroes() });
+  sc.innerHTML = surfaceHTML({ W, H, hz: sceneHz || H * 0.4, heroes: sceneHeroes(), stall: STALL });
+  // Trollar's stall opens the shop: the scene is under the card, so a see-through button in the
+  // card's window (the scene-gap) sits over it. Only on the start screen proper (#stallTap is
+  // there), never mid-run.
+  const tap = $("stallTap"), box = sc.querySelector(".d-stall");
+  if (tap && gap && box) {
+    const g = gap.getBoundingClientRect(), s = box.getBoundingClientRect();
+    const top = Math.max(0, s.top - g.top), bottom = Math.min(g.height, s.bottom - g.top);
+    Object.assign(tap.style, { left: Math.round(s.left - g.left) + "px", top: Math.round(top) + "px", width: Math.round(s.width) + "px", height: Math.max(0, Math.round(bottom - top)) + "px" });
+    tap.hidden = bottom - top < 24;
+  }
 }
+const STALL = stallSvg();
 const sceneOn = () => !$("scene").hidden;
-const sceneNow = () => (sceneOn() ? { hz: sceneHz, heroes: sceneHeroes() } : null);
+const sceneNow = () => (sceneOn() ? { hz: sceneHz, heroes: sceneHeroes(), stall: STALL } : null);
 function hideScene() { $("scene").hidden = true; $("scene").innerHTML = ""; document.body.classList.remove("on-scene"); }
 let sceneFrame = 0;
 const redrawScene = () => { if (!sceneOn() || descending()) return; cancelAnimationFrame(sceneFrame); sceneFrame = requestAnimationFrame(drawScene); };
@@ -1593,7 +1788,7 @@ function bookPage() {
   }
   beasts += "</div>";
   const heroes = HEROES.map((h) => onTeam(h.d)
-    ? `<section class="hero-card${h.d === team.captain ? " captain-card" : ""}">${heroSvg(h, { color: h.d === team.captain ? team.color : null })}
+    ? `<section class="hero-card${h.d === team.captain ? " captain-card" : ""}">${heroArt(h.d)}
         <b>${esc(h.n)}</b><small>${esc(h.cls)}</small><small>${esc(h.move)}</small>${quipsHeard(h.d)}${h.d === team.captain ? '<small class="cap-tag">Your hero</small>' : ""}</section>`
     : `<section class="hero-card unmet">${heroSvg(h, { cursed: true, cracks: cracksOf(h.d) })}<b>???</b><small>${cracksOf(h.d) ? `Curse cracked ${cracksOf(h.d)} of ${CURSE_HITS}` : "Still cursed"}</small></section>`).join("");
   const freed = HEROES.filter((h) => onTeam(h.d)).length, met = roster().filter((x) => seen[x.m.n]).length;
@@ -1662,15 +1857,15 @@ function captainHTML(label) {
   if (!first && !pickOpen) {
     const h = HEROES[team.captain];
     return `<div class="grp" id="captain"><span>${label || "Your hero"}</span>
-      <div class="cap-row"><div class="cap-art">${heroSvg(h, { color: team.color })}</div>
+      <div class="cap-row"><div class="cap-art">${heroArt(h.d)}</div>
         <div class="cap-text"><b>${esc(h.n)}</b><small>Power hits on ${h.d}s</small></div>
-        <button class="small" type="button" id="changeHero">Change</button></div></div>`;
+        ${label ? "" : `<button class="small wear-btn" type="button" id="openWardrobe" aria-label="Wardrobe"><span aria-hidden="true">👕</span></button>`}<button class="small" type="button" id="changeHero">Change</button></div></div>`;
   }
   const any = freePick(team, fresh());
   const heroes = HEROES.map((h) => {
     const can = any || onTeam(h.d), on = h.d === team.captain;
     return `<button type="button" class="hpick${on ? " on" : ""}" data-d="${h.d}" ${can ? "" : "disabled"} aria-pressed="${on}" aria-label="${can ? h.n : "Cursed, not rescued yet"}">
-      ${heroSvg(h, { color: on ? team.color : null, cursed: !can })}<small>${can ? h.n : "???"}</small></button>`;
+      ${heroSvg(h, { color: on ? team.color : null, cursed: !can, wear: can ? dressOf(h.d) : null })}<small>${can ? h.n : "???"}</small></button>`;
   }).join("");
   const title = !first ? label || "Your hero" : any ? "Pick your hero" : "Pick who leads next";
   return `<div class="grp" id="captain"><span>${title}</span>
@@ -1682,6 +1877,7 @@ function wireCaptain() {
   const custom = ["Pick your hero", "Pick who leads next", "Your hero"].includes(label) ? "" : label;
   const redraw = () => { const n = $("captain"); n.outerHTML = captainHTML(custom); wireCaptain(); };
   if ($("changeHero")) $("changeHero").onclick = () => { pickOpen = true; redraw(); };
+  if ($("openWardrobe")) $("openWardrobe").onclick = () => wardrobeCard();
   box.querySelectorAll(".hpick:not([disabled])").forEach((b) => b.onclick = () => {
     const next = pickHero(team, Number(b.dataset.d), fresh());
     if (!next) return;
@@ -1779,6 +1975,8 @@ function start(depth, enter, voiced, pause) {
   G.onMenu = false;
   hide(); hideScene();
   newRun(depth);
+  shopRestock(); // Trollar's clothing changes after each run
+  G.shopping = null;
   Object.assign(G, { hearts: band().hearts, streak: 0, solved: 0, tries: 0, running: true, retry: [], recent: [], next: false, paused: null, runStars: 0,
     fx: {}, chest: null });
   MR = freshRun();

@@ -18,6 +18,8 @@ import { patternFacts, PATTERN_GAME_LEVELS } from "./patterns.js";
 import { traitOf } from "./traits.js";
 import { QUIPS, FINALS, CRIT, TEAM_LINES, TEAM_NUMBERS, CAPTAIN_LINES, captainNames } from "./moments.js";
 import { fewest, ITEMS } from "./loot.js";
+import { clothesById, findable } from "./clothes.js";
+import { allPrices } from "./shop.js";
 import { coinWords } from "./coins.js";
 import { BANDS, pool, factOf } from "./learn.js";
 
@@ -202,9 +204,45 @@ export function purseLine(c) {
   return capital(spoken(b)) + (b === 1 ? " dollar" : " dollars") + (r ? " and " + cents(r) : "") + "!";
 }
 
+// Clothing (clothes.js, DESIGN.md §6.3): a piece's name, said when it's found in a chest, bought,
+// or tapped in the wardrobe: "A party hat!", "An eye patch!", "Bunny ears!" (no "a" for a pair).
+// Only the findable pieces: the special ones come from achievements (later). In the "clothes"
+// sprite.
+var PAIRS = { glasses: true, sunglasses: true, starglasses: true, bunnyears: true };
+function pieceWords(id) { var p = clothesById[id]; return p.name[0] + p.name.slice(1).toLowerCase(); }
+export function clothingName(id) {
+  var w = pieceWords(id), low = w[0].toLowerCase() + w.slice(1);
+  return PAIRS[id] ? w + "!" : (/^[aeiou]/i.test(w) ? "An " : "A ") + low + "!";
+}
+// Trollar's shop: what he says, in the "shop" sprite with the prices. Short, for a pre-reader.
+export var SHOP = {
+  hello: "Welcome to my shop!",
+  hi: "Hello again! What will it be?",
+  pick: "Tap something to buy it!",
+  how: "Tap coins to pay Trollar!",
+  need: "You need more coins. Open chests to find some!",
+  enough: "That's enough! Tap Buy!",
+  exact: "Exact change!",
+  thanks: "Thank you! Come again!",
+  inItems: "It's in your items!",
+  putOn: "Put it on?",
+  allClothes: "You have all my clothes!",
+  wardrobeHow: "Tap something to put it on your captain!",
+  wardrobeEmpty: "No clothes yet. Open chests or visit Trollar's shop!"
+};
+// "The pie costs thirty-five cents.", "The sunglasses cost a quarter." is said in cents too, so
+// the number matches the tag. thing: { kind: "item" | "clothing", id }.
+var ITEM_THE = { pie: "The pie", shield: "The shield", totem: "The Times Two Totem", magnet: "The Hero Magnet" };
+export function priceLine(thing, c) {
+  var what = thing.kind === "item" ? ITEM_THE[thing.id] : "The " + pieceWords(thing.id).toLowerCase();
+  return what + (thing.kind === "clothing" && PAIRS[thing.id] ? " cost " : " costs ") + cents(c) + ".";
+}
+// Change from Trollar: "Here's ten cents back!" (always under a dollar: shop.js pay).
+export function changeLine(c) { return "Here's " + cents(c) + " back!"; }
+
 // [{ kind, text }], each once.
 // The groups the listen check (review/listen/) plays lines in.
-export var GROUPS = ["Phrases", "Monsters & heroes", "Add & subtract", "Times & divide", "Missing numbers", "Which is more", "Coins", "Two-digit", "Balance Hall", "Three numbers", "Arrays", "Time", "Patterns", "Fractions", "Rounding", "Area & perimeter", "Hero quips", "Team-ups", "Captain lines", "Boss forms", "Chests & items", "Money"];
+export var GROUPS = ["Phrases", "Monsters & heroes", "Add & subtract", "Times & divide", "Missing numbers", "Which is more", "Coins", "Two-digit", "Balance Hall", "Three numbers", "Arrays", "Time", "Patterns", "Fractions", "Rounding", "Area & perimeter", "Hero quips", "Team-ups", "Captain lines", "Boss forms", "Chests & items", "Money", "Shop", "Clothing"];
 
 // [{ kind, text, group, sprite? }], each once.
 export function spokenLines() {
@@ -299,6 +337,12 @@ export function spokenLines() {
   ITEMS.forEach(function (i) { [itemName, itemWhat, itemUse].forEach(function (f) { add("p", f(i.id), "Chests & items", "loot"); }); });
   for (var c = 1; c < 100; c++) add("p", moneyLine(c), "Money", "loot");
   for (c = 100; c <= PURSE_MAX_SPOKEN; c++) add("p", purseLine(c), "Money");
+  // Trollar's shop, in the "shop" sprite: what he says and every price (K's and the older ones');
+  // his change, 1–99¢, in "change"; clothing names in "clothes".
+  Object.keys(SHOP).forEach(function (k) { add("p", SHOP[k], "Shop", "shop"); });
+  allPrices().forEach(function (t) { add("p", priceLine(t, t.c), "Shop", "shop"); });
+  for (c = 1; c < 100; c++) add("p", changeLine(c), "Shop", "change");
+  findable().forEach(function (p) { add("p", clothingName(p.id), "Clothing", "clothes"); });
   var seen = {};
   return packSprites(out.filter(function (l) { var k = l.kind + ":" + l.text; if (seen[k]) return false; seen[k] = true; return true; }));
 }
@@ -318,7 +362,7 @@ export function estSeconds(text) { return text.length / CHARS_PER_S + SPRITE_GAP
 // Loaded whenever the game has a voice (after the first tap), in any stratum. The purse's dollar
 // amounts ("purse") and every problem and monster sprite wait for a run that needs them
 // (runSprites).
-export var ALWAYS = ["phrases-start", "phrases-fight", "phrases-explain", "heroes", "quips", "captains", "bosses", "loot", "money", "depths"];
+export var ALWAYS = ["phrases-start", "phrases-fight", "phrases-explain", "heroes", "quips", "captains", "bosses", "loot", "money", "depths", "shop", "change", "clothes"];
 var slug = function (t) { return t.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, ""); };
 var KIND = { "+": "add", "-": "sub", "×": "mul", "÷": "div", "□": "bonds", "○": "cmp", "=": "bal", "¢": "coins", "M": "more", "/": "frac", "≈": "round", "▭": "rect", "Σ": "three", "▦": "arrays" };
 var memo = null;

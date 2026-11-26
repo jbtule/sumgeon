@@ -5,8 +5,10 @@
 // on the rescue floor. Its lock is a learned fact from the stratum's band, answered on the number
 // pad (or < = >). Right: it opens. Wrong: the lock jams, the fact goes to the retry queue, and a
 // second lock is tried; a second miss leaves it shut. A missed lock costs nothing.
-// Inside, one thing: money about half the time, an item about a third, otherwise (for now) money.
+// Inside, one thing: money about half the time, an item about a third, otherwise a piece of
+// clothing the player doesn't have yet (money once they have every piece).
 import { pool, factOf, learned, notRecent } from "./learn.js";
+import { CLOTHES, clothesById, findable, SPOTS } from "./clothes.js";
 
 export const CHEST_SHARE = 1 / 3, LOCKS = 2;
 // m: the floor's monster. A boss always has one; the rescue floor (a cursed hero) never does.
@@ -36,16 +38,53 @@ export function lockKey(bandKey, recs, opts = {}) {
 }
 export const lockOf = (key, rnd) => factOf(key, rnd);
 
-// What's inside: "money" or an item, one of ITEMS' ids. Clothing (DESIGN.md §6.3, later) is the
-// rest: when it's built, CLOTHING_READY turns on and a clothing pick goes here; until then it's money.
-export const MONEY_SHARE = 0.5, ITEM_SHARE = 1 / 3, CLOTHING_READY = false;
-export function contents(rnd) {
+// What's inside: "money", an item (one of ITEMS' ids), or clothing: a findable piece (never a
+// special one) not in owned yet, and money once every piece is owned.
+export const MONEY_SHARE = 0.5, ITEM_SHARE = 1 / 3, CLOTHING_READY = true;
+export function contents(rnd, owned) {
   const r = rnd || Math.random, roll = r();
   if (roll < MONEY_SHARE) return { kind: "money" };
   if (roll < MONEY_SHARE + ITEM_SHARE) return { kind: "item", item: ITEMS[Math.floor(r() * ITEMS.length)].id };
-  // The clothing hook: a piece you don't have yet, once clothing is built.
-  return CLOTHING_READY ? { kind: "clothing" } : { kind: "money" };
+  const left = CLOTHING_READY ? unowned(owned) : [];
+  return left.length ? { kind: "clothing", piece: left[Math.floor(r() * left.length)].id } : { kind: "money" };
 }
+
+/* ---------- the clothing bag and the wardrobe (DESIGN.md §6.3) ----------
+   Saved per player as wardrobe: { owned: [piece ids], wear: { [digit]: { head, face, neck } } }.
+   A piece comes from a chest or Trollar's shop, never twice. The captain is dressed in the
+   wardrobe, one piece per spot; a hero keeps what they wear after they stop being captain. */
+// The findable pieces not owned yet (never the special ones).
+export const unowned = (owned) => findable().filter((p) => !(owned || []).includes(p.id));
+export function freshWardrobe(saved) {
+  const s = saved && typeof saved === "object" ? saved : {};
+  const owned = [...new Set(Array.isArray(s.owned) ? s.owned.filter((id) => clothesById[id]) : [])], wear = {};
+  for (let d = 0; d <= 9; d++) {
+    const w = s.wear && s.wear[d], o = {};
+    if (w) SPOTS.forEach((sp) => { const p = clothesById[w[sp]]; if (p && p.spot === sp && owned.includes(p.id)) o[sp] = p.id; });
+    if (Object.keys(o).length) wear[d] = o;
+  }
+  return { owned, wear };
+}
+export const owns = (w, id) => w.owned.includes(id);
+// A new piece into the bag; false when it was already there (or isn't a piece).
+export function addPiece(w, id) { if (!clothesById[id] || owns(w, id)) return false; w.owned.push(id); return true; }
+// What hero d wears: { head, face, neck } of ids (empty spots left out).
+export const wearOf = (w, d) => (d == null ? {} : w.wear[d] || {});
+// Putting piece id on hero d, in its spot; id null takes spot off. Only owned pieces: false
+// otherwise.
+export function putOn(w, d, id, spot) {
+  if (d == null) return false;
+  const p = id ? clothesById[id] : null;
+  if (id && (!p || !owns(w, id))) return false;
+  const sp = p ? p.spot : spot;
+  if (!SPOTS.includes(sp)) return false;
+  const o = Object.assign({}, w.wear[d] || {});
+  if (p) o[sp] = id; else delete o[sp];
+  if (Object.keys(o).length) w.wear[d] = o; else delete w.wear[d];
+  return true;
+}
+// The owned pieces for one spot, in CLOTHES order.
+export const ownedFor = (w, spot) => CLOTHES.filter((p) => p.spot === spot && owns(w, p.id));
 
 /* ---------- money ----------
    Saved per player in cents (wallet), never lost. Found as a small pile of coins: the Cellar's
