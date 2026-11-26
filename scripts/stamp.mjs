@@ -24,7 +24,7 @@ const v = "?v=" + short;
 const root = fileURLToPath(new URL("..", import.meta.url));
 const out = join(root, "_site");
 // Every file the site serves. New top-level site files go here.
-const SITE = ["index.html", "LICENSE.md", "styles.css", "js", "listen", "spell", "moments", "gallery",
+const SITE = ["index.html", "LICENSE.md", "styles.css", "js", "review",
   "manifest.webmanifest", "favicon.svg", "apple-touch-icon.png", "icon-192.png", "icon-512.png", "social.png"];
 // Written by scripts/audio/build.mjs in the deploy; without it the game uses the device voice.
 const OPTIONAL = ["audio.json"];

@@ -4,13 +4,14 @@ import { readdirSync, readFileSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { join } from "node:path";
+import { PAGES } from "./stamping.mjs";
 
 const root = fileURLToPath(new URL("..", import.meta.url));
 let failed = false;
 function fail(msg) { console.error("✗ " + msg); failed = true; }
 
 // Syntax of every module and script.
-for (const dir of ["js", "scripts", "listen", "spell", "moments", "gallery"]) {
+for (const dir of ["js", "scripts", "review/listen", "review/spell", "review/moments", "review/gallery"]) {
   for (const f of readdirSync(join(root, dir)).filter((f) => /\.m?js$/.test(f))) {
     try { execFileSync(process.execPath, ["--check", join(root, dir, f)], { stdio: "pipe" }); }
     catch (e) { fail(`${dir}/${f}: ${e.stderr}`); }
@@ -37,14 +38,17 @@ if (/localStorage\.(setItem|getItem)\(/.test(app.replace(/window\.localStorage;[
 
 // The grown-up pages (the listen check spells out every recorded line; the spell check tries the
 // recognizer; the moments page plays Hero Moments; the gallery shows the monster art): search engines skip them, the game never
-// links to them, and stamp.mjs can fill in their badge, script and import map.
-for (const [dir, script] of [["listen", "listen.js"], ["spell", "spell.js"], ["moments", "moments.js"], ["gallery", "gallery.js"]]) {
+// links to them, and stamp.mjs can fill in their badge, script and import map. They all live
+// under review/, whose index.html lists them.
+for (const [dir, script] of PAGES) {
+  if (!dir.startsWith("review/")) fail(`${dir} should be under review/`);
   const page = readFileSync(join(root, dir, "index.html"), "utf8");
   if (!page.includes('<meta name="robots" content="noindex, nofollow">')) fail(`${dir}/index.html should be noindex`);
   if (!/<script type="importmap">[\s\S]*?<\/script>/.test(page)) fail(`${dir}/index.html has no import map`);
   for (const s of ['<span id="buildSha">dev</span>', `src="${script}"`]) if (page.split(s).length !== 2) fail(`${dir}/index.html should have ${s} exactly once (stamp.mjs fills it in)`);
-  if (new RegExp(dir + "/").test(html) || new RegExp(dir + "/").test(app)) fail(`the game shouldn't link to ${dir}/`);
 }
+if (!readFileSync(join(root, "review", "index.html"), "utf8").includes('<meta name="robots" content="noindex, nofollow">')) fail("review/index.html should be noindex");
+if (/review\//.test(html) || /review\//.test(app)) fail("the game shouldn't link to review/");
 
 if (failed) process.exit(1);
 console.log("✓ check passed");

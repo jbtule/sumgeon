@@ -1,4 +1,4 @@
-// Recorded drawings: real kids' handwriting from the spell check's Record mode (spell/), shared
+// Recorded drawings: real kids' handwriting from the spell check's Record mode (review/spell/), shared
 // as a zip, to test the spell reader (js/sigil.js) on. No DOM: the page draws the PNGs, and
 // scripts/drawings-to-fixtures.mjs turns a shared zip into test fixtures.
 //

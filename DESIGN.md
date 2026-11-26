@@ -377,7 +377,7 @@ Hitting a monster should feel good. Today there is a shake and a damage pop. The
 - Haptics: `navigator.vibrate(15)` on hits and `(40)` on misses where supported, and respect a settings toggle.
 - `prefers-reduced-motion` keeps working: no shake, projectiles replaced by fades, no particles.
 
-### 8.4 Hero Moments (built 2026-11-25: js/moments.js, js/slowmo.js, moments/)
+### 8.4 Hero Moments (built 2026-11-25: js/moments.js, js/slowmo.js, review/moments/)
 Now and then, a hero in your answer gets a slow-motion close-up and a quip before it strikes. It's a surprise, so it has to stay rare and never repeat itself.
 
 **When it happens.** Only on a right, unhinted answer that contains the digit of a hero on your team (the captain or a rescued hero), and never in a player's first fight.
@@ -430,7 +430,7 @@ Respellings for the voice go in `SAY_AS` as usual (Twodini is "Toodini"; check "
 
 **Collecting.** The Heroes half of Monsters & Heroes shows each hero's quips heard ("Quips: 3 of 5"), a small reason to try different captains.
 
-**Reviewing them** (built with the feature). A grown-up page, `moments/` at `/sumgeon/moments/`, built like the listen check and the spell check: `noindex`, not linked from the game, and stamped with the deployed commit.
+**Reviewing them** (built with the feature). A grown-up page, `review/moments/` at `/sumgeon/review/moments/`, built like the listen check and the spell check: `noindex`, not linked from the game, and stamped with the deployed commit.
 - **Pick and play:** pick a hero, a quip and a monster (in any stratum's colors and wall), then play the whole moment exactly as the game runs it: the same code, sounds and voice clip. **Team-up with** picks a second hero (or None), and the quip menu has the team-up lines; a number's line brings its own pair. A Captain group has the hero's name lines and the shared captain lines.
 - **Controls:**
   - **Replay** and **Play all.** Play all runs every hero's quips one after another, like the listen check, then the team-ups: each general line with a sample pair, and each number's line with its own digits; then the captain lines: the five shared ones with sample heroes, and each hero's four name lines.
@@ -546,7 +546,7 @@ A pre-reader can't use a menu she can't hear, and the device voice is hit and mi
 - A single **`say(kind, text)`** plays the recorded clip, or falls back to the device voice when there's no clip, the device is offline before the clip was saved, or during local dev. The device voice is ranked the same way Sound Box does it: Premium > Enhanced > basic, en-US, no novelty voices.
 - **iOS only plays sound after a tap**, so a launch shows one big **Start / Continue** button, like Sound Box's. That tap also unlocks the Web Audio context for sound effects.
 - The service worker saves a band's clips in the background after launch (`saveGently`), so offline play keeps the recorded voice.
-- A **listen check** page (`/listen/`, a grown-up tool, `noindex`, not linked from the game) plays every clip with ✓/✗ marks, so mispronunciations get caught by ear instead of guessed.
+- A **listen check** page (`/review/listen/`, a grown-up tool, `noindex`, not linked from the game) plays every clip with ✓/✗ marks, so mispronunciations get caught by ear instead of guessed.
 
 ### 13.2 Kinds of speech
 | Kind | What | Examples | Voice |

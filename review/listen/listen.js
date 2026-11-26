@@ -5,7 +5,7 @@
 //
 // Marks live in localStorage ("sumgeon:listen"), keyed by the clip's key: { s: "ok" | "bad",
 // tags, note, t }. A re-recorded line has a new key, so it shows up as unheard again.
-import { spokenLines, GROUPS } from "../js/lines.js";
+import { spokenLines, GROUPS } from "../../js/lines.js";
 
 const $ = (id) => document.getElementById(id);
 const STORE = "sumgeon:listen";
@@ -22,7 +22,7 @@ const LINES = spokenLines();
 let base = "", clips = {};
 async function loadAudio() {
   const live = "https://tools.tuley.name/sumgeon/audio.json", local = /^(localhost|127\.|\[::1\])/.test(location.hostname);
-  for (const url of local ? [live, "../audio.json"] : ["../audio.json", live]) {
+  for (const url of local ? [live, "../../audio.json"] : ["../audio.json", live]) {
     try { const r = await fetch(url, { cache: "no-store" }); if (r.ok) { const m = await r.json(); base = m.base; clips = m.clips; return; } } catch (e) { /* try the next */ }
   }
 }

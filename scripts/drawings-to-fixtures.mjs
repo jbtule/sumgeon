@@ -1,4 +1,4 @@
-// Turns drawings shared from the spell check's Record mode (spell/) into test fixtures for the
+// Turns drawings shared from the spell check's Record mode (review/spell/) into test fixtures for the
 // spell reader (js/sigil.js):
 //   node scripts/drawings-to-fixtures.mjs <sumgeon-drawings-….zip | drawings.json> ... [--out <file>]
 // Writes (or adds to) scripts/sigil-fixtures.json:

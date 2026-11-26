@@ -143,7 +143,7 @@ export var DEPTH_MAX_SPOKEN = 20;
 export function depthLine(d) { return "Depth " + spoken(d) + "!"; }
 
 // [{ kind, text }], each once.
-// The groups the listen check (listen/) plays lines in.
+// The groups the listen check (review/listen/) plays lines in.
 export var GROUPS = ["Phrases", "Monsters & heroes", "Add & subtract", "Times & divide", "Missing numbers", "Which is more", "Coins", "Two-digit", "Balance Hall", "Three numbers", "Arrays", "Fractions", "Rounding", "Area & perimeter", "Hero quips", "Team-ups", "Captain lines"];
 
 // [{ kind, text, group, sprite? }], each once.

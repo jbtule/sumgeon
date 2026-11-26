@@ -2,7 +2,7 @@
 // for a page to draw (no font): a 1 that's one straight line, an open 4, a 9 with a straight stem.
 // Fonts have quirks kids copy (Bungee's 1 has a long flag and a base, and its 4 is a squared U).
 // Used by the game, to show how to write a digit after a spell that was hard to read (app.js),
-// and by the spell check's Record prompt (spell/spell.js). No DOM: runs in Node.
+// and by the spell check's Record prompt (review/spell/spell.js). No DOM: runs in Node.
 //
 // Each digit is a list of strokes in the order they're written, each [[x, y], ...] in a 100 × 100
 // box (y down), about 60 wide and centered.

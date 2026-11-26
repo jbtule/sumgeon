@@ -12,11 +12,11 @@
 //
 // Expecting (Try it): pick the answer, and see what the game would do with the drawing
 // (judge in js/sigil.js): hit, hit and show how to write it, backwards, wrong, or try again.
-import { read, judge, CLEAR, ACCEPT } from "../js/sigil.js";
-import { handwritingPath } from "../js/handwriting.js";
-import { openStore, displayName } from "../js/store.js";
-import { zip } from "../js/zip.js";
-import { STORE, SOMEONE, summary, pngNames, zipName, drawingsJSON, README } from "../js/drawings.js";
+import { read, judge, CLEAR, ACCEPT } from "../../js/sigil.js";
+import { handwritingPath } from "../../js/handwriting.js";
+import { openStore, displayName } from "../../js/store.js";
+import { zip } from "../../js/zip.js";
+import { STORE, SOMEONE, summary, pngNames, zipName, drawingsJSON, README } from "../../js/drawings.js";
 
 const $ = (id) => document.getElementById(id);
 let ls = null;
