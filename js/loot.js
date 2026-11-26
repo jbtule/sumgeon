@@ -79,8 +79,9 @@ export function fewest(cents) {
 
 /* ---------- items ----------
    Every item found goes in the inventory (counts, no limit, kept between runs). Three quick-use
-   slots sit by the hearts in a fight: a slot holds an item, and using it takes one from the
-   inventory; the slot is spent until the next floor, when it fills again if there are more. */
+   slots sit by the hearts in a fight: a slot holds one item, filled from the inventory card, and
+   each item is one use: using it takes it from the inventory and empties the slot, which stays
+   empty until the player fills it again from the inventory card. */
 export const ITEMS = [
   { id: "pie", icon: "🥧", name: "Pie" },
   { id: "shield", icon: "🛡️", name: "Shield" },
@@ -94,7 +95,13 @@ export function freshItems(saved) {
   const s = saved && typeof saved === "object" ? saved : {}, have = {};
   ITEMS.forEach((i) => { const n = s.have && s.have[i.id]; if (n > 0) have[i.id] = Math.floor(n); });
   const slots = [];
-  for (let k = 0; k < SLOTS; k++) { const id = Array.isArray(s.slots) ? s.slots[k] : null; slots.push(itemOf(id) ? id : null); }
+  // A slot holds one of an item you have: no more slots of an item than you have of it.
+  const held = {};
+  for (let k = 0; k < SLOTS; k++) {
+    const id = Array.isArray(s.slots) ? s.slots[k] : null, ok = !!itemOf(id) && (held[id] || 0) < (have[id] || 0);
+    if (ok) held[id] = (held[id] || 0) + 1;
+    slots.push(ok ? id : null);
+  }
   return { have, slots };
 }
 export const countOf = (inv, id) => inv.have[id] || 0;
@@ -112,29 +119,13 @@ export function putInSlot(inv, id) {
   return k;
 }
 export function clearSlot(inv, k) { inv.slots[k] = null; return inv; }
-// A run's slots: whether each is ready (its item loaded) or spent. At the start of every floor
-// (and when a slot is set mid-run), each slot holding an item there's one of is ready again.
-export function refill(inv, ready) {
-  const out = [], loaded = {};
-  // A slot already ready stays ready (while there's one of its item for it)...
-  for (let k = 0; k < SLOTS; k++) {
-    const id = inv.slots[k], keep = !!id && !!ready && !!ready[k] && countOf(inv, id) > (loaded[id] || 0);
-    if (keep) loaded[id] = (loaded[id] || 0) + 1;
-    out.push(keep);
-  }
-  // ... and a spent one fills if the inventory has one left over for it.
-  for (let k = 0; k < SLOTS; k++) {
-    const id = inv.slots[k];
-    if (!id || out[k] || countOf(inv, id) <= (loaded[id] || 0)) continue;
-    loaded[id] = (loaded[id] || 0) + 1; out[k] = true;
-  }
-  return out;
-}
-// Using slot k: one of its item from the inventory. Returns the item's id, or null.
-export function useSlot(inv, ready, k) {
+// Using slot k: each item is one use. It comes out of the inventory and the slot empties, and
+// stays empty: slots never refill by themselves, only from the inventory card. Returns the item's
+// id, or null.
+export function useSlot(inv, k) {
   const id = inv.slots[k];
-  if (!id || !ready[k] || !countOf(inv, id)) return null;
-  inv.have[id]--; ready[k] = false;
+  if (!id || !countOf(inv, id)) return null;
+  inv.have[id]--; inv.slots[k] = null;
   return id;
 }
 

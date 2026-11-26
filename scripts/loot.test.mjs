@@ -1,7 +1,7 @@
 // Chests, money and items (js/loot.js, DESIGN.md §6.3).
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { chestAfter, CHEST_SHARE, lockKey, lockOf, lockable, contents, moneyFor, fewest, ONE_COIN, CELLAR_BOSS, ITEMS, freshItems, countOf, gain, putInSlot, clearSlot, refill, useSlot, eatPie, arm, blockMiss, totemMult, magnetSpent, SLOTS } from "../js/loot.js";
+import { chestAfter, CHEST_SHARE, lockKey, lockOf, lockable, contents, moneyFor, fewest, ONE_COIN, CELLAR_BOSS, ITEMS, freshItems, countOf, gain, putInSlot, clearSlot, useSlot, eatPie, arm, blockMiss, totemMult, magnetSpent, SLOTS } from "../js/loot.js";
 import { pool, learned } from "../js/learn.js";
 import { seeded, decide, freshState, freshRun } from "../js/moments.js";
 import { WINGS, runFloors } from "../js/wings.js";
@@ -115,21 +115,22 @@ assert.ok(chestSvg("locked").includes("<svg") && chestSvg("open").includes("open
   clearSlot(inv, 0);
   assert.deepEqual(inv.slots, [null, "pie", "totem"]);
 
-  // Slot refill: a used slot is spent until the next floor, then fills from the inventory.
+  // Each item is one use: a used slot empties and stays empty. No refill, even with more in the
+  // inventory; only the inventory card fills it again.
   const v = freshItems({ have: { pie: 2 }, slots: ["pie", null, null] });
-  let ready = refill(v, null);
-  assert.deepEqual(ready, [true, false, false]);
-  assert.equal(useSlot(v, ready, 0), "pie");
-  assert.equal(countOf(v, "pie"), 1);
-  assert.equal(useSlot(v, ready, 0), null, "spent until the next floor");
-  ready = refill(v, ready);
-  assert.deepEqual(ready, [true, false, false], "the next floor: filled from the inventory");
-  useSlot(v, ready, 0);
-  ready = refill(v, ready);
-  assert.deepEqual(ready, [false, false, false], "none left: it stays empty");
-  // Two slots, one pie: only one is loaded.
-  const w = freshItems({ have: { pie: 1 }, slots: ["pie", "pie", null] });
-  assert.deepEqual(refill(w, [true, true, false]), [true, false, false]);
+  assert.equal(useSlot(v, 0), "pie");
+  assert.equal(countOf(v, "pie"), 1, "it comes out of the inventory");
+  assert.deepEqual(v.slots, [null, null, null], "the used slot is empty");
+  assert.equal(useSlot(v, 0), null, "an empty slot has nothing to use");
+  // The next floor (app.js loadMonster) and a reload change nothing: still empty.
+  assert.deepEqual(freshItems(JSON.parse(JSON.stringify(v))).slots, [null, null, null], "no refill");
+  const app = readFileSync(new URL("../js/app.js", import.meta.url), "utf8");
+  const load = app.slice(app.indexOf("function loadMonster"), app.indexOf("function newProblem"));
+  assert.ok(!/inv\.slots|putInSlot|refill/.test(load), "a new floor doesn't touch the slots");
+  assert.ok(!/putInSlot/.test(app.slice(app.indexOf("function takeLoot"), app.indexOf("function lootRowHTML"))), "an item found in a chest isn't slotted by itself");
+  assert.equal(putInSlot(v, "pie"), 0, "the inventory card fills it again");
+  // Two slots of one pie: a saved inventory keeps only one.
+  assert.deepEqual(freshItems({ have: { pie: 1 }, slots: ["pie", "pie", null] }).slots, ["pie", null, null]);
 }
 
 // Item effects.

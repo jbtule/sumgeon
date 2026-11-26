@@ -21,7 +21,7 @@ import { say, stopSpeech, setVoice, speaking, cutOff } from "./speech.js";
 import { freshState as freshMoments, freshRun, decide as decideMoment, joined, heardOf, nameLine } from "./moments.js";
 import { playMoment } from "./slowmo.js";
 import { playDescent, descending, surfaceHTML } from "./descent.js";
-import { chestAfter, lockKey, lockOf, contents, moneyFor, fewest, ITEMS, itemOf, SLOTS, freshItems, countOf, gain, putInSlot, clearSlot, refill, useSlot, eatPie, arm, blockMiss, totemMult, magnetSpent } from "./loot.js";
+import { chestAfter, lockKey, lockOf, contents, moneyFor, fewest, ITEMS, itemOf, SLOTS, freshItems, countOf, gain, putInSlot, clearSlot, useSlot, eatPie, arm, blockMiss, totemMult, magnetSpent } from "./loot.js";
 import { LOOT, askLine, itemName, itemWhat, itemUse, moneyLine, purseLine } from "./lines.js";
 import { chestSvg, purseSvg, walletSvg, walletMini } from "./chest.js";
 
@@ -217,9 +217,8 @@ function whoUI() {
 // keys, so a fact doesn't repeat right away; hinted: a hint is open for this problem.
 let G = { floor: 0, hearts: 5, hp: 0, max: 0, streak: 0, solved: 0, tries: 0, cur: null, input: "", busy: true, running: false,
   retry: [], recent: [], hinted: false, t0: 0, next: false,
-  // Items (loot.js): ready: each quick-use slot loaded or spent; fx: the Shield, Totem and Magnet
-  // armed; armed: which slot armed each, so it glows until the effect is used.
-  ready: [false, false, false], fx: {}, armed: {}, chest: null };
+  // Items (loot.js): fx: the Shield, Totem and Magnet armed.
+  fx: {}, chest: null };
 
 function heartsUI(cracking) {
   const h = $("hearts");
@@ -235,10 +234,11 @@ function heartsUI(cracking) {
   h.setAttribute("aria-label", `${G.hearts} of ${max} hearts`);
 }
 /* ---------- items in a fight (loot.js, DESIGN.md §6.3) ----------
-   Three quick-use slots by the hearts, each a big icon with how many you have. Tap one to use it
-   (not while busy; mid-problem is fine). A used slot is spent until the next floor, when it fills
-   again from the inventory. An armed Shield, Totem or Magnet glows on its slot until it's used
-   (the Totem with a gold ×2). Hidden for a player who has never had an item. */
+   Three quick-use slots by the hearts, each holding one item. Tap one to use it (not while busy;
+   mid-problem is fine). Each item is one use: the slot empties and stays empty; it never refills
+   by itself. An empty slot is a dim outline with a "+" that opens 🎒 Items (as pausing to it
+   does), the only place slots are filled. An armed Shield, Totem or Magnet shows by the problem
+   until it's used (the Totem as a gold ×2). Hidden for a player with no items. */
 // An item's icon: its emoji, but the Times Two Totem is a gold "×2" (the ✖️ emoji is a thin grey
 // cross on the dark slots).
 const itemIcon = (id) => (id === "totem" ? '<span class="tot">×2</span>' : itemOf(id).icon);
@@ -251,27 +251,22 @@ function slotsUI() {
   $("armed").innerHTML = on.map((id) => `<i class="on-${id}" title="${esc(itemOf(id).name)}">${id === "totem" ? "×2" : itemOf(id).icon}</i>`).join("");
   box.hidden = !any;
   if (!any) return;
-  const armedAt = {};
-  Object.keys(G.armed).forEach((id) => { if (G.fx[id]) armedAt[G.armed[id]] = id; });
-  box.innerHTML = inv.slots.map((id, k) => {
-    if (!id) return `<button type="button" class="slot empty" data-k="${k}" aria-label="Empty slot" disabled></button>`;
-    const it = itemOf(id), on = armedAt[k], ready = G.ready[k];
-    const cls = on ? " armed" : ready ? "" : " spent";
-    return `<button type="button" class="slot${cls}${on === "totem" ? " x2" : ""}" data-k="${k}" aria-label="${esc(it.name)}${on ? ", on" : ready ? "" : ", used"}, ${countOf(inv, id)} left"><span class="ico" aria-hidden="true">${itemIcon(id)}</span><b>${countOf(inv, id)}</b></button>`;
-  }).join("");
+  box.innerHTML = inv.slots.map((id, k) => !id
+    ? `<button type="button" class="slot empty" data-k="${k}" aria-label="Empty slot: open your items"><span aria-hidden="true">+</span></button>`
+    : `<button type="button" class="slot" data-k="${k}" aria-label="Use ${esc(itemOf(id).name)}"><span class="ico" aria-hidden="true">${itemIcon(id)}</span></button>`).join("");
 }
 function useItem(k) {
   if (!G.running || G.busy || G.paused || G.next || !$("ov").hidden) return;
   const id = inv.slots[k];
-  if (!id) return;
-  if (!G.ready[k] || !countOf(inv, id)) { say("p", LOOT.slotSpent, true); return; }
+  // An empty slot opens 🎒 Items, as pausing to it does: Done goes back to the pause screen.
+  if (!id) { pause(); if (G.paused) itemsCard(true); return; }
   if (id === "pie") {
     const r = eatPie(G.hearts, band().hearts);
     if (!r.used) { say("p", LOOT.heartsFull, true); return; }
     G.hearts = r.hearts; heartsUI();
   } else if (G.fx[id]) return; // already on: a second isn't wasted
-  useSlot(inv, G.ready, k); saveItems();
-  if (id !== "pie") { arm(G.fx, id); G.armed[id] = k; }
+  useSlot(inv, k); saveItems();
+  if (id !== "pie") arm(G.fx, id);
   sfx.powerUp();
   say("p", itemUse(id), true);
   // What it does, the first time it's used.
@@ -282,7 +277,7 @@ $("slots").addEventListener("click", (e) => { const b = e.target.closest(".slot"
 // Unused armed effects (a Shield never needed) go back in the inventory when a run ends.
 function refundArmed() {
   ["shield", "totem", "magnet"].forEach((id) => { if (G.fx[id]) gain(inv, id); });
-  G.fx = {}; G.armed = {};
+  G.fx = {};
   saveItems();
 }
 function hpUI() { $("hpBar").style.width = Math.max(0, G.hp / G.max * 100) + "%"; $("hpTxt").textContent = `${Math.max(0, G.hp)} / ${G.max} HP`; }
@@ -427,8 +422,6 @@ function loadMonster(i, quiet) {
   G.onFloor = 0; G.halved = false; G.floorLost = 0; G.floorStreak = 0; G.floorSlow = false; G.barked = {};
   if (!quiet) setMsg(t ? `${t.icon} ${t.name}: ${t.text}` : "Your answer is your attack.");
   $("floorLbl").textContent = (G.depth > 1 ? `Depth ${G.depth} · ` : "") + (m.boss ? "Boss floor" : m.cursed != null ? "Rescue floor" : `Floor ${i + 1} / ${G.floors.length}`);
-  // Each floor, a spent quick-use slot fills again from the inventory (loot.js refill).
-  if (!quiet) G.ready = refill(inv, G.ready);
   hpUI(); heartsUI(); streakUI(); slotsUI();
   if (quiet) return;
   meet(seen, m, Date.now()); store.player(PID).set("bestiary", seen);
@@ -1059,12 +1052,10 @@ function takeLoot(C) {
   if (what.kind === "item") {
     const it = itemOf(what.item);
     gain(inv, it.id);
-    // A first one goes straight into an empty quick-use slot, so it's there to tap.
-    if (inv.slots.includes(null) && !inv.slots.includes(it.id)) putInSlot(inv, it.id);
     saveItems();
     say("p", itemName(it.id));
     if (once("found:" + it.id)) say("p", itemWhat(it.id));
-    C.lootMsg = `<b class="loot-name">${esc(it.name)}</b>It's in your items.`;
+    C.lootMsg = `<b class="loot-name">${esc(it.name)}</b>It's in your 🎒 items.`;
     return `<div class="loot-item"><span class="ico" aria-hidden="true">${itemIcon(it.id)}</span></div>`;
   }
   const c = moneyFor(wing().id, C.boss), f = fewest(c);
@@ -1111,7 +1102,7 @@ function itemsCard(fromPause, quiet) {
   <div class="btns"><button class="big" id="itemsDone">Done</button></div>`, fromPause ? "float" : "page");
   const redraw = () => { const top = $("ov").scrollTop; itemsCard(fromPause, true); $("ov").scrollTop = top; };
   // Mid-run (from the pause screen) a slot set fills right away from the inventory.
-  const changed = (k) => { G.ready[k] = false; if (G.running) G.ready = refill(inv, G.ready); saveItems(); };
+  const changed = () => saveItems(); // a slot set from the pause screen is there to tap when the fight resumes
   $("card").querySelectorAll(".iitem").forEach((b) => b.onclick = () => {
     const id = b.dataset.id;
     say("p", itemName(id), true); say("p", itemWhat(id));
@@ -1672,7 +1663,7 @@ function start(depth, enter, voiced, pause) {
   hide(); hideScene();
   newRun(depth);
   Object.assign(G, { hearts: band().hearts, streak: 0, solved: 0, tries: 0, running: true, retry: [], recent: [], next: false, paused: null, runStars: 0,
-    ready: [false, false, false], fx: {}, armed: {}, chest: null });
+    fx: {}, chest: null });
   MR = freshRun();
   if (!voiced) { stopSpeech(); openingLines(enter, G.depth); }
   const go = () => {

@@ -166,8 +166,7 @@ export var LOOT = {
   itemsHow: "Tap an item to put it in a slot.",
   itemsClear: "Tap a slot to take it out.",
   heartsFull: "Your hearts are full!",
-  shieldBlock: "Your shield blocked it!",
-  slotSpent: "Used up! It fills again on the next floor."
+  shieldBlock: "Your shield blocked it!"
 };
 // Each item: its name (found, or tapped on the inventory card), what it does (the first time it's
 // found or used, and on the inventory card), and what's said when it's used.

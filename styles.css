@@ -441,16 +441,11 @@ body{transition:background-color .4s;--hint-empty:var(--edge);--hint-line:var(--
 .slots[hidden]{display:none}
 .slot{position:relative;width:44px;height:44px;padding:0;border-radius:12px;border:2px solid var(--edge);background:var(--btn);display:grid;place-items:center;box-shadow:0 3px 0 var(--dark)}
 .slot .ico{font-size:24px;line-height:1}
-.slot b{position:absolute;right:-5px;bottom:-5px;min-width:18px;height:18px;padding:0 4px;border-radius:9px;background:var(--dark);color:var(--ink);font:400 11px/18px Bungee,sans-serif;border:2px solid var(--edge)}
-.slot.empty{background:none;border-style:dashed;box-shadow:none}
-.slot.spent{opacity:.4;box-shadow:none}
-.slot.armed{border-color:var(--gold);box-shadow:0 0 0 2px var(--gold),0 0 14px #ffc93c99;animation:armed 1s ease-in-out infinite alternate}
+.slot.empty{background:none;border-style:dashed;box-shadow:none;opacity:.55;color:var(--muted);font:400 18px/1 Bungee,sans-serif}
 .armed{display:inline-flex;flex-direction:column;gap:3px;flex:none}
 .armed[hidden]{display:none}
 .armed i{display:grid;place-items:center;min-width:30px;height:24px;padding:0 4px;border-radius:8px;font:400 14px/1 Bungee,sans-serif;font-style:normal;background:var(--dark);border:2px solid var(--gold);box-shadow:0 0 10px #ffc93c88}
 .armed i.on-totem{background:var(--gold);color:var(--dark);border-color:var(--dark)}
-@keyframes armed{to{box-shadow:0 0 0 2px var(--gold),0 0 22px #ffc93ccc}}
-@media(prefers-reduced-motion:reduce){.slot.armed{animation:none}}
 .chest-card{display:grid;grid-template-columns:minmax(0,1fr);justify-items:center;gap:8px;width:100%}
 .chest-card h2{margin:0}
 .chest-box{position:relative;width:min(220px,62vw)}
@@ -844,7 +839,6 @@ body.on-scene>.top,body.on-scene>.who,body.on-scene>.game,body.on-scene>.badges{
   .slots{gap:5px}
   .slot{width:36px;height:36px;border-radius:10px}
   .slot .ico{font-size:19px}
-  .slot b{min-width:15px;height:15px;font-size:9px;line-height:15px;right:-4px;bottom:-4px;padding:0 3px}
   .slots:not([hidden])~.flame span{display:none}
   .chest-pad{--key:42px;gap:6px}
   .chest-box{width:min(190px,52vw)}

@@ -256,6 +256,7 @@ Replaces the between-floor choice. Clearing a floor still heals 1 heart.
 - As built: the Cellar's chests hold one coin, its boss's two; the Hall's 2–50¢; the Mines' and the Tower's 6–75¢; a boss's 40–99¢, so every amount found is under a dollar and its line is recorded. The purse says the coins under a dollar and the total past it.
 - The Times Two Totem shows as a gold "×2" rather than the ✖️ emoji, which reads as a thin grey cross.
 - An unused Shield, Totem or Magnet still armed when a run ends goes back in the inventory.
+- **No automatic refill** (changed after the iPhone test, 2026-11-25; replaces "fills it at the next floor" below): each item is one use. A used slot empties and stays empty; the player fills slots only from 🎒 Items (start screen or pause screen). An empty slot shows as a dim outline with a "+" that opens 🎒 Items. A slot holds one item, so it shows no count; the inventory card shows the counts.
 
 **Math-locked chests.**
 - **When:** after the floor's monster is beaten, about 1 floor in 3 has a chest, and every boss does. Never the rescue floor, where freeing the hero is the reward.
