@@ -558,7 +558,7 @@ Each milestone should be playable and shippable on its own. Revised 2026-11-25 f
 5. **M5 — Grade strata, K–3** (next; §4.1). One stratum per grade for the kids playing now:
    - ✅ restructure into grade bands with today's monsters, the levels in the school's order, zero facts, make-10 partners, ×0 and ×1, × tens, and monsters moved (2026-11-25; with a stand-in wall, palette and boss for the Mines);
    - ✅ the Crystal Mines' wall, palette and the Centipede (2026-11-25; the wall: blue rock that recedes and red-violet crystals that seem to jut out, by chromostereopsis);
-   - the new K–3 monsters: ✅ Pipsqueak (dot flash), Doublet, Triceraplus (three addends), Margot-Rythm, Squaresquatch and Halfling (2026-11-25); still to come: Slimelipsis and Tick-Tockus;
+   - the new K–3 monsters: ✅ Pipsqueak (dot flash), Doublet, Triceraplus (three addends), Margot-Rythm, Squaresquatch and Halfling (2026-11-25); ✅ Slimelipsis (patterns, odd and even) and Tick-Tockus (time) in batch 1 (2026-11-26);
    - the 3rd-grade gaps: fractions, rounding, and area and perimeter (✅ as typed whole numbers in step 1; comparing fractions and number lines wait for Halfling).
    
    - **Every line in an audio sprite** (decided 2026-11-25): convert the remaining single-clip lines (phrases, problems and facts, coins, quips) into small sprites grouped by related text, each well under 25 MiB. A sprite is loaded only when it can be needed (the phrases and names always; a stratum's problem sprites when its run starts) and dropped after, so the decoded audio on a phone stays small; measure it on the iPhone. Once every line is in a sprite, stop deploying the single clips, so the audio host stays well under Cloudflare Pages' limit on files per deployment.
