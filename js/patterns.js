@@ -211,7 +211,9 @@ export function oddEvenSvg(p, opt = {}) {
     }
     if (glow) { count++; s += `<circle cx="${x + BLOB * 0.38}" cy="${base - BLOB_H * 0.85}" r="12" fill="${GOLD}" stroke="${DK}" stroke-width="2.5"/><text x="${x + BLOB * 0.38}" y="${base - BLOB_H * 0.85}" dy=".36em" text-anchor="middle" font-family="Nunito, sans-serif" font-weight="900" font-size="15" fill="${DK}">${count}</text>`; }
   });
-  return `<svg viewBox="-6 -10 ${W + 12} ${rows * rowH + 4}" class="pattern" role="img" aria-label="${p.nums.join(", ")}">${s}</svg>`;
+  // A worked row's gold glow reaches past the end slimes, so it gets room at the sides.
+  const pad = opt.worked ? Math.ceil(BLOB * 0.12) + 6 : 6;
+  return `<svg viewBox="${-pad} -10 ${W + 2 * pad} ${rows * rowH + 4}" class="pattern" role="img" aria-label="${p.nums.join(", ")}">${s}</svg>`;
 }
 export const spokenOddEvenAnswer = (p) => (p.ans ? cap(spoken(p.ans)) + (p.ans === 1 ? " number is " : " numbers are ") + p.ask + "." : `None of them are ${p.ask}.`);
 export function oddEvenHint(p, worked) {
