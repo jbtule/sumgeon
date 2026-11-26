@@ -274,6 +274,9 @@ export function clockSvg(h, m, opt = {}) {
   s += `<circle cx="${c}" cy="${c}" r="8" fill="${GOLD}" stroke="${DK}" stroke-width="3.5"/>`;
   // The hint's count by 5s, on the rim.
   if (hint.fives != null) for (let k = 5; k <= hint.fives; k += 5) s += pill(k, k, false);
+  // Before answering, the 5s still to count show "?" all the way to the long hand (hint.rest:
+  // the last 5 to mark), so the child keeps counting where the labels stop.
+  if (hint.rest) for (let k = (hint.fives || 0) + 5; k <= hint.rest; k += 5) s += pill(k, "?", false);
   // The label at the minute hand moves out past the rim when it would sit on a 5s label (37 by
   // 35); the page lets the drawing spill out of its box.
   if (hint.ask) s += pill(m, hint.ask, true, m % 5 !== 0 && hint.fives >= 5);
@@ -311,10 +314,10 @@ export function clockHint(p, worked) {
   if (!ones) {
     return worked
       ? { layer: { glow: "minute", fives: m }, say: `Count by 5s from the 12: ${fivesList(m)}. ${m} minutes past ${h}.` }
-      : { layer: { glow: "minute", fives: half, ask: "?" }, say: `Count by 5s from the 12 to the long hand: ${started}?` };
+      : { layer: { glow: "minute", fives: half, rest: m - 5, ask: "?" }, say: `Count by 5s from the 12 to the long hand: ${started}?` };
   }
   if (worked) return { layer: { glow: "minute", fives: five, ones: tick, ask: m }, say: five ? `By 5s to ${five}, then ${ones} more: ${five} + ${ones} = ${m}.` : `Count the little ticks from the 12 by 1s: ${tick.join(", ")}. ${m} minute${m === 1 ? "" : "s"} past ${p.h}.` };
-  return { layer: { glow: "minute", fives: half, ask: "?" }, say: five ? `Count by 5s from the top: ${started}then the little ticks by 1s to the long hand.` : "Count the little ticks from the top by 1s." };
+  return { layer: { glow: "minute", fives: half, rest: five, ask: "?" }, say: five ? `Count by 5s from the top: ${started}then the little ticks by 1s to the long hand.` : "Count the little ticks from the top by 1s." };
 }
 const fivesList = (to) => { const out = []; for (let k = 5; k <= to; k += 5) out.push(k); return out.join(", "); };
 
