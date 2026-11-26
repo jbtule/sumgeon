@@ -34,7 +34,7 @@ export const MON=[
  {n:'Haberhasher',op:'mix',c:'#e2a24c',hits:3,quip:'tips his hat and crumbles into tens and ones.',
   d:c=>`${foot(70,190,16)}${foot(122,190,16)}`+line(`<path d="M82 22 L66 180 M136 22 L120 180"/>`,c,24)+line(`<path d="M30 70 H172 M24 132 H166"/>`,c,24)+`${eye(88,66,7)}${eye(112,66,7)}<path d="M94 76 Q100 80 106 76" ${ds}/>`+solid(`<rect x="72" y="-22" width="64" height="44" rx="6"/>`,'#3a4a8c')+`<rect x="72" y="8" width="64" height="9" fill="#ff5a4e"/>`+solid(`<ellipse cx="104" cy="24" rx="50" ry="9"/>`,'#3a4a8c')},
  {n:'Chompers',op:'○',c:'#6cc24a',hits:3,quip:'snaps shut and slinks off to the swamp.',
-  d:c=>`<path d="M82 124 V150 M128 146 V170" stroke="${DK}" stroke-width="10" stroke-linecap="round"/>${foot(84,154,14)}${foot(130,174,14)}`+line(`<path d="M172 40 L44 100 L172 160"/>`,c,30)+`<path d="M92 86 l8 12 l6 -16 M120 73 l8 12 l6 -16 M148 60 l8 12 l6 -16 M92 114 l8 -12 l6 16 M120 127 l8 -12 l6 16 M148 140 l8 -12 l6 16" fill="#f3efe4" stroke="${DK}" stroke-width="2.5" stroke-linejoin="round"/>`+solid(`<circle cx="74" cy="72" r="15"/>`,c)+`${eye(76,70,8)}<circle cx="170" cy="38" r="3" fill="${DK}"/><circle cx="162" cy="42" r="3" fill="${DK}"/>`},
+  d:(c,m)=>chompersArt(c,m&&m.jaw,m&&m.head)},
  {n:'Equal Twins',op:'=',c:'#ff7ac8',hits:4,quip:'agree, for once, to call it even.',
   d:c=>`${foot(74,176,15)}${foot(126,176,15)}`+solid(`<rect x="26" y="50" width="148" height="40" rx="20"/>`,c)+solid(`<rect x="26" y="112" width="148" height="40" rx="20"/>`,'#8ab4ff')+`${eye(86,68,8)}${eye(110,68,8)}<path d="M92 80 Q98 85 104 80" ${ds}/>${eye(90,130,8)}${eye(114,130,8)}<path d="M96 142 Q102 147 108 142" ${ds}/><path d="M150 46 l14 -12 l2 16 z M150 46 l-14 -12 l-2 16 z" fill="#ffc93c" stroke="${DK}" stroke-width="3" stroke-linejoin="round"/><path d="M30 112 Q40 92 70 104 L70 112 Z" fill="#3a4a8c" stroke="${DK}" stroke-width="3" stroke-linejoin="round"/>`},
  {n:'Starbot',op:'×',c:'#9fb6c9',hits:4,quip:'powers down with a sparkly fizzle.',
@@ -265,6 +265,26 @@ MON.push(
    +X.map(face).join('')
    +X.map((x)=>`<circle cx="${x-14}" cy="${B-47}" r="3.5" fill="#fff" opacity=".7"/>`).join('')}});
 
+/* ---------- Chompers' jaws ----------
+   Chompers' mouth is the < symbol: two jaws hinged at (44, 100). jaw.o is how open they are (1,
+   the drawing's <, down to 0, closed flat) and jaw.gap how far apart (24 is "=", the mouth shut as
+   two level bars). The head (the eye bump, eye and nostrils, and a look's extras on the head, head)
+   rides on the top jaw. The game turns him to face > by mirroring the whole drawing (app.js). */
+const CHOMP_ANGLE = 25.1;
+export const CHOMP_SHUT = { o: 0, gap: 24 };
+export const chompersArt = (c, jaw, head) => {
+  const o = jaw && jaw.o != null ? jaw.o : 1, gap = (jaw && jaw.gap) || 0, a = f1(CHOMP_ANGLE * (1 - o));
+  const tt = `translate(0 ${-gap}) rotate(${a} 44 100)`, tb = `translate(0 ${gap}) rotate(${-a} 44 100)`;
+  const tooth = `fill="#f3efe4" stroke="${DK}" stroke-width="2.5" stroke-linejoin="round"`;
+  // The legs reach up to the bottom jaw wherever it is, so they stay on as it snaps shut.
+  const legY = (x) => f1(100 + gap + (x - 44) * Math.tan(CHOMP_ANGLE * o * Math.PI / 180) + 4);
+  return `<path d="M82 ${legY(82)} V150 M128 ${legY(128)} V170" stroke="${DK}" stroke-width="10" stroke-linecap="round"/>${foot(84,154,14)}${foot(130,174,14)}`
+  +line(`<path d="M44 100 L172 160" transform="${tb}"/><path d="M44 100 L172 40" transform="${tt}"/>`,c,30)
+  // Teeth only while the mouth is open: shut, it's a plain "=".
+  +(o > .3 ? `<path transform="${tt}" d="M92 86 l8 12 l6 -16 M120 73 l8 12 l6 -16 M148 60 l8 12 l6 -16" ${tooth}/><path transform="${tb}" d="M92 114 l8 -12 l6 16 M120 127 l8 -12 l6 16 M148 140 l8 -12 l6 16" ${tooth}/>` : '')
+  +`<g transform="${tt}">`+solid(`<circle cx="74" cy="72" r="15"/>`,c)+`${eye(76,70,8)}<circle cx="170" cy="38" r="3" fill="${DK}"/><circle cx="162" cy="42" r="3" fill="${DK}"/>${head || ''}</g>`;
+};
+
 /* ---------- looks: the same monster with different extras ----------
    Each regular monster has four more looks with alliterative names (Minustaur's Mom, Mighty
    Minustaur). A look is the same drawing plus accessories placed on its face and head, so kids
@@ -277,7 +297,7 @@ export const ANCHOR = {
   Minustaur: { eyes: [[82, 101, 9], [118, 101, 9]], mouth: [100, 116], top: [100, 84], neck: [100, 128], ground: 180 },
   Quizard: { eyes: [[88, 30, 8], [112, 30, 8]], mouth: [100, 44], top: [100, -4], hat: true, neck: [100, 62], ground: 204 },
   Trollar: { eyes: [[88, 28, 8], [112, 28, 8]], mouth: [100, 41], top: [100, 14], neck: [100, 54], ground: 202 },
-  Chompers: { eyes: [[76, 70, 8]], mouth: [150, 100], top: [74, 56], neck: [58, 112], ground: 178 },
+  Chompers: { eyes: [[76, 70, 8]], mouth: [150, 100], top: [74, 56], neck: [58, 112], ground: 178, jaw: true },
   "Equal Twins": { eyes: [[86, 68, 8], [110, 68, 8]], mouth: [98, 82], top: [100, 50], neck: [100, 100], ground: 182 },
   Timesaur: { eyes: [[89, 93, 9], [112, 93, 9]], mouth: [100, 108], top: [100, 76], neck: [100, 124], ground: 174 },
   Divvy: { eyes: [[89, 50, 8], [111, 50, 8]], mouth: [100, 66], top: [100, 22], neck: [100, 88], ground: 192 },
@@ -360,8 +380,13 @@ export function lookOf(m, i) {
   return Object.assign({}, m, { n: l[0], base: m.n, look: l[1], quip });
 }
 export const allLooks = () => MON.flatMap((m) => (LOOKS[m.n] || []).map((_, i) => lookOf(m, i + 1)));
+const NECK = ["scarf", "bowtie", "medal"];
 function dress(m) {
-  const a = ANCHOR[m.base], art = m.d(m.c, m), extras = m.look.filter((k) => KIT[k]).map((k) => KIT[k](a, m.c)).join("");
+  const a = ANCHOR[m.base], kit = m.look.filter((k) => KIT[k]);
+  // A monster whose head moves (Chompers' top jaw, a.jaw) wears what's on its head on it; what's
+  // on its neck stays put.
+  const onHead = (k) => a.jaw && !NECK.includes(k), draw = (ks) => ks.map((k) => KIT[k](a, m.c)).join("");
+  const art = m.d(m.c, a.jaw ? Object.assign({}, m, { head: draw(kit.filter(onHead)) }) : m), extras = draw(kit.filter((k) => !onHead(k)));
   if (!m.look.includes("mini")) return art + extras;
   // Smaller, standing on the same ground.
   return `<g transform="translate(100 ${a.ground}) scale(.72) translate(-100 ${-a.ground})">${art}${extras}</g>`;

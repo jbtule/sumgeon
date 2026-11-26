@@ -425,6 +425,34 @@ export function coins(n) {
     }
   });
 }
+// Chompers' jaws (🐊 Big Bite), on a right comparison: two quick snaps with a crunch, the bigger
+// number eaten. happy: a right "=", a light snap of the shut mouth and a little rising chirp.
+export function chomp(happy) {
+  play(function (t) {
+    if (happy) {
+      noise(t, 0.04, 0.3, "bandpass", 2200);
+      tone("sine", 520, 780, t + 0.05, 0.12, 0.12);
+      tone("sine", 780, 1170, t + 0.16, 0.14, 0.1);
+      return;
+    }
+    [0, 0.11].forEach(function (d) {
+      noise(t + d, 0.05, 0.4, "bandpass", 2400); // the teeth meeting
+      tone("square", 220, 90, t + d, 0.07, 0.08);
+    });
+    noise(t + 0.13, 0.16, 0.35, "lowpass", 1400); // the crunch
+    noise(t + 0.16, 0.1, 0.2, "bandpass", 3200);
+  });
+}
+// Chompers' sad empty-jaw clack, on a wrong comparison: a hollow wooden clack, then a droop.
+export function clack() {
+  play(function (t) {
+    noise(t, 0.035, 0.35, "bandpass", 1100);
+    tone("triangle", 700, 500, t, 0.05, 0.12);
+    noise(t + 0.12, 0.035, 0.25, "bandpass", 1000);
+    tone("triangle", 600, 420, t + 0.12, 0.05, 0.1);
+    tone("sine", 392, 262, t + 0.2, 0.28, 0.1);
+  });
+}
 // The Shield blocking a miss: Sir Fourtress's metal clang.
 export function clang() { play(MOVE[4]); }
 // An item used: a quick rising shimmer.

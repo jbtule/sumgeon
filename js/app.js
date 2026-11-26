@@ -1,6 +1,7 @@
 // Everything on screen: the game loop, the menu and players, and the attack animations.
 // Problems, monsters, saving, sound and speech live in their own modules.
-import { MON, svg, LOOKS, lookOf } from "./monsters.js";
+import { MON, svg, LOOKS, lookOf, allLooks, CHOMP_SHUT } from "./monsters.js";
+import { chompPose, morePose, mouthOf, SNAP, FLIP_MS, SNAP_MS, EAT_MS } from "./chomp.js";
 import { spokenProblem, spokenFact } from "./problems.js";
 import { BANDS, choose, factOf, record as recordAnswer, helpFor, openLevel, monsterHP, probeKey, tierOf, skipTo, SKIP_PROBES, SKIP_WINDOW, MAX_LEAP, fluentTime, spellKey, RECENT } from "./learn.js";
 import { hintFor, STRATEGIES } from "./hints.js";
@@ -317,6 +318,7 @@ function ansUI() {
 }
 // The problem as shown: "3 + 4 =", or with a glowing □ for a missing number ("3 + □ = 7").
 const BLANK = '<span class="blank" id="blank">?</span>';
+const side = (lr, t) => `<span class="side" data-side="${lr}">${t}</span>`;
 // A fraction stacked, numerator over denominator: "1/2" → ½ drawn as two rows.
 const stacked = (t) => t.replace(/(\d+|□)\/(\d+)/g, '<span class="frac"><span>$1</span><span>$2</span></span>');
 function probUI() {
@@ -329,9 +331,11 @@ function probUI() {
   else if (p.op === "…") box.innerHTML = slimeRow(p);
   // Odd and even: the slimes holding their numbers, and "Even numbers = □" under them.
   else if (p.op === "◐") box.innerHTML = oddEvenSvg(p, { hint: G.hinted, perRow: p.nums.length <= 6 ? p.nums.length : 4 }) + `<span class="find">${p.ask === "even" ? "Even" : "Odd"} numbers = ${BLANK}</span>`;
+  // A comparison: each side in its own box, so Chompers can eat the bigger one (chompAct).
+  else if (p.sym && p.op === "○") box.innerHTML = `${side("l", esc(p.l))} ${BLANK} ${side("r", esc(p.r))}`;
   else if (p.blank || p.sym || p.op === "=") box.innerHTML = esc(p.q).replace("□", BLANK);
   // "7 or 4": which is more (K). The voice asks it; the answer box is the answer.
-  else if (p.op === "more") box.innerHTML = `${p.x} <small class="or">or</small> ${p.y}`;
+  else if (p.op === "more") box.innerHTML = `${side("l", p.x)} <small class="or">or</small> ${side("r", p.y)}`;
   // Fractions, stacked, with the glowing □ as the hidden numerator: 1/2 = □/4.
   else if (p.op === "/") box.innerHTML = stacked(esc(p.q)).replace("□", BLANK);
   // Rounding: 47 ≈ □, and to what.
@@ -479,6 +483,7 @@ function loadMonster(i, quiet) {
   const el = $("mon");
   el.className = "mon";
   el.innerHTML = monsterArt(m);
+  G.chomp = G.chompFace = "right"; chompSeq++;
   $("mName").textContent = m.n;
   // The trait badge, and what it does under the monster as it arrives.
   const t = traitOf(m), badge = $("trait");
@@ -558,6 +563,7 @@ function newProblem() {
   G.slot = G.cur.slots ? { at: 0, vals: ["", ""] } : null;
   probUI();
   clockArt();
+  if (onChompers() && G.chomp !== G.chompFace) chompTurn(G.chompFace);
   if (flipped) judoThrow(G.cur);
   if (dice) diceFlash(G.cur);
   // Coins ("How many dimes?") and comparisons can't be read off the screen by a pre-reader, so
@@ -817,9 +823,11 @@ function submit() {
     let dmg = Math.max(1, Math.round(G.cur.ans * (crit ? 2 : 1) * trait.mult * bonus.mult * totem * (G.cur.reversed ? 0.5 : 1)));
     if (totem > 1) slotsUI();
     const level = learnFrom(true);
-    G.input = ""; ansUI();
+    // Chompers (🐊) acts it out first: he chomps the bigger side (chompAct). A comparison keeps its
+    // ○ Chompers until the next problem; a "which is more" answer leaves its box after the chomp.
+    const pose = chompFor(G.cur, G.input);
+    if (!pose) { G.input = ""; ansUI(); }
     $("hint").hidden = true; $("hintBtn").hidden = true;
-    sfx.launch(G.streak);
     const critsNow = G.streak === 3 && !G.hinted;
     if (critsNow) say("p", PHRASE.crits);
     // Now and then a Hero Moment: a slow-motion close-up and a quip before the hit (moments.js).
@@ -827,7 +835,11 @@ function submit() {
     const mo = momentFor(typed, critsNow, !!m.boss && G.hp - dmg <= 0), boost = momentBoost(mo);
     if (boost) dmg = Math.round(dmg * (1 + MOMENT_BOOST * boost));
     const momentName = mo ? HEROES[mo.hero].n + (mo.partner != null ? " & " + HEROES[mo.partner].n : "") : "";
-    (mo ? heroMoment(mo, typed, crit) : fly(typed, crit)).then(() => {
+    chompAct(pose).then(() => {
+      if (pose && G.cur.op === "more") { G.input = ""; ansUI(); }
+      sfx.launch(G.streak);
+      return mo ? heroMoment(mo, typed, crit) : fly(typed, crit);
+    }).then(() => {
       if (!mo) sfx.impact(crit); // a moment lands with its own, bigger impact and shake
       if (G.charged) sfx.zap(); // a lightning problem beaten: the lightning thrown back
       burst(crit);
@@ -850,10 +862,16 @@ function submit() {
       // happens once).
       const bark = half ? (half.split ? "split" : "second") : trait.mult > 1 ? "double" : trait.mult < 1 ? "half" : bonus.power ? "power" : null;
       if (bark && !level && (half || !critsNow) && !G.cur.reversed && !G.cur.howTo && !G.barked[bark]) { G.barked[bark] = true; say("p", BARK[bark]); }
-      if (G.hp <= 0) { setTimeout(() => { $("mon").className = "mon dead"; }, 300); setTimeout(cleared, 1100); }
+      if (G.hp <= 0) { setTimeout(() => { $("mon").className = "mon dead" + ($("mon").classList.contains("face-l") ? " face-l" : ""); }, 300); setTimeout(cleared, 1100); }
       else setTimeout(newProblem, level ? 1200 : 450);
     });
-  } else miss("Oops!");
+  } else {
+    // Chompers snaps at the picked side, clacks, and turns to the right way, then the usual miss.
+    const pose = chompFor(G.cur, G.input);
+    if (!pose) return miss("Oops!");
+    G.busy = true;
+    chompAct(pose).then(() => miss("Oops!"));
+  }
 }
 
 // A wrong answer: the monster lunges, a heart cracks off, the right answer is shown
@@ -1769,7 +1787,7 @@ function start(depth, enter, voiced, pause) {
     if (!G.running) return;
     // ?monster=Tick-Tockus puts that monster on the first floor (or the ?floor= one); ?floor=4
     // starts on that floor. For testing.
-    if (MONSTER_AT) { const m = MON.find((x) => x.n === MONSTER_AT); if (m) G.floors[FLOOR_AT ? FLOOR_AT - 1 : 0] = m; }
+    if (MONSTER_AT) { const m = MON.find((x) => x.n === MONSTER_AT) || allLooks().find((x) => x.n === MONSTER_AT); if (m) G.floors[FLOOR_AT ? FLOOR_AT - 1 : 0] = m; }
     loadMonster(FLOOR_AT ? FLOOR_AT - 1 : 0);
     // The player's first fight: how to attack, before the first problem is read (until they answer).
     if (once("hit")) say("p", PHRASE.hitHow, false, () => !G.tries && G.running);
@@ -1835,6 +1853,87 @@ if ("serviceWorker" in navigator && /^https?:$/.test(location.protocol)) {
 document.addEventListener("gesturestart", (e) => e.preventDefault());
 document.addEventListener("touchmove", (e) => { if (e.touches.length > 1) e.preventDefault(); }, { passive: false });
 
+/* ---------- Chompers acts out the symbol (🐊 Big Bite; poses in chomp.js) ----------
+   His mouth is the < or > symbol. A tap on < = > turns him (a quick flip, mirrored on x) so the
+   mouth opens to the side the symbol opens to, or shuts it flat for =. The problem line keeps the
+   plain symbol. Hit! plays the act: a right answer chomps the bigger side (it shrinks away
+   toward him, then its digits fly as usual), a right = is a happy bounce, and
+   a wrong one snaps at the picked side, clacks and turns the right way before the miss. "Which
+   is more" (the Cellar) turns and chomps when the answer goes in. With reduced motion, only the
+   end pose. Input waits (G.busy) through the act, about half a second. */
+const onChompers = () => { const m = G.floors && G.floors[G.floor]; return !!m && (m.base || m.n) === "Chompers" && G.hp > 0; };
+let chompSeq = 0;
+const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+// The pose for the answer typed, or null (not Chompers, or not a comparison).
+function chompFor(p, input) {
+  if (!onChompers()) return null;
+  if (p.op === "○" && p.sym) return chompPose(input, p.sym);
+  if (p.op === "more") return morePose(p.x, p.y, input);
+  return null;
+}
+// Draws him with his mouth opening "left" or "right", or "shut" (=, keeping the way he faced),
+// its jaws k open (1 open, 0 closed).
+function chompDraw(mouth, k = 1) {
+  const el = $("mon"), m = G.floors[G.floor], face = mouth === "shut" ? G.chompFace : mouth;
+  el.innerHTML = monsterArt(Object.assign({}, m, { jaw: mouth === "shut" ? { o: 0, gap: CHOMP_SHUT.gap * k } : { o: k } }));
+  el.classList.toggle("face-l", face === "left");
+  G.chomp = mouth; G.chompFace = face;
+  return el.querySelector("svg");
+}
+// Turns him to a pose: squeezed edge-on, the drawing swapped, and out again (FLIP_MS). Opening or
+// shutting while facing the same way is a squash instead.
+function chompTurn(mouth) {
+  if (!onChompers() || !mouth || mouth === G.chomp) return Promise.resolve();
+  const seq = ++chompSeq, sv = $("mon").querySelector("svg"), face = mouth === "shut" ? G.chompFace : mouth;
+  if (reduced() || !sv || !sv.animate) { chompDraw(mouth); return Promise.resolve(); }
+  const s0 = G.chompFace === "left" ? -1 : 1, s1 = face === "left" ? -1 : 1, mid = s0 !== s1 ? "scaleX(0)" : `scale(${s0 * 1.08}, .8)`;
+  return sv.animate([{ transform: `scaleX(${s0})` }, { transform: mid }], { duration: FLIP_MS / 2, easing: "ease-in", fill: "forwards" }).finished.then(() => {
+    if (seq !== chompSeq || !onChompers()) return;
+    return chompDraw(mouth).animate([{ transform: mid }, { transform: `scaleX(${s1})` }], { duration: FLIP_MS / 2, easing: "ease-out" }).finished;
+  }).catch(() => {});
+}
+// The bigger number eaten: it shrinks away toward Chompers.
+function eatSide(side) {
+  const el = side && $("prob").querySelector(`.side[data-side="${side[0]}"]`);
+  if (!el) return Promise.resolve();
+  if (reduced() || !el.animate) { el.style.visibility = "hidden"; return Promise.resolve(); }
+  const a = centerOf(el), b = centerOf($("mon"));
+  return el.animate([{ transform: "none", opacity: 1 }, { transform: `translate(${b.x - a.x}px, ${b.y - a.y}px) scale(0)`, opacity: 0.3 }],
+    { duration: EAT_MS, easing: "ease-in", fill: "forwards" }).finished.catch(() => {});
+}
+// Plays the act for a pose (chomp.js chompPose). Resolves when the hit (or the miss) can go on.
+async function chompAct(pose) {
+  if (!pose || !onChompers()) return;
+  if (reduced()) {
+    if (pose.act === "chomp") { sfx.chomp(); eatSide(pose.eat); } else if (pose.act === "bounce") sfx.chomp(true); else sfx.clack();
+    chompDraw(pose.right ? pose.mouth : pose.settle || G.chomp);
+    return;
+  }
+  await chompTurn(pose.mouth); // already turned by the tap; "which is more" turns now
+  const el = $("mon"), mouth = G.chomp;
+  if (pose.act === "bounce") {
+    sfx.chomp(true);
+    await el.animate([{ transform: "none" }, { transform: "translateY(-12%) scale(1.04, .96)", offset: 0.3 }, { transform: "translateY(0) scale(1.06, .9)", offset: 0.55 },
+      { transform: "translateY(-5%)", offset: 0.8 }, { transform: "none" }], { duration: 420, easing: "ease-out" }).finished.catch(() => {});
+    return;
+  }
+  // Snap: the jaws open and shut twice, lunging at the side bitten (or in place).
+  const dir = pose.bite === "left" ? -1 : pose.bite === "right" ? 1 : 0, snapMs = SNAP.length * SNAP_MS;
+  el.animate([{ transform: "none" }, { transform: `translateX(${dir * 14}%) rotate(${dir * 3}deg)`, offset: 0.35 }, { transform: `translateX(${dir * 10}%)`, offset: 0.75 }, { transform: "none" }],
+    { duration: snapMs + 140, easing: "ease-out" });
+  const eaten = pose.eat ? eatSide(pose.eat) : Promise.resolve();
+  for (let i = 0; i < SNAP.length; i++) {
+    chompDraw(mouth, SNAP[i]);
+    if (i === 1) { if (pose.act === "chomp") sfx.chomp(); else sfx.clack(); }
+    await wait(SNAP_MS);
+  }
+  chompDraw(mouth, pose.right ? 1 : mouth === "shut" ? 1 : 0.6);
+  if (pose.right) { await eaten; await wait(90); return; }
+  // Wrong: a sad beat, then he turns the right way as the miss shows the answer.
+  await wait(150);
+  if (pose.settle === G.chomp) chompDraw(pose.settle); else await chompTurn(pose.settle);
+}
+
 /* ---------- input ---------- */
 function press(k) {
   if (G.next && k === "go") return nextAfterMiss();
@@ -1850,7 +1949,7 @@ function press(k) {
   if (k !== "del" && sym !== cmp) return; // digits for numbers, < = > for comparisons
   sfx.tick();
   if (k === "del") G.input = G.input.slice(0, -1);
-  else if (sym) G.input = k;
+  else if (sym) { G.input = k; chompTurn(mouthOf(k)); }
   else if (G.input.length < 4) G.input = (G.input === "0" ? "" : G.input) + k;
   ansUI();
 }

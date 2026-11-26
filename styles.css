@@ -318,6 +318,10 @@ h1 b{color:var(--coral);font-weight:400}
 .blank.typed{border-style:solid;animation:none}
 @keyframes blankglow{to{box-shadow:0 0 14px #ffc93c88}}
 @media(prefers-reduced-motion:reduce){.blank{animation:none}}
+/* Chompers (🐊) faces the picked way (face-l: mirrored, mouth to the left). Each side of a
+   comparison is its own box, so the bigger one can be eaten (app.js chompAct). */
+.prob .side{display:inline-block}
+.mon.face-l svg{transform:scaleX(-1)}
 .game.missing .ans{display:none}
 .game.missing .probrow{grid-column:1/-1;justify-self:center}
 @media (min-width: 760px){.game.missing .probrow{grid-column:2/-1;margin-right:16px}}
