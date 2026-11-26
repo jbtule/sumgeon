@@ -47,6 +47,14 @@ for (const band of Object.keys(BANDS)) {
       assert.ok(saysAnswer(f, after.say), `${p.key}: ${after.say}`);
       continue;
     }
+    // Shapes (Polly-Gon). Drawing: the dots to join before, the shape's sides and corners after
+    // ("A triangle has 3 sides and 3 corners."). Counting stops partway at a "?" before, and says
+    // the count after (a unit fraction's 1/4).
+    if (f.op === "◇") {
+      if (f.draw) assert.ok(/Join the dots!|all the way round!$/.test(before.say) && (f.shape === "circle" ? /no corners/.test(after.say) : after.say.includes(`has ${f.ans} sides`) || after.say.includes("4 sides")), `${p.key}: ${before.say} / ${after.say}`);
+      else assert.ok(before.say.endsWith("?") && (f.kind === "unit" ? after.say.endsWith(`1/${f.ans}.`) : new RegExp(`\\b${f.ans}\\b`).test(after.say)), `${p.key}: ${before.say} / ${after.say}`);
+      continue;
+    }
     // Batch 2. True or false: "Work out each side." before, "… True." or "… False." after. Fix it,
     // place value, dollars and the number line stop at "?" before, and say the answer after.
     if (BATCH2.includes(f.op)) {
@@ -143,7 +151,8 @@ function shown(h) {
 let quiet = 0;
 for (const band of Object.keys(BANDS)) {
   for (const [f, key] of problems(band)) {
-    if (f.op === "≈" || (f.op === "¢" && f.q === String(f.ans))) continue;
+    // (A shape to draw has no number to give away: its ans is what the drawing hits for.)
+    if (f.op === "≈" || (f.op === "¢" && f.q === String(f.ans)) || f.draw) continue;
     // The hour is on the clock's face for everyone to see (it's reading it that's asked), and odd
     // and even's rule names the even digits (0, 2, 4, 6 and 8); patterns.test checks its count.
     if (f.op === "◐" || (f.op === "⌚" && (f.kind === "hour" || (f.kind === "time" && !f.m)))) continue;
@@ -200,12 +209,16 @@ const opening = { "Ten-frame": /^Put together/, "Draw and cross out": /^Take awa
   "Count up to subtract": /^Think addition: count up from 158 to 403\. 2 \+ 40 \+ 200 \+ 3 = 245$/,
   "Compare hundreds, tens, ones": /^Same hundreds\. Then the tens: 4 tens and 5 tens\. 345 < 354$/,
   "Adding up to four numbers": /^Find a ten: 23 \+ 17 = 40\. 40 \+ 14 \+ 31 = 85$/,
-  "Fractions on a number line": /^Each jump is 1\/4\. Count the jumps from 0 to the dot: 1\/4, 2\/4, 3\/4$/, "Equal parts": /^1, 2, 3, 4\. 4 equal parts: fourths\.$/ };
+  "Fractions on a number line": /^Each jump is 1\/4\. Count the jumps from 0 to the dot: 1\/4, 2\/4, 3\/4$/, "Equal parts": /^1, 2, 3, 4\. 4 equal parts: fourths\.$/,
+  // Shapes (Polly-Gon).
+  "Drawing shapes": /^A triangle has 3 sides and 3 corners\.$/, "Counting sides": /^Count each side, going round: 1, 2, 3, 4, 5, 6\. A hexagon has 6 sides\.$/,
+  "Faces of a cube": /^You can see 3 faces\. 3 more hide on the back\. 3 \+ 3 = 6$/, "Equal shares": /^Count the parts: 1, 2, 3, 4\. 4 equal parts\.$/,
+  "Rows and columns of squares": /^4 \+ 4 \+ 4 = 12$/, "Unit fractions": /^Count the equal parts: 1, 2, 3, 4\. Each part is 1\/4\.$/ };
 assert.equal(STRATEGIES.length, Object.keys(opening).length);
 for (const s of STRATEGIES) {
   const h = hintFor(s.f, true);
   assert.match(h.say, opening[s.title], s.title);
-  assert.ok(h.grownups && (TALKS.includes(s.f.op) || BATCH2.includes(s.f.op) || "…".includes(s.f.op) && h.say.endsWith("= " + s.f.ans) || h.say.endsWith(s.f.sym ? s.f.l + " " + s.f.sym + " " + s.f.r : "= " + s.f.ans)), s.title);
+  assert.ok(h.grownups && (TALKS.includes(s.f.op) || BATCH2.includes(s.f.op) || s.f.op === "◇" || "…".includes(s.f.op) && h.say.endsWith("= " + s.f.ans) || h.say.endsWith(s.f.sym ? s.f.l + " " + s.f.sym + " " + s.f.r : "= " + s.f.ans)), s.title);
 }
 console.log("✓ hint strategies");
 

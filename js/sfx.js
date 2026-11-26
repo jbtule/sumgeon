@@ -453,6 +453,28 @@ export function clack() {
     tone("sine", 392, 262, t + 0.2, 0.28, 0.1);
   });
 }
+// Polly-Gon's squawk (🦜 Squawk Back), as its body flashes the shape: two quick, raspy parrot
+// screeches, a wobbling saw tone through a nasal band, the second higher, and a flutter of wings.
+export function squawk() {
+  play(function (t) {
+    [[0, 1400, 2300, 1100], [0.17, 1700, 2700, 1300]].forEach(function (s) {
+      var at = t + s[0], o = ctx.createOscillator(), lfo = ctx.createOscillator(), dep = ctx.createGain(), f = ctx.createBiquadFilter(), g = ctx.createGain();
+      o.type = "sawtooth";
+      o.frequency.setValueAtTime(s[1], at);
+      o.frequency.linearRampToValueAtTime(s[2], at + 0.05);
+      o.frequency.exponentialRampToValueAtTime(s[3], at + 0.14);
+      lfo.frequency.value = 55; dep.gain.value = 120; lfo.connect(dep).connect(o.frequency);
+      f.type = "bandpass"; f.frequency.value = 2200; f.Q.value = 2.5;
+      g.gain.setValueAtTime(0, at);
+      g.gain.linearRampToValueAtTime(0.22, at + 0.01);
+      g.gain.exponentialRampToValueAtTime(0.0001, at + 0.15);
+      o.connect(f).connect(g).connect(out);
+      o.start(at); lfo.start(at); o.stop(at + 0.2); lfo.stop(at + 0.2);
+      noise(at, 0.06, 0.12, "highpass", 4000);
+    });
+    [0.32, 0.38, 0.44].forEach(function (d) { noise(t + d, 0.04, 0.1, "bandpass", 900); });
+  });
+}
 // The Shield blocking a miss: Sir Fourtress's metal clang.
 export function clang() { play(MOVE[4]); }
 // An item used: a quick rising shimmer.
