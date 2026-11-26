@@ -14,7 +14,7 @@ export const TRAITS = {
   "Haberhasher": { icon: "🔢", name: "Tens and ones", text: "Asks two-digit sums and differences" },
   "Chompers": { icon: "🐊", name: "Big Bite", text: "Eats the bigger number: that's your hit" },
   "Equal Twins": { icon: "⚖️", name: "Balance", text: "Both sides must match" },
-  "Judo Judy": { icon: "🥋", name: "Flip", text: "Judo Judy flips your problem: same answer!" },
+  "Judo Judy": { icon: "🥋", name: "Flip", text: "Flips your sums: same answer" },
   "Starbot": { icon: "⭐", name: "Stripes", text: "Loves the ×5 and ×10 tables" },
   "Make-Ten Golem": { icon: "🔟", name: "Ten Smash", text: "Answers of 10 or more smash it for double" },
   "Sigma Rex": { icon: "👑", name: "Second wind", text: "Armors up at half HP" },

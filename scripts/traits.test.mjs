@@ -57,7 +57,7 @@ assert.equal(mon("The Unknown"), undefined, "The Unknown is retired");
 // Flip (Judo Judy): + with the smaller number first is thrown to the bigger first. Same answer,
 // same fact key (turnarounds share one), so the fact's record is the same either way.
 const judy = mon("Judo Judy");
-assert.deepEqual(traitOf(judy), { icon: "🥋", name: "Flip", text: "Judo Judy flips your problem: same answer!" });
+assert.deepEqual(traitOf(judy), { icon: "🥋", name: "Flip", text: "Flips your sums: same answer" });
 const three8 = factOf("+3,8", () => 0.9); // not turned around: 3 + 8
 assert.equal(three8.q, "3 + 8");
 const thrown = flipOf(judy, three8);
