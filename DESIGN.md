@@ -198,20 +198,32 @@ Left out everywhere, as before: graphs and data, measuring length, word problems
 
 **The plan: one path per stratum.**
 - **Steps:** each stratum gets a single ordered **path** of steps. A step is one of today's levels (of the band or of a strand), so fact keys and records don't change. Each step names the monster that asks it.
-- **Opening a step:** a step opens when the step before it is 70% learned (box 3+), the rule levels use today. Skipping ahead (§5) works along the path, so a fluent player runs through it quickly.
+- **A window of three topics** (decided with the user: the kids have capacity to go ahead, but not a year's topics at once, and they want variety):
+  - About **three new steps are open at once**, and problems mix across them, plus due reviews of everything learned.
+  - The next step joins the window when the oldest new step in it is about **40% learned** (box 3+). That's enough to show it's sinking in, without holding a capable kid back.
+  - Skipping ahead (§5) still runs a fluent kid past a step they already know in a few problems.
 - **Ongoing steps:** a few steps are marked **ongoing** (counting, comparing in K; counting to 120 in 1st). They open with the path's first step and stay open, as the guides teach them all year.
 - **Review:** each path starts with a **review** of the grade before (its learned facts mixed in as due reviews, never new). That's how 2nd grade's priority "fluency within 20" and 3rd grade's "fluency within 1000" are kept up.
+- **Chapters, guarded by mega bosses** (§14.2):
+  - Each path is split into **chapters** of 3–4 steps, and the dungeon's depth paces them: **a chapter every 5 depths**.
+  - **Opening a chapter:** its steps can join the window only once **both** the mega boss at the end of the chapter before is beaten **and** that chapter's steps are partly learned (the 40% rule). So a lucky run can't skip learning, and learning alone doesn't skip the dungeon.
+  - **The boss across a chapter's 5 depths** builds up to the mega boss:
+    - depths 1–2: the normal boss;
+    - depths 3–4: the boss **powering up**, gaining pieces of its mega form each depth (a crystal shoulder, then both; a few Σ tufts), with a little more HP and "I'm getting stronger…", but no second trait yet;
+    - depth 5: the full **mega boss**, crowned, with its second trait and a big chest. Beating it opens the next chapter.
+  - The pattern repeats: depth 10 is the next mega boss, then 15, and so on. Past a stratum's last chapter, mega bosses keep coming every 5 depths, with their chests.
+  - On the depth map, the boss icon fills in toward the crown across a chapter, and mega depths wear a crown.
 - **Monsters arrive as their step opens.**
   - A monster with no open step doesn't appear.
-  - When a new step opens, its monster is announced on the floor-cleared or end card ("A new monster appears in the Mines: Squaresquatch!"), and it takes a depth-1 floor from the next run.
+  - When a new step joins the window, its monster is announced on the floor-cleared or end card ("A new monster appears in the Mines: Squaresquatch!"), and it takes a depth-1 floor from the next run.
   - Depth-1 floors are the newest open steps' monsters (newest first), plus the rescue floor and the boss. Deeper, the pool is every monster with an open step.
   - The boss asks everything open.
-  
-  So a stratum visibly fills up with monsters as the player learns.
+
+  So a stratum visibly fills up with monsters, chapter by chapter, as the player learns and goes deeper.
 - **Opening the next stratum:** it opens when the boss is beaten and the path's **priority steps** (the guide's priority standards, marked ★ below) are 60% learned. Other steps (time, patterns, shapes…) never hold it up, as strands don't today.
 - **Older players start further on:** a player's grade opens every stratum at or below it (§4.1). Placement and skipping ahead carry a fluent player along a path in a run or two.
 
-**The paths** (★ = a priority standard in the school's guide; the monster in brackets; *new* = a gap to build).
+**The paths** (★ = a priority standard in the school's guide; the monster in brackets; *new* = a gap to build). Chapters (every 5 depths) group the steps about 3–4 at a time, in this order; the exact cut is set when it's built, with the balance sim.
 
 **The Counting Cellar (K)**
 1. ★ How many, and which is more, to 5: the dot flash, how many at a glance up to 5 (*new*, Pipsqueak), and which is more to 5 (Chompers). Ongoing.
@@ -277,7 +289,8 @@ Three-digit numbers (2nd 5–9) and four addends are done (PR #111).
 
 **How it would be built:**
 - **`PATHS` in wings.js:** one per stratum, listing steps as `{ band, level }` with flags `priority`, `ongoing`, `review`, and the monsters.
-- **learn.js:** `openLevel` becomes `openSteps(path, recs)`. `choose` draws only from open steps.
+- **learn.js:** `openLevel` becomes `openSteps(path, recs, chapter)`: the window of three, the 40% rule, and the chapter limit. `choose` draws only from open steps.
+- **wings.js / app.js:** the chapter a player has reached is the number of mega bosses beaten in the stratum (saved with its depths). The boss at each depth is normal, powering up (depths 3–4 of a chapter) or mega (depth 5).
 - **runFloors:** fills depth 1 from the newest steps.
 - **The stratum-open check:** uses the priority steps.
 - **Saved data:** none is lost. Steps are today's levels, so records carry over and a returning player's open steps follow from what they've learned.
@@ -751,12 +764,12 @@ _Revised with the user on 2026-11-25. Sumgeon already rewards play in many ways 
 ### 14.2 The big ones: each stratum's Champion and Legend, won against its mega and Legend bosses
 The strata are deep, so these are the game's biggest moments, with the biggest card (the stratum's wall behind it, a fanfare, the boss and the captain), always shown, never secret. Each is won in a fight, not quietly:
 - **The boss** ends every run, as now.
-- **The mega boss** takes its place on every 10th depth (10, 20, 30 …): a bigger, crowned form of the stratum's boss with its own name and line ("Mega Golem!"), more HP, and the boss's trait plus a second one (the Golem's Ten Smash with Second Wind armor, say). The depth map marks those depths with a crown, and the descent says "Mega boss ahead!". Each one beaten gives a big chest (§6.3).
+- **The mega boss** takes its place on every 5th depth (5, 10, 15 …; revised 2026-11-26 with §4.3's chapters, the boss powering up on the two depths before): a bigger, crowned form of the stratum's boss with its own name and line ("Mega Golem!"), more HP, and the boss's trait plus a second one (the Golem's Ten Smash with Second Wind armor, say). The depth map marks those depths with a crown, and the descent says "Mega boss ahead!". Each one beaten gives a big chest (§6.3).
 - **The Legend boss** appears once every fact in the stratum's band is mastered (box 4): the next run in that stratum, at any depth, ends with the boss's golden form ("A legend awaits!"). It's a final exam: every kind of problem the stratum asks, weighted to the facts that took longest to learn, no fact twice, with the boss's trait and its mega trait. Lost, it's there again on the next run until it's beaten. Afterwards the boss shows golden in Monsters & Heroes and the stratum's layer on the depth map gets a gold edge.
 
 | Achievement | Icon | Earned by | Reward |
 |---|---|---|---|
-| *Counting Cellar* **Champion** | 🏆 | Beat the stratum's mega boss at depth 10 | coins and the stratum's champion badge, worn by the captain (a clothing piece only from here) |
+| *Counting Cellar* **Champion** | 🏆 | Beat the mega boss that opens the stratum's last chapter (§4.3) | coins and the stratum's champion badge, worn by the captain (a clothing piece only from here) |
 | *Counting Cellar* **Legend** | 🌟 | Beat the stratum's Legend boss (every fact mastered first) | a golden crown for the captain, one per stratum in that stratum's colors |
 | **Champion of Champions** / **Legend of Legends** | 👑 / 🌠 | Every stratum open to the player | a cape |
 
@@ -764,7 +777,7 @@ The mega and Legend forms are looks of the four bosses (new art and lines, no ne
 
 **Drawn, not wired yet** (`BOSS_FORMS` in `monsters.js`, shown on the gallery page; names, beaten and won lines recorded in the "bosses" sprite):
 
-| Boss | Mega form (every 10th depth) | Its second trait (planned) | Legend form (after mastery) |
+| Boss | Mega form (every 5th depth) | Its second trait (planned) | Legend form (after mastery) |
 |---|---|---|---|
 | Make-Ten Golem | **Mega-Ten Golem**: crystal armor, its whole ten-frame lit gold, a crown | 👑 Second wind (Sigma Rex's): armors up at half HP | **Golden Golem**, smiling |
 | Judo Judy | **Mega Judy**: a power burst, the black belt glowing gold, fierce brows, a crown | ⚡ Black Belt (new): every 4th problem is a big throw, a miss costs 2 hearts | **Golden Judy** |
