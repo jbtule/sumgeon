@@ -182,6 +182,109 @@ Every Wing also has one **rescue floor** holding a cursed digit (§6.6). The pro
 
 ---
 
+### 4.3 Progression within a stratum (plan, 2026-11-26)
+
+_Decided with the user: each stratum follows its grade's teaching order, opened by mastery, and the gaps still open are placed in it. Built after this plan; nothing here is in the game yet._
+
+**Where the order comes from.** The school teaches from i-Ready, and its curriculum guides give the lessons' order:
+- **2nd grade:** the guide numbers all 32 lessons.
+- **1st grade:** the topics are numbered, and some lesson numbers are given (data is lesson 13; shapes, time, length and coins are 22–27).
+- **Kindergarten:** the units are "ongoing", so the order below follows what builds on what.
+- **3rd grade:** the guide lists topics without lesson numbers, so its order is the least certain (marked "to confirm").
+
+Left out everywhere, as before: graphs and data, measuring length, word problems, and the K calendar unit (days of the week, seasons, birthdays). None of them is a quick typed number.
+
+**The problem today.** A stratum has one ladder of levels (its band, which opens the next stratum at 60%) and strands beside it (coins, time, patterns, arrays, comparing…). Every strand is open from the first day, so a 2nd grader can meet arrays and odd and even (the year's last two lessons) before two-digit adding.
+
+**The plan: one path per stratum.**
+- **Steps:** each stratum gets a single ordered **path** of steps. A step is one of today's levels (of the band or of a strand), so fact keys and records don't change. Each step names the monster that asks it.
+- **Opening a step:** a step opens when the step before it is 70% learned (box 3+), the rule levels use today. Skipping ahead (§5) works along the path, so a fluent player runs through it quickly.
+- **Ongoing steps:** a few steps are marked **ongoing** (counting, comparing in K; counting to 120 in 1st). They open with the path's first step and stay open, as the guides teach them all year.
+- **Review:** each path starts with a **review** of the grade before (its learned facts mixed in as due reviews, never new). That's how 2nd grade's priority "fluency within 20" and 3rd grade's "fluency within 1000" are kept up.
+- **Monsters arrive as their step opens.**
+  - A monster with no open step doesn't appear.
+  - When a new step opens, its monster is announced on the floor-cleared or end card ("A new monster appears in the Mines: Squaresquatch!"), and it takes a depth-1 floor from the next run.
+  - Depth-1 floors are the newest open steps' monsters (newest first), plus the rescue floor and the boss. Deeper, the pool is every monster with an open step.
+  - The boss asks everything open.
+  
+  So a stratum visibly fills up with monsters as the player learns.
+- **Opening the next stratum:** it opens when the boss is beaten and the path's **priority steps** (the guide's priority standards, marked ★ below) are 60% learned. Other steps (time, patterns, shapes…) never hold it up, as strands don't today.
+- **Older players start further on:** a player's grade opens every stratum at or below it (§4.1). Placement and skipping ahead carry a fluent player along a path in a run or two.
+
+**The paths** (★ = a priority standard in the school's guide; the monster in brackets; *new* = a gap to build).
+
+**The Counting Cellar (K)**
+1. ★ How many, and which is more, to 5: the dot flash, how many at a glance up to 5 (*new*, Pipsqueak), and which is more to 5 (Chompers). Ongoing.
+2. ★ Add and subtract within 5, with zero (Plusquito, Minustaur).
+3. Count on by 1s, back by 1s from 10 (Slimelipsis). Ongoing.
+4. ★ Within 10 (Plusquito, Minustaur); dice sums (Pipsqueak); which is more to 10 (Chompers).
+5. ★ Coins: find the coin, then what each coin is worth (Trollar).
+6. ★ Make 10 and number bonds (the Make-Ten Golem's own kind).
+7. ★ 10 and some more (teens); count by 10s (Slimelipsis).
+8. ★ Shapes: name and draw a circle, square, triangle, rectangle and hexagon; count sides and corners (*shapes batch*, Polly-Gon).
+
+**The Balance Hall (1st)**
+1. Review: the Cellar's facts within 10.
+2. ★ Within 20, not crossing 10; count on to 120 and back from 20 (Slimelipsis; count back from 20 is *new*). Ongoing.
+3. ★ Three numbers (Triceraplus).
+4. ★ Crossing 10: make a ten, use a ten (Plusquito, Minustaur).
+5. ★ Doubles and near doubles (Doublet).
+6. ★ The equal sign: true or false, fix it, missing numbers (the Equal Twins, Quizard).
+7. ★ Compare two-digit numbers with < = > (Chompers).
+8. ★ Add and subtract tens; 10 more, 10 less (Haberhasher visits, or Plusquito).
+9. ★ Two-digit plus one-digit, then two-digit plus two-digit, with and without regrouping (*moved* from the Mines' first levels).
+10. ★ Shapes: what makes a shape; halves and fourths (*shapes batch*, Polly-Gon).
+11. ★ Time to the hour and half hour (Tick-Tockus).
+12. ★ Coin values (*new in the Hall*: Trollar visits with "each coin").
+13. Count by 5s (Slimelipsis).
+
+**The Crystal Mines (2nd)** (i-Ready lesson numbers)
+1. ★ Review: fluency within 20, the Hall's facts (lessons 1–2; *new* as review).
+2. ★ Two-digit add and subtract, then with regrouping (6–8; Haberhasher, Margot-Rythm).
+3. ★ Money: counting coins, then bills, then bills and coins (10; Trollar).
+4. Time to 5 minutes (11; Tick-Tockus).
+5. ★ Three-digit place value: blocks, expanded form, tens in a number (12–13; Haberhasher); count by 5s, 10s and 100s (Slimelipsis).
+6. ★ Compare three-digit numbers (14; Chompers).
+7. ★ 10 and 100 more or less (15).
+8. ★ Add and subtract within 1000 (16–18; Margot-Rythm, Haberhasher).
+9. Add up to four two-digit numbers (19; Triceraplus).
+10. ★ Shapes and equal shares: halves, thirds, fourths; squares in a rectangle (28–30; *shapes batch*, Polly-Gon).
+11. ★ Arrays (31; Squaresquatch).
+12. Even and odd; count by 2s (32; Slimelipsis).
+
+**The Tables Tower (3rd)** (to confirm: the guide gives topics, not lesson numbers)
+1. Review: add and subtract within 1000 (Margot-Rythm).
+2. ★ × 0, 1, 2, 5, 10 (Timesaur, Starbot).
+3. ★ × 3, 4, 6; then × 7, 8, 9 (Timesaur).
+4. ★ Division: ÷ 1, 2, 5, 10, then 3, 4, 6, then 7, 8, 9 (Divvy). The guide's topic list puts all × before ÷ ("Understand the meaning of division" after × 7, 8, 9); today's levels alternate. *To confirm with the class's order.*
+5. ★ × tens (4 × 30); rounding to 10 and 100.
+6. ★ Fractions: on a number line, then equal fractions, then **comparing fractions** with < = > (*new*, Halfling or Chompers visiting).
+7. Time to the minute, then elapsed time (Tick-Tockus).
+8. ★ Area and perimeter.
+9. Shapes: quadrilaterals (rhombus, rectangle, square), shapes cut into equal parts as unit fractions (*shapes batch*, Polly-Gon).
+10. × and ÷ 11 and 12 (an extra, kept last).
+
+**The gaps, all placed above:**
+- the dot flash (K 1);
+- shapes (K 8, 1st 10, 2nd 10, 3rd 9);
+- count back from 20 (1st 2);
+- two-digit adding moved to 1st (1st 9);
+- coin values in the Hall (1st 12);
+- the within-20 review (2nd 1);
+- comparing fractions (3rd 6).
+
+Three-digit numbers (2nd 5–9) and four addends are done (PR #111).
+
+**How it would be built:**
+- **`PATHS` in wings.js:** one per stratum, listing steps as `{ band, level }` with flags `priority`, `ongoing`, `review`, and the monsters.
+- **learn.js:** `openLevel` becomes `openSteps(path, recs)`. `choose` draws only from open steps.
+- **runFloors:** fills depth 1 from the newest steps.
+- **The stratum-open check:** uses the priority steps.
+- **Saved data:** none is lost. Steps are today's levels, so records carry over and a returning player's open steps follow from what they've learned.
+- **No dungeon version bump:** runs and depths stay.
+- **Tests:** every fact is in exactly one step; every path's steps open in order; no monster appears before its step; and the balance sim per path.
+- **Order:** this plan first, then the progression itself, then the remaining gap batches (shapes, comparing fractions, the dot flash, the Hall changes) slotted into their steps.
+
 ## 5. The learning engine (how the game teaches)
 
 This is the most important invisible system. Today problems are random. They should become **deliberately chosen**.
