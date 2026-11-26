@@ -2,7 +2,7 @@
 // 2nd grade's 10 and 100 more or less: the fixed samples, their levels, and the hints.
 import assert from "node:assert/strict";
 import { twoDigitFacts, TWO_LEVELS } from "../js/twodigit.js";
-import { pool, openLevel, choose, keyOf, factOf, BANDS } from "../js/learn.js";
+import { pool, choose, keyOf, factOf, BANDS } from "../js/learn.js";
 import { facts } from "../js/problems.js";
 import { hintFor } from "../js/hints.js";
 
@@ -57,15 +57,14 @@ assert.ok(lv("Add tens to a number").every((f) => (f.x % 10 === 0) !== (f.y % 10
 const big = fs.filter((f) => TWO_LEVELS[f.lv].big);
 assert.equal(big.length, 48);
 assert.ok(big.every((f) => { const n = f.op === "+" ? Math.max(f.x, f.y) : f.x, s = f.op === "+" ? Math.min(f.x, f.y) : f.y; return n >= 100 && n <= 999 && [10, 100].includes(s) && f.ans >= 100 && f.ans <= 999; }), "within 1000");
-// 1st grade's tens are the Hall's last level; the Mines ask the rest, adding and subtracting mixed.
-const hall = pool("first").filter((f) => f.level === BANDS.first.levels.length - 1 && "+-".includes(f.op));
+// 1st grade's tens are a level of the Hall's; the Mines ask the rest, adding and subtracting mixed.
+const hall = pool("first").filter((f) => f.level === BANDS.first.levels.findIndex((l) => l.name === "Add and subtract tens") && "+-".includes(f.op));
 assert.equal(hall.length, lv("Add tens").length + lv("Subtract tens").length + lv("10 more").length + lv("10 less").length + lv("Add tens to a number").length);
 // The Mines also ask place value (placevalue.js, 76 facts), in two levels of their own.
 assert.equal(pool("second").filter((f) => f.op !== "#").length, fs.length - hall.length);
 assert.equal(pool("second").filter((f) => f.op === "#").length, 76);
 assert.ok([0, 1].every((L) => ["+", "-"].every((op) => pool("second").some((f) => f.level === L && f.op === op))), "each Mines level adds and subtracts");
-assert.equal(openLevel("second", {}), 0);
-const first = factOf(choose("second", {}, { now: 0, rnd: () => 0.5 }));
+const first = factOf(choose("second", {}, { now: 0, rnd: () => 0.5, open: [0] }));
 assert.ok((first.x % 10) + (first.y % 10) < 10 || first.op === "-", "a new player starts without regrouping");
 // Hints.
 assert.equal(hintFor({ op: "+", x: 38, y: 25, ans: 63 }, false).say, "Tens and ones: 30 + 20 = 50, 8 + 5 = 13. 50 + 13 = ?");

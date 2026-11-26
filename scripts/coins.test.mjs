@@ -1,7 +1,7 @@
 // Coins (Trollar): the facts, their levels, the drawing and the spoken lines.
 import assert from "node:assert/strict";
 import { coinFacts, coinFact, findFact, pileOf, coinsSvg, coinWords, COIN_LEVELS } from "../js/coins.js";
-import { pool, factOf, openLevel, choose } from "../js/learn.js";
+import { pool, factOf, choose } from "../js/learn.js";
 import { spokenProblem, spokenFact } from "../js/problems.js";
 import { hintFor } from "../js/hints.js";
 
@@ -48,13 +48,8 @@ assert.deepEqual([0, 1].map((i) => pk.filter((f) => f.level === i).length), [36,
 assert.deepEqual([0, 1, 2, 3].map((i) => pc.filter((f) => f.level === i).length), [5, 9, 29, 47]);
 assert.ok(pc.filter((f) => f.op === "¢").every((f) => !factOf(f.key).find && factOf(f.key).q.includes("+")), "the Mines only count coins");
 assert.equal(COIN_LEVELS.length, 6);
-assert.equal(openLevel("coinsK", {}), 0);
-assert.match(choose("coinsK", {}, { now: 0, rnd: () => 0.5 }), /^¢\?[qdnp]:/, "a new player finds coins");
-assert.match(choose("coins", {}, { now: 0, rnd: () => 0.5 }), /^¢0,0,0,\d$/, "counting starts with pennies");
-// Half the finding learned opens "Each coin" (strands open at 50%, not 70%).
-const recs = {};
-pk.filter((f) => f.level === 0).slice(0, 18).forEach((f) => (recs[f.key] = { b: 3, n: 2, c: 2, ms: 2000, t: 0 }));
-assert.equal(openLevel("coinsK", recs), 1);
+assert.match(choose("coinsK", {}, { now: 0, rnd: () => 0.5, open: [0] }), /^¢\?[qdnp]:/, "a new player finds coins");
+assert.match(choose("coins", {}, { now: 0, rnd: () => 0.5, open: [0] }), /^¢0,0,0,\d$/, "counting starts with pennies");
 // Drawing and words.
 const s = coinsSvg(dimeNickel3.coins);
 assert.ok(s.startsWith("<svg") && (s.match(/<circle/g) || []).length >= 5 && !/undefined|NaN/.test(s));

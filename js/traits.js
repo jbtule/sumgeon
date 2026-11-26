@@ -78,20 +78,31 @@ export function asks(m) {
   return (op) => !"○=Σ⌚…◐✓✎◇⁙".includes(op);
 }
 
-// A monster's trait, or null. Cursed digits have Lucky Number (DESIGN.md §6.6).
+// A monster's trait, or null. Cursed digits have Lucky Number (DESIGN.md §6.6). A boss's forms
+// (monsters.js bossForm) keep the boss's own; a mega boss adds its second, trait2.
 export function traitOf(m) {
   if (m.cursed != null) return { icon: "🍀", name: "Lucky Number", text: `Answers with a ${m.cursed} hit double` };
   return TRAITS[kind(m)] || null;
 }
+// A mega boss (DESIGN.md §4.3, §14.2), whose second trait (m.trait2) is on: each one's rule below.
+//   Mega-Ten Golem, 👑 Second wind: armors up at half HP, as Sigma Rex does (hits under 10 do half).
+//   Mega Judy, ⚡ Black Belt: every 4th problem is a big throw, a miss costs 2 hearts (as
+//     Minustaur's charge).
+//   The Megapede, 🐛 Curl Up: at half HP it curls into a ring, and hits under 20 do half damage.
+//   Mega Sigma Rex, 🥋 Flip: flips times facts (3 × 8 is thrown to show 8 × 3), as Judo Judy flips
+//     sums.
+export const mega = (m) => !!m && m.form === "mega" && !!m.trait2;
 
 // Flip (Judo Judy): an addition of two numbers with the smaller first (3 + 8) is thrown, so it
 // shows the bigger first (8 + 3). The turnaround has the same answer and the same fact record
 // (learn.js keyOf: turnarounds share a key). Returns the flipped problem, or null for anything
 // else: doubles, a hidden number (□), comparing, balancing, taking away.
+// Mega Sigma Rex flips times facts the same way (3 × 8 shows 8 × 3).
 export function flipOf(m, p) {
-  if (kind(m) !== "Judo Judy" || !p || p.op !== "+" || p.blank || p.sym || p.fact) return null;
+  const op = kind(m) === "Judo Judy" ? "+" : kind(m) === "Sigma Rex" && mega(m) ? "×" : null;
+  if (!op || !p || p.op !== op || p.blank || p.sym || p.fact) return null;
   if (!Number.isInteger(p.x) || !Number.isInteger(p.y) || p.x >= p.y) return null;
-  return Object.assign({}, p, { x: p.y, y: p.x, q: p.y + " + " + p.x, flipped: true });
+  return Object.assign({}, p, { x: p.y, y: p.x, q: p.y + " " + op + " " + p.x, flipped: true });
 }
 
 // Flash (Pipsqueak): a sum of two dice-sized numbers (3 + 5) comes as two dice, which turn into
@@ -110,8 +121,9 @@ export function dieSvg(n) {
   return `<svg class="die" viewBox="0 0 50 50" role="img" aria-label="${n}"><rect x="2" y="2" width="46" height="46" rx="9" fill="#f6f3ea" stroke="#0c171c" stroke-width="3"/>${pips}</svg>`;
 }
 
-// Whether this problem is charged (Minustaur): every 4th on the floor. n counts from 0.
-export function charged(m, n) { return kind(m) === "Minustaur" && n % 4 === 3; }
+// Whether this problem is charged (Minustaur; Mega Judy's big throw, ⚡ Black Belt): every 4th on
+// the floor, a miss costing 2 hearts. n counts from 0.
+export function charged(m, n) { return (kind(m) === "Minustaur" || (kind(m) === "Judo Judy" && mega(m))) && n % 4 === 3; }
 
 // Facts a monster asks more often (Starbot: anything with a 5 or 10), as a test on a fact key.
 export function prefers(m) {
@@ -132,19 +144,23 @@ export function regroups(p) {
 // How a hit lands. ans: the answer; typed: what was typed; low: the monster is at half HP or less;
 // p: the problem (Margot-Rythm looks at its numbers).
 // Returns { mult, note } where note says why, for the message under the monster.
+// A boss in any of its forms (powering up, mega) keeps its trait; a mega boss adds its second.
 export function hitBy(m, ans, typed, low, p) {
+  const k = kind(m);
   if (m.cursed != null && String(typed).includes(String(m.cursed))) return { mult: 2, note: `Lucky ${m.cursed}! Double damage` };
-  if (m.n === "Make-Ten Golem" && ans >= 10) return { mult: 2, note: "Ten Smash! Double damage" };
-  if (m.n === "The Centipede" && ans >= 100) return { mult: 2, note: "Hundred Legs! Double damage" };
-  if (kind(m) === "Margot-Rythm" && regroups(p)) return { mult: 2, note: "Regrouped! Double damage" };
-  if (kind(m) === "Timesaur" && ans < 10) return { mult: 0.5, note: "Armor! Half damage" };
-  if (m.n === "Sigma Rex" && low && ans < 10) return { mult: 0.5, note: "Armor! Half damage" };
+  if (k === "Make-Ten Golem" && ans >= 10) return { mult: 2, note: "Ten Smash! Double damage" };
+  if (k === "The Centipede" && ans >= 100) return { mult: 2, note: "Hundred Legs! Double damage" };
+  if (k === "Margot-Rythm" && regroups(p)) return { mult: 2, note: "Regrouped! Double damage" };
+  if (k === "Timesaur" && ans < 10) return { mult: 0.5, note: "Armor! Half damage" };
+  if ((k === "Sigma Rex" || (k === "Make-Ten Golem" && mega(m))) && low && ans < 10) return { mult: 0.5, note: "Armor! Half damage" };
+  if (k === "The Centipede" && mega(m) && low && ans < 20) return { mult: 0.5, note: "Curled up! Half damage" };
   return { mult: 1, note: "" };
 }
 
 // What happens the first time a monster drops to half HP: a note, and whether its art splits.
 export function atHalf(m) {
   if (kind(m) === "Divvy") return { note: m.n + " splits in two!", split: true };
-  if (m.n === "Sigma Rex") return { note: "Sigma Rex gets a second wind! Armor up.", split: false };
+  if (kind(m) === "Sigma Rex" || (kind(m) === "Make-Ten Golem" && mega(m))) return { note: m.n + " gets a second wind! Armor up.", split: false };
+  if (kind(m) === "The Centipede" && mega(m)) return { note: m.n + " curls up! Hits under 20 do half damage.", split: false, curl: true };
   return null;
 }

@@ -86,7 +86,7 @@ console.log("✓ traits");
 
 // The grade strata's new monsters (M5 step 3): each trait, and what each asks.
 import { isDouble, isDice, regroups, flashOf, dieSvg } from "../js/traits.js";
-import { pool as poolOf, openLevel, monsterHP } from "../js/learn.js";
+import { pool as poolOf, monsterHP } from "../js/learn.js";
 import { threeFacts, tenOf } from "../js/three.js";
 import { arrayFacts } from "../js/arrays.js";
 import { lookOf, LOOKS } from "../js/monsters.js";
@@ -122,8 +122,7 @@ import { lookOf, LOOKS } from "../js/monsters.js";
   assert.ok(!isDouble("+", "+6,7") && !isDouble("-", "-15,7") && !isDouble("○", "○x") && !isDouble("+", "Σ4,6,4"));
   // With only the first level open (no doubles in it), Doublet asks the doubles of the lowest level that has them.
   const dRecs = {};
-  assert.equal(openLevel("first", dRecs), 0);
-  for (let i = 0; i < 200; i++) assert.ok(isDouble(...(() => { const k = choose("first", dRecs, { now: 0, rnd: Math.random, asks: asks(mon("Doublet")) }); return [poolOf("first").find((f) => f.key === k).op, k]; })()));
+  for (let i = 0; i < 200; i++) assert.ok(isDouble(...(() => { const k = choose("first", dRecs, { now: 0, rnd: Math.random, asks: asks(mon("Doublet")), open: [0] }); return [poolOf("first").find((f) => f.key === k).op, k]; })()));
 
   // Triceraplus (Hall): its own strand of three numbers, two of them making ten; no one else adds three.
   const tri = asked("Triceraplus", "three");
@@ -163,7 +162,7 @@ import { lookOf, LOOKS } from "../js/monsters.js";
   // Chompers visiting the Tower compares fractions, and only them.
   const cf = asked("Chompers", "third");
   assert.ok(cf.length === 24 && cf.every((f) => f.op === "○" && f.key.includes("/")));
-  for (let i = 0; i < 100; i++) assert.equal(choose("third", {}, { now: 0, asks: asks(mon("Halfling")) })[0], "↔", "fractions from the start");
+  for (let i = 0; i < 100; i++) assert.equal(choose("third", {}, { now: 0, asks: asks(mon("Halfling")), open: [8, 9, 10] })[0], "↔", "fractions on a number line first");
   assert.ok(asks(mon("Halfling"))("/", "/1,2,4") && !asks(mon("Halfling"))("×", "×3,4"));
   assert.ok(LOOKS.Halfling.length === 4);
 

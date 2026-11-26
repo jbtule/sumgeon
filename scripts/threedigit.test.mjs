@@ -4,7 +4,7 @@
 import assert from "node:assert/strict";
 import { compare1000Facts, decidingPlace, compareFact } from "../js/balance.js";
 import { sumFacts, sumFact, threeFacts, threeFactOf, tenPairOf, SUM_LEVELS } from "../js/three.js";
-import { pool, factOf, keyOf, openLevel, BANDS } from "../js/learn.js";
+import { pool, factOf, keyOf, BANDS } from "../js/learn.js";
 import { spokenProblem, spokenFact } from "../js/problems.js";
 import { hintFor } from "../js/hints.js";
 import { stackable } from "../js/twodigit.js";
@@ -59,7 +59,6 @@ assert.equal(keyOf(sumFact([23, 14, 31, 12])), "Σ23,14,31,12");
 // Triceraplus's strand in the Mines: three numbers first, then four.
 assert.deepEqual(BANDS.sumsM.levels.map((l) => l.name), ["Three two-digit numbers", "Four two-digit numbers"]);
 assert.ok(pool("sumsM").every((p) => p.level === factOf(p.key).nums.length - 3));
-assert.equal(openLevel("sumsM", {}), 0);
 // Stacked (four rows) about half the time; the Hall's 4 + 3 + 6 never.
 assert.ok(ss.every(stackable) && !threeFacts().some(stackable));
 // Words and hints: find a ten when two ones make one, else the tens then the ones.

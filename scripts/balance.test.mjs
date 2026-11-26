@@ -1,7 +1,7 @@
 // The Balance Hall: comparing and balancing problems, their keys, words and hints.
 import assert from "node:assert/strict";
 import { balanceFacts, balanceFactOf, compareFact, balanceFact, BALANCE_SETS, moreFacts, moreFact } from "../js/balance.js";
-import { pool, openLevel, choose, factOf } from "../js/learn.js";
+import { pool, choose, factOf, BANDS } from "../js/learn.js";
 import { asks } from "../js/traits.js";
 import { MON } from "../js/monsters.js";
 import { spokenProblem, spokenFact } from "../js/problems.js";
@@ -20,7 +20,10 @@ assert.ok(fs.some((f) => f.sym === "=") && fs.some((f) => f.sym === "<") && fs.s
 assert.equal(BALANCE_SETS.length, 5);
 const hall = pool("first").filter((f) => f.op === "○" || f.op === "=");
 assert.equal(hall.length, 120, "every comparing and balancing fact is in the Hall");
-for (const op of ["○", "="]) assert.ok(hall.some((f) => f.op === op && f.level === 0), op);
+const lvl = (name) => BANDS.first.levels.findIndex((l) => l.name === name);
+// Comparing is its own level of the Hall's path (Chompers), balancing is the equal sign's.
+assert.ok(hall.filter((f) => f.op === "○").every((f) => f.level === lvl("Compare with < = >")));
+assert.ok(hall.filter((f) => f.op === "=").every((f) => f.level === lvl("The equal sign")));
 const mon = (n) => MON.find((m) => m.n === n);
 for (let i = 0; i < 50; i++) {
   assert.equal(choose("first", {}, { now: 0, asks: asks(mon("Chompers")) })[0], "○", "Chompers only compares");
@@ -39,7 +42,6 @@ assert.deepEqual([factOf("M4,7", () => 0.9).q, factOf("M4,7", () => 0.1).q], ["4
 assert.equal(spokenProblem(m74), "Which is more, seven or four?");
 assert.equal(spokenFact(moreFact(4, 7)), "Seven is more than four.");
 assert.equal(hintFor(m74, true).say, "Line them up: the longer row is more. More = 7");
-assert.equal(openLevel("more", {}), 0);
 assert.ok(pool("more").filter((f) => f.level === 0).every((f) => f.ans <= 5));
 
 const c = compareFact("3 + 4", "8"), b = balanceFact("3 + 4", "□ + 5");

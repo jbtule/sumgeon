@@ -43,8 +43,15 @@ export const lockOf = (key, rnd) => factOf(key, rnd);
 export const MONEY_SHARE = 0.5, ITEM_SHARE = 1 / 3, CLOTHING_READY = true;
 // money: false before the player has met money (a kindergartner who hasn't done a coin problem,
 // app.js moneyOK): then a chest holds an item or clothing, never coins.
-export function contents(rnd, owned, money = true) {
+// big: a mega boss's big chest (DESIGN.md §4.3): more coins (moneyFor big) or two items, half and
+// half; two items before the player has met money.
+export function contents(rnd, owned, money = true, big = false) {
   const r = rnd || Math.random, roll = r();
+  if (big) {
+    if (money && roll < 0.5) return { kind: "money", big: true };
+    const a = ITEMS[Math.floor(r() * ITEMS.length)].id, rest = ITEMS.filter((i) => i.id !== a);
+    return { kind: "items", items: [a, rest[Math.floor(r() * rest.length)].id] };
+  }
   const item = () => ({ kind: "item", item: ITEMS[Math.floor(r() * ITEMS.length)].id });
   if (!money) {
     const left = CLOTHING_READY ? unowned(owned) : [];
@@ -100,17 +107,20 @@ export const ownedFor = (w, spot) => CLOTHES.filter((p) => p.spot === spot && ow
    aloud is the one a kid would make. */
 export const ONE_COIN = [1, 5, 10, 25];
 export const CELLAR_BOSS = [15, 20, 30, 35, 50]; // two coins each: a dime and a nickel, two dimes ...
+// A mega boss's big chest in the Cellar: three coins (a quarter, a dime and a nickel; three quarters …).
+export const CELLAR_BIG = [40, 45, 55, 60, 75];
 export const MONEY = {
-  cellar: { coins: ONE_COIN, boss: CELLAR_BOSS },
-  hall: { min: 2, max: 50, bossMin: 40, bossMax: 99 },
-  mines: { min: 6, max: 75, bossMin: 50, bossMax: 99 },
-  tower: { min: 6, max: 75, bossMin: 50, bossMax: 99 }
+  cellar: { coins: ONE_COIN, boss: CELLAR_BOSS, big: CELLAR_BIG },
+  hall: { min: 2, max: 50, bossMin: 40, bossMax: 99, bigMin: 75, bigMax: 99 },
+  mines: { min: 6, max: 75, bossMin: 50, bossMax: 99, bigMin: 80, bigMax: 99 },
+  tower: { min: 6, max: 75, bossMin: 50, bossMax: 99, bigMin: 80, bigMax: 99 }
 };
-// Cents found in a chest in wing `wingId` (a boss's when boss).
-export function moneyFor(wingId, boss, rnd) {
+// Cents found in a chest in wing `wingId` (a boss's when boss; a mega boss's big chest when big).
+// Always under a dollar, so its line is recorded.
+export function moneyFor(wingId, boss, rnd, big) {
   const r = rnd || Math.random, m = MONEY[wingId] || MONEY.mines;
-  if (m.coins) { const list = boss ? m.boss : m.coins; return list[Math.floor(r() * list.length)]; }
-  const lo = boss ? m.bossMin : m.min, hi = boss ? m.bossMax : m.max;
+  if (m.coins) { const list = big ? m.big : boss ? m.boss : m.coins; return list[Math.floor(r() * list.length)]; }
+  const lo = big ? m.bigMin : boss ? m.bossMin : m.min, hi = big ? m.bigMax : boss ? m.bossMax : m.max;
   return lo + Math.floor(r() * (hi - lo + 1));
 }
 // The fewest coins (and $1 bills past a dollar) for an amount: { bills, q, d, n, p }.
