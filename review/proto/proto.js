@@ -1,34 +1,78 @@
-// The prototype page (review/proto/): two new kinds of problem to try on a phone before they're
-// in the game. Telling time (Tick-Tockus, js/clock.js) and what comes next (Slimelipsis,
-// js/patterns.js), laid out like the game's problem area: the monster small in its box, the clock
-// or the slimes, the problem, the number pad and Hit!, a 💡 hint, and Next. Nothing is saved or
-// learned; the only thing kept (in localStorage, "sumgeon:proto") is which kind, level and clock
-// numbers were picked. The voice is the device's (speechSynthesis), since these lines aren't
-// recorded yet.
-import { NEW_MON, svg } from "../../js/monsters.js";
-import { CLOCK_LEVELS, clockLevel, clockProblem, clockLine, clockQuestion, spokenClock, spokenTime, clockSvg, clockHint, digital } from "../../js/clock.js";
-import { PATTERN_LEVELS, patternLevel, patternProblem, spokenPattern, spokenPatternAnswer, patternSvg, patternHint } from "../../js/patterns.js";
+// The prototype page (review/proto/): new kinds of problem to try on a phone before they're in the
+// game, laid out like the game's problem area: the monster's box with the picture, the problem,
+// the number pad and Hit! (or the spell pad, to draw), a 💡 hint, and Next. Nothing is saved or
+// learned; the only thing kept (in localStorage, "sumgeon:proto") is which kind and level were
+// picked and the clock's look. The voice is the device's (speechSynthesis), since these lines
+// aren't recorded yet.
+//
+// Each kind is an entry in TYPES: its levels, its monster, how to make a problem, draw it, hint it
+// and say it. An answer is one or more slots typed in order (dollars and cents are two), or a
+// drawing (shapes).
+import { NEW_MON, MON as GAME_MON, svg } from "../../js/monsters.js";
+import { CLOCK_LEVELS, clockProblem, clockLine, clockQuestion, spokenClock, spokenTime, clockSvg, clockHint, digital } from "../../js/clock.js";
+import { PATTERN_LEVELS, patternProblem, spokenPattern, spokenPatternAnswer, patternSvg, patternHint } from "../../js/patterns.js";
+import { SHAPE_LEVELS, shapeLevel, isDraw, countProblem, countSvg, countHint, spokenCount, spokenDraw, readShape, judgeShape, cleanShape, article, CORNERS, COUNT_LINE } from "../../js/shapes.js";
 
 const $ = (id) => document.getElementById(id);
+const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+const monster = (n) => NEW_MON.find((m) => m.n === n) || GAME_MON.find((m) => m.n === n);
+const pick = (list, rnd) => list[Math.floor(rnd() * list.length)];
+
+/* ---------- the kinds ---------- */
+// slot(i) draws answer slot i (a glowing ?, filling as it's typed); st is the problem's state.
+const TYPES = {
+  clock: {
+    icon: "🕒", label: "Time", mon: "Tick-Tockus", big: true, levels: CLOCK_LEVELS,
+    problem: (lv, rnd) => clockProblem(lv.id, rnd),
+    picture: (p, st) => clockSvg(p.h, p.m, { numbers: view.numbers, hands: view.hands, hint: st.hint && st.hint.layer, reach: reach() }),
+    line: (p, slot) => clockLine(p).map((part) => (part === null ? slot(0) : esc(part))).join(""),
+    question: clockQuestion,
+    shown: (p) => (p.ask === "minutes" ? String(p.ans).padStart(2, "0") : p.ans),
+    hint: clockHint, spoken: spokenClock, missed: (p) => spokenTime(p.h, p.m), answer: (p) => digital(p.h, p.m)
+  },
+  pattern: {
+    icon: "🫧", label: "Patterns", mon: "Slimelipsis", big: true, levels: PATTERN_LEVELS,
+    problem: (lv, rnd) => patternProblem(lv.id, rnd),
+    picture: (p, st) => patternSvg(p, { typed: st.typed[0], state: st.done, hops: st.hint && st.hint.hops }),
+    line: (p) => (p.blank === p.nums.length - 1 ? "What comes next?" : "What's missing?"), words: true,
+    hint: patternHint, spoken: spokenPattern, missed: spokenPatternAnswer, answer: (p) => p.ans
+  },
+  shape: {
+    icon: "🔷", label: "Shapes", mon: null, monLabel: "Shape monster (to design)", levels: SHAPE_LEVELS, stratum: () => "hall",
+    draw: (lv) => isDraw(lv.id),
+    problem: (lv, rnd) => (isDraw(lv.id) ? { draw: true, shape: pick(lv.shapes, rnd), strict: !!lv.strict, ans: null } : countProblem(lv.id, rnd)),
+    picture: (p, st) => (p.draw ? `<div class="pp-ask">Draw ${article(p.shape)}<b>${p.shape}</b></div>` : countSvg(p, { hint: !!st.hint, worked: st.hint && st.worked })),
+    line: (p, slot) => (p.draw ? "Draw it, then tap Cast!" : `${COUNT_LINE[p.kind]}: ${slot(0)}`), words: true,
+    hint: (p, worked) => (p.draw ? { say: `${cap(article(p.shape))}${p.shape} has ${CORNERS[p.shape] ? `${CORNERS[p.shape]} sides and ${CORNERS[p.shape]} corners` : "no corners: it's round all the way"}.` } : countHint(p, worked)),
+    spoken: (p) => (p.draw ? spokenDraw(p.shape) : spokenCount(p)),
+    missed: (p) => `It's ${p.ans}.`, answer: (p) => p.ans
+  }
+};
+const cap = (t) => t[0].toUpperCase() + t.slice(1);
+
+/* ---------- what's picked ---------- */
 const STORE = "sumgeon:proto";
-const MON = { clock: NEW_MON.find((m) => m.n === "Tick-Tockus"), pattern: NEW_MON.find((m) => m.n === "Slimelipsis") };
 // The clock's numbers default to school-style handwriting (an open 4, a 1 that's one line), as on
-// a classroom clock; "bungee" is the game's font.
-// Its hands are straight arrows by default; "tentacle" tries Tick-Tockus's tentacles as hands.
-const view = { type: "clock", clock: "hours", pattern: "ones", numbers: "hand", hands: "arrow" };
+// a classroom clock; "bungee" is the game's font. Its hands are straight arrows by default;
+// "tentacle" tries Tick-Tockus's tentacles as hands.
+const view = { type: "clock", clock: "hours", pattern: "ones", shape: "drawK", numbers: "hand", hands: "arrow" };
 try { Object.assign(view, JSON.parse(localStorage.getItem(STORE)) || {}); } catch (e) { /* defaults */ }
+if (!TYPES[view.type]) view.type = "clock";
 const keep = () => { try { localStorage.setItem(STORE, JSON.stringify(view)); } catch (e) { /* this visit only */ } };
 // ?type=pattern&level=twos&numbers=hand opens straight to one (for screenshots and links).
 const q = new URLSearchParams(location.search);
-if (q.get("type")) view.type = q.get("type") === "pattern" ? "pattern" : "clock";
+if (TYPES[q.get("type")]) view.type = q.get("type");
 if (q.get("level")) view[view.type] = q.get("level");
 if (q.get("numbers")) view.numbers = q.get("numbers") === "hand" ? "hand" : "bungee";
 if (q.get("hands")) view.hands = q.get("hands") === "tentacle" ? "tentacle" : "arrow";
 // ?seed=<n> makes the problems the same each time (for screenshots).
 let seed = Number(q.get("seed")) || 0;
 const rnd = seed ? () => ((seed = (seed * 9301 + 49297) % 233280) / 233280) : Math.random;
+const T = () => TYPES[view.type];
+const level = () => T().levels.find((l) => l.id === view[view.type]) || T().levels[0];
 
-// The problem now: { p, typed, done: null | "right" | "wrong", hint: null | "hint" | "worked" }.
+// The problem now: { p, typed: [one string per slot], at: the slot being typed, done: null |
+// "right" | "wrong", hint: null | "hint" | "worked", note: words after a drawing is read }.
 let S = null;
 
 /* ---------- the voice ---------- */
@@ -40,22 +84,22 @@ function say(text) {
   u.rate = 0.95;
   synth.speak(u);
 }
-const spokenNow = () => (view.type === "clock" ? spokenClock(S.p) : spokenPattern(S.p));
 
 /* ---------- drawing ---------- */
-const level = () => (view.type === "clock" ? clockLevel(view.clock) : patternLevel(view.pattern));
 function drawChrome() {
-  const m = MON[view.type], lv = level();
-  document.body.dataset.stratum = lv.stratum;
-  $("box").style.setProperty("--wall", `var(--wall-${lv.stratum})`);
-  $("mon").innerHTML = svg(m);
-  $("mName").textContent = m.n;
-  for (const b of $("types").querySelectorAll("button")) b.setAttribute("aria-pressed", String(b.dataset.type === view.type));
-  const levels = view.type === "clock" ? CLOCK_LEVELS : PATTERN_LEVELS;
-  $("level").innerHTML = levels.map((l) => `<option value="${l.id}"${l.id === lv.id ? " selected" : ""}>${l.name} · ${l.grade}</option>`).join("");
+  const t = T(), lv = level(), stratum = t.stratum ? t.stratum(lv) : lv.stratum || "hall";
+  document.body.dataset.stratum = stratum;
+  $("box").style.setProperty("--wall", `var(--wall-${stratum})`);
+  const m = t.mon && monster(t.mon);
+  // The clock is Tick-Tockus itself, so it isn't drawn small too; a kind with no monster drawn yet
+  // shows a placeholder name.
+  $("mon").innerHTML = m && !t.big ? svg(m) : "";
+  $("mon").hidden = !m || t.big;
+  $("mName").textContent = m ? m.n : t.monLabel;
+  $("mName").classList.toggle("placeholder", !m);
+  $("types").innerHTML = Object.entries(TYPES).map(([id, x]) => `<button type="button" data-type="${id}" aria-pressed="${id === view.type}" aria-label="${x.label}" title="${x.label}">${x.icon}</button>`).join("");
+  $("level").innerHTML = t.levels.map((l) => `<option value="${l.id}"${l.id === lv.id ? " selected" : ""}>${esc(l.name)} · ${l.grade}</option>`).join("");
   $("tools").hidden = view.type !== "clock";
-  // The clock is Tick-Tockus itself, so only Slimelipsis shows small by its name.
-  $("mon").hidden = view.type === "clock";
   $("numStyle").textContent = view.numbers === "hand" ? "Handwritten" : "Bungee";
   $("handStyle").textContent = view.hands === "tentacle" ? "Tentacles" : "Arrows";
 }
@@ -69,85 +113,154 @@ function reach() {
   if (!(unit > 0)) return undefined;
   return { side: ((w - s) / 2 + 4) / unit, below: ((h - s) / 2 + 4) / unit };
 }
-function drawClock(hint) {
-  $("pic").innerHTML = clockSvg(S.p.h, S.p.m, { numbers: view.numbers, hands: view.hands, hint: hint && hint.layer, reach: reach() });
-}
 
-// The answer slot: a glowing "?" that fills as you type, gold when right, coral when wrong.
-function slot() {
-  const cls = S.done ? S.done : S.typed ? "typed" : "";
-  const text = S.done ? (view.type === "clock" && S.p.ask === "minutes" ? String(S.p.ans).padStart(2, "0") : S.p.ans) : S.typed || "?";
-  return `<span class="blank ${cls}">${text}</span>`;
+// Answer slot i: a glowing "?" that fills as it's typed (the one being typed glows), gold when
+// right, coral when wrong.
+function slot(i) {
+  const t = T(), shown = t.shown ? t.shown(S.p, i) : [].concat(S.p.ans)[i];
+  const typed = S.typed[i], cls = S.done ? S.done : typed ? "typed" : "", now = !S.done && i === S.at && S.typed.length > 1 ? " now" : "";
+  return `<span class="blank ${cls}${now}">${S.done ? shown : typed || "?"}</span>`;
 }
+function hintNow() { return S.hint ? T().hint(S.p, S.hint === "worked") : null; }
 function draw() {
-  const p = S.p, worked = S.hint === "worked", hint = S.hint ? (view.type === "clock" ? clockHint(p, worked) : patternHint(p, worked)) : null;
-  if (view.type === "clock") {
-    drawClock(hint);
-    // The problem line: "□ o'clock", "half past □", "3:□" (after a miss, "3:05").
-    $("prob").className = "prob";
-    $("prob").innerHTML = clockLine(p).map((part) => (part === null ? slot() : esc(part))).join("");
-    $("prob").setAttribute("aria-label", clockQuestion(p));
-  } else {
-    $("pic").innerHTML = patternSvg(p, { typed: S.typed, state: S.done, hops: hint && hint.hops });
-    $("prob").className = "prob words";
-    $("prob").textContent = p.blank === p.nums.length - 1 ? "What comes next?" : "What's missing?";
-    $("prob").removeAttribute("aria-label");
-  }
+  const t = T(), p = S.p, worked = S.hint === "worked", hint = hintNow();
+  const st = { typed: S.typed, done: S.done, hint, worked };
+  $("pic").innerHTML = t.picture(p, st);
+  $("prob").className = "prob" + (t.words ? " words" : "");
+  $("prob").innerHTML = t.line(p, slot);
+  if (t.question) $("prob").setAttribute("aria-label", t.question(p)); else $("prob").removeAttribute("aria-label");
   // The line under the box: ✓ Right!, or Oops with the answer and the worked hint, or the hint.
   // An equation in the words doesn't break across lines ("50 + 2 = ?").
   const words = hint ? esc(hint.say.replace(/ ([=+−]) /g, " $1 ")) : "";
-  const head = S.done === "right" ? `<b><span class="tick">✓</span>Right!</b>` : S.done === "wrong" ? `<b>Oops! It's ${view.type === "clock" ? digital(p.h, p.m) : p.ans}.</b>` : "";
+  const head = S.note ? `<b>${S.note}</b>` : S.done === "right" ? `<b><span class="tick">✓</span>Right!</b>` : S.done === "wrong" ? `<b>Oops! It's ${esc(t.answer(p))}.</b>` : "";
   $("hint").hidden = !hint && !head;
-  $("hint").className = "pp-hint" + (worked ? " worked" : S.done === "right" ? " good" : "");
+  $("hint").className = "pp-hint" + (worked || S.done === "wrong" ? " worked" : S.done === "right" ? " good" : "");
   $("hint").innerHTML = head + words;
-  $("said").textContent = spokenNow();
+  $("said").textContent = t.spoken(p);
+  padUI(p.draw ? "spell" : "num");
   const go = $("pad").querySelector('[data-k="go"]');
-  go.textContent = S.done ? "Next ›" : "Hit!";
+  go.textContent = S.done ? "Next ›" : p.draw ? "Cast!" : S.at < S.typed.length - 1 ? "Next ›" : "Hit!";
   go.classList.toggle("next", !!S.done);
-  go.setAttribute("aria-label", S.done ? "Next problem" : "Attack");
+  go.setAttribute("aria-label", S.done ? "Next problem" : p.draw ? "Cast the drawing" : "Attack");
+  document.querySelector(".pp").classList.toggle("drawing", !!p.draw);
   // Again now the hint line has settled the room left, so the tentacles fit it.
-  if (view.type === "clock") drawClock(hint);
+  if (view.type === "clock") $("pic").innerHTML = t.picture(p, st);
+  if (p.draw) paint();
 }
 let resized = 0;
 addEventListener("resize", () => { clearTimeout(resized); resized = setTimeout(() => S && draw(), 100); });
-const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+
+/* ---------- the pads ---------- */
+// The number pad, or the spell pad to draw on (as the game's, app.js padUI("spell")): a glowing
+// pad with Clear and Cast in the number pad's place.
+function padUI(mode) {
+  const pad = $("pad");
+  if (pad.dataset.mode === mode) return;
+  pad.dataset.mode = mode;
+  pad.classList.toggle("spell", mode === "spell");
+  if (mode === "spell") {
+    pad.innerHTML = `<canvas id="sigil" class="sigil" aria-label="Draw here"></canvas><button type="button" data-k="clear" class="del">Clear</button><button type="button" data-k="go" class="go">Cast!</button>`;
+    const c = $("sigil");
+    c.onpointerdown = (e) => { if (S.done) return; e.preventDefault(); c.setPointerCapture(e.pointerId); drawing = [point(e)]; strokes.push(drawing); paint(); };
+    c.onpointermove = (e) => { if (!drawing) return; drawing.push(point(e)); paint(); };
+    c.onpointerup = c.onpointercancel = () => { drawing = null; };
+    return;
+  }
+  pad.innerHTML = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "del", "0", "go"].map((k) =>
+    `<button type="button" data-k="${k}" class="${k === "go" ? "go" : k === "del" ? "del" : ""}" aria-label="${k === "del" ? "Delete" : k === "go" ? "Attack" : k}">${k === "del" ? "⌫" : k === "go" ? "Hit!" : k}</button>`).join("");
+}
+let strokes = [], drawing = null, overlay = null;
+function point(e) { const r = $("sigil").getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; }
+// The strokes glowing gold; after a read, dimmed under the clean shape (overlay) glowing green.
+function paint() {
+  const c = $("sigil");
+  if (!c) return;
+  const r = c.getBoundingClientRect(), dpr = devicePixelRatio || 1;
+  if (c.width !== Math.round(r.width * dpr) || c.height !== Math.round(r.height * dpr)) { c.width = Math.round(r.width * dpr); c.height = Math.round(r.height * dpr); }
+  const g = c.getContext("2d");
+  g.setTransform(dpr, 0, 0, dpr, 0, 0);
+  g.clearRect(0, 0, r.width, r.height);
+  g.lineCap = g.lineJoin = "round"; g.lineWidth = 8; g.strokeStyle = "#fff1b8"; g.shadowColor = "#ffc93c"; g.shadowBlur = 16;
+  g.globalAlpha = overlay ? 0.35 : 1;
+  const line = (s) => { g.beginPath(); s.forEach(([x, y], i) => (i ? g.lineTo(x, y) : g.moveTo(x, y))); if (s.length === 1) g.lineTo(s[0][0] + 0.5, s[0][1]); g.stroke(); };
+  strokes.forEach(line);
+  g.globalAlpha = 1;
+  if (overlay) { g.strokeStyle = "#e8ffe9"; g.shadowColor = "#7fdc8a"; g.shadowBlur = 20; g.lineWidth = 7; overlay.forEach(line); }
+}
+// Cast: read the drawing knowing the shape asked (shapes.js judgeShape), as a spell is read.
+function cast() {
+  const p = S.p, r = readShape(strokes, { strict: p.strict }), j = judgeShape(r, p.shape, p.strict);
+  const pts = strokes.flat(), xs = pts.map((v) => v[0]), ys = pts.map((v) => v[1]);
+  const c = $("sigil").getBoundingClientRect();
+  // The clean shape goes over the drawing, or in the middle of the pad if the drawing is tiny.
+  const box = pts.length > 1 && Math.max(...xs) - Math.min(...xs) + Math.max(...ys) - Math.min(...ys) > 40
+    ? { x: Math.min(...xs), y: Math.min(...ys), w: Math.max(...xs) - Math.min(...xs), h: Math.max(...ys) - Math.min(...ys) }
+    : { x: c.width * 0.3, y: c.height * 0.15, w: c.width * 0.4, h: c.height * 0.7 };
+  S.read = r && { shape: r.shape, clear: r.clear, fit: r.fit, margin: r.margin, corners: r.corners, aspect: r.aspect, outcome: j.outcome };
+  if (j.outcome === "retry") {
+    strokes = []; S.tries = (S.tries || 0) + 1;
+    S.note = "Hmm, I can't tell. Try again!";
+    say("Try again!");
+    draw();
+    return;
+  }
+  // The clean shape: shaped like theirs when it counted, the plain one when it was another shape.
+  // A good drawing stays as it is, as a good spell does.
+  overlay = j.outcome === "hit" ? null : cleanShape(j.outcome === "wrong" ? null : r, p.shape, box);
+  if (j.outcome === "wrong") {
+    S.done = "wrong"; S.hint = "hint";
+    S.note = `Oops! That looks like ${article(r.shape)}${r.shape}.`;
+    say(`Oops! That looks like ${article(r.shape)}${r.shape}. Here's ${article(p.shape)}${p.shape}.`);
+  } else {
+    S.done = "right";
+    S.note = j.outcome === "hit" ? `✓ ${cap(article(p.shape))}${p.shape}!` : `✓ ${cap(article(p.shape))}${p.shape}! Here's a neat one.`;
+    say(j.outcome === "hit" ? `${cap(article(p.shape))}${p.shape}!` : `${cap(article(p.shape))}${p.shape}! Here's a neat one.`);
+  }
+  draw();
+}
 
 /* ---------- play ---------- */
 let spoke = false; // the voice waits for the first tap (iOS only speaks inside one)
 function next(speak) {
-  const lv = level();
+  const t = T(), lv = level();
   let p;
   // Not the same problem twice in a row.
   for (let i = 0; i < 8; i++) {
-    p = view.type === "clock" ? clockProblem(lv.id, rnd) : patternProblem(lv.id, rnd);
+    p = t.problem(lv, rnd);
     if (!S || JSON.stringify(p) !== JSON.stringify(S.p)) break;
   }
-  // ?time=3:37 shows that time first (asking the minutes, or the hour on the hour).
-  const t = !S && view.type === "clock" && /^(\d{1,2}):(\d\d)$/.exec(q.get("time") || "");
-  if (t) { const h = Number(t[1]), m = Number(t[2]); p = { level: lv.id, h, m, ask: m && q.get("ask") !== "hour" ? "minutes" : "hour", ans: m && q.get("ask") !== "hour" ? m : h }; }
-  S = { p, typed: "", done: null, hint: null };
+  // ?time=3:37 shows that time first (asking the minutes, or the hour on the hour); ?shape=hexagon
+  // asks for that shape first.
+  const tm = !S && view.type === "clock" && /^(\d{1,2}):(\d\d)$/.exec(q.get("time") || "");
+  if (tm) { const h = Number(tm[1]), m = Number(tm[2]); p = { level: lv.id, h, m, ask: m && q.get("ask") !== "hour" ? "minutes" : "hour", ans: m && q.get("ask") !== "hour" ? m : h }; }
+  if (!S && p.draw && q.get("shape")) p.shape = q.get("shape");
+  S = { p, typed: Array.from({ length: [].concat(p.ans).length }, () => ""), at: 0, done: null, hint: null, note: "" };
+  strokes = []; drawing = null; overlay = null;
   draw();
-  if (speak) say(spokenNow());
+  if (speak) say(t.spoken(p));
 }
 function press(k) {
-  if (S.done) { if (k === "go") { next(true); } return; }
-  if (/^[0-9]$/.test(k)) { if (S.typed.length < 4) S.typed = (S.typed === "0" ? "" : S.typed) + k; }
-  else if (k === "del") S.typed = S.typed.slice(0, -1);
+  if (S.done) { if (k === "go") next(true); return; }
+  if (S.p.draw) {
+    if (k === "clear") { strokes = []; S.note = ""; draw(); }
+    else if (k === "go" && strokes.length) cast();
+    return;
+  }
+  const cur = S.typed[S.at];
+  if (/^[0-9]$/.test(k)) { if (cur.length < 4) S.typed[S.at] = (cur === "0" ? "" : cur) + k; }
+  else if (k === "del") { if (cur) S.typed[S.at] = cur.slice(0, -1); else if (S.at) S.at--; }
   else if (k === "go") {
-    if (!S.typed) return;
-    if (Number(S.typed) === S.p.ans) {
-      S.done = "right"; S.hint = null;
-    } else {
-      S.done = "wrong"; S.hint = "worked";
-      say("Oops! " + (view.type === "clock" ? spokenTime(S.p.h, S.p.m) : spokenPatternAnswer(S.p)));
-    }
+    if (!cur) return;
+    // More than one slot (dollars, then cents): Hit! moves on to the next one first.
+    if (S.at < S.typed.length - 1) { S.at++; draw(); return; }
+    const ans = [].concat(S.p.ans);
+    if (ans.every((a, i) => Number(S.typed[i]) === a)) { S.done = "right"; S.hint = null; }
+    else { S.done = "wrong"; S.hint = "worked"; say("Oops! " + T().missed(S.p)); }
   }
   draw();
 }
 
 /* ---------- wiring ---------- */
-$("pad").innerHTML = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "del", "0", "go"].map((k) =>
-  `<button type="button" data-k="${k}" class="${k === "go" ? "go" : k === "del" ? "del" : ""}" aria-label="${k === "del" ? "Delete" : k === "go" ? "Attack" : k}">${k === "del" ? "⌫" : k === "go" ? "Hit!" : k}</button>`).join("");
 $("pad").addEventListener("click", (e) => { const b = e.target.closest("button"); if (b) press(b.dataset.k); });
 document.addEventListener("keydown", (e) => {
   if (e.target.closest && e.target.closest("select")) return;
@@ -162,7 +275,7 @@ function toggleHint() {
   draw();
 }
 $("hintBtn").addEventListener("click", toggleHint);
-$("sayBtn").addEventListener("click", () => say(spokenNow()));
+$("sayBtn").addEventListener("click", () => say(T().spoken(S.p)));
 $("types").addEventListener("click", (e) => {
   const b = e.target.closest("button");
   if (!b || b.dataset.type === view.type) return;
@@ -174,6 +287,8 @@ $("numStyle").addEventListener("click", () => { view.numbers = view.numbers === 
 // After the first tap anywhere, new problems are read aloud as they appear, as the game reads coin
 // and comparing problems for a pre-reader.
 document.addEventListener("pointerdown", () => { spoke = true; }, { once: true, capture: true });
+// For checking the reader from a test: the last read.
+window.protoState = () => S;
 
 drawChrome();
 next(false);
