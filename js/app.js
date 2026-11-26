@@ -2,7 +2,7 @@
 // Problems, monsters, saving, sound and speech live in their own modules.
 import { MON, svg, LOOKS, lookOf } from "./monsters.js";
 import { spokenProblem, spokenFact } from "./problems.js";
-import { BANDS, choose, factOf, record as recordAnswer, helpFor, openLevel, monsterHP, probeKey, tierOf, skipTo, SKIP_PROBES, SKIP_WINDOW, MAX_LEAP, fluentTime, spellKey } from "./learn.js";
+import { BANDS, choose, factOf, record as recordAnswer, helpFor, openLevel, monsterHP, probeKey, tierOf, skipTo, SKIP_PROBES, SKIP_WINDOW, MAX_LEAP, fluentTime, spellKey, RECENT } from "./learn.js";
 import { hintFor, STRATEGIES } from "./hints.js";
 import { openStore, displayName } from "./store.js";
 import { PHRASE, monsterName, monsterCleared, monsterWon, heroJoins, heroCursed, heroRescue, heroAlmost, heroHelps, traitLine, BARK, wingCleared, wingOpened, depthLine, DEPTH_MAX_SPOKEN, reversedLine, howToWriteLine, quipLine } from "./lines.js";
@@ -422,7 +422,7 @@ function newProblem() {
   // Flash (Pipsqueak): 3 + 5 comes as two dice, which turn into the numbers (traits.js flashOf).
   const dice = flashOf(m, G.cur);
   if (dice) G.cur = dice;
-  G.recent = [key].concat(G.recent).slice(0, 3);
+  G.recent = [key].concat(G.recent).slice(0, RECENT);
   G.input = ""; G.busy = false; G.hinted = false; G.t0 = performance.now();
   probUI();
   if (flipped) judoThrow(G.cur);

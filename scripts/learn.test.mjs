@@ -1,6 +1,6 @@
 // The learning engine: keys, records, levels opening, and how problems are chosen.
 import assert from "node:assert/strict";
-import { BANDS, pool, keyOf, factOf, record, openLevel, helpFor, choose, monsterHP, learned, mastered } from "../js/learn.js";
+import { BANDS, pool, keyOf, factOf, record, openLevel, helpFor, choose, monsterHP, learned, mastered, RECENT, notRecent } from "../js/learn.js";
 import { MON } from "../js/monsters.js";
 import { facts, spokenProblem, spokenFact } from "../js/problems.js";
 import { spokenLines, askLine } from "../js/lines.js";
@@ -159,4 +159,26 @@ console.log(`✓ learn (K ${pool("kinder").length} facts, 1st ${pool("first").le
   assert.ok(Math.abs(off - plain) < 0.05, "no share, no bias");
   const held = share({ digit: 3, avoidDigitShare: 0.85 });
   assert.ok(held < plain / 3, `the first fight holds the captain's digit back (${plain.toFixed(2)} → ${held.toFixed(2)})`);
+}
+
+// No repeats within a fight: the last RECENT problems stay out of the way while there are others
+// (a missed fact still comes back, through retry). Played as a learner who's seen the first
+// level: mostly learning facts, which used to come back every 4th problem.
+{
+  for (const band of ["kinder", "first", "third"]) {
+    const recs = {};
+    for (const f of pool(band).filter((f) => f.level === 0)) recs[f.key] = { b: 0, n: 1, c: 0, ms: 5000, t: 0 };
+    let recent = [], seed = 7;
+    const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+    const fight = [];
+    for (let i = 0; i < 12; i++) {
+      const k = choose(band, recs, { now: 1, rnd, recent });
+      fight.push(k); recent = [k].concat(recent).slice(0, RECENT);
+    }
+    assert.equal(new Set(fight).size, fight.length, `${band}: no repeats in 12 problems (${fight.join(" ")})`);
+  }
+  // A small set falls back to the last 3, then to anything.
+  const few = [{ key: "a" }, { key: "b" }, { key: "c" }, { key: "d" }];
+  assert.deepEqual(notRecent(few, ["a", "b", "c", "d"]).map((f) => f.key), ["d"]);
+  assert.deepEqual(notRecent(few.slice(0, 2), ["a", "b"]).map((f) => f.key), ["a", "b"]);
 }

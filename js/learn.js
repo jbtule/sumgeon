@@ -228,13 +228,27 @@ export function frontier(bandKey, recs) {
 // tier at most), or null when there's none.
 // asks: the kinds of problem the monster asks (traits.js asks), as a test on a fact's operation
 // and key.
+// How many of the last problems a fight keeps out of the way (app.js G.recent), so the same
+// problem doesn't come back within a fight while there are others to ask. A missed fact still
+// comes back on purpose (retry). When a monster asks only a few (Doublet's doubles), fewer are
+// kept out: the last 3, then none (notRecent).
+export const RECENT = 12;
+// The ones not among the recent keys: all the recent ones if that leaves any, else not the last
+// 3, else anything.
+export function notRecent(list, recent, keyOf = (f) => f.key) {
+  for (const n of [(recent || []).length, 3, 0]) {
+    const r = (recent || []).slice(0, n), left = list.filter((f) => !r.includes(keyOf(f)));
+    if (left.length) return left;
+  }
+  return list;
+}
 export function probeKey(bandKey, recs, rnd, recent, avoidAns, leap, asks) {
   const t = tiers(bandKey), fr = frontier(bandKey, recs);
   if (fr + 1 >= t.length) return null;
   const i = Math.min(t.length - 1, fr + Math.max(1, leap || 1));
   const factAt = (k) => pool(bandKey).find((x) => x.key === k) || {};
   const ansOf = (k) => { const f = factAt(k); return f.op + " " + f.ans; };
-  let fresh = t[i].filter((k) => !learned(recs[k]) && !(recent || []).includes(k) && (!asks || asks(factAt(k).op, k)));
+  let fresh = notRecent(t[i].filter((k) => !learned(recs[k]) && (!asks || asks(factAt(k).op, k))), recent, (k) => k);
   const varied = fresh.filter((k) => !(avoidAns || []).includes(ansOf(k)));
   if (varied.length) fresh = varied;
   return fresh.length ? fresh[Math.floor((rnd || Math.random)() * fresh.length)] : null;
@@ -262,8 +276,7 @@ export function choose(bandKey, recs, opts) {
   const rnd = opts.rnd || Math.random, now = opts.now, recent = opts.recent || [];
   if (opts.retry) return opts.retry;
   const L = openLevel(bandKey, recs);
-  let open = asked(bandKey, L, opts.asks).filter((f) => !recent.includes(f.key));
-  if (!open.length) open = asked(bandKey, L, opts.asks);
+  let open = notRecent(asked(bandKey, L, opts.asks), recent);
   // Not the same kind of problem with the same answer as the last couple (opts.avoidAns, as
   // "op ans" like "- 10"), when there's anything else: the teen subtraction facts (17 − 7,
   // 15 − 5, 12 − 2) all equal 10 and came up in a row. A different kind (3 + 7) is fine.
@@ -325,7 +338,7 @@ export function choose(bandKey, recs, opts) {
 // one of the last few; the monster's operation preferred. Null when there's none.
 export function spellKey(bandKey, recs, opts) {
   const rnd = opts.rnd || Math.random, recent = opts.recent || [], L = openLevel(bandKey, recs);
-  let ok = asked(bandKey, L, opts.asks).filter((f) => "+-×÷".includes(f.key[0]) && f.ans >= 0 && f.ans <= 9 && learned(recs[f.key]) && !recent.includes(f.key));
+  let ok = notRecent(asked(bandKey, L, opts.asks).filter((f) => "+-×÷".includes(f.key[0]) && f.ans >= 0 && f.ans <= 9 && learned(recs[f.key])), recent);
   const varied = ok.filter((f) => !(opts.avoidAns || []).includes(f.op + " " + f.ans));
   if (varied.length) ok = varied;
   const mine = ok.filter((f) => f.op === opts.op);
