@@ -210,6 +210,35 @@ export const NEW_MON=[
    +`<rect x="88" y="88" width="26" height="24" rx="5" fill="${GOLD}" stroke="${DK}" stroke-width="3.5"/>`
    +`${eye(93,50,8)}${eye(111,50,8)}<path d="M96 66 Q102 71 108 66" ${ds} stroke-width="3"/>`}
 ];
+// Margot-Rythm (the Mines, "algorithm"): an old desktop computer. Its screen shows the stacked
+// algorithm for 27 + 15, the carried 1 glowing gold like a cursor. Digits are strokes in unit
+// coordinates (x, y pairs from 0 to 1), placed in a box by glyph().
+const GLYPH = { 1: "M.15 .22 L.55 0 L.55 1", 2: "M0 .26 Q0 0 .5 0 Q1 0 1 .3 Q1 .52 0 1 L1 1", 4: "M.72 1 L.72 0 L0 .66 L1 .66",
+  5: "M.95 0 L.12 0 L.05 .44 Q.5 .3 .85 .5 Q1.05 .75 .8 .94 Q.4 1.08 0 .86", 7: "M0 0 L1 0 L.35 1", "+": "M0 .5 L1 .5 M.5 0 L.5 1" };
+const glyph = (k, x, y, w, h) => { let i = 0; return GLYPH[k].replace(/-?\d*\.?\d+/g, (v) => f1(i++ % 2 ? y + h * v : x + w * v)); };
+NEW_MON.push(
+ {n:'Margot-Rythm',op:'+',sym:'¹+',stratum:'mines',c:'#e6d29e',hits:4,
+  trait:{icon:'🔁',name:'Carry the One',text:'Problems that need regrouping hit double'},
+  quip:'carries the one and shuts down for the night.',
+  d:c=>{const SCR='#173a2e',PH='#7dffa0',CAB='#b49a5e',dig=(k,x,y,w=12,h=17)=>`<path d="${glyph(k,x,y,w,h)}"/>`;
+   // Drawn a little big, then shrunk to fit the frame with its waving plug and the CRT's back.
+   return `<g transform="translate(100 100) scale(.9) translate(-100 -96)">`+line(`<path d="M72 160 Q62 172 74 180 Q84 186 78 192 M128 160 Q138 172 126 180 Q116 186 122 192"/>`,CAB,7)
+   +solid(`<rect x="62" y="186" width="30" height="13" rx="4"/><rect x="108" y="186" width="30" height="13" rx="4"/>`,'#5b5f73')
+   +line(`<path d="M24 76 Q2 86 12 108 Q20 126 6 136 M176 70 Q200 62 192 40 Q186 24 198 12"/>`,CAB,7)
+   +solid(`<rect x="-8" y="134" width="26" height="34" rx="13" transform="rotate(-12 5 151)"/><rect x="186" y="-6" width="24" height="18" rx="4"/>`,'#cbb784')
+   +`<path d="M-6 146 L16 141 M5 143 L3 134" ${thin(2.5)} fill="none" transform="rotate(-12 5 151)"/><path d="M192 -6 V-14 M204 -6 V-14" ${thin(4)}/>`
+   +solid(`<path d="M50 6 L62 -14 H138 L150 6 Z"/>`,'#cbb784')+`<path d="M80 -8 H120 M84 -2 H116" ${thin(3)}/>`
+   +`<path d="M38 118 Q100 130 162 118 L168 142 H32 Z" fill="${DK}"/><path d="M82 138 Q82 126 100 126 Q118 126 118 138 Z" fill="#ff7a8a" stroke="${DK}" stroke-width="3"/>`
+   +solid(`<rect x="22" y="-2" width="156" height="126" rx="16"/>`,c)
+   +solid(`<path d="M32 138 H168 L182 164 H18 Z"/>`,'#cbb784')
+   +[0,1,2,3,4,5,6,7].map(i=>`<rect x="${34+i*17}" y="142" width="13" height="8" rx="2" fill="${CREAM}" stroke="${DK}" stroke-width="2"/>`).join('')
+   +[0,1,2,3,4,5,6,7,8].map(i=>`<rect x="${26+i*17}" y="153" width="13" height="7" rx="2" fill="${CREAM}" stroke="${DK}" stroke-width="2"/>`).join('')
+   +`<rect x="36" y="8" width="128" height="100" rx="16" fill="${SCR}" stroke="${DK}" stroke-width="4"/>`
+   +`<rect x="132" y="112" width="28" height="5" rx="2" fill="${DK}"/><circle cx="42" cy="115" r="4" fill="${PH}" stroke="${DK}" stroke-width="1.5"/>`
+   +[[80,3],[120,-3]].map(([x,dx])=>`<path d="M${x-6} 19 H${x-11} V43 H${x-6} M${x+6} 19 H${x+11} V43 H${x+6}" fill="none" stroke="${PH}" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><rect x="${x+dx-4.5}" y="31" width="9" height="9" rx="1" fill="${PH}"/>`).join('')
+   +`<circle cx="105" cy="50" r="8.5" fill="${GOLD}" opacity=".3"/>`
+   +`<g fill="none" stroke="${PH}" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round">${dig(2,96,59)}${dig(7,115,59)}${dig('+',72,84,11,11)}${dig(1,96,81)}${dig(5,115,81)}<path d="M68 102 H132"/></g>`
+   +`<path d="${glyph(1,101,44,8,12)}" fill="none" stroke="${GOLD}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></g>`}});
 // The Crystal Mines' boss gets its real art: the approved Centipede replaces the stand-in above
 // (the Golem's shape), keeping its game data, and leaves NEW_MON, since it's in the game now.
 {
@@ -246,7 +275,9 @@ export const ANCHOR = {
   Slimelipsis: { eyes: [[90, 108, 8], [110, 108, 8]], mouth: [100, 123], top: [100, 88], neck: [100, 134], ground: 150 },
   Squaresquatch: { eyes: [[84, 86, 9], [110, 86, 9]], mouth: [97, 110], top: [97, 40], neck: [97, 124], ground: 196 },
   "The Centipede": { eyes: [[34, 62, 9], [58, 62, 9]], mouth: [46, 82], top: [46, 12], hat: true, neck: [46, 92], ground: 200 },
-  Halfling: { eyes: [[93, 50, 8], [111, 50, 8]], mouth: [102, 68], top: [102, 4], neck: [102, 82], ground: 196 }
+  Halfling: { eyes: [[93, 50, 8], [111, 50, 8]], mouth: [102, 68], top: [102, 4], neck: [102, 82], ground: 196 },
+  // Margot-Rythm's mouth is the gap above its keyboard jaw; its neck is the keyboard.
+  "Margot-Rythm": { eyes: [[82, 41, 10], [118, 41, 10]], mouth: [100, 129], top: [100, 1], neck: [100, 148], ground: 193 }
 };
 const st = `stroke="${DK}" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"`;
 // Each accessory: (anchor, color) → SVG drawn over the monster.
