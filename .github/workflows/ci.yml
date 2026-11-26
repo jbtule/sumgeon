@@ -8,10 +8,10 @@
 #   GitHub Pages      the game, at tools.tuley.name/sumgeon/ (the jbtule user site's custom
 #                     domain covers project pages)
 #
-# audio.json (which line has which clip) only ever lists clips that are live, so the game never
-# asks for one that isn't there. Clips already live are never recorded again
-# (scripts/audio/build.mjs); without the Cloudflare token, new lines aren't recorded and use the
-# device voice until it's set.
+# audio.json (which line has which clip, and the audio sprites: every line is in one) only ever
+# lists clips and sprites that are live, so the game never asks for one that isn't there. Clips
+# already live are never recorded again (scripts/audio/build.mjs); without the Cloudflare token,
+# new lines aren't recorded and use the device voice until it's set.
 #
 # One-time setup: Settings → Pages → Source: GitHub Actions. Repo secrets CLOUDFLARE_API_TOKEN
 # (Cloudflare Pages: Edit) and CLOUDFLARE_ACCOUNT_ID.
@@ -90,8 +90,10 @@ jobs:
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: "3.12"
-      # ffmpeg joins the audio sprites (build.mjs); without it the build skips them.
-      - run: command -v ffmpeg || (sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg)
+      # Records any missing clips, and builds every audio sprite (the clips' bytes joined; no
+      # ffmpeg needed). When anything is missing it first fetches every live clip into _audio/a,
+      # since a Pages deploy replaces the whole site, so each sprite is joined from all its clips,
+      # not only the ones recorded in this run.
       - id: build
         env:
           GENERATE: ${{ needs.cloudflare.outputs.ok }}

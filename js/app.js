@@ -19,12 +19,12 @@ import { traitOf, charged, prefers, hitBy, atHalf, asks, flipOf, flashOf, dieSvg
 import { roster, mastery, meet, beat } from "./bestiary.js";
 import { HEROES, CHALK, heroSvg, freePick, pickHero, curseCaptain, crackCurse, CURSE_HITS, resetTeam } from "./heroes.js";
 import * as sfx from "./sfx.js";
-import { say, stopSpeech, setVoice, speaking, cutOff } from "./speech.js";
+import { say, stopSpeech, setVoice, speaking, cutOff, needSprites, spriteStatus } from "./speech.js";
 import { freshState as freshMoments, freshRun, decide as decideMoment, joined, heardOf, nameLine } from "./moments.js";
 import { playMoment } from "./slowmo.js";
 import { playDescent, descending, surfaceHTML } from "./descent.js";
 import { chestAfter, lockKey, lockOf, contents, moneyFor, fewest, ITEMS, itemOf, SLOTS, freshItems, countOf, gain, putInSlot, clearSlot, useSlot, eatPie, arm, blockMiss, totemMult, magnetSpent } from "./loot.js";
-import { LOOT, askLine, itemName, itemWhat, itemUse, moneyLine, purseLine } from "./lines.js";
+import { LOOT, askLine, itemName, itemWhat, itemUse, moneyLine, purseLine, ALWAYS, runSprites } from "./lines.js";
 import { chestSvg, purseSvg, walletSvg, walletMini } from "./chest.js";
 
 const $ = (id) => document.getElementById(id);
@@ -433,8 +433,17 @@ function newRun(depth) {
   document.body.dataset.stratum = wing().id; // its wall and colors (styles.css)
   G.depth = depth || deepest(wing(), progress); G.floors = runFloors(wing(), team, null, G.depth);
   diveUI();
+  spritesFor(wing());
   // The room darkens as you go deeper: 8% per depth, up to 48% at depth 7.
   document.querySelector(".game").style.setProperty("--murk", Math.min(0.48, 0.08 * (G.depth - 1)).toFixed(2));
+}
+// The voice's audio sprites this stratum can need (lines.js runSprites, speech.js needSprites): the
+// ones every stratum needs, its monsters' lines, and its band's and strands' problems up to the
+// level after the newest open one (a probe or a skip can reach it). Other strata's are let go.
+function spritesFor(w) {
+  const upto = {};
+  [w.band].concat(Object.values(w.strands || {})).forEach((b) => { upto[b] = openLevel(b, recs) + 1; });
+  needSprites(ALWAYS.concat(runSprites(w, upto)));
 }
 // Bosses roar every so often while you're working on a problem: a growl, and they rear up and
 // shake while the room flickers. Never during an attack, a card, a hint or the pause.
@@ -772,8 +781,9 @@ function learnFrom(ok) {
   if (!fluent) G.floorSlow = true; // the "all fast" star (wings.js floorStars)
   f.cool--;
   store.player(PID).set("facts", recs);
-  if (skipped) { say("p", PHRASE.skip); return "Skipping ahead! You already know these."; }
   const after = openLevel(bk, recs);
+  if (after > before) spritesFor(wing()); // the next level's problems come into reach
+  if (skipped) { say("p", PHRASE.skip); return "Skipping ahead! You already know these."; }
   if (after > before) { say("p", BARK.level); return `New level: ${b.levels[after].name}!`; }
   return null;
 }
@@ -1469,7 +1479,12 @@ function settings(paused, tab) {
   $("voiceOn").onchange = () => { st.voice = $("voiceOn").checked; setVoice(st.voice); saveSettings(); };
   // Sound check (Game tab): what the sound effects' audio reports, as ?audio shows, for the Home
   // Screen app, which has no address bar. Test plays the floor-cleared fanfare.
-  const soundState = () => { const a = sfx.status(); if ($("soundState")) $("soundState").textContent = `Audio: ${a.state}\nPlayed: ${a.played}  Restarted: ${a.remade || 0}\nError: ${a.error || "none"}`; };
+  // The voice's sprites: how many of those this stratum needs are in, the bytes held, and the lines
+  // decoded (speech.js spriteStatus).
+  const soundState = () => {
+    const a = sfx.status(), v = spriteStatus(), mb = (b) => (b / 1e6).toFixed(1);
+    if ($("soundState")) $("soundState").textContent = `Audio: ${a.state}\nPlayed: ${a.played}  Restarted: ${a.remade || 0}\nError: ${a.error || "none"}\nVoice sprites: ${v.loaded} of ${v.wanted} in (${v.listed} in all), ${mb(v.bytes)} MB\nDecoded: ${v.decodedLines} lines, ${mb(v.decodedBytes)} MB`;
+  };
   soundState(); const soundTimer = setInterval(() => { if (!$("soundState")) clearInterval(soundTimer); else soundState(); }, 800);
   $("soundTest").onclick = () => { sfx.restart(sfx.victory); setTimeout(soundState, 300); };
   wireSwatches();
