@@ -24,10 +24,11 @@ const mon = (n) => MON.find((m) => m.n === n);
 // their pools; 2nd grade's equal shares are, so it has a depth-1 floor in the Mines, in
 // Margot-Rythm's place (her adding and subtracting within 1000 is the Mines' own band, which
 // Haberhasher and the boss ask too), and she visits from the pool.
+// Pipsqueak asks the dot flash and then his dice sums in the Cellar, as a strand (flashK).
 // Chompers visits the Tower's pool too, with no strand there: he asks the band's comparisons, which
 // in the Tower are comparing fractions (3/8 ○ 5/8), and eats the bigger fraction.
 export const WINGS = [
-  { id: "cellar", name: "The Counting Cellar", band: "kinder", strands: { Trollar: "coinsK", Chompers: "more", Slimelipsis: "patK", "Polly-Gon": "shapesK" },
+  { id: "cellar", name: "The Counting Cellar", band: "kinder", strands: { Trollar: "coinsK", Chompers: "more", Slimelipsis: "patK", "Polly-Gon": "shapesK", Pipsqueak: "flashK" },
     pool: ["Plusquito", "Minustaur", "Pipsqueak", "Chompers", "Trollar", "Slimelipsis", "Polly-Gon"], floors: ["Plusquito", "Pipsqueak", "rescue", "Chompers", "Trollar"], boss: "Make-Ten Golem" },
   { id: "hall", name: "The Balance Hall", band: "first", after: "cellar", strands: { Triceraplus: "three", "Tick-Tockus": "timeH", Slimelipsis: "patH", "Polly-Gon": "shapesH" },
     pool: ["Quizard", "Chompers", "Equal Twins", "Doublet", "Triceraplus", "Tick-Tockus", "Slimelipsis", "Polly-Gon"], floors: ["Quizard", "Equal Twins", "rescue", "Tick-Tockus", "Triceraplus"], boss: "Judo Judy" },

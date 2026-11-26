@@ -11,6 +11,7 @@ import { lineSvg, lineHint, lineFactOf } from "./numberline.js";
 import { pvSvg, pvHint, pvFactOf } from "./placevalue.js";
 import { dollarSvg, dollarHint, dollarFactOf } from "./dollars.js";
 import { countSvg, countHint, drawHintSvg, drawHint, shapeFactOf } from "./shapes.js";
+import { flashSvg, flashHint, flashFactOf } from "./flash.js";
 
 // Hints (DESIGN.md §5.3): the models classrooms use now, with the classroom's words, and a line
 // for grown-ups who learned it another way. No DOM: returns { model, say, grownups } where model
@@ -770,7 +771,20 @@ function shapeHintFor(f, worked) {
   return { model: fitted(pic, h > w * 1.2 ? 80 : 130, "the shape, with the hint on it"), say: countHint(f, worked).say, grownups: SHAPE_WHY[f.kind === "corners" ? "sides" : f.kind] };
 }
 
+// The dot flash (Pipsqueak, js/flash.js): the dots back, colored by group ("2 and 2 make ?"). In a
+// fight they come back on the problem's own card (app.js); here for the Oops card and the grown-ups' page.
+const FLASH_WHY = {
+  d: "How many at a glance: kids learn the dice patterns as pictures and see small groups inside them (a 5 is the 4 corners and 1 in the middle), so they know how many without counting one by one.",
+  f: "Five-frames: 5 boxes in a row. Kids see how many are full, and how many empty, so 4 is \"one less than 5\" at a glance.",
+  o: "Dominoes: each half is a small group seen at a glance, and the two halves put together make the whole: 3 and 2 make 5.",
+  s: "Small groups: kids spot each little group without counting it (2, 2 and 1), then put them together."
+};
+function flashHintFor(f, worked) {
+  return { model: fitted(flashSvg(f, { hint: true }), 90, "the dots, in groups"), say: flashHint(f, worked).say, grownups: FLASH_WHY[f.kind] };
+}
+
 export function hintFor(f, worked) {
+  if (f.op === "⁙") return flashHintFor(f, worked);
   if (f.op === "◇") return shapeHintFor(f, worked);
   if (f.op === "✓" || f.op === "✎") return tfHintFor(f, worked);
   if (f.op === "↔") return lineHintFor(f, worked);
@@ -950,6 +964,9 @@ export function hintFor(f, worked) {
 // The strategies, one sample problem each, for the "How the hints work" page in Settings, where
 // the grown-ups lines live (the hints in play show only the drawing and its words).
 export const STRATEGIES = [
+  { title: "How many at a glance", grade: "K", f: flashFactOf("⁙d5") },
+  { title: "Five-frames", grade: "K", f: flashFactOf("⁙f4") },
+  { title: "Dominoes", grade: "K", f: flashFactOf("⁙o3,2") },
   { title: "Ten-frame", grade: "K", f: { op: "+", x: 3, y: 4 } },
   { title: "Adding zero", grade: "K", f: { op: "+", x: 4, y: 0 } },
   { title: "Which is more", grade: "K", f: moreFact(7, 4) },

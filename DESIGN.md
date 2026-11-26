@@ -75,7 +75,7 @@ Each monster gets one simple trait that changes *how* you do math, never anythin
 - **Trollar**: 🪙 *Toll*. Asks only coin problems: count the coins, type the cents.
 - **Quizard**: ❓ *Mystery*. Every problem hides a number (3 + □ = 7); the hidden number is the damage. Its body is a big question mark in a wizard hat.
 - **Sigma Rex**: 👑 *Second wind*. At half HP it armors up like Timesaur.
-- **Pipsqueak** (the Cellar): 🎲 *Flash*. A sum of two small numbers comes as two dice to count by sight, and after a moment each die flips over into its number.
+- **Pipsqueak** (the Cellar): 🎲 *Flash*. Dots flash for a moment (a die, a five-frame, a domino, small groups): how many? Then a sum of two small numbers comes as two dice to count by sight, and after a moment each die flips over into its number.
 - **Doublet** (the Hall): 👯 *Doubles*. Asks only doubles and taking half away (8 + 8, 16 − 8).
 - **Triceraplus** (the Hall): 🦕 *Three horns*. Adds three numbers, two of which make 10 (4 + 3 + 6: find the ten first).
 - **Margot-Rythm** (the Mines): 🔁 *Carry the One*. Problems that need regrouping hit double.
@@ -118,7 +118,7 @@ One stratum per grade, in a **straight chain**: each opens only the next. The le
 - **Tick-Tockus** asks time the way Trollar asks coins: one monster whose problems follow the stratum's grade.
 - **Saved progress:** a dungeon version bump starts runs over and keeps what's been learned. (Done: version 5. No fact's key changed meaning.)
 - **Built in step 2 (2026-11-25), with today's input and monsters:**
-  - **K (Cellar):** within 5 with zero (4 + 0, 4 − 4) → within 10 → make 10 (7 + □ = 10) and number bonds of 5–9 as □ problems → 10 and some more (10 + 4, 14 − 4, 10 + □ = 14). Chompers asks "which is more, 7 or 4?" (type the bigger number), Trollar finds coins and says what each is worth, Plusquito and Minustaur ask the rest. Not yet: counting on and back, the dot flash, Slimelipsis.
+  - **K (Cellar):** within 5 with zero (4 + 0, 4 − 4) → within 10 → make 10 (7 + □ = 10) and number bonds of 5–9 as □ problems → 10 and some more (10 + 4, 14 − 4, 10 + □ = 14). Chompers asks "which is more, 7 or 4?" (type the bigger number), Trollar finds coins and says what each is worth, Plusquito and Minustaur ask the rest. Not yet: counting on and back, the dot flash, Slimelipsis (all built since).
   - **1st (Hall):** within 20 not crossing 10 → crossing 10 → missing numbers and the equal sign (8 + □ = 13, balance both sides) → ± tens (40 + 30, 10 more, 10 less, 34 + 20), with comparing at each step (to 10, sums, to 100). Quizard, Chompers, the Equal Twins and Minustaur. Not yet: counting to 120, three addends, true or false, hours.
   - **2nd (Mines):** two-digit ± mixed without regrouping → with regrouping → 10 and 100 more or less within 1000; counting coins with ¢. Haberhasher and Trollar, with Plusquito and Minustaur standing in, and The Centipede as its boss. Not yet: four addends, three-digit place value (34 tens), odd and even, $, arrays.
   - **3rd (Tower):** × and ÷ only, in the school's order (× 0, 1, 2, 5, 10 and ÷ → × 3, 4, 6 and ÷ → × 7, 8, 9 and ÷), then × tens, fractions as a hidden whole number (1/2 = □/4, 2/4 = □/2, 1 = □/4), rounding to the nearest 10 and 100, area and perimeter of a drawn rectangle, and × ÷ 11 and 12 last. Not yet: fractions on a number line and comparing them (Halfling), time.
@@ -155,6 +155,11 @@ One stratum per grade, in a **straight chain**: each opens only the next. The le
   - **Who asks:** Chompers visits the Tower's pool (decided with the user: he has the flip and chomp for < = >, and eats the bigger fraction, which shrinks into his mouth; a right = is his happy bounce). With no strand in the Tower he asks the band's comparisons, which there are only fractions. Halfling, the fractions monster and a depth-1 floor, asks them too. The Tower's other monsters never compare.
   - **Damage:** a comparison hits for the bigger number; for fractions, the bigger fraction's numerator (its pieces), as the Tower's other fractions hit for a numerator.
   - **Hint:** two fraction bars of the same whole, one over the other, shaded, with the rule in words; never the symbol (or a ring round the bigger) before answering; worked, the bigger bar ringed in gold and the comparison written.
+- **Built (2026-11-26): the dot flash** (K.NS.B.8; the K guide's subitizing, 1–5: dot cards, dice, five-frames, dominoes), with Pipsqueak: "How many dots?" 22 fixed facts (keys "⁙d4" a die, "⁙f3" a five-frame, "⁙o3,2" a domino, "⁙s2,2,1" small groups).
+  - **Pipsqueak's strand in the Cellar** (`flashK`): dice and five-frames to 3 → to 5 → dots any way (dominoes and small groups) → his dice sums (the band's facts within 10, the same keys), so it's how many at a glance first, then the numbers, the K guide's order. A strand, like which is more (the other half of the Cellar's first step), because a monster asks one strand or its band, and a level at the front of the Cellar's band would close levels a returning player has open until the flash was learned; it doesn't count toward the Cellar's 60% (the progression plan, §4.3, would count it as a priority step).
+  - **A brief look, not a test of speed:** the dots show for 1.5 s, then the card turns face down; "Show me again" peeks once more (a hint). The answer is typed, and hits for the count.
+  - **Hint and miss:** the dots come back, colored by the groups they're seen in ("2 and 2 make ?"); worked, "2 and 2 make 4." Never the count before answering.
+  - **Voice:** "How many dots?" as it appears; the first time, "Look quick! How many dots?".
 - **Build order** (stacked PRs): (1) this plan; (2) restructure K–3 into grade strata with today's monsters (the levels in the school's order, zero facts, make-10 partners, ×0 and ×1, × tens, monsters moved), with a stand-in wall and boss for the Mines; (3) the Crystal Mines' wall, palette, the Centipede and voice lines; (4) the new K–3 monsters: Doublet, Slimelipsis, dot flash, three addends, arrays, Tick-Tockus; (5) the Fraction Forge; (6) the Parenthesis Pyramid.
 
 ### 4.2 Retired: strata past 6th grade
@@ -237,7 +242,7 @@ Left out everywhere, as before: graphs and data, measuring length, word problems
 **The paths** (★ = a priority standard in the school's guide; the monster in brackets; *new* = a gap to build). Chapters (every 5 depths) group the steps about 3–4 at a time, in this order; the exact cut is set when it's built, with the balance sim.
 
 **The Counting Cellar (K)**
-1. ★ How many, and which is more, to 5: the dot flash, how many at a glance up to 5 (*new*, Pipsqueak), and which is more to 5 (Chompers). Ongoing.
+1. ★ How many, and which is more, to 5: the dot flash, how many at a glance up to 5 (built 2026-11-26, Pipsqueak), and which is more to 5 (Chompers). Ongoing.
 2. ★ Add and subtract within 5, with zero (Plusquito, Minustaur).
 3. Count on by 1s, back by 1s from 10 (Slimelipsis). Ongoing.
 4. ★ Within 10 (Plusquito, Minustaur); dice sums (Pipsqueak); which is more to 10 (Chompers).
@@ -288,7 +293,7 @@ Left out everywhere, as before: graphs and data, measuring length, word problems
 10. × and ÷ 11 and 12 (an extra, kept last).
 
 **The gaps, all placed above:**
-- the dot flash (K 1);
+- the dot flash (K 1; ✅ built 2026-11-26);
 - shapes (K 8, 1st 10, 2nd 10, 3rd 9);
 - count back from 20 (1st 2);
 - two-digit adding moved to 1st (1st 9);
@@ -704,7 +709,7 @@ Each milestone should be playable and shippable on its own. Revised 2026-11-25 f
 5. **M5 — Grade strata, K–3** (next; §4.1). One stratum per grade for the kids playing now:
    - ✅ restructure into grade bands with today's monsters, the levels in the school's order, zero facts, make-10 partners, ×0 and ×1, × tens, and monsters moved (2026-11-25; with a stand-in wall, palette and boss for the Mines);
    - ✅ the Crystal Mines' wall, palette and the Centipede (2026-11-25; the wall: blue rock that recedes and red-violet crystals that seem to jut out, by chromostereopsis);
-   - the new K–3 monsters: ✅ Pipsqueak (dot flash), Doublet, Triceraplus (three addends), Margot-Rythm, Squaresquatch and Halfling (2026-11-25); ✅ Slimelipsis (patterns, odd and even) and Tick-Tockus (time) in batch 1 (2026-11-26);
+   - the new K–3 monsters: ✅ Pipsqueak (dice sums; the dot flash itself 2026-11-26), Doublet, Triceraplus (three addends), Margot-Rythm, Squaresquatch and Halfling (2026-11-25); ✅ Slimelipsis (patterns, odd and even) and Tick-Tockus (time) in batch 1 (2026-11-26);
    - ✅ batch 2 (2026-11-26): true or false and fix it (the Equal Twins), place value with base-ten blocks (Haberhasher), dollars and cents (Trollar), fractions on a number line (Halfling), and stacked two- and three-digit sums;
    - ✅ three-digit numbers (2026-11-26): adding and subtracting within 1000 (the Mines, and Margot-Rythm visiting the Tower for 3rd grade), comparing three-digit numbers (Chompers in the Mines) and adding up to four two-digit numbers (Triceraplus in the Mines);
    - the 3rd-grade gaps: fractions, rounding, and area and perimeter (✅ as typed whole numbers in step 1; ✅ number lines in batch 2; ✅ comparing fractions, 2026-11-26: Chompers visiting the Tower, and Halfling).

@@ -7,6 +7,7 @@ import { spokenLine, spokenLineAnswer } from "./numberline.js";
 import { spokenPV, spokenPVAnswer } from "./placevalue.js";
 import { spokenDollars, spokenDollarAnswer } from "./dollars.js";
 import { spokenShape, spokenShapeAnswer } from "./shapes.js";
+import { spokenFlash, spokenFlashAnswer } from "./flash.js";
 
 // Problem generation and spoken text. No DOM: runs in Node for the tests and, later, the
 // audio build (which records the same spoken text the app asks for).
@@ -94,6 +95,8 @@ export function spokenProblem(p) {
   if (p.op === "$") return spokenDollars(p);
   // Shapes (Polly-Gon): "Draw a triangle!", "How many sides does this hexagon have?"
   if (p.op === "◇") return spokenShape(p);
+  // The dot flash (Pipsqueak): "How many dots?"
+  if (p.op === "⁙") return spokenFlash(p);
   // Which is more (K): "Which is more, seven or four?"
   if (p.op === "more") return "Which is more, " + spoken(p.x) + " or " + spoken(p.y) + "?";
   // Fractions: "one half equals what fourths"; "one equals what fourths".
@@ -125,6 +128,7 @@ export function spokenFact(p) {
   if (p.op === "#") return spokenPVAnswer(p);
   if (p.op === "$") return spokenDollarAnswer(p);
   if (p.op === "◇") return spokenShapeAnswer(p);
+  if (p.op === "⁙") return spokenFlashAnswer(p);
   if (p.op === "more") return capital(spoken(p.ans)) + " is more than " + spoken(Math.min(p.x, p.y)) + ".";
   if (p.op === "/") return fractionWords(p.a, p.b, spoken) + " equals " + fractionWords(p.ans, p.d, spoken);
   if (p.op === "▦") return capital(spoken(p.r)) + " rows of " + spoken(p.c) + " make " + spoken(p.ans) + ".";

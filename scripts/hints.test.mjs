@@ -47,6 +47,12 @@ for (const band of Object.keys(BANDS)) {
       assert.ok(saysAnswer(f, after.say), `${p.key}: ${after.say}`);
       continue;
     }
+    // The dot flash: the groups before ("2 and 2 make ?", or "Touch the dot. How many?"), and the
+    // count after.
+    if (f.op === "⁙") {
+      assert.ok(before.say.endsWith("?") && new RegExp(`\\b${f.ans}\\b`).test(after.say), `${p.key}: ${before.say} / ${after.say}`);
+      continue;
+    }
     // Shapes (Polly-Gon). Drawing: the dots to join before, the shape's sides and corners after
     // ("A triangle has 3 sides and 3 corners."). Counting stops partway at a "?" before, and says
     // the count after (a unit fraction's 1/4).
@@ -193,6 +199,7 @@ const opening = { "Ten-frame": /^Put together/, "Draw and cross out": /^Take awa
   "Make 10 partners": /^How many more make 10\? Count the empty spaces\. 7 \+ □ = 10, □ = 3$/, "Number bonds": /^6 is 4 and how many more\? 4 \+ □ = 6, □ = 2$/,
   "10 and 100 more": /^100 more: the hundreds go up by 1\. 345 \+ 100 = 445$/, "Times zero": /^Zero groups/, "Times tens": /^4 × 3 tens is 12 tens, 120\. 4 × 30 = 120$/,
   "Equal fractions": /^The same amount is shaded\. Count the shaded fourths: □ = 2$/,
+  "How many at a glance": /^4 and 1 make 5\.$/, "Five-frames": /^2 and 2 make 4\.$/, "Dominoes": /^3 and 2 make 5\.$/,
   "Compare fractions: same size pieces": /^Same size pieces: more pieces is more\. 3\/8 < 5\/8$/, "Compare fractions: same number of pieces": /^Same number of pieces: bigger pieces is more\. 2\/3 > 2\/6$/, "Rounding": /^47 is between 40 and 50\. Halfway is 45, and 47 is past halfway, so it rounds up\. □ = 50$/,
   "Area": /^Count the squares, or rows × columns: 3 × 4 = 12$/, "Perimeter": /^Add all four sides: 4 \+ 3 \+ 4 \+ 3 = 14$/,
   "Three numbers: find the ten": /^Find the ten: 4 \+ 6 = 10\. 10 \+ 3 = 13$/, "Arrays as equal rows": /^Add the rows: 5 \+ 5 \+ 5 = 15$/,
@@ -221,7 +228,7 @@ assert.equal(STRATEGIES.length, Object.keys(opening).length);
 for (const s of STRATEGIES) {
   const h = hintFor(s.f, true);
   assert.match(h.say, opening[s.title], s.title);
-  assert.ok(h.grownups && (TALKS.includes(s.f.op) || BATCH2.includes(s.f.op) || s.f.op === "◇" || "…".includes(s.f.op) && h.say.endsWith("= " + s.f.ans) || h.say.endsWith(s.f.sym ? s.f.l + " " + s.f.sym + " " + s.f.r : "= " + s.f.ans)), s.title);
+  assert.ok(h.grownups && (TALKS.includes(s.f.op) || s.f.op === "⁙" || BATCH2.includes(s.f.op) || s.f.op === "◇" || "…".includes(s.f.op) && h.say.endsWith("= " + s.f.ans) || h.say.endsWith(s.f.sym ? s.f.l + " " + s.f.sym + " " + s.f.r : "= " + s.f.ans)), s.title);
 }
 console.log("✓ hint strategies");
 

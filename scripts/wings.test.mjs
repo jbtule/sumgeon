@@ -35,9 +35,10 @@ for (const w of WINGS) {
   }
 }
 // The new monsters' strands and bands: Squaresquatch asks arrays in the Mines and Triceraplus
-// three numbers in the Hall; the rest their stratum's band.
+// three numbers in the Hall, Pipsqueak the dot flash (and his dice sums) in the Cellar; the rest
+// their stratum's band.
 assert.deepEqual([bandOf(mines, { n: "Squaresquatch" }), bandOf(mines, { n: "Margot-Rythm" }), bandOf(hall, { n: "Doublet" }), bandOf(tower, { n: "Halfling" }), bandOf(cellar, { n: "Pipsqueak" }), bandOf(hall, { n: "Triceraplus" })],
-  ["arrays", "second", "first", "third", "kinder", "three"]);
+  ["arrays", "second", "first", "third", "flashK", "three"]);
 const named = (n) => ({ n });
 assert.deepEqual([bandOf(cellar, named("Trollar")), bandOf(mines, named("Trollar")), bandOf(cellar, named("Chompers")), bandOf(hall, named("Chompers")), bandOf(mines, named("Haberhasher"))],
   ["coinsK", "coins", "more", "first", "second"], "Trollar finds coins in the Cellar and counts them in the Mines");
