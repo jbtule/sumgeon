@@ -2,7 +2,7 @@
 // pool, with a rescue floor and a boss, and asks one grade's band of facts (§4.1: one stratum per
 // grade, K to 3rd). They make a straight chain: mastery opens only the next. No DOM: runs in Node
 // for the tests.
-import { MON, LOOKS, lookOf } from "./monsters.js";
+import { MON, LOOKS, lookOf, bossForm } from "./monsters.js";
 import { HEROES } from "./heroes.js";
 import { BANDS, pool, learned, stepFacts, openSteps, chaptersOf } from "./learn.js";
 
@@ -160,7 +160,7 @@ export function runFloors(wing, team, rnd, depth) {
     if (f === "pool" || (depth || 1) > 1) return dressed(pick(), wing, depth, i);
     last = f;
     return mon(f);
-  }).concat([mon(wing.boss)]);
+  }).concat([bossAt(wing, depth)]);
 }
 // Below depth 1, each floor's monster wears one of its looks (monsters.js LOOKS), the same one
 // every time you come back to that floor of that depth: a hash of the Wing, depth and floor.
@@ -174,6 +174,21 @@ function dressed(m, wing, depth, floor) {
 // Depth: beating a Wing's boss opens its next depth, and "Go deeper" goes there. Each depth is
 // tougher (HP), mixes its floors, and asks more of the newest problems.
 export const depthHP = (d) => 1 + 0.15 * ((d || 1) - 1);
+
+// The boss at each depth builds up to a mega boss every MEGA_EVERY depths (DESIGN.md §4.3, §14.2):
+// the normal boss at depths 1–2 of each five, powering up at 3 and 4 (some of its mega form's
+// parts, a little more HP, "I'm getting stronger!"), and the mega boss at 5, 10, 15…: crowned,
+// with its second trait and a big chest. Beating a mega boss opens the next chapter.
+export const MEGA_EVERY = 5;
+// 0: the boss; 1 and 2: powering up; 3: the mega boss.
+export function bossStage(depth) { const k = (((depth || 1) - 1) % MEGA_EVERY) + 1; return k <= 2 ? 0 : k < MEGA_EVERY ? k - 2 : 3; }
+export const isMega = (depth) => bossStage(depth) === 3;
+// How much more HP the boss has at each stage.
+export const BOSS_HP = [1, 1.1, 1.2, 1.4];
+export function bossAt(wing, depth) {
+  const b = mon(wing.boss), s = bossStage(depth);
+  return (s === 3 ? bossForm(b, "mega") : s ? bossForm(b, "power", s) : null) || b;
+}
 export const deepest = (wing, progress) => ((progress[wing.id] || {}).depth || 1);
 
 // The share of a Wing's priority steps learned (box 3 or more; DESIGN.md §4.3): the school's

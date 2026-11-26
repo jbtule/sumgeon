@@ -7,8 +7,8 @@ import { BANDS, choose, factOf, record as recordAnswer, helpFor, monsterHP, prob
 import { countSvg, readShape, judgeShape, cleanFor, squawkBody, isDrawKey, SHAPE_LINE, SHAPE_CODE, article } from "./shapes.js";
 import { hintFor, STRATEGIES } from "./hints.js";
 import { openStore, displayName } from "./store.js";
-import { PHRASE, monsterName, monsterCleared, monsterWon, heroJoins, heroCursed, heroRescue, heroAlmost, heroHelps, traitLine, BARK, wingCleared, wingOpened, depthLine, DEPTH_MAX_SPOKEN, reversedLine, howToWriteLine, quipLine, squawk } from "./lines.js";
-import { WINGS, wingOf, runFloors, openWings, toOpen, floorStars, wingStars, depthScale, depthHP, deepest, MAP_DEPTHS, GRADES, gradeLabel, gradeName, withGrade, bandOf, gradeBand, OLD_BANDS, PATHS, chapterOf, stepsOpen } from "./wings.js";
+import { PHRASE, monsterName, monsterCleared, monsterWon, heroJoins, heroCursed, heroRescue, heroAlmost, heroHelps, traitLine, BARK, wingCleared, wingOpened, depthLine, DEPTH_MAX_SPOKEN, reversedLine, howToWriteLine, quipLine, squawk, trait2Line } from "./lines.js";
+import { WINGS, wingOf, runFloors, openWings, toOpen, floorStars, wingStars, depthScale, depthHP, deepest, MAP_DEPTHS, GRADES, gradeLabel, gradeName, withGrade, bandOf, gradeBand, OLD_BANDS, PATHS, chapterOf, stepsOpen, bossStage, isMega, BOSS_HP, MEGA_EVERY, megasOf } from "./wings.js";
 import { missingOf, pickBlank, filled, spokenMissing, MISSING_SHARE, canHide } from "./missing.js";
 import { rectSvg } from "./third.js";
 import { arraySvg } from "./arrays.js";
@@ -23,7 +23,7 @@ import { coinsSvg, pileOf, coinOf } from "./coins.js";
 import { stackOf } from "./twodigit.js";
 import { read as readSigil, judge as judgeSigil } from "./sigil.js";
 import { HANDWRITING } from "./handwriting.js";
-import { traitOf, charged, prefers, hitBy, atHalf, asks, flipOf, flashOf, dieSvg, FLASH_MS } from "./traits.js";
+import { traitOf, charged, prefers, hitBy, atHalf, asks, flipOf, flashOf, dieSvg, FLASH_MS, mega } from "./traits.js";
 import { roster, mastery, meet, beat } from "./bestiary.js";
 import { HEROES, CHALK, heroSvg, freePick, pickHero, curseCaptain, crackCurse, CURSE_HITS, resetTeam } from "./heroes.js";
 import * as sfx from "./sfx.js";
@@ -400,7 +400,7 @@ function probUI() {
   else if (p.op === "¢" && p.find) box.innerHTML = coinsSvg(p.pile) + `<span class="find">${coinOf(p.find).names} = <span class="blank" id="blank">?</span></span>`;
   else if (p.op === "¢") box.innerHTML = coinsSvg(p.pile) + " =";
   // Flipped by Judo Judy: each number in its own box, so the throw can swap them (judoThrow).
-  else if (p.flipped) box.innerHTML = `<span class="jn">${p.x}</span> <span class="jop">+</span> <span class="jn">${p.y}</span> =`;
+  else if (p.flipped) box.innerHTML = `<span class="jn">${p.x}</span> <span class="jop">${p.op}</span> <span class="jn">${p.y}</span> =`;
   // Three-digit numbers on one line ("287 + 359 ="), a little smaller so it fits an iPhone SE.
   else if ((p.op === "+" || p.op === "-") && Math.max(p.x, p.y) >= 100) box.innerHTML = `<span class="wide3">${esc(p.q)} =</span>`;
   else box.textContent = p.q + " =";
@@ -529,7 +529,7 @@ function diveUI() {
   const d = G.depth, w = wing(), last = Math.max(MAP_DEPTHS, d + 2), rows = [];
   for (let n = 1; n <= last; n++) {
     const sc = depthScore(w, n), score = sc.got ? `<small>★${sc.got}</small>` : "";
-    rows.push(`<li class="${n < d ? "done" : n === d ? "now" : ""}" data-n="${n}" data-score="${sc.got}" data-max="${sc.max}"><i></i><span>${n}</span>${score}</li>`);
+    rows.push(`<li class="${n < d ? "done" : n === d ? "now" : ""}${isMega(n) ? " mega" : ""}" data-n="${n}" data-score="${sc.got}" data-max="${sc.max}"><i></i><span>${n}</span>${score}</li>`);
   }
   const box = $("dive");
   box.innerHTML = rows.join("");
@@ -593,34 +593,43 @@ function loadMonster(i, quiet) {
   G.floor = i;
   roarSoon();
   // Deeper floors are tougher: about 80% of the usual HP on floor 1, up to 130% for the boss.
-  G.max = G.hp = Math.round(monsterHP(m, strandOf(m), recs, levelsFor(strandOf(m)).levels) * depthScale(i, G.floors.length) * depthHP(G.depth));
+  // A boss powering up has a little more HP, a mega boss more (wings.js BOSS_HP).
+  const stage = m.boss ? bossStage(G.depth) : 0;
+  G.max = G.hp = Math.round(monsterHP(m, strandOf(m), recs, levelsFor(strandOf(m)).levels) * depthScale(i, G.floors.length) * depthHP(G.depth) * BOSS_HP[stage]);
   const el = $("mon");
   el.className = "mon";
   el.innerHTML = monsterArt(m);
   G.chomp = G.chompFace = "right"; chompSeq++;
   $("mName").textContent = m.n;
   // The trait badge, and what it does under the monster as it arrives.
-  const t = traitOf(m), badge = $("trait");
+  // A mega boss has a second trait (traits.js mega): both icons, and the second one's name.
+  const t = traitOf(m), t2 = mega(m) ? m.trait2 : null, badge = $("trait");
   badge.hidden = !t;
-  if (t) { badge.textContent = `${t.icon} ${t.name}`; badge.title = t.text; }
+  if (t) { badge.textContent = t2 ? `${t.icon}${t2.icon} ${t2.name}` : `${t.icon} ${t.name}`; badge.title = t2 ? `${t.text}. ${t2.text}` : t.text; }
   // A long name (Professor Minustaur), or one that doesn't fit beside its trait badge on a small
   // phone (Disco Squatch and 🟩 Arrays), shrinks to fit.
   const nm = $("mName");
   nm.classList.remove("long");
   if (m.n.length > 13 || nm.scrollWidth > nm.clientWidth + 1) nm.classList.add("long");
   G.onFloor = 0; G.halved = false; G.floorLost = 0; G.floorStreak = 0; G.floorSlow = false; G.barked = {};
-  if (!quiet) setMsg(t ? `${t.icon} ${t.name}: ${t.text}` : "Your answer is your attack.");
+  if (!quiet) setMsg(t2 ? `👑 Mega boss! ${t2.icon} ${t2.name}: ${t2.text}` : m.form === "power" ? `${m.n} is getting stronger!` : t ? `${t.icon} ${t.name}: ${t.text}` : "Your answer is your attack.");
+  $("mon").classList.toggle("mega", !!t2);
   $("floorLbl").textContent = (G.depth > 1 ? `Depth ${G.depth} · ` : "") + (m.boss ? "Boss floor" : m.cursed != null ? "Rescue floor" : `Floor ${i + 1} / ${G.floors.length}`);
   hpUI(); heartsUI(); streakUI(); slotsUI();
   if (quiet) return;
   meet(seen, m, Date.now()); store.player(PID).set("bestiary", seen);
   sfx.appear(m.boss);
-  if (m.boss) say("p", PHRASE.boss);
+  // "Mega boss ahead!" as a mega boss arrives (DESIGN.md §4.3), else "Boss floor!".
+  if (t2) say("p", PHRASE.megaAhead);
+  else if (m.boss) say("p", PHRASE.boss);
   // A cursed hero (the rescue floor) is announced with the quips' light echo (CURSED_FX), then who
   // you're freeing; a trait says what it does, the first times you meet it.
   say("m", monsterName(m), false, null, m.cursed != null ? CURSED_FX : undefined);
   if (m.cursed != null) say("p", heroRescue(HEROES[m.cursed]), false, null, CURSED_FX);
   if (t && once("trait:" + t.name, 2)) say("p", traitLine(m));
+  // Powering up on the two depths before a mega boss; a mega boss's second trait, the first times.
+  if (m.form === "power") say("p", PHRASE.stronger);
+  if (t2 && once("trait2:" + (m.base || m.n), 2)) say("p", trait2Line(m));
 }
 // The next problem, chosen by the learning engine (learn.js): a missed fact when it's due back,
 // otherwise learning, review or new facts, with the monster's operation preferred.
@@ -655,7 +664,8 @@ function newProblem() {
   // Charge (Minustaur): every 4th problem on the floor, a miss costs 2 hearts.
   G.charged = charged(m, G.onFloor++);
   $("charge").hidden = !G.charged;
-  if (G.charged) { sfx.charge(); say("p", PHRASE.charged, false, () => G.charged && !G.busy); }
+  // Mega Judy's big throw (⚡ Black Belt) is charged the same way.
+  if (G.charged) { sfx.charge(); if (mega(m)) say("p", PHRASE.bigThrow, false, () => G.charged && !G.busy); else say("p", PHRASE.charged, false, () => G.charged && !G.busy); }
   G.cur = factOf(key);
   // A shape to draw hits for its strand's typical answer (learn.js drawHit). Without a touch screen
   // (a missed one coming back, or ?fact=), a counting problem about it instead.
@@ -1028,12 +1038,13 @@ function submit() {
       if (half) {
         setMsg(half.note, "good");
         if (half.split) { $("mon").innerHTML = `<div class="split">${monsterArt(m)}${monsterArt(m)}</div>`; }
+        if (half.curl) $("mon").classList.add("curled"); // the Megapede curls into a ring (🐛 Curl Up)
       }
       // One short bark for what this hit did, at most: the half-HP change, the trait, or a power
       // hit, each once a floor. None when something else was just said (a new level, skipping
       // ahead, a backwards spell, or "Critical hits!", unless it's the half-HP change, which only
       // happens once).
-      const bark = half ? (half.split ? "split" : "second") : trait.mult > 1 ? "double" : trait.mult < 1 ? "half" : bonus.power ? "power" : null;
+      const bark = half ? (half.split ? "split" : half.curl ? "curl" : "second") : trait.mult > 1 ? "double" : trait.mult < 1 ? "half" : bonus.power ? "power" : null;
       if (bark && !level && (half || !critsNow) && !G.cur.reversed && !G.cur.howTo && !G.barked[bark]) { G.barked[bark] = true; say("p", BARK[bark]); }
       if (G.hp <= 0) { setTimeout(() => { $("mon").className = "mon dead" + ($("mon").classList.contains("face-l") ? " face-l" : ""); }, 300); setTimeout(cleared, 1100); }
       else setTimeout(newProblem, level ? 1200 : 450);
@@ -1073,7 +1084,8 @@ function miss(why) {
   // The whole fact, said out loud: "three plus four is seven".
   const said = G.cur.fact || G.cur;
   say("q", spokenFact(said));
-  if (cost > 1) say("p", PHRASE.chargedMiss);
+  if (cost > 1 && mega(G.floors[G.floor])) say("p", PHRASE.bigThrowMiss);
+  else if (cost > 1) say("p", PHRASE.chargedMiss);
   if (blocked) setTimeout(() => { G.next = true; openWorked(); }, 600);
   if (blocked) return;
   setTimeout(() => {
@@ -1129,7 +1141,7 @@ function cleared(chestDone) {
   sfx.victory(); // a floor cleared gets the fanfare (the user liked it better than the jingle)
   const nx = G.floors[G.floor + 1];
   const next = `<div class="cardmon">${monsterArt(nx)}</div>
-  <p>Next down the stairs: <strong>${nx.n}</strong>${nx.boss ? ", the boss" : ""}.${healed ? " You found a heart (+1)." : ""}</p>`;
+  <p>Next down the stairs: <strong>${nx.n}</strong>${nx.form === "mega" ? ", the 👑 mega boss" : nx.boss ? ", the boss" : ""}.${healed ? " You found a heart (+1)." : ""}</p>`;
   if (m.cursed != null && !crackCurse(team, m.cursed).freed) {
     // The curse cracks (heroes.js crackCurse): it takes CURSE_HITS wins to break.
     const h = HEROES[m.cursed], r = crackCurse(team, m.cursed);
@@ -1163,14 +1175,20 @@ function cleared(chestDone) {
   <div class="btns"><button class="big" id="next">Floor ${G.floor + 2}</button></div>`, "float");
   }
   if (healed) say("p", PHRASE.heart);
-  if (nx.boss) say("p", PHRASE.nextBoss);
+  if (nx.form === "mega") say("p", PHRASE.megaAhead);
+  else if (nx.boss) say("p", PHRASE.nextBoss);
   $("next").onclick = () => { hide(); loadMonster(G.floor + 1); newProblem(); };
 }
 function end(win) {
   G.running = false;
   refundArmed();
-  const w = wing(), before = openWings(progress, recs, st.start);
+  const w = wing(), before = openWings(progress, recs, st.start), chBefore = chapterNow(w);
   if (win) { progress[w.id] = progress[w.id] || { boss: 0, best: 0 }; progress[w.id].boss++; }
+  // A mega boss beaten (DESIGN.md §4.3): the next chapter is reached. Counted by the depths whose
+  // mega boss is beaten, so beating the same one again doesn't count twice.
+  const megaWin = win && G.floors[G.floor].form === "mega";
+  if (megaWin) { const p = progress[w.id]; p.megas = Math.max(megasOf(p), Math.floor(G.depth / MEGA_EVERY)); keepSteps(w); }
+  const chOpened = chapterNow(w) > chBefore ? chapterNow(w) : 0;
   const stars = win ? earnStars() : "";
   if (win) { beat(seen, G.floors[G.floor], Date.now()); store.player(PID).set("bestiary", seen); }
   const f = record(), acc = G.tries ? Math.round(G.solved / G.tries * 100) : 0, m = G.floors[G.floor];
@@ -1182,6 +1200,7 @@ function end(win) {
   // A stratum cleared: the fanfare for now; it's meant to get something really big (DESIGN.md §8.3).
   if (win) { sfx.victory(); say("p", monsterCleared(m)); say("p", wingCleared(w)); } else say("p", monsterWon(m));
   if (fallen) say("p", heroCursed(fallen));
+  if (chOpened) say("p", PHRASE.chapter);
   if (opened) { say("p", PHRASE.unlocked); openedAll.forEach((x) => say("p", wingOpened(x))); }
   // What the win card offers, the first few wins (a new stratum's own offer says it otherwise).
   else if (win && once("deeper", 3)) say("p", PHRASE.deeper);
@@ -1192,7 +1211,8 @@ function end(win) {
   const depth = G.depth;
   if (win) { progress[w.id].depth = Math.max(deepest(w, progress), depth + 1); store.player(PID).set("wings", progress); }
   const deeper = win;
-  const left = opened ? `<div class="unlocked" role="status"><b>🔓 New stratum unlocked!</b><span>${openedAll.map((x) => esc(x.name)).join(" and ")} ${openedAll.length > 1 ? "are" : "is"} open.</span></div>` : win ? nextWingHint() : "";
+  const chapterNote = chOpened ? `<div class="unlocked chapter" role="status"><b>👑 Chapter ${chOpened} is open!</b><span>New steps join as you learn: ${esc(PATHS[w.id].filter((s) => s.chapter === chOpened && !s.ongoing && !s.review).map((s) => s.name).join(", "))}.</span></div>` : "";
+  const left = chapterNote + (opened ? `<div class="unlocked" role="status"><b>🔓 New stratum unlocked!</b><span>${openedAll.map((x) => esc(x.name)).join(" and ")} ${openedAll.length > 1 ? "are" : "is"} open.</span></div>` : win ? nextWingHint() : "");
   pickOpen = false;
   show(`<h2>${win ? wingCleared(w) : `${m.n} won this round`}</h2>
   ${win || fallen ? "" : `<div class="cardmon">${monsterArt(m)}</div>`}
@@ -1242,8 +1262,10 @@ function hide() { $("ov").hidden = true; }
 const CHEST_ALWAYS = new URLSearchParams(location.search).get("chest");
 function openChest(m, done) {
   G.busy = true;
-  const C = G.chest = { done, boss: !!m.boss, tries: 0, key: null };
-  say("p", LOOT.chest, true);
+  // A mega boss's chest is a big one (DESIGN.md §4.3): more coins, or two items.
+  const C = G.chest = { done, boss: !!m.boss, big: m.form === "mega", tries: 0, key: null };
+  if (C.big) say("p", LOOT.bigChest, true);
+  else say("p", LOOT.chest, true);
   if (once("chest", 3)) say("p", LOOT.chestHow);
   nextLock(C);
 }
@@ -1269,8 +1291,8 @@ function chestShow(C, state, msg) {
   const inside = state === "open" ? `<div class="loot-pop">${C.lootHTML}</div>`
     : `<div class="lock${state === "shut" ? " shut" : ""}" id="lock"><div class="lockq">${lockHTML(C.p)}</div></div>`;
   show(`<div class="chest-card c-${state}">
-    <h2>${CHEST_TITLE[state]}</h2>
-    <div class="chest-box">${chestSvg(art)}${inside}</div>
+    <h2>${state === "locked" && C.big ? "A big treasure chest!" : CHEST_TITLE[state]}</h2>
+    <div class="chest-box${C.big ? " big" : ""}">${chestSvg(art)}${inside}</div>
     <p class="chest-msg" id="chestMsg">${msg || (state === "locked" ? (C.tries ? "Try this lock." : "Answer the lock to open it.") : "")}</p>
     ${state === "locked" ? `<div class="pad chest-pad${cmp ? " cmp" : ""}" id="chestPad">${padKeysHTML(cmp ? "cmp" : "num", "Open!")}</div>`
       : `<div class="btns">${state === "open" && C.piece ? '<button class="big alt" id="chestWear">👕 Put it on</button>' : ""}<button class="big" id="chestNext">Next</button></div>`}</div>`, "float chest");
@@ -1328,7 +1350,7 @@ function chestSubmit(C) {
 }
 // What's inside (loot.js contents): money, counted aloud, or an item. Saved at once.
 function takeLoot(C) {
-  let what = contents(Math.random, wardrobe.owned, moneyOK());
+  let what = contents(Math.random, wardrobe.owned, moneyOK(), C.big);
   if (CHEST_ALWAYS === "money") what = { kind: "money" };
   if (CHEST_ALWAYS === "item" && what.kind !== "item") what = { kind: "item", item: ITEMS[Math.floor(Math.random() * ITEMS.length)].id };
   if (CHEST_ALWAYS === "clothing" && what.kind !== "clothing") { const l = unowned(wardrobe.owned); if (l.length) what = { kind: "clothing", piece: l[Math.floor(Math.random() * l.length)].id }; }
@@ -1343,6 +1365,13 @@ function takeLoot(C) {
     const preview = hasCaptain() ? heroSvg(HEROES[team.captain], { color: team.color, wear: Object.assign({}, dressOf(team.captain), { [p.spot]: p.id }) }) : pieceSvg(p.id);
     return `<div class="loot-cloth">${preview}</div>`;
   }
+  // A big chest's two items.
+  if (what.kind === "items") {
+    what.items.forEach((id) => { gain(inv, id); say("p", itemName(id)); if (once("found:" + id)) say("p", itemWhat(id)); });
+    saveItems();
+    C.lootMsg = `<b class="loot-name">${what.items.map((id) => esc(itemOf(id).name)).join(" and ")}</b>They're in your 🎒 items.`;
+    return `<div class="loot-item two">${what.items.map((id) => `<span class="ico" aria-hidden="true">${itemIcon(id)}</span>`).join("")}</div>`;
+  }
   if (what.kind === "item") {
     const it = itemOf(what.item);
     gain(inv, it.id);
@@ -1352,7 +1381,7 @@ function takeLoot(C) {
     C.lootMsg = `<b class="loot-name">${esc(it.name)}</b>It's in your 🎒 items.`;
     return `<div class="loot-item"><span class="ico" aria-hidden="true">${itemIcon(it.id)}</span></div>`;
   }
-  const c = moneyFor(wing().id, C.boss), f = fewest(c);
+  const c = moneyFor(wing().id, C.boss, Math.random, C.big), f = fewest(c);
   wallet += c; saveWallet();
   sfx.coins(f.q + f.d + f.n + f.p);
   say("p", moneyLine(c));
@@ -1706,15 +1735,24 @@ function levelLine() {
 // A stratum's depths on the map, as a shaft going down: depths cleared (filled), the deepest
 // reached ("you are here"), and the ones still below. It starts at MAP_DEPTHS rows and grows as
 // you go deeper; a long run of cleared depths folds into one row.
+// Each row has the boss's mark (bossMark): a ring filling in toward the crown across a chapter's
+// five depths, and a crown on a mega boss's depth (DESIGN.md §4.3).
 function depthTrack(w, d) {
   const last = Math.max(MAP_DEPTHS, d + 1), rows = [];
   let first = 1;
   if (last > 8) { first = last - 6; rows.push(`<li class="done fold"><i></i>Depths 1–${first - 1} cleared</li>`); }
   for (let n = first; n <= last; n++) {
-    const sc = depthScore(w, n), score = sc.got ? ` <small>★ ${sc.got} of ${sc.max}</small>` : "";
-    rows.push(n < d ? `<li class="done"><i></i>Depth ${n}${score}</li>` : n === d ? `<li class="here"><i></i>Depth ${n}${score} <em>${d === 1 && !(progress[w.id] || {}).best ? "start here" : "you are here"}</em></li>` : `<li><i></i>Depth ${n}</li>`);
+    const sc = depthScore(w, n), score = sc.got ? ` <small>★ ${sc.got} of ${sc.max}</small>` : "", mk = bossMark(n);
+    rows.push(n < d ? `<li class="done${isMega(n) ? " mega" : ""}"><i></i>Depth ${n}${mk}${score}</li>` : n === d ? `<li class="here${isMega(n) ? " mega" : ""}"><i></i>Depth ${n}${mk}${score} <em>${d === 1 && !(progress[w.id] || {}).best ? "start here" : "you are here"}</em></li>` : `<li class="${isMega(n) ? "mega" : ""}"><i></i>Depth ${n}${mk}</li>`);
   }
   return `<ol class="shaft" aria-label="Deepest: depth ${d}">${rows.join("")}</ol>`;
+}
+// The boss's mark on a depth: a crown on a mega boss's depth; on the two depths before it, a ring
+// filled a third, then two thirds, as the boss powers up; nothing on the boss's plain depths.
+function bossMark(n) {
+  const s = bossStage(n);
+  if (s === 3) return ` <b class="bmark crown" title="Mega boss" aria-label="Mega boss">👑</b>`;
+  return s ? ` <b class="bmark" style="--fill:${s * 33}%" title="The boss is getting stronger" aria-label="The boss is getting stronger"></b>` : "";
 }
 // The depth map: the strata (wings.js WINGS) as rock layers under the surface, each in its own
 // texture, open or locked (and what opens it), with the deepest depth reached on the side.
@@ -2137,22 +2175,26 @@ function nextWingHint() {
 // How long the room shows empty after the descent before the first monster arrives.
 const AFTER_DESCENT_MS = 1300;
 const FACT_AT = new URLSearchParams(location.search).get("fact");
-const FLOOR_AT = Math.max(0, Math.min(5, Number(new URLSearchParams(location.search).get("floor")) || 0)), MONSTER_AT = new URLSearchParams(location.search).get("monster");
+// ?depth=N enters at that depth (the boss powering up at 3 and 4, a mega boss at 5), for testing.
+const DEPTH_AT = Math.max(0, Math.floor(Number(new URLSearchParams(location.search).get("depth"))) || 0);
+const FLOOR_AT = Math.max(0, Math.min(6, Number(new URLSearchParams(location.search).get("floor")) || 0)), MONSTER_AT = new URLSearchParams(location.search).get("monster");
 function descend(depth, mode) {
   if (descending()) return;
-  const d = depth || deepest(wing(), progress), enter = mode === "enter";
+  const d = depth || DEPTH_AT || deepest(wing(), progress), enter = mode === "enter";
   G.onMenu = false; // no update reload, no stratum double-tap, mid-descent
   stopSpeech(); openingLines(enter, d);
   const ov = $("ov");
   ov.classList.add("leaving");
   const fell = setTimeout(() => { ov.classList.remove("leaving"); hide(); }, reduced() ? 0 : 450);
-  playDescent({ wing: wing(), depth: d, mode, reduced: reduced(), scene: enter ? sceneNow() : null, title: enter ? PHRASE.enter : `Depth ${d}`, sub: enter ? `${wing().name} · Depth ${d}` : wing().name },
+  // A mega boss's depth says so as it lands (DESIGN.md §4.3).
+  playDescent({ wing: wing(), depth: d, mode, reduced: reduced(), scene: enter ? sceneNow() : null, title: enter ? PHRASE.enter : `Depth ${d}`, sub: enter ? `${wing().name} · Depth ${d}` : wing().name, mega: isMega(d) ? "👑 " + PHRASE.megaAhead : "" },
     () => { clearTimeout(fell); ov.classList.remove("leaving"); start(d, enter, true, reduced() ? 300 : AFTER_DESCENT_MS); });
 }
 // What's said as a run begins: "Now entering the Sumgeon!" (from the start screen), then the depth.
 function openingLines(enter, d) {
   if (enter) say("p", PHRASE.enter, false, null, ENTER_FX);
   if (d > 1 && d <= DEPTH_MAX_SPOKEN) say("p", depthLine(d), false, null, ENTER_FX); // "Depth two!" echoes like the entrance
+  if (isMega(d)) say("p", PHRASE.megaAhead, false, null, ENTER_FX);
 }
 // enter: from the start screen's "Enter the dungeon", which says so first. voiced: the descent
 // already said the opening lines.

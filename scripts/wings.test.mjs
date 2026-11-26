@@ -131,7 +131,7 @@ for (let k = 0; k < 50; k++) {
 }
 assert.deepEqual(runFloors(cellar, { captain: 5, rescued: [] }, () => 0, 1).map((m) => m.n).slice(0, 2), ["Plusquito", "Pipsqueak"], "depth 1 keeps the Wing's own order and looks");
 // Below depth 1, monsters wear their looks: across depths, some floors are in a look.
-const looked = [2, 3, 4, 5, 6, 7].flatMap((d) => runFloors(cellar, { captain: 5, rescued: [] }, () => 0.5, d)).filter((m) => m.base);
+const looked = [2, 3, 4, 5, 6, 7].flatMap((d) => runFloors(cellar, { captain: 5, rescued: [] }, () => 0.5, d)).filter((m) => m.base && !m.boss);
 assert.ok(looked.length > 0 && looked.every((m) => m.look && m.n !== m.base));
 assert.equal(depthHP(1), 1);
 assert.ok(Math.abs(depthHP(3) - 1.3) < 1e-9);

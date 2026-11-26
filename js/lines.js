@@ -71,6 +71,14 @@ export var PHRASE = {
   unlocked: "New stratum unlocked!",
   spell: "Cast a spell!",
   spellFail: "Incantation failed!",
+  // Chapters and mega bosses (DESIGN.md §4.3, §14.2): in the descent and as a mega boss arrives;
+  // the boss powering up on the two depths before; Mega Judy's big throw (⚡ Black Belt) and a miss
+  // on one; and a mega boss beaten opening the next chapter.
+  megaAhead: "Mega boss ahead!",
+  stronger: "I'm getting stronger!",
+  bigThrow: "Big throw!",
+  bigThrowMiss: "Big throw! You lost two hearts.",
+  chapter: "A new chapter is open!",
   win: "You cleared the Sumgeon!"
 };
 // Names spelled the way the voice should say them. The screen keeps the real spelling.
@@ -138,6 +146,14 @@ export var TRAIT_LINE = {
   "What's Next": "What comes next? Count the pattern!",
   "Squawk Back": "Listen for the squawk! Its body shows the shape."
 };
+// A mega boss's second trait (traits.js mega), said after its name the first times you meet it.
+export var TRAIT2_LINE = {
+  "Make-Ten Golem": "Halfway down, this boss puts on armor!",
+  "Judo Judy": "Big throws! Every fourth problem, a miss costs two hearts.",
+  "The Centipede": "Halfway down, it curls up! Answers under twenty do half damage.",
+  "Sigma Rex": "Watch out! It flips your times facts. Same answer!"
+};
+export function trait2Line(m) { return (m && m.trait2 && TRAIT2_LINE[m.base || m.n]) || null; }
 // Polly-Gon's squawk as its body flashes the problem's shape (shapes.js squawkLine): "Squawk! Polly
 // want a triangle!", in its monster sprite.
 export function squawk(p) { return squawkLine(p); }
@@ -158,7 +174,8 @@ export var BARK = {
   double: "Double damage!",
   half: "Half damage!",
   split: "Split in two!",
-  second: "Second wind!"
+  second: "Second wind!",
+  curl: "Curled up!"
 };
 export function wingCleared(w) { return "You cleared " + w.name + "!"; }
 export function wingOpened(w) { return w.name + " is open!"; }
@@ -190,6 +207,8 @@ export var LOOT = {
   chestJam: "The lock jammed!",
   chestAgain: "Try another lock!",
   chestShut: "Still locked. Maybe next time!",
+  // After a mega boss (DESIGN.md §4.3): a big chest, with more coins or two items.
+  bigChest: "A big treasure chest!",
   purseEmpty: "Your purse is empty. Open chests to find coins!",
   itemsEmpty: "No items yet. Open chests to find some!",
   itemsHow: "Tap an item to put it in a slot.",
@@ -294,6 +313,7 @@ export function spokenLines() {
     add("p", luckyLine(h.d), "Phrases");
   });
   Object.keys(TRAIT_LINE).forEach(function (k) { add("p", TRAIT_LINE[k], "Phrases"); });
+  Object.keys(TRAIT2_LINE).forEach(function (k) { add("p", TRAIT2_LINE[k], "Phrases"); });
   Object.keys(BARK).forEach(function (k) { add("p", BARK[k], "Phrases"); });
   for (var d = 2; d <= DEPTH_MAX_SPOKEN; d++) add("p", depthLine(d), "Phrases", "depths");
   REVERSIBLE.forEach(function (n) { add("p", reversedLine(n), "Phrases"); });
@@ -419,7 +439,7 @@ function index() {
   [PHRASE.enter, PHRASE.pickGrade, PHRASE.pickHero, PHRASE.heroFirst, PHRASE.deeper, PHRASE.exitSure, PHRASE.unlocked, PHRASE.win]
     .concat(WINGS.map(wingCleared), WINGS.map(wingOpened)).forEach(function (t) { phrases[t] = "phrases-start"; });
   [PHRASE.hitHow, PHRASE.cmpHow, PHRASE.cmpSame, PHRASE.spellHow, PHRASE.paused, PHRASE.tfHow, PHRASE.drawHow, PHRASE.flashHow]
-    .concat(Object.values(TRAIT_LINE), HEROES.map(function (h) { return luckyLine(h.d); }), REVERSIBLE.map(reversedLine), [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map(howToWriteLine))
+    .concat(Object.values(TRAIT_LINE), Object.values(TRAIT2_LINE), HEROES.map(function (h) { return luckyLine(h.d); }), REVERSIBLE.map(reversedLine), [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map(howToWriteLine))
     .forEach(function (t) { phrases[t] = "phrases-explain"; });
   // Problems: every line a band can say, found from its facts the way the game asks them (both
   // turnarounds; a number hidden for the facts that can hide one), in the first band and level
