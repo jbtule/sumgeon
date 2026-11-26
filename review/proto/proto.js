@@ -14,7 +14,8 @@ const STORE = "sumgeon:proto";
 const MON = { clock: NEW_MON.find((m) => m.n === "Tick-Tockus"), pattern: NEW_MON.find((m) => m.n === "Slimelipsis") };
 // The clock's numbers default to school-style handwriting (an open 4, a 1 that's one line), as on
 // a classroom clock; "bungee" is the game's font.
-const view = { type: "clock", clock: "hours", pattern: "ones", numbers: "hand" };
+// Its hands are straight arrows by default; "tentacle" tries Tick-Tockus's tentacles as hands.
+const view = { type: "clock", clock: "hours", pattern: "ones", numbers: "hand", hands: "arrow" };
 try { Object.assign(view, JSON.parse(localStorage.getItem(STORE)) || {}); } catch (e) { /* defaults */ }
 const keep = () => { try { localStorage.setItem(STORE, JSON.stringify(view)); } catch (e) { /* this visit only */ } };
 // ?type=pattern&level=twos&numbers=hand opens straight to one (for screenshots and links).
@@ -22,6 +23,7 @@ const q = new URLSearchParams(location.search);
 if (q.get("type")) view.type = q.get("type") === "pattern" ? "pattern" : "clock";
 if (q.get("level")) view[view.type] = q.get("level");
 if (q.get("numbers")) view.numbers = q.get("numbers") === "hand" ? "hand" : "bungee";
+if (q.get("hands")) view.hands = q.get("hands") === "tentacle" ? "tentacle" : "arrow";
 // ?seed=<n> makes the problems the same each time (for screenshots).
 let seed = Number(q.get("seed")) || 0;
 const rnd = seed ? () => ((seed = (seed * 9301 + 49297) % 233280) / 233280) : Math.random;
@@ -52,7 +54,23 @@ function drawChrome() {
   const levels = view.type === "clock" ? CLOCK_LEVELS : PATTERN_LEVELS;
   $("level").innerHTML = levels.map((l) => `<option value="${l.id}"${l.id === lv.id ? " selected" : ""}>${l.name} · ${l.grade}</option>`).join("");
   $("tools").hidden = view.type !== "clock";
-  $("numStyle").textContent = view.numbers === "hand" ? "Handwriting" : "Bungee";
+  // The clock is Tick-Tockus itself, so only Slimelipsis shows small by its name.
+  $("mon").hidden = view.type === "clock";
+  $("numStyle").textContent = view.numbers === "hand" ? "Handwritten" : "Bungee";
+  $("handStyle").textContent = view.hands === "tentacle" ? "Tentacles" : "Arrows";
+}
+// How far Tick-Tockus's tentacles can reach past the case, in the clock's drawing units, from the
+// room the picture has beside and under the clock (its size comes from the CSS).
+function reach() {
+  const pic = $("pic"), cs = getComputedStyle(pic);
+  const w = pic.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+  const h = pic.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
+  const s = Math.min(pic.clientWidth / 1.36, h), unit = s / 240;
+  if (!(unit > 0)) return undefined;
+  return { side: ((w - s) / 2 + 4) / unit, below: ((h - s) / 2 + 4) / unit };
+}
+function drawClock(hint) {
+  $("pic").innerHTML = clockSvg(S.p.h, S.p.m, { numbers: view.numbers, hands: view.hands, hint: hint && hint.layer, reach: reach() });
 }
 
 // The answer slot: a glowing "?" that fills as you type, gold when right, coral when wrong.
@@ -64,7 +82,7 @@ function slot() {
 function draw() {
   const p = S.p, worked = S.hint === "worked", hint = S.hint ? (view.type === "clock" ? clockHint(p, worked) : patternHint(p, worked)) : null;
   if (view.type === "clock") {
-    $("pic").innerHTML = clockSvg(p.h, p.m, { numbers: view.numbers, hint: hint && hint.layer });
+    drawClock(hint);
     // The problem line: "□ o'clock", "half past □", "3:□" (after a miss, "3:05").
     $("prob").className = "prob";
     $("prob").innerHTML = clockLine(p).map((part) => (part === null ? slot() : esc(part))).join("");
@@ -87,7 +105,11 @@ function draw() {
   go.textContent = S.done ? "Next ›" : "Hit!";
   go.classList.toggle("next", !!S.done);
   go.setAttribute("aria-label", S.done ? "Next problem" : "Attack");
+  // Again now the hint line has settled the room left, so the tentacles fit it.
+  if (view.type === "clock") drawClock(hint);
 }
+let resized = 0;
+addEventListener("resize", () => { clearTimeout(resized); resized = setTimeout(() => S && draw(), 100); });
 const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
 
 /* ---------- play ---------- */
@@ -147,6 +169,7 @@ $("types").addEventListener("click", (e) => {
   view.type = b.dataset.type; keep(); drawChrome(); next(spoke);
 });
 $("level").addEventListener("change", () => { view[view.type] = $("level").value; keep(); drawChrome(); next(spoke); });
+$("handStyle").addEventListener("click", () => { view.hands = view.hands === "tentacle" ? "arrow" : "tentacle"; keep(); drawChrome(); draw(); });
 $("numStyle").addEventListener("click", () => { view.numbers = view.numbers === "hand" ? "bungee" : "hand"; keep(); drawChrome(); draw(); });
 // After the first tap anywhere, new problems are read aloud as they appear, as the game reads coin
 // and comparing problems for a pre-reader.

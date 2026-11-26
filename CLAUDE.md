@@ -23,6 +23,7 @@ A math-practice dungeon crawler. The player fights anthropomorphic monsters buil
   - `loot.js`: chests, money and items' rules (when a chest comes, its lock, what's inside, the fewest coins, the inventory and slots, the items' effects)
   - `chest.js`: the chest, coin purse and $1 bill art, and the wallet drawn as money
   - `clock.js` and `patterns.js`: prototypes of Tick-Tockus's telling time (an analog clock, its problems and hint) and Slimelipsis's what comes next (skip counting on a row of slimes), used only by `review/proto/` so far: no fact keys, nothing in the game reads them
+  - `clock.js` and `patterns.js`: prototypes of Tick-Tockus's telling time (the clock is Tick-Tockus, its tentacles fitted to the room around it; arrow or tentacle hands; its problems and hint) and Slimelipsis's what comes next (skip counting on a row of slimes), used only by `review/proto/` so far: no fact keys, nothing in the game reads them
   The modules other than `app.js`, `sfx.js` and `speech.js` have no DOM and run in Node.
 - Modules need http, so run it with `npm run dev` (`scripts/dev-server.mjs`, port 8791, or `node scripts/dev-server.mjs <port>`), then open http://localhost:8791. Opening `index.html` as a file won't work.
   - The dev server stamps every page on the fly the way the deploy does (`scripts/stamping.mjs`, shared with `stamp.mjs`): each module gets `?v=dev<…>`, which changes whenever a file changes. It also sends no-cache headers and byte ranges (Safari's `<audio>` needs them). A plain static server lets Safari keep stale modules on a phone.

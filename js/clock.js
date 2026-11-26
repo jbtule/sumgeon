@@ -128,6 +128,90 @@ function hand(a, len, w, color, glow) {
     + (glow ? `<path d="${d}" fill="none" stroke="${GOLD}" stroke-width="16" stroke-linejoin="round" opacity=".55"/>` : "")
     + `<path d="${d}" fill="${DK}" stroke="${DK}" stroke-width="8" stroke-linejoin="round"/><path d="${d}" fill="${color}"/><path d="${d}" fill="url(#clocksh)"/></g>`;
 }
+// A tapered band along a centerline (points), w0 wide at the start and w1 at the end, with a
+// round end: a tentacle, or a tentacle hand. Returns path markup for solid-style drawing.
+function ribbon(pts, w0, w1) {
+  const L = [], R = [], n = pts.length - 1;
+  pts.forEach(([x, y], i) => {
+    const [ax, ay] = pts[Math.max(0, i - 1)], [bx, by] = pts[Math.min(n, i + 1)];
+    const len = Math.hypot(bx - ax, by - ay) || 1, nx = -(by - ay) / len, ny = (bx - ax) / len, w = (w0 + (w1 - w0) * i / n) / 2;
+    L.push(`${f1(x + nx * w)} ${f1(y + ny * w)}`); R.push(`${f1(x - nx * w)} ${f1(y - ny * w)}`);
+  });
+  const [tx, ty] = pts[n];
+  return `<path d="M${L.join(" L")} L${R.reverse().join(" L")} Z"/><circle cx="${f1(tx)}" cy="${f1(ty)}" r="${f1(w1 / 2)}"/>`;
+}
+const outline = (shape, color, w = 8) => `<g fill="${DK}" stroke="${DK}" stroke-width="${w}" stroke-linejoin="round">${shape}</g><g fill="${color}">${shape}</g><g fill="url(#clocksh)">${shape}</g>`;
+// A curling centerline, turtle style: from (x, y) heading h (radians, 0 right, π/2 down), len
+// long. The bend k (per unit) eases from k0 to k1 over the last part (from t0), so the tip curls.
+function curl(x, y, h, len, k0, k1, t0 = 0.4, n = 36) {
+  const pts = [[x, y]], ds = len / n;
+  for (let i = 1; i <= n; i++) {
+    const t = i / n, e = Math.max(0, (t - t0) / (1 - t0));
+    h += (k0 + (k1 - k0) * e * e) * ds;
+    x += Math.cos(h) * ds; y += Math.sin(h) * ds;
+    pts.push([x, y]);
+  }
+  return pts;
+}
+// Tick-Tockus's tentacles: three a side, coming out from behind the bottom of the case (so they
+// never cover the face, its numbers or ticks, and the hint's rim labels are drawn over them). One
+// hugs the rim up the side, one curls out sideways, one curls down below. reach: how far they can
+// go beyond the case, in drawing units, { side, below } (the page measures the room it has); they
+// shrink to fit.
+export const TENTACLE = "#e8679f";
+function tentacles(reach = {}) {
+  const side = Math.max(18, Math.min(80, reach.side ?? 60)), below = Math.max(12, Math.min(60, reach.below ?? 36));
+  const c = CLOCK.c, rad = (a) => (a - 90) * Math.PI / 180;
+  // [angle on the case (clockwise from the 12), how far, bend along, bend at the tip, width]
+  const LEFT = [
+    // Hugs the rim: out at about 8 o'clock, round the case upward, the tip curling out.
+    { a: 236, len: 60 + side * 1.1, k0: 0.008, k1: -0.12, t0: 0.6, w: 18, turn: 0.75 },
+    // Out to the side and curling up.
+    { a: 214, len: 30 + side * 1.2, k0: 0, k1: 0.11, t0: 0.3, w: 18, turn: 0.55 },
+    // Down below, curling out.
+    { a: 196, len: 22 + below * 1.2, k0: 0, k1: 0.14, t0: 0.25, w: 16, turn: -0.15 }
+  ];
+  let s = "";
+  for (const t of LEFT) {
+    for (const dir of [1, -1]) {
+      // Start inside the case so the root is hidden behind it, heading out along the radius (and
+      // turned by `turn`, toward the 12 for the one that hugs the rim).
+      const a = dir === 1 ? t.a : 360 - t.a, [x0, y0] = clockPoint(a, CLOCK.rim - 14);
+      const h = rad(a) + dir * t.turn;
+      // Shortened until it stays inside the room it has (its width included).
+      let len = t.len, pts;
+      for (let i = 0; i < 16; i++) {
+        pts = curl(x0, y0, h, len, dir * t.k0, dir * t.k1, t.t0);
+        const xs = pts.map(([x]) => x), out = Math.max(-Math.min(...xs), Math.max(...xs) - CLOCK.size), low = Math.max(...pts.map(([, y]) => y)) - CLOCK.size;
+        if (out + t.w / 2 <= side && low + t.w / 2 <= below) break;
+        len *= 0.9;
+      }
+      s += outline(ribbon(pts, t.w, 7), TENTACLE, 7);
+      // A few suckers on the underside of the outer half.
+      s += pts.filter((_, i) => i > 14 && i % 6 === 3).map(([x, y], i, arr) => {
+        const k = pts.indexOf(arr[i]), [px, py] = pts[k - 1], [qx, qy] = pts[k + 1] || pts[k];
+        const len = Math.hypot(qx - px, qy - py) || 1, off = (t.w - (t.w - 6) * k / pts.length) * 0.22;
+        return `<circle cx="${f1(x - dir * (qy - py) / len * off)}" cy="${f1(y + dir * (qx - px) / len * off)}" r="2.6" fill="#ffd0e3" stroke="${DK}" stroke-width="1.2"/>`;
+      }).join("");
+    }
+  }
+  return s;
+}
+// A tentacle hand: from just behind the center to its rounded tip at angle a, tapering, with a
+// gentle S-bend in the middle that straightens out before the tip, so the tip lies exactly on the
+// radius and points straight along it. A sucker or two near the tip.
+function tentacleHand(a, len, w0, w1, color, glow, bend) {
+  const c = CLOCK.c, n = 30, tail = 10, pts = [];
+  for (let i = 0; i <= n; i++) {
+    const t = i / n, y = c + tail - (len + tail - w1 / 2) * t;
+    pts.push([c + bend * Math.sin(Math.PI * t) * (1 - t) * (1 - t), y]);
+  }
+  const shape = ribbon(pts, w0, w1);
+  const sucker = (t) => { const [x, y] = pts[Math.round(t * n)]; return `<circle cx="${f1(x)}" cy="${f1(y)}" r="${f1(w1 * 0.22)}" fill="#ffffffb0" stroke="${DK}" stroke-width="1"/>`; };
+  return `<g transform="rotate(${f1(a)} ${c} ${c})">`
+    + (glow ? `<g fill="none" stroke="${GOLD}" stroke-width="10" stroke-linejoin="round" opacity=".6">${shape}</g>` : "")
+    + outline(shape, color, 7) + sucker(0.72) + sucker(0.86) + `</g>`;
+}
 // A small gold pill on the rim at minute m, holding a label (the hint's count by 5s).
 function pill(m, label, strong, out) {
   const [x, y] = clockPoint(m * 6, CLOCK.rim + (out ? 25 : 0)), r = String(label).length > 1 ? 14 : 12;
@@ -144,10 +228,14 @@ function sweep(m) {
 
 // The clock at h:m. opt.numbers: "bungee" (default) or "hand"; opt.hint: a hint layer from
 // clockHint ({ ring: [hour numbers to ring], glow: "hour", fives: last 5s label, ask: the label
-// at the hand, ones: [minute ticks to light] }); opt.label: the aria label.
+// at the hand, ones: [minute ticks to light] }); opt.label: the aria label. The clock is
+// Tick-Tockus: its tentacles reach out past the 240 × 240 drawing (shown with overflow visible) as
+// far as opt.reach allows; opt.monster false draws a plain clock. opt.hands: "arrow" or "tentacle".
 export function clockSvg(h, m, opt = {}) {
   const { c, rim, face, num } = CLOCK, { hour, minute } = handAngles(h, m), hint = opt.hint || {};
   let s = `<defs><linearGradient id="clocksh" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".38"/><stop offset=".55" stop-color="#fff" stop-opacity="0"/></linearGradient></defs>`;
+  // Tick-Tockus's tentacles, behind the case (opt.monster false leaves a plain clock).
+  if (opt.monster !== false) s += tentacles(opt.reach);
   // Two little bells on top, like an alarm clock (and Tick-Tockus's ears).
   const bell = (a) => { const [x, y] = clockPoint(a, rim + 4); return `<circle cx="${x}" cy="${y}" r="15"/>`; };
   s += `<g fill="${DK}" stroke="${DK}" stroke-width="9">${bell(-38)}${bell(38)}</g><g fill="${GOLD}">${bell(-38)}${bell(38)}</g><g fill="url(#clocksh)">${bell(-38)}${bell(38)}</g>`;
@@ -165,8 +253,15 @@ export function clockSvg(h, m, opt = {}) {
   for (const n of hint.ring || []) { const [x, y] = clockPoint(n * 30, num); s += `<circle cx="${x}" cy="${y}" r="17" fill="${GOLD}" opacity=".55" stroke="${GOLD}" stroke-width="3"/>`; }
   for (let n = 1; n <= 12; n++) { const [x, y] = clockPoint(n * 30, num); s += numeral(n, x, y, opt.numbers, n > 9 && opt.numbers !== "hand" ? 22 : 25); }
   // The hands: the long minute hand under the short hour hand, so the hour is never hidden.
-  s += hand(minute, CLOCK.minLen, 7, CLOCK_COLORS.minute, hint.glow === "minute");
-  s += hand(hour, CLOCK.hourLen, 12, CLOCK_COLORS.hour, hint.glow === "hour");
+  // opt.hands: "arrow" (straight, an arrow tip) or "tentacle" (tapered, a gentle bend, a round tip
+  // on the exact minute).
+  if (opt.hands === "tentacle") {
+    s += tentacleHand(minute, CLOCK.minLen, 11, 6, CLOCK_COLORS.minute, hint.glow === "minute", 7);
+    s += tentacleHand(hour, CLOCK.hourLen, 17, 10, CLOCK_COLORS.hour, hint.glow === "hour", -5);
+  } else {
+    s += hand(minute, CLOCK.minLen, 7, CLOCK_COLORS.minute, hint.glow === "minute");
+    s += hand(hour, CLOCK.hourLen, 12, CLOCK_COLORS.hour, hint.glow === "hour");
+  }
   s += `<circle cx="${c}" cy="${c}" r="8" fill="${GOLD}" stroke="${DK}" stroke-width="3.5"/>`;
   // The hint's count by 5s, on the rim.
   if (hint.fives != null) for (let k = 5; k <= hint.fives; k += 5) s += pill(k, k, false);

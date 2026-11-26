@@ -61,6 +61,19 @@ for (const id of levels) {
     for (const style of ["bungee", "hand"]) assert.ok(!/NaN|undefined/.test(clockSvg(p.h, p.m, { numbers: style, hint: after.layer })), `${id} ${digital(p.h, p.m)} ${style}`);
   }
 }
+// Tick-Tockus: the tentacles stay inside the room they're given (beside and under the 240-wide
+// drawing), and the tentacle hands draw at every time.
+const nums = (s) => [...s.matchAll(/-?\d+(\.\d+)?/g)].map((m) => Number(m[0]));
+for (const reach of [{ side: 18, below: 12 }, { side: 40, below: 20 }, { side: 80, below: 60 }, undefined]) {
+  const s = clockSvg(3, 0, { reach }), side = reach ? reach.side : 60, below = reach ? reach.below : 36;
+  const paths = [...s.matchAll(/<path d="(M[^"]*Z)"/g)].map((m) => nums(m[1]));
+  const xs = paths.flatMap((p) => p.filter((_, i) => i % 2 === 0)), ys = paths.flatMap((p) => p.filter((_, i) => i % 2 === 1));
+  assert.ok(Math.min(...xs) >= -side - 1 && Math.max(...xs) <= CLOCK.size + side + 1, `tentacles inside the sides (${JSON.stringify(reach)})`);
+  assert.ok(Math.max(...ys) <= CLOCK.size + below + 1, `tentacles inside the room below (${JSON.stringify(reach)})`);
+}
+assert.ok(!clockSvg(3, 0, { monster: false }).includes("#ffd0e3"), "a plain clock has no tentacles");
+for (let m = 0; m < 60; m++) assert.ok(!/NaN|undefined/.test(clockSvg(7, m, { hands: "tentacle", hint: { glow: "minute" } })), `tentacle hands at 7:${m}`);
+
 // Random problems come from the level's set.
 let r = 1; const rnd = () => ((r = (r * 9301 + 49297) % 233280) / 233280);
 for (const id of levels) {
