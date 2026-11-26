@@ -41,8 +41,15 @@ export const lockOf = (key, rnd) => factOf(key, rnd);
 // What's inside: "money", an item (one of ITEMS' ids), or clothing: a findable piece (never a
 // special one) not in owned yet, and money once every piece is owned.
 export const MONEY_SHARE = 0.5, ITEM_SHARE = 1 / 3, CLOTHING_READY = true;
-export function contents(rnd, owned) {
+// money: false before the player has met money (a kindergartner who hasn't done a coin problem,
+// app.js moneyOK): then a chest holds an item or clothing, never coins.
+export function contents(rnd, owned, money = true) {
   const r = rnd || Math.random, roll = r();
+  const item = () => ({ kind: "item", item: ITEMS[Math.floor(r() * ITEMS.length)].id });
+  if (!money) {
+    const left = CLOTHING_READY ? unowned(owned) : [];
+    return roll < MONEY_SHARE + ITEM_SHARE || !left.length ? item() : { kind: "clothing", piece: left[Math.floor(r() * left.length)].id };
+  }
   if (roll < MONEY_SHARE) return { kind: "money" };
   if (roll < MONEY_SHARE + ITEM_SHARE) return { kind: "item", item: ITEMS[Math.floor(r() * ITEMS.length)].id };
   const left = CLOTHING_READY ? unowned(owned) : [];

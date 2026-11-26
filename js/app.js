@@ -1166,7 +1166,7 @@ function chestSubmit(C) {
 }
 // What's inside (loot.js contents): money, counted aloud, or an item. Saved at once.
 function takeLoot(C) {
-  let what = contents(Math.random, wardrobe.owned);
+  let what = contents(Math.random, wardrobe.owned, moneyOK());
   if (CHEST_ALWAYS === "money") what = { kind: "money" };
   if (CHEST_ALWAYS === "item" && what.kind !== "item") what = { kind: "item", item: ITEMS[Math.floor(Math.random() * ITEMS.length)].id };
   if (CHEST_ALWAYS === "clothing" && what.kind !== "clothing") { const l = unowned(wardrobe.owned); if (l.length) what = { kind: "clothing", piece: l[Math.floor(Math.random() * l.length)].id }; }
@@ -1201,11 +1201,20 @@ function takeLoot(C) {
 /* ---------- the purse and the items (DESIGN.md §6.3) ----------
    On the start screen (and the pause screen): the purse, the wallet always as coins (the fewest
    of each, $1 bills past a dollar), and 🎒 Items, where the 3 quick-use slots are set. */
+// Money comes once the player has met it: a coin problem answered right (Trollar's find-the-coin
+// and each coin in the Cellar, counting coins in the Mines), a grade past kindergarten (1st grade
+// learns coin values), or coins already in the purse. Until then a kindergartner's chests hold
+// items and clothing, and the purse, the shop and Trollar's stall don't show.
+function moneyOK() {
+  if (wallet > 0 || (st.grade != null && st.grade >= 1)) return true;
+  return Object.keys(recs).some((k) => k[0] === "¢" && recs[k] && recs[k].c > 0);
+}
 function lootRowHTML() {
-  return `<div class="loot-row">
-    <button type="button" class="small purse-btn" id="openPurse" aria-label="Your purse">${purseSvg()}<span class="wmini">${walletMini(wallet) || "<small>Empty</small>"}</span></button>
+  const money = moneyOK();
+  return `<div class="loot-row${money ? "" : " no-money"}">
+    ${money ? `<button type="button" class="small purse-btn" id="openPurse" aria-label="Your purse">${purseSvg()}<span class="wmini">${walletMini(wallet) || "<small>Empty</small>"}</span></button>` : ""}
     <button type="button" class="small items-btn" id="openItems" aria-label="Items"><span aria-hidden="true">🎒</span><span class="imini">${inv.slots.map((id) => `<i>${id ? itemIcon(id) : ""}</i>`).join("")}</span></button>
-    <button type="button" class="small shop-btn" id="openShop" aria-label="Trollar's shop"><span class="shop-mini" aria-hidden="true">${STALL}</span></button>
+    ${money ? `<button type="button" class="small shop-btn" id="openShop" aria-label="Trollar's shop"><span class="shop-mini" aria-hidden="true">${STALL}</span></button>` : ""}
   </div>`;
 }
 
@@ -1418,12 +1427,12 @@ function pause() {
   if (justPaused && once("pause", 3)) say("p", PHRASE.paused);
   show(`<h2>Paused</h2>
   <p>Floor ${G.floor + 1} of ${G.floors.length}: <strong>${esc(G.floors[G.floor].n)}</strong></p>
-  <div class="pause-btns"><button class="small" type="button" id="pBook">📖 Monsters &amp; Heroes</button><button class="small" type="button" id="pSettings">⚙ Settings</button><button class="small" type="button" id="pItems">🎒 Items</button><button class="small" type="button" id="pWardrobe">👕 Wardrobe</button><button class="small purse-btn pwide" type="button" id="pPurse" aria-label="Your purse">${purseSvg()}<span class="wmini">${walletMini(wallet)}</span></button><button class="small danger" type="button" id="pExit">Exit the dungeon</button></div>
+  <div class="pause-btns"><button class="small" type="button" id="pBook">📖 Monsters &amp; Heroes</button><button class="small" type="button" id="pSettings">⚙ Settings</button><button class="small" type="button" id="pItems">🎒 Items</button><button class="small" type="button" id="pWardrobe">👕 Wardrobe</button>${moneyOK() ? `<button class="small purse-btn pwide" type="button" id="pPurse" aria-label="Your purse">${purseSvg()}<span class="wmini">${walletMini(wallet)}</span></button>` : ""}<button class="small danger" type="button" id="pExit">Exit the dungeon</button></div>
   <div class="btns"><button class="big" id="resume">Keep fighting</button></div>`, "float");
   $("resume").onclick = resume;
   $("pBook").onclick = bookPage;
   $("pItems").onclick = () => itemsCard(true);
-  $("pPurse").onclick = () => purseCard(true);
+  if ($("pPurse")) $("pPurse").onclick = () => purseCard(true);
   $("pWardrobe").onclick = () => wardrobeCard();
   $("pSettings").onclick = () => settings(true);
   $("pExit").onclick = () => {
@@ -1590,9 +1599,10 @@ function menu() {
   wireCaptain();
   $("openSettings").onclick = () => settings();
   if ($("switchPlayer")) $("switchPlayer").onclick = () => settings();
-  $("openPurse").onclick = () => purseCard(false);
+  if ($("openPurse")) $("openPurse").onclick = () => purseCard(false);
   $("openItems").onclick = () => itemsCard(false);
-  $("openShop").onclick = $("stallTap").onclick = () => { G.shopping = null; shopCard(); };
+  $("stallTap").onclick = () => { G.shopping = null; shopCard(); };
+  if ($("openShop")) $("openShop").onclick = $("stallTap").onclick;
   $("go").onclick = () => {
     if (!hasCaptain()) { $("warn").textContent = freePick(team, fresh()) ? "Pick your hero first." : "Pick who leads first."; $("captain").scrollIntoView({ block: "center", behavior: "smooth" }); say("p", PHRASE.heroFirst, true); return; }
     descend(null, "enter");
@@ -1623,7 +1633,7 @@ function drawScene() {
     card.style.setProperty("--sheet", sheet + "px");
     sceneHz = card.getBoundingClientRect().top + $("ov").scrollTop + sheet - 16;
   }
-  sc.innerHTML = surfaceHTML({ W, H, hz: sceneHz || H * 0.4, heroes: sceneHeroes(), stall: STALL });
+  sc.innerHTML = surfaceHTML({ W, H, hz: sceneHz || H * 0.4, heroes: sceneHeroes(), stall: moneyOK() ? STALL : "" });
   // Trollar's stall opens the shop: the scene is under the card, so a see-through button in the
   // card's window (the scene-gap) sits over it. Only on the start screen proper (#stallTap is
   // there), never mid-run.
@@ -1637,7 +1647,7 @@ function drawScene() {
 }
 const STALL = stallSvg();
 const sceneOn = () => !$("scene").hidden;
-const sceneNow = () => (sceneOn() ? { hz: sceneHz, heroes: sceneHeroes(), stall: STALL } : null);
+const sceneNow = () => (sceneOn() ? { hz: sceneHz, heroes: sceneHeroes(), stall: moneyOK() ? STALL : "" } : null);
 function hideScene() { $("scene").hidden = true; $("scene").innerHTML = ""; document.body.classList.remove("on-scene"); }
 let sceneFrame = 0;
 const redrawScene = () => { if (!sceneOn() || descending()) return; cancelAnimationFrame(sceneFrame); sceneFrame = requestAnimationFrame(drawScene); };

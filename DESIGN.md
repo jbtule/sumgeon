@@ -278,6 +278,7 @@ Replaces the between-floor choice. Clearing a floor still heals 1 heart.
   - **Clothing**, the rest: always a piece you don't have yet (money instead once you have every piece).
 
 **Money.**
+- A kindergartner meets money first in a fight (Trollar's coin problems): until a coin problem is answered right, chests hold items and clothing, and the purse and the shop don't show.
 - Kept per player in cents (`wallet`), never lost, not even on a loss.
 - Shown as a coin purse: the fewest coins for the amount (quarters, dimes, nickels, pennies; dollar bills past a dollar, §4.1 2nd grade), never just a number, so it's coin practice every time you look.
 
