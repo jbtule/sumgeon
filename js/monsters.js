@@ -151,6 +151,30 @@ export const NEW_MON=[
    +`<path d="M55 23 Q46 18 40 25 Q35 32 40 39 Q46 45 55 41 M46 16 V48" ${thin(3.5)} fill="none"/>`
    +`${eye(34,62,9)}${eye(58,62,9)}<path d="M32 78 Q46 88 60 78" ${ds} stroke-width="3"/><path d="M37 81 l2 7 l3 -6 M55 81 l-2 7 l-3 -6" fill="${CREAM}" stroke="${DK}" stroke-width="2" stroke-linejoin="round"/>`}}
 ];
+// Polly-Gon ("Polly want a…"), the shape monster for K–2: a parrot built from shapes a kid can
+// count. A flat-topped hexagon body (all six sides showing: the head, wings and tail tuck behind
+// it), a circle head with a triangle crest and beak, triangle wings, a fan of long triangle tail
+// feathers, and square feet. It visits the Cellar, the Hall and the Mines (shapes, sides and corners).
+{
+  const hex = (cx, cy, r) => [0, 60, 120, 180, 240, 300].map((a) => at(cx, cy, r, a).map(f1).join(' ')).join(' L');
+  NEW_MON.push(
+ {n:'Polly-Gon',op:'mix',sym:'⬡',stratum:'cellar, hall, mines',c:'#3fcf62',hits:3,
+  trait:{icon:'🦜',name:'Squawk Back',text:'Its body flashes the shape it asks for'},
+  quip:'squawks once for every side and flaps away.',
+  d:c=>{const RED='#ff4f5e',BLUE='#3d8bff',tri=(p)=>`<path d="M${p} Z"/>`;
+   return solid(tri('92 138 L36 186 L54 202')+tri('108 138 L164 186 L146 202'),RED)+solid(tri('100 138 L90 208 L110 208'),GOLD)
+   +solid(tri('74 104 L2 52 L26 128'),BLUE)+solid(tri('126 116 L196 140 L150 168'),BLUE)
+   +solid(tri('60 100 L20 70 L32 114')+tri('136 122 L176 138 L150 154'),GOLD)
+   +line(`<path d="M80 160 V180 M120 160 V180"/>`,'#ffa04a',5)
+   +solid(`<rect x="68" y="176" width="22" height="20" rx="3"/><rect x="110" y="176" width="22" height="20" rx="3"/>`,'#ffa04a')
+   +`<path d="M75 190 v6 M83 190 v6 M117 190 v6 M125 190 v6" ${ds} stroke-width="2.5"/>`
+   +solid(tri('84 26 L74 2 L96 18')+tri('104 18 L118 0 L114 24'),GOLD)+solid(tri('92 18 L96 -6 L106 16'),BLUE)
+   +solid(`<circle cx="100" cy="46" r="34"/>`,RED)
+   +solid(`<path d="M${hex(100,120,50)} Z"/>`,c)
+   +`<ellipse cx="80" cy="56" rx="7" ry="4" fill="#ffb3c8" opacity=".85"/><ellipse cx="120" cy="56" rx="7" ry="4" fill="#ffb3c8" opacity=".85"/>`
+   +eye(86,40,11)+eye(114,40,11)
+   +solid(tri('89 52 L111 52 L100 72'),GOLD)}});
+}
 // The new monsters in the game (M5 step 3, DESIGN.md §4.1): their traits are in traits.js, and they
 // keep sym and stratum for the gallery.
 MON.push(
@@ -276,7 +300,9 @@ export const ANCHOR = {
   "The Centipede": { eyes: [[34, 62, 9], [58, 62, 9]], mouth: [46, 82], top: [46, 12], hat: true, neck: [46, 92], ground: 200 },
   Halfling: { eyes: [[93, 50, 8], [111, 50, 8]], mouth: [102, 68], top: [102, 4], neck: [102, 82], ground: 196 },
   // Margot-Rythm's mouth is the gap above its keyboard jaw; its neck is the keyboard.
-  "Margot-Rythm": { eyes: [[82, 41, 10], [118, 41, 10]], mouth: [100, 129], top: [100, 1], neck: [100, 148], ground: 193 }
+  "Margot-Rythm": { eyes: [[82, 41, 10], [118, 41, 10]], mouth: [100, 129], top: [100, 1], neck: [100, 148], ground: 193 },
+  // Polly-Gon (NEW_MON): its mouth is the beak, its top the head under the crest.
+  "Polly-Gon": { eyes: [[86, 40, 11], [114, 40, 11]], mouth: [100, 62], top: [100, 12], neck: [100, 80], ground: 196 }
 };
 const st = `stroke="${DK}" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"`;
 // Each accessory: (anchor, color) → SVG drawn over the monster.

@@ -42,7 +42,9 @@ assert.ok(!/\b(she|her|hers|he|him|his)\b/i.test(judy.quip), "Judo Judy's lines 
 // The six new monsters in the game (M5 step 3): in MON with a symbol, a stratum for the gallery,
 // anchors and four looks each; Tick-Tockus and Slimelipsis wait in NEW_MON for their problems.
 const SIX = ["Pipsqueak", "Doublet", "Triceraplus", "Margot-Rythm", "Squaresquatch", "Halfling"];
-assert.deepEqual(NEW_MON.map((m) => m.n), ["Tick-Tockus", "Slimelipsis"]);
+assert.deepEqual(NEW_MON.map((m) => m.n), ["Tick-Tockus", "Slimelipsis", "Polly-Gon"]);
+// Polly-Gon (shapes, K–2), drawn but not in play: its beaten line names it, no pronoun.
+assert.ok(!/\b(she|her|hers|he|him|his|its|they|their)\b/i.test(NEW_MON.find((m) => m.n === "Polly-Gon").quip), "Polly-Gon's beaten line uses no pronoun");
 for (const n of SIX) {
   const m = MON.find((x) => x.n === n);
   assert.ok(m && m.sym && m.stratum && !m.trait && !m.boss, `${n} is in the game, its trait in traits.js`);
