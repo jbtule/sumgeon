@@ -14,7 +14,7 @@ const STORE = "sumgeon:gallery";
 const TAGS = ["Symbol", "Creature", "Color", "Small size", "Style", "Too scary", "Quip"];
 const WALLS = { cellar: "The Counting Cellar", hall: "The Balance Hall", mines: "The Crystal Mines", tower: "The Tables Tower", plain: "Plain" };
 const ALL_WALLS = ["cellar", "hall", "mines", "tower"];
-const SHORT = { cellar: "Cellar", hall: "Hall", mines: "Mines*", tower: "Tower" };
+const SHORT = { cellar: "Cellar", hall: "Hall", mines: "Mines", tower: "Tower" };
 
 // The game's own monsters: their symbol and their strata in the grade plan (DESIGN.md §4.1).
 // Kept here rather than read from wings.js, which is being restructured.
