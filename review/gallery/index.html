@@ -78,6 +78,23 @@
   .g-lines{display:grid;gap:2px}
   @media(max-width:700px){.g-form .g-stage{padding:10px 3px 6px}.g-form .g-info{padding:8px 6px 10px;font-size:12px}.g-form .g-title b{font-size:13px}.g-form .g-trait,.g-form .g-quip{font-size:12px}.g-form .g-smalls{gap:5px}.g-form .flagbtn{padding:0 8px}}
   [hidden]{display:none !important}
+  .c-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:10px}
+  .c-piece{display:grid;justify-items:center;align-content:start;gap:4px;padding:10px 6px;border-radius:14px;background:var(--panel);border:2px solid var(--line);text-align:center}
+  .c-piece.c-special{border-color:var(--gold)}
+  .c-piece svg{width:84px;height:84px;display:block}
+  .c-piece b{font-size:13px;line-height:1.2}
+  .c-piece small{color:var(--muted);font-size:11px;font-weight:800}
+  .c-h3{font:400 15px Bungee,sans-serif;color:var(--muted);margin:18px 0 6px}
+  .c-pick label{display:inline-flex;align-items:center;gap:6px;font-weight:800;color:var(--muted);font-size:14px}
+  .c-pick select{min-height:40px;border-radius:10px;border:2px solid var(--edge);background:var(--btn);color:var(--ink);font:inherit;font-weight:800;padding:0 8px;max-width:60vw}
+  .c-dress{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;padding:10px;border-radius:18px;background:var(--wall-cellar);border:2px solid var(--line)}
+  .c-dress div{display:grid;justify-items:center;color:#fff;font-weight:800;font-size:12px;text-align:center;text-shadow:0 1px 0 #000}
+  .c-dress svg{width:100%;max-width:150px;aspect-ratio:220/234;display:block}
+  .c-small{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:center;gap:6px 14px;margin-top:8px}
+  .c-small span{display:flex;align-items:flex-end;gap:4px}
+  .c-small i{display:block}.c-small i svg{width:100%;height:100%}
+  .c-small .s72{width:72px;height:77px}.c-small .s40{width:40px;height:43px}
+  @media(max-width:520px){.c-dress{gap:2px;padding:6px}.c-dress div{font-size:9px}}
   @media(max-width:420px){.g-grid{grid-template-columns:1fr}.g-stages.g-three .g-stage{padding:10px 4px 6px}}
 </style>
 </head>
@@ -121,6 +138,20 @@
   <div class="g-forms" id="formsGrid"></div>
   <h2>Heroes</h2>
   <div class="g-grid" id="heroGrid"></div>
+  <h2>Clothing</h2>
+  <p class="g-meta">What the heroes can wear (js/clothes.js, DESIGN.md §6.3): one piece per spot (head, face, neck). ★ Special pieces come only from achievements (§14.2). Not in the game yet.</p>
+  <div class="c-grid" id="piecesGrid"></div>
+  <h3 class="c-h3">Try it on</h3>
+  <div class="bar c-pick">
+    <label>Head <select id="wearHead"></select></label>
+    <label>Face <select id="wearFace"></select></label>
+    <label>Neck <select id="wearNeck"></select></label>
+    <button class="small" type="button" id="wearNext">Next outfit</button>
+    <button class="small" type="button" id="wearNone">Nothing</button>
+  </div>
+  <div class="c-dress" id="dressGrid"></div>
+  <p class="g-meta">Small: 72 px (Monsters &amp; Heroes, the hero chooser) and 40 px (the hearts row).</p>
+  <div class="c-dress c-small" id="dressSmall"></div>
   <h2>Retired</h2>
   <p class="g-meta">Out of the game, kept for the record.</p>
   <div class="g-grid" id="retiredGrid"></div>
