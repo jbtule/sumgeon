@@ -223,12 +223,12 @@ function pill(m, label, strong, out) {
   return `<circle cx="${x}" cy="${y}" r="${r}" fill="${strong ? GOLD : DK}" stroke="${strong ? DK : GOLD}" stroke-width="2.5"/>`
     + `<text x="${x}" y="${y}" dy=".35em" text-anchor="middle" font-family="Nunito, sans-serif" font-weight="900" font-size="${String(label).length > 1 ? 13 : 15}" fill="${strong ? DK : GOLD}">${label}</text>`;
 }
-// The minute hand's path from the 12 to minute m, as a wedge of the face.
-function sweep(m) {
-  if (!m) return "";
-  const c = CLOCK.c, r = CLOCK.face - 2, [x, y] = clockPoint(m * 6, r);
-  return `<path d="M${c} ${c} L${c} ${c - r} A${r} ${r} 0 ${m > 30 ? 1 : 0} 1 ${x} ${y} Z" fill="${CLOCK_COLORS.minute}" opacity=".15"/>`
-    + `<path d="M${c} ${c - r} A${r} ${r} 0 ${m > 30 ? 1 : 0} 1 ${x} ${y}" fill="none" stroke="${CLOCK_COLORS.minute}" stroke-width="4" stroke-dasharray="2 7" stroke-linecap="round"/>`;
+// The minute hand's path from minute a (the 12 by default) to minute b, as a wedge of the face.
+function sweep(b, a = 0) {
+  if (b <= a) return "";
+  const c = CLOCK.c, r = CLOCK.face - 2, [x0, y0] = clockPoint(a * 6, r), [x, y] = clockPoint(b * 6, r), big = b - a > 30 ? 1 : 0;
+  return `<path d="M${c} ${c} L${x0} ${y0} A${r} ${r} 0 ${big} 1 ${x} ${y} Z" fill="${CLOCK_COLORS.minute}" opacity=".15"/>`
+    + `<path d="M${x0} ${y0} A${r} ${r} 0 ${big} 1 ${x} ${y}" fill="none" stroke="${CLOCK_COLORS.minute}" stroke-width="4" stroke-dasharray="2 7" stroke-linecap="round"/>`;
 }
 
 // The clock at h:m. opt.numbers: "hand" (default, handwritten) or "bungee"; opt.hint: a hint layer from
@@ -248,6 +248,8 @@ export function clockSvg(h, m, opt = {}) {
   s += `<circle cx="${c}" cy="${c}" r="${rim + 8}" fill="${DK}" stroke="${DK}" stroke-width="9"/><circle cx="${c}" cy="${c}" r="${rim + 8}" fill="${CLOCK_COLORS.rim}"/><circle cx="${c}" cy="${c}" r="${rim + 8}" fill="url(#clocksh)"/>`;
   s += `<circle cx="${c}" cy="${c}" r="${face}" fill="${CREAM}" stroke="${DK}" stroke-width="4"/>`;
   if (hint.fives != null || hint.ask) s += sweep(m);
+  // Elapsed time's sweep, from one minute to another (hint.from, hint.to).
+  if (hint.from != null) s += sweep(hint.to, hint.from);
   // The ticks: a short one each minute, a long one at each number.
   for (let i = 0; i < 60; i++) {
     const big = i % 5 === 0, lit = (hint.ones || []).includes(i);
@@ -264,6 +266,8 @@ export function clockSvg(h, m, opt = {}) {
     s += tentacleHand(minute, CLOCK.minLen, 11, 6, CLOCK_COLORS.minute, hint.glow === "minute", 7);
     s += tentacleHand(hour, CLOCK.hourLen, 17, 10, CLOCK_COLORS.hour, hint.glow === "hour", -5);
   } else {
+    // A faint earlier time (elapsed time's start), under the hands that tell the time now.
+    if (hint.ghost) { const g = handAngles(hint.ghost.h, hint.ghost.m); s += `<g opacity=".3" class="ghost">${hand(g.minute, CLOCK.minLen, 7, CLOCK_COLORS.minute)}${hand(g.hour, CLOCK.hourLen, 12, CLOCK_COLORS.hour)}</g>`; }
     s += hand(minute, CLOCK.minLen, 7, CLOCK_COLORS.minute, hint.glow === "minute");
     s += hand(hour, CLOCK.hourLen, 12, CLOCK_COLORS.hour, hint.glow === "hour");
   }
@@ -273,6 +277,10 @@ export function clockSvg(h, m, opt = {}) {
   // The label at the minute hand moves out past the rim when it would sit on a 5s label (37 by
   // 35); the page lets the drawing spill out of its box.
   if (hint.ask) s += pill(m, hint.ask, true, m % 5 !== 0 && hint.fives >= 5);
+  // Elapsed time's count by 5s along the sweep (hint.labels: [{ m, text }]), and small gold dots
+  // on the 5s still to count (hint.dots: [minutes]).
+  for (const d of hint.dots || []) { const [x, y] = clockPoint(d * 6, CLOCK.rim); s += `<circle cx="${x}" cy="${y}" r="4.5" fill="${GOLD}" stroke="${DK}" stroke-width="2"/>`; }
+  for (const l of hint.labels || []) s += pill(l.m % 60, l.text, !!l.strong).replace("<text ", '<text class="lab5" ');
   return `<svg viewBox="0 0 ${CLOCK.size} ${CLOCK.size}" class="clock" role="img" aria-label="${opt.label || "A clock showing " + digital(h, m)}">${s}</svg>`;
 }
 
@@ -311,7 +319,8 @@ const fivesList = (to) => { const out = []; for (let k = 5; k <= to; k += 5) out
 // - long: two clocks, the start and the end, "How many minutes?" (under an hour). Level A stays
 //   in the hour in 5s; B crosses the hour in 5s; C crosses or not, to the minute.
 // - add: "It's 3:15. What time is it 20 minutes later?" A stays in the hour, answered in the
-//   "3:□" slot (minutes only); B crosses it, answered "□:□□", the hour then the minutes.
+//   "3:□" slot (minutes only); B crosses it, answered "□:□□" in two slots, the hour, then
+//   (Hit! reads "Minutes ›") the minutes.
 // The hint is 3rd grade's open number line: jumps from the start to a friendly time (the next
 // quarter hour, or the hour), then on to the end.
 export const ELAPSED_LEVELS = [
@@ -366,17 +375,36 @@ export function elapsedStops(p) {
 const hm = (t) => { const { h, m } = fromMin(t); return digital(h, m); };
 // The words: before answering, the first jump and "then to 3:45?" (or "then 20 more?"); worked,
 // every jump and the sum.
+// Within one hour in 5s (longA, addA) the hint is drawn around the clock instead: the minute
+// hand's sweep from the start to the end, counted by 5s on the rim. Before answering only the
+// first half of the 5s are labeled (and adding, the sweep stops there too), never the total.
+export const inHour = (p) => !p.cross && p.h2 === p.h && p.m % 5 === 0 && p.d % 5 === 0;
+const faceNumber = (m) => (m % 60 ? (m % 60) / 5 : 12);
+export const sweepCounted = (p, worked) => (worked ? p.d / 5 : Math.max(1, Math.floor(p.d / 10)));
+export function sweepLayer(p, worked) {
+  const n = p.d / 5, k = sweepCounted(p, worked);
+  const labels = Array.from({ length: k }, (_, i) => ({ m: p.m + 5 * (i + 1), text: 5 * (i + 1), strong: worked && i === n - 1 }));
+  const dots = Array.from({ length: n - k }, (_, i) => p.m + 5 * (k + i + 1));
+  if (p.kind === "add" && !worked) return { from: p.m, to: p.m + 5 * k, labels };
+  return { from: p.m, to: p.m + p.d, labels, dots, ghost: { h: p.h, m: p.m } };
+}
 export function elapsedHint(p, worked) {
   const s = elapsedStops(p), jumps = s.slice(1).map((t, i) => t - s[i]);
+  if (inHour(p)) {
+    const counts = Array.from({ length: sweepCounted(p, worked) }, (_, i) => 5 * (i + 1)).join(", ");
+    if (p.kind === "long") return { say: worked ? `From the ${faceNumber(p.m)} to the ${faceNumber(p.m2)}: ${counts}. ${p.d} minutes.` : `From the ${faceNumber(p.m)} to the ${faceNumber(p.m2)}: ${counts}, … How many minutes?` };
+    return { say: worked ? `From the ${faceNumber(p.m)}: ${counts}. The long hand lands on the ${faceNumber(p.m2)}: ${digital(p.h2, p.m2)}.` : `From the ${faceNumber(p.m)}, count ${p.d} minutes by 5s: ${counts}, … Where does the long hand land?` };
+  }
   if (p.kind === "long") {
     if (!worked) return { say: `${hm(s[0])} → ${hm(s[1])} is ${jumps[0]}, then to ${hm(s[s.length - 1])}?` };
     return { say: `${s.slice(1).map((t, i) => `${hm(s[i])} → ${hm(t)} is ${jumps[i]}`).join(", ")}. ${jumps.join(" + ")} = ${p.d} minutes.` };
   }
-  if (!worked) return { say: `${hm(s[0])} + ${jumps[0]} is ${hm(s[1])}, then ${p.d - jumps[0]} more: ?` };
+  if (!worked) return { say: `${hm(s[0])} + ${jumps[0]} is ${hm(s[1])}. Then the rest of the ${p.d} minutes: ?` };
   return { say: `${hm(s[0])} + ${jumps.join(" + ")} = ${hm(s[s.length - 1])}.` };
 }
 // The picture. long: the two clocks side by side with their times under them, an arrow between;
-// add: the start clock and its time. With the hint, the open number line under them: a hop for
+// add: the start clock and its time. With the hint: within the hour, one big clock with the sweep
+// (above); across the hour or to the minute, the open number line under them (3.MD.1): a hop for
 // each jump, labeled with its minutes, the stops' times under the line; before answering only
 // the first hop is labeled, the end time shown (long) or "?" (add), the rest "?".
 export function elapsedSvg(p, opt = {}) {
@@ -384,6 +412,15 @@ export function elapsedSvg(p, opt = {}) {
   const clockAt = (h, m, x) => clockSvg(h, m, { monster: false }).replace('<svg viewBox="0 0 240 240"', `<svg x="${x}" y="0" width="${C}" height="${C}" viewBox="-6 -6 252 252"`);
   const label = (x, t) => `<text x="${x + C / 2}" y="${C + 22}" text-anchor="middle" font-family="Bungee, sans-serif" font-size="20" fill="${ink}">${t}</text>`;
   let s = "";
+  // Within the hour, the hint is one big clock: the start's hands faint, the end's solid (adding:
+  // the start's, until it's worked), the sweep between counted by 5s on the rim.
+  if (opt.hint && inHour(p)) {
+    const B = 190, show = p.kind === "add" && !opt.worked ? [p.h, p.m] : [p.h2, p.m2];
+    s += clockSvg(show[0], show[1], { monster: false, hint: sweepLayer(p, opt.worked) }).replace('<svg viewBox="0 0 240 240"', `<svg x="${(W - B) / 2}" y="0" width="${B}" height="${B}" viewBox="-14 -14 268 268"`);
+    const caption = p.kind === "long" ? `${digital(p.h, p.m)} → ${digital(p.h2, p.m2)}` : `${digital(p.h, p.m)} + ${p.d} min`;
+    s += `<text x="${W / 2}" y="${B + 24}" text-anchor="middle" font-family="Bungee, sans-serif" font-size="20" fill="${ink}">${caption}</text>`;
+    return `<svg viewBox="0 0 ${W} ${B + 32}" class="elapsed" role="img" aria-label="${caption}">${s}</svg>`;
+  }
   if (p.kind === "long") {
     s += clockAt(p.h, p.m, 8) + label(8, digital(p.h, p.m)) + clockAt(p.h2, p.m2, W - C - 8) + label(W - C - 8, digital(p.h2, p.m2));
     s += `<path d="M${W / 2 - 14} ${C / 2} H${W / 2 + 12} M${W / 2 + 4} ${C / 2 - 8} L${W / 2 + 13} ${C / 2} L${W / 2 + 4} ${C / 2 + 8}" fill="none" stroke="${gold}" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>`;
@@ -414,3 +451,6 @@ export function elapsedLine(p) {
   if (p.cross) return [null, ":", null];
   return [`${p.h2}:`, null];
 }
+// A whole time is typed in two slots, "□:□□": the hour, then (Hit!, "Minutes ›") the minutes.
+// readTime reads them as the page checks them: "7" and "05" (or "5") are 7:05.
+export const readTime = (hour, minutes) => ({ h: Number(hour), m: Number(minutes) });

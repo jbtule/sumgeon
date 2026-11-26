@@ -11,7 +11,7 @@
 import { NEW_MON, MON as GAME_MON, svg } from "../../js/monsters.js";
 import { CLOCK_LEVELS, ELAPSED_LEVELS, isElapsed, elapsedProblem, elapsedSvg, elapsedLine, elapsedHint, spokenElapsed, spokenElapsedAnswer, clockProblem, clockLine, clockQuestion, spokenClock, spokenTime, clockSvg, clockHint, digital } from "../../js/clock.js";
 import { PATTERN_LEVELS, patternProblem, spokenPattern, spokenPatternAnswer, patternSvg, patternHint, ODD_LEVELS, isOddEven, oddEvenProblem, oddEvenSvg, oddEvenHint, spokenOddEven } from "../../js/patterns.js";
-import { TF_LEVELS, tfProblem, tfSvg, tfHint, spokenTF, spokenTFAnswer, fixParts } from "../../js/truefalse.js";
+import { TF_LEVELS, tfProblem, tfSvg, tiltOf, tfHint, spokenTF, spokenTFAnswer, fixParts } from "../../js/truefalse.js";
 import { LINE_LEVELS, lineProblem, lineSvg, lineHint, spokenLine, spokenLineAnswer } from "../../js/numberline.js";
 import { PV_LEVELS, pvProblem, pvSvg, pvLine, pvHint, spokenPV, spokenPVAnswer } from "../../js/placevalue.js";
 import { DOLLAR_LEVELS, dollarProblem, dollarSvg, dollarHint, spokenDollars, sayMoney } from "../../js/dollars.js";
@@ -36,7 +36,8 @@ const TYPES = {
     question: (p) => (p.kind ? spokenElapsed(p) : clockQuestion(p)),
     words: (p) => p.kind === "long",
     shown: (p, i) => (p.kind === "add" ? (p.cross ? (i ? String(p.m2).padStart(2, "0") : p.h2) : String(p.ans).padStart(2, "0")) : p.kind ? p.ans : p.ask === "minutes" ? String(p.ans).padStart(2, "0") : p.ans),
-    nextLabel: "Minutes ›",
+    // Two slots name what's being entered: "Hour ✓", then "Minutes!" (which answers).
+    nextLabel: "Hour ✓", lastLabel: "Minutes!", nextSay: "Now the minutes!",
     hint: (p, worked) => (p.kind ? elapsedHint(p, worked) : clockHint(p, worked)),
     spoken: (p) => (p.kind ? spokenElapsed(p) : spokenClock(p)),
     missed: (p) => (p.kind ? spokenElapsedAnswer(p) : spokenTime(p.h, p.m)),
@@ -65,12 +66,27 @@ const TYPES = {
   truefalse: {
     icon: "⚖️", label: "True or false", mon: "Equal Twins", levels: TF_LEVELS, stratum: () => "hall",
     problem: (lv, rnd) => tfProblem(lv.id, rnd),
-    picture: (p, st) => tfSvg(p, { hint: !!st.hint, worked: st.hint && st.worked }),
+    // After an answer the scale shows what's true, swinging from where it was (still with reduced
+    // motion): true or false settles level or tips; fix it, right, swings level with the number in;
+    // a miss first weighs the typed number, then the worked hint puts the right one in.
+    picture: (p, st) => {
+      const from = still() ? null : S.fromTilt;
+      if (p.kind === "tf") return S.done ? tfSvg(p, { done: true, worked: st.worked, from }) : tfSvg(p, { hint: !!st.hint });
+      if (S.done === "right") return tfSvg(p, { value: p.ans, from });
+      if (S.done === "wrong" && S.fixStage === "typed") return tfSvg(p, { value: Number(S.typed[0]), from });
+      return tfSvg(p, { hint: !!st.hint, worked: st.hint && st.worked, from: S.done ? from : null });
+    },
     // True or false: answered on the True and False keys (pad "tf"). Fix it: the false equation,
     // its wrong number struck through, then the □.
     pad: (p) => (p.kind === "tf" ? (S.done ? "tfnext" : "tf") : "num"),
-    line: (p, slot) => (p.kind === "tf" ? `True or false? ${slot(0)}`
-      : fixParts(p).map((x) => (x === null ? `<s>${p.eq[p.eq.fix][p.eq[p.eq.fix].length - 1]}</s>${slot(0)}` : esc(x))).join("")),
+    // Fix it shows the whole false equation for a second ("10 = 1 + 7"), then the wrong number is
+    // crossed out and lifts above its place, small and red, and the "?" takes its place, so the
+    // line always reads as one equation ("? = 1 + 7"). With reduced motion it starts swapped.
+    line: (p, slot) => {
+      if (p.kind === "tf") return `True or false? ${slot(0)}`;
+      const wrong = p.eq[p.eq.fix][p.eq[p.eq.fix].length - 1];
+      return fixParts(p).map((x) => (x !== null ? esc(x) : S.swapped ? `<span class="fixslot${S.done ? " settled" : ""}"><s class="was">${wrong}</s>${slot(0)}</span>` : `<span class="fixslot pre">${wrong}</span>`)).join("");
+    },
     shown: (p) => (p.kind === "tf" ? (p.ans === "T" ? "True" : "False") : p.ans),
     typedShown: (v) => (v === "T" ? "True" : v === "F" ? "False" : v),
     words: (p) => p.kind === "tf",
@@ -99,13 +115,14 @@ const TYPES = {
     icon: "💵", label: "Dollars", mon: "Trollar", levels: DOLLAR_LEVELS,
     problem: (lv, rnd) => dollarProblem(lv.id, rnd),
     picture: (p, st) => dollarSvg(p, { hint: !!st.hint, worked: st.worked }),
-    // Dollars and cents are two slots, typed in order: "$□ and □¢" (or "$□.□□" to compare).
-    line: (p, slot) => (p.kind === "bills" ? `$${slot(0)}` : view.money === "dot" ? `$${slot(0)}.${slot(1)}` : `$${slot(0)} <small>and</small> ${slot(1)}¢`),
-    shown: (p, i) => (p.kind === "bills" ? p.ans : i === 1 && view.money === "dot" ? String(p.ans[1]).padStart(2, "0") : p.ans[i]),
-    nextLabel: "Cents ›",
+    // Dollars and cents are two slots, typed in order: "$□ and □¢" (2nd grade writes $ and ¢
+    // apart; money as a decimal, $3.25, waits for 4th grade).
+    line: (p, slot) => (p.kind === "bills" ? `$${slot(0)}` : `$${slot(0)} <small>and</small> ${slot(1)}¢`),
+    shown: (p, i) => (p.kind === "bills" ? p.ans : p.ans[i]),
+    nextLabel: "Dollars ✓", lastLabel: "Cents!", nextSay: "Now the cents!",
     hint: dollarHint, spoken: spokenDollars,
     missed: (p) => (p.kind === "bills" ? sayMoney(p.ans) : sayMoney(p.ans[0], p.ans[1])),
-    answer: (p) => (p.kind === "bills" ? `$${p.ans}` : view.money === "dot" ? `$${p.ans[0]}.${String(p.ans[1]).padStart(2, "0")}` : `$${p.ans[0]} and ${p.ans[1]}¢`)
+    answer: (p) => (p.kind === "bills" ? `$${p.ans}` : `$${p.ans[0]} and ${p.ans[1]}¢`)
   }
 };
 const cap = (t) => t[0].toUpperCase() + t.slice(1);
@@ -114,9 +131,7 @@ const cap = (t) => t[0].toUpperCase() + t.slice(1);
 const STORE = "sumgeon:proto";
 // The clock's look is picked (js/clock.js): handwritten numbers and arrow hands. ?numbers=bungee
 // and ?hands=tentacle still show the others, for comparing; they aren't kept.
-// Money reads "$□ and □¢" by default (2nd grade writes $ and ¢ apart; decimals come in 4th);
-// "dot" tries "$□.□□".
-const view = { type: "clock", clock: "hours", pattern: "ones", shape: "drawK", dollars: "bills", money: "and" };
+const view = { type: "clock", clock: "hours", pattern: "ones", shape: "drawK", dollars: "bills" };
 try { Object.assign(view, JSON.parse(localStorage.getItem(STORE)) || {}); } catch (e) { /* defaults */ }
 Object.assign(view, { numbers: "hand", hands: "arrow" });
 if (!TYPES[view.type]) view.type = "clock";
@@ -127,7 +142,6 @@ if (TYPES[q.get("type")]) view.type = q.get("type");
 if (q.get("level")) view[view.type] = q.get("level");
 if (q.get("numbers")) view.numbers = q.get("numbers") === "hand" ? "hand" : "bungee";
 if (q.get("hands")) view.hands = q.get("hands") === "tentacle" ? "tentacle" : "arrow";
-if (q.get("money")) view.money = q.get("money") === "dot" ? "dot" : "and";
 // ?seed=<n> makes the problems the same each time (for screenshots).
 let seed = Number(q.get("seed")) || 0;
 const rnd = seed ? () => ((seed = (seed * 9301 + 49297) % 233280) / 233280) : Math.random;
@@ -162,9 +176,6 @@ function drawChrome() {
   $("mName").classList.toggle("placeholder", !m);
   $("types").innerHTML = Object.entries(TYPES).map(([id, x]) => `<button type="button" data-type="${id}" aria-pressed="${id === view.type}" aria-label="${x.label}" title="${x.label}">${x.icon}</button>`).join("");
   $("level").innerHTML = t.levels.map((l) => `<option value="${l.id}"${l.id === lv.id ? " selected" : ""}>${esc(l.name)} · ${l.grade}</option>`).join("");
-  $("tools").hidden = view.type !== "dollars";
-  $("moneyStyle").hidden = view.type !== "dollars";
-  $("moneyStyle").textContent = view.money === "dot" ? "$3.25" : "$3 and 25¢";
 }
 // How far Tick-Tockus's tentacles can reach past the case, in the clock's drawing units, from the
 // room the picture has beside and under the clock (its size comes from the CSS).
@@ -181,7 +192,7 @@ function reach() {
 // right, coral when wrong.
 function slot(i) {
   const t = T(), shown = t.shown ? t.shown(S.p, i) : [].concat(S.p.ans)[i];
-  const typed = S.typed[i], cls = S.done ? S.done : typed ? "typed" : "", now = !S.done && i === S.at && S.typed.length > 1 ? " now" : "";
+  const typed = S.typed[i], cls = S.done ? S.done : typed ? "typed" : "", now = !S.done && S.typed.length > 1 ? (i === S.at ? " now" : i > S.at && !typed ? " wait" : "") : "";
   return `<span class="blank ${cls}${now}">${S.done ? shown : (typed && t.typedShown ? t.typedShown(typed) : typed) || "?"}</span>`;
 }
 function hintNow() { return S.hint ? T().hint(S.p, S.hint === "worked") : null; }
@@ -205,8 +216,9 @@ function draw() {
   padUI(p.draw ? "spell" : t.pad ? t.pad(p) : "num");
   const go = $("pad").querySelector('[data-k="go"]');
   if (go) {
-    go.textContent = S.done ? "Next ›" : p.draw ? "Cast!" : S.at < S.typed.length - 1 ? t.nextLabel || "Next ›" : "Hit!";
+    go.textContent = S.done ? "Next ›" : p.draw ? "Cast!" : S.at < S.typed.length - 1 ? t.nextLabel || "Next ›" : S.typed.length > 1 && t.lastLabel ? t.lastLabel : "Hit!";
     go.classList.toggle("next", !!S.done);
+    go.classList.toggle("longkey", go.textContent.length > 6);
     go.setAttribute("aria-label", S.done ? "Next problem" : p.draw ? "Cast the drawing" : "Attack");
   }
   document.querySelector(".pp").classList.toggle("drawing", !!p.draw);
@@ -299,6 +311,7 @@ function cast() {
 
 /* ---------- play ---------- */
 let spoke = false; // the voice waits for the first tap (iOS only speaks inside one)
+const slotTold = {}; // how often "Now the minutes!" (or cents) has been said on this page
 function next(speak) {
   const t = T(), lv = level();
   let p;
@@ -317,11 +330,18 @@ function next(speak) {
   if (fr) { p.n = Number(fr[1]); p.d = Number(fr[2]); p.ans = p.n; }
   S = { p, typed: Array.from({ length: [].concat(p.ans).length }, () => ""), at: 0, done: null, hint: null, note: "" };
   strokes = []; drawing = null; overlay = null;
+  // Fix it: the swap, after a second (at once with reduced motion, or once anything's typed).
+  if (p.kind === "fix") {
+    const still = matchMedia("(prefers-reduced-motion: reduce)").matches, me = S;
+    S.swapped = still;
+    if (!still) setTimeout(() => { if (S === me && !S.swapped) { S.swapped = true; draw(); } }, 1000);
+  }
   draw();
   if (speak) say(t.spoken(p));
 }
 function press(k) {
   if (S.done) { if (k === "go") next(true); return; }
+  if (S.p.kind === "fix" && !S.swapped) S.swapped = true;
   if (S.p.draw) {
     if (k === "clear") { strokes = []; S.note = ""; draw(); }
     else if (k === "go" && strokes.length) cast();
@@ -342,19 +362,38 @@ function press(k) {
   else if (k === "del") { if (cur) S.typed[S.at] = cur.slice(0, -1); else if (S.at) S.at--; }
   else if (k === "go") {
     if (!cur) return;
-    // More than one slot (dollars, then cents): Hit! moves on to the next one first.
-    if (S.at < S.typed.length - 1) { S.at++; draw(); return; }
+    // More than one slot (dollars, then cents; an hour, then minutes): Hit! moves on to the next
+    // one first, and delete in an empty slot goes back to the one before.
+    if (S.at < S.typed.length - 1) {
+      S.at++; draw();
+      // The first couple of times, the voice says the second slot's turn ("Now the minutes!").
+      const t = T();
+      if (t.nextSay && (slotTold[t.nextSay] = (slotTold[t.nextSay] || 0) + 1) <= 2) say(t.nextSay);
+      return;
+    }
     answer();
     return;
   }
   draw();
 }
 function answer() {
-  const ans = [].concat(S.p.ans);
+  const ans = [].concat(S.p.ans), p = S.p;
+  // Where the scale was, so it can swing from there (true or false: tipped only if the hint was open).
+  if (p.kind === "tf") S.fromTilt = S.hint ? tiltOf(p.eq) : 0;
+  if (p.kind === "fix") S.fromTilt = tiltOf(p.eq);
   if (ans.every((a, i) => (typeof a === "string" ? S.typed[i] === a : Number(S.typed[i]) === a))) { S.done = "right"; S.hint = null; }
-  else { S.done = "wrong"; S.hint = "worked"; say("Oops! " + T().missed(S.p)); }
+  else {
+    S.done = "wrong"; S.hint = "worked"; say("Oops! " + T().missed(p));
+    // Fix it, missed: first the scale weighs the typed number, then the right one goes in.
+    if (p.kind === "fix" && !still()) {
+      S.fixStage = "typed";
+      const me = S, typedEq = { ...p.eq, [p.eq.fix]: p.eq[p.eq.fix].slice(0, -1).concat(Number(S.typed[0])) };
+      setTimeout(() => { if (S === me) { S.fixStage = "worked"; S.fromTilt = tiltOf(typedEq); draw(); } }, 1400);
+    }
+  }
   draw();
 }
+const still = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 /* ---------- wiring ---------- */
 $("pad").addEventListener("click", (e) => { const b = e.target.closest("button"); if (b) press(b.dataset.k); });
@@ -380,7 +419,6 @@ $("types").addEventListener("click", (e) => {
   view.type = b.dataset.type; keep(); drawChrome(); next(spoke);
 });
 $("level").addEventListener("change", () => { view[view.type] = $("level").value; keep(); drawChrome(); next(spoke); });
-$("moneyStyle").addEventListener("click", () => { view.money = view.money === "dot" ? "and" : "dot"; keep(); drawChrome(); draw(); });
 // After the first tap anywhere, new problems are read aloud as they appear, as the game reads coin
 // and comparing problems for a pre-reader.
 document.addEventListener("pointerdown", () => { spoke = true; }, { once: true, capture: true });

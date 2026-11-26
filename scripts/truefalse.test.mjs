@@ -1,7 +1,7 @@
 // True or false (js/truefalse.js, the prototype page): about half true, the false ones off by 1
 // or 2, every form, fix it's answers, and the words.
 import assert from "node:assert/strict";
-import { TF_LEVELS, tfProblem, tfSvg, tfHint, spokenTF, spokenTFAnswer, tfWorked, isTrue, eqText, eqValue, trueEquation, falsify, fixParts, eqWords } from "../js/truefalse.js";
+import { TF_LEVELS, tfProblem, tfSvg, tiltOf, tfHint, spokenTF, spokenTFAnswer, tfWorked, isTrue, eqText, eqValue, trueEquation, falsify, fixParts, eqWords } from "../js/truefalse.js";
 
 let seed = 9; const rnd = () => ((seed = (seed * 9301 + 49297) % 233280) / 233280);
 const allNums = (e) => e.l.concat(e.r);
@@ -49,4 +49,16 @@ assert.equal(spokenTF({ kind: "fix", eq: { l: [4, 2], lop: "+", r: [7], fix: "r"
 assert.equal(tfHint({ kind: "fix", eq: { l: [4, 2], lop: "+", r: [7], fix: "r" }, ans: 6 }, true).say, "4 + 2 is 6.");
 const t = trueEquation(10, rnd), f = falsify(t, 10, rnd);
 assert.ok(isTrue(t) && (f === null || !isTrue(f)));
-console.log("✓ true or false: half true, forms, off by 1 or 2, fix it, words");
+// After answering the scale shows what's true: true or false, level when true and tipped when
+// false; fix it, level with the right number in, tipped with a wrong one. A swing animates from
+// where it was to there, ending at the same tilt.
+const fix = { kind: "fix", eq: { l: [4, 2], lop: "+", r: [7], fix: "r" }, ans: 6 };
+assert.ok(tfSvg(f42, { done: true }).includes("rotate(8 ") && tfSvg({ kind: "tf", eq: { l: [4, 2], lop: "+", r: [6] }, ans: "T" }, { done: true }).includes("rotate(0 "));
+assert.ok(tfSvg(fix).includes("rotate(8 "), "fix it starts tipped");
+assert.ok(tfSvg(fix, { value: 6 }).includes("rotate(0 "), "the right number levels it");
+assert.ok(tfSvg(fix, { value: 9 }).includes("rotate(12 "), "a wrong one tips it by its own imbalance");
+const swing = tfSvg(fix, { value: 6, from: 8 }).match(/values="([^"]+)"/)[1].split(";");
+assert.equal(swing[0], "8 150 96");
+assert.equal(swing[swing.length - 1], "0 150 96");
+assert.equal(tiltOf(fix.eq), 8);
+console.log("✓ true or false: half true, forms, off by 1 or 2, fix it, words, the scale after answering");

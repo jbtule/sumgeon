@@ -64,12 +64,15 @@ export const spokenPVAnswer = (p) => (p.kind === "tens" ? `${cap(spoken(p.ans))}
 
 
 /* ---------- the blocks, on a place-value mat ---------- */
-// The blocks sit on a light mat with three labeled columns (hundreds | tens | ones), as in class,
-// so they read at a glance whatever the stratum's wall. Classic base-ten colors: flats and rods
-// blue, cubes orange, each with a dark outline and a sheen, a little apart so 2 cubes read as 2.
-const DK = "#0c171c", MAT = "#f3efe4", MAT_LINE = "#c9c2b0", BLUE = "#3fa6e8", ORANGE = "#ff8a3c", HINT = "#d9a400";
+// The blocks sit on a mat in the game's own look (a dark panel like the hint box: the stratum's
+// --panel, a --line border, rounded corners) with three columns (hundreds | tens | ones, labels in
+// --muted, dividers in --line), as in class, so they read at a glance whatever the wall. Classic
+// base-ten colors stay bright: flats and rods blue, cubes orange, each with a dark outline, a light
+// edge and a sheen, a little apart so 2 cubes read as 2. Values in chalk; the hint's in gold.
+const DK = "#0c171c", BLUE = "#3fa6e8", ORANGE = "#ff8a3c";
+const PANEL = "var(--panel, #1a313a)", LINE = "var(--line, #2a4852)", MUTED = "var(--muted, #a9bec1)", CHALK = "var(--ink, #f3efe4)", HINT = "var(--gold, #ffc93c)";
 const SHEEN = `<linearGradient id="pvsh" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".45"/><stop offset=".6" stop-color="#fff" stop-opacity="0"/></linearGradient>`;
-const block = (x, y, w, h, fill, cls) => `<rect x="${f1(x)}" y="${f1(y)}" width="${w}" height="${h}" rx="2" fill="${fill}" stroke="${DK}" stroke-width="2" class="${cls}"/><rect x="${f1(x + 1)}" y="${f1(y + 1)}" width="${w - 2}" height="${h - 2}" rx="1.5" fill="url(#pvsh)"/>`;
+const block = (x, y, w, h, fill, cls) => `<rect x="${f1(x)}" y="${f1(y)}" width="${w}" height="${h}" rx="2" fill="${fill}" stroke="${DK}" stroke-width="2" class="${cls}"/><rect x="${f1(x + 1)}" y="${f1(y + 1)}" width="${w - 2}" height="${h - 2}" rx="1.5" fill="url(#pvsh)" stroke="#ffffff66" stroke-width="1"/>`;
 const CUBE = 14, ROD_W = 11, ROD_H = 60, FLAT = 60;
 const cube = (x, y) => block(x, y, CUBE, CUBE, ORANGE, "cube");
 function rod(x, y) {
@@ -96,7 +99,7 @@ function rods(n, opt = {}) {
   for (let g = 0; g < groups; g++) {
     const gx = (g % perRow) * (gw + 12), gy = Math.floor(g / perRow) * (gh + 16), k = Math.min(10, n - g * 10);
     // The hint rings each full ten of tens as a hundred: rods slide together into a flat outline.
-    if (opt.ringTens && k === 10) s += `<rect x="${f1(gx - 4)}" y="${f1(gy - 4)}" width="${gw + 8}" height="${gh + 8}" rx="5" fill="none" stroke="${HINT}" stroke-width="3" stroke-dasharray="6 4"/>` + `<text x="${f1(gx + gw / 2)}" y="${f1(gy + gh + 14)}" text-anchor="middle" font-family="Nunito, sans-serif" font-weight="900" font-size="12" fill="${DK}">100</text>`;
+    if (opt.ringTens && k === 10) s += `<rect x="${f1(gx - 4)}" y="${f1(gy - 4)}" width="${gw + 8}" height="${gh + 8}" rx="5" fill="none" stroke="${HINT}" stroke-width="3" stroke-dasharray="6 4"/>` + `<text x="${f1(gx + gw / 2)}" y="${f1(gy + gh + 14)}" text-anchor="middle" font-family="Nunito, sans-serif" font-weight="900" font-size="12" fill="${HINT}">100</text>`;
     for (let i = 0; i < k; i++) s += rod(gx + i * step, gy);
   }
   const rowsUsed = Math.ceil(groups / perRow);
@@ -127,14 +130,14 @@ export function pvSvg(p, opt = {}) {
   let x = 0, s = "";
   cols.forEach((c, i) => {
     const w = Math.max(i === 2 ? 44 : 64, c.g.w) + pad * 2;
-    if (i) s += `<line x1="${f1(x)}" y1="6" x2="${f1(x)}" y2="${f1(top + inner + bottom - 6)}" stroke="${MAT_LINE}" stroke-width="2"/>`;
-    s += `<text x="${f1(x + w / 2)}" y="16" text-anchor="middle" font-family="Nunito, sans-serif" font-weight="900" font-size="11" fill="#6b6659">${c.name}</text>`;
+    if (i) s += `<line x1="${f1(x)}" y1="6" x2="${f1(x)}" y2="${f1(top + inner + bottom - 6)}" stroke="${LINE}" stroke-width="2"/>`;
+    s += `<text x="${f1(x + w / 2)}" y="16" text-anchor="middle" font-family="Nunito, sans-serif" font-weight="900" font-size="11" fill="${MUTED}">${c.name}</text>`;
     s += `<g transform="translate(${f1(x + (w - c.g.w) / 2)} ${f1(top + inner - c.g.h)})">${c.g.s}</g>`;
-    if (showLabels && c.label) s += `<text x="${f1(x + w / 2)}" y="${f1(top + inner + 19)}" text-anchor="middle" font-family="Nunito, sans-serif" font-weight="900" font-size="15" fill="${DK}">${c.label}</text>`;
+    if (showLabels && c.label) s += `<text x="${f1(x + w / 2)}" y="${f1(top + inner + 19)}" text-anchor="middle" font-family="Nunito, sans-serif" font-weight="900" font-size="15" fill="${hint ? HINT : CHALK}">${c.label}</text>`;
     x += w;
   });
   const W = x, H = top + inner + bottom;
-  const mat = `<rect x="0" y="0" width="${f1(W)}" height="${f1(H)}" rx="12" fill="${DK}" stroke="${DK}" stroke-width="8"/><rect x="0" y="0" width="${f1(W)}" height="${f1(H)}" rx="12" fill="${MAT}"/>`;
+  const mat = `<rect x="0" y="0" width="${f1(W)}" height="${f1(H)}" rx="14" fill="${PANEL}" stroke="${LINE}" stroke-width="3"/>`;
   return `<svg viewBox="-6 -6 ${f1(W + 12)} ${f1(H + 12)}" class="pv" role="img" aria-label="${p.h} hundreds, ${p.t} tens, ${p.o} ones"><defs>${SHEEN}</defs>${mat}${s}</svg>`;
 }
 // The hint's words. Before answering they stop at "?".

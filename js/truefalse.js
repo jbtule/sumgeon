@@ -100,21 +100,31 @@ const fixed = (p) => ({ ...p.eq, [p.eq.fix]: p.eq[p.eq.fix].slice(0, -1).concat(
 // One big balance scale: the equation over the beam (tf), the pans holding each side's dots when
 // the hint is open (or always, for fix it), level, or tipped toward the heavier side when the hint
 // is open (fix it: always, since it's false). Worked, a true one glows gold.
+// How far the scale tips toward the heavier side, in degrees (0 when it balances).
+export const tiltOf = (e) => { const [a, b] = eqValue(e); return Math.sign(b - a) * Math.min(12, 5 + Math.abs(a - b) * 3); };
+// opt.value: fix it, the number in the slot (the scale weighs that); opt.done: true or false,
+// answered, so the scale shows what's true (level when true, tipped when false); opt.from: the
+// tilt the scale swings from, to its new tilt with a little wobble to rest (the page leaves it out
+// with reduced motion).
 export function tfSvg(p, opt = {}) {
-  const e = p.kind === "fix" && opt.worked ? fixed(p) : p.eq, [a, b] = eqValue(e);
-  const W = 300, cx = W / 2, beamY = 96, showDots = p.kind === "fix" || opt.hint;
-  const tip = p.kind === "fix" || opt.hint, tilt = tip ? Math.sign(b - a) * Math.min(12, 5 + Math.abs(a - b) * 3) : 0;
+  const e = p.kind === "fix" && opt.value != null ? { ...p.eq, [p.eq.fix]: p.eq[p.eq.fix].slice(0, -1).concat(opt.value) } : p.kind === "fix" && opt.worked ? fixed(p) : p.eq, [a, b] = eqValue(e);
+  const W = 300, cx = W / 2, beamY = 96, showDots = p.kind === "fix" || opt.hint || opt.done;
+  const tip = p.kind === "fix" || opt.hint || opt.done, tilt = tip ? tiltOf(e) : 0;
+  // The swing, as an SVG animation of the beam's turn: from, past the new tilt and back, to rest.
+  const turn = (deg) => `${f1(deg)} ${cx} ${beamY}`;
+  const swing = opt.from != null ? `<animateTransform attributeName="transform" type="rotate" dur="1.1s" fill="freeze" calcMode="spline" keyTimes="0;0.55;0.75;0.9;1" keySplines="0.3 0 0.4 1;0.4 0 0.6 1;0.4 0 0.6 1;0.4 0 0.6 1" values="${(() => { const dir = Math.sign(tilt - opt.from) || 1; return [opt.from, tilt + 4 * dir, tilt - 2 * dir, tilt + 0.7 * dir, tilt]; })().map(turn).join(";")}"/>` : "";
   const dots = (px, v, color) => Array.from({ length: v }, (_, k) => `<circle cx="${f1(px - 36 + (k % 5) * 18)}" cy="${f1(beamY + 2 - Math.floor(k / 5) * 15)}" r="6.5" fill="${color}" stroke="${DK}" stroke-width="1.5"/>`).join("");
   let s = "";
   if (p.kind === "tf" && opt.worked) s += `<rect x="4" y="4" width="${W - 8}" height="${beamY + 72}" rx="18" fill="${p.ans === "T" ? GOLD : CORAL}" opacity=".14" stroke="${p.ans === "T" ? GOLD : CORAL}" stroke-width="3"/>`;
   if (p.kind === "tf") s += `<text x="${cx}" y="34" dy=".36em" text-anchor="middle" font-family="Bungee, sans-serif" font-size="${Math.min(32, Math.floor(280 / (eqText(e).length * 0.62)))}" fill="${INK}">${eqText(e)}</text>`;
   s += `<path d="M${cx} ${beamY} L${cx - 18} ${beamY + 66} H${cx + 18} Z" fill="${MUTED}" stroke="${DK}" stroke-width="3" stroke-linejoin="round"/>`;
   const pan = (px) => `<path d="M${px - 50} ${beamY + 14} Q${px} ${beamY + 36} ${px + 50} ${beamY + 14} Z" fill="${TEAL}" stroke="${DK}" stroke-width="3" stroke-linejoin="round"/>`;
-  s += `<g transform="rotate(${tilt} ${cx} ${beamY})"><line x1="20" y1="${beamY}" x2="${W - 20}" y2="${beamY}" stroke="${DK}" stroke-width="10" stroke-linecap="round"/><line x1="20" y1="${beamY}" x2="${W - 20}" y2="${beamY}" stroke="${INK}" stroke-width="5" stroke-linecap="round"/>${pan(70)}${pan(W - 70)}`
-    + (showDots ? dots(70, a, GOLD) + dots(W - 70, b, p.kind === "fix" && !opt.worked ? CORAL : GOLD) : "") + `</g>`;
+  // The beam turns about the post's top.
+  s += `<g transform="rotate(${tilt} ${cx} ${beamY})">${swing}<line x1="20" y1="${beamY}" x2="${W - 20}" y2="${beamY}" stroke="${DK}" stroke-width="10" stroke-linecap="round"/><line x1="20" y1="${beamY}" x2="${W - 20}" y2="${beamY}" stroke="${INK}" stroke-width="5" stroke-linecap="round"/>${pan(70)}${pan(W - 70)}`
+    + (showDots ? dots(70, a, GOLD) + dots(W - 70, b, p.kind === "fix" && a !== b ? CORAL : GOLD) : "") + `</g>`;
   s += `<circle cx="${cx}" cy="${beamY}" r="7" fill="${GOLD}" stroke="${DK}" stroke-width="2.5"/>`;
   // Each side's amount under its pan, with the hint.
-  if (showDots && opt.hint) s += [[70, a], [W - 70, b]].map(([x, v]) => `<text x="${x}" y="${beamY + 62}" text-anchor="middle" font-family="Nunito, sans-serif" font-weight="900" font-size="16" fill="${INK}">${v}</text>`).join("");
+  if (showDots && (opt.hint || opt.done)) s += [[70, a], [W - 70, b]].map(([x, v]) => `<text x="${x}" y="${beamY + 62}" text-anchor="middle" font-family="Nunito, sans-serif" font-weight="900" font-size="16" fill="${INK}">${v}</text>`).join("");
   const top = p.kind === "tf" ? 0 : beamY - 74;
   return `<svg viewBox="0 ${top} ${W} ${beamY + 74 - top}" class="tf" role="img" aria-label="${eqText(e)}">${s}</svg>`;
 }

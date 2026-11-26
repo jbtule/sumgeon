@@ -1,7 +1,7 @@
 // Telling time (Tick-Tockus, js/clock.js, the prototype page): the hands, the problems and their
 // answers, the words, the drawing and the hint.
 import assert from "node:assert/strict";
-import { ELAPSED_LEVELS, elapsedProblem, elapsedSvg, elapsedHint, elapsedStops, elapsedLine, spokenElapsed, spokenElapsedAnswer, timeWords, CLOCK_LEVELS, handAngles, clockProblem, allClockProblems, clockQuestion, clockLine, spokenClock, spokenTime, digital, clockSvg, clockHint, clockPoint, CLOCK } from "../js/clock.js";
+import { ELAPSED_LEVELS, inHour, readTime, elapsedProblem, elapsedSvg, elapsedHint, elapsedStops, elapsedLine, spokenElapsed, spokenElapsedAnswer, timeWords, CLOCK_LEVELS, handAngles, clockProblem, allClockProblems, clockQuestion, clockLine, spokenClock, spokenTime, digital, clockSvg, clockHint, clockPoint, CLOCK } from "../js/clock.js";
 
 // The hands, for every minute of the day: the minute hand moves 6° a minute, the hour hand 30° an
 // hour and half a degree a minute, so it's halfway between two numbers at :30.
@@ -119,7 +119,9 @@ for (const lv of ELAPSED_LEVELS) {
     if (p.kind === "long") assert.equal(p.ans, p.d);
     else if (p.cross) assert.deepEqual(p.ans, [p.h2, p.m2]);
     else assert.equal(p.ans, p.m2);
+    // One slot per number: a whole time is two, the hour then the minutes ("□:□□").
     assert.equal(elapsedLine(p).filter((x) => x === null).length, [].concat(p.ans).length);
+    if (p.cross) assert.deepEqual(elapsedLine(p), [null, ":", null]);
     // The hands on the clocks drawn: minute, then hour, for each.
     const s = elapsedSvg(p), clocks = p.kind === "long" ? [[p.h, p.m], [p.h2, p.m2]] : [[p.h, p.m]];
     assert.deepEqual(rotations(s), clocks.flatMap(([h, m]) => { const a = handAngles(h, m); return [Math.round(a.minute * 10) / 10, Math.round(a.hour * 10) / 10]; }));
@@ -128,17 +130,33 @@ for (const lv of ELAPSED_LEVELS) {
     const st = elapsedStops(p);
     assert.ok(st.length >= 3 && st[st.length - 1] - st[0] === p.d);
     const before = elapsedHint(p, false).say, after = elapsedHint(p, true).say;
+    // (Face numbers, "the 9", and times, "3:45", aren't the answer; strip them before looking.)
+    const bare = before.replace(/\d+:\d\d/g, "").replace(/the \d+/g, "").replace(/count \d+ minutes/, "");
     if (p.kind === "long") {
-      assert.ok(!new RegExp(`\\b${p.d}\\b`).test(before.replace(/\d+:\d\d/g, "")), `${before}`);
-      assert.ok(after.endsWith(`= ${p.d} minutes.`), after);
+      assert.ok(!new RegExp(`\\b${p.d}\\b`).test(bare), `${before}`);
+      assert.ok(after.includes(`${p.d} minutes.`), after);
     } else {
-      assert.ok(!before.includes(digital(p.h2, p.m2)), before);
-      assert.ok(after.endsWith(`= ${digital(p.h2, p.m2)}.`), after);
+      assert.ok(!before.includes(digital(p.h2, p.m2)) && before.endsWith("?"), before);
+      assert.ok(after.endsWith(`${digital(p.h2, p.m2)}.`), after);
     }
-    const jumps = [...elapsedSvg(p, { hint: true }).matchAll(/class="jump">([^<]*)</g)].map((m) => m[1]);
-    assert.equal(jumps.filter((j) => j !== "?").length, 1, "one hop labeled before answering");
-    assert.ok(!jumps.includes("+" + p.d));
-    if (p.kind === "add") assert.ok(![...elapsedSvg(p, { hint: true }).matchAll(/class="stop">([^<]*)</g)].some((m) => m[1] === digital(p.h2, p.m2)), "the end time is hidden");
+    if (inHour(p)) {
+      // Within the hour: one big clock, the sweep counted by 5s on the rim, only up to about
+      // halfway before answering (adding, the end hand isn't drawn yet); worked, every 5.
+      const labs = (o) => [...elapsedSvg(p, o).matchAll(/class="lab5"[^>]*>(\d+)</g)].map((m) => Number(m[1]));
+      const n = p.d / 5, b = labs({ hint: true });
+      assert.ok(b.length >= 1 && b.length <= n / 2 && !b.includes(p.d), `${p.d} min: labels ${b}`);
+      assert.deepEqual(labs({ hint: true, worked: true }), Array.from({ length: n }, (_, i) => 5 * (i + 1)));
+      const rot = rotations(elapsedSvg(p, { hint: true }));
+      const shown = p.kind === "add" ? handAngles(p.h, p.m) : handAngles(p.h2, p.m2);
+      assert.ok(rot.includes(Math.round(shown.minute * 10) / 10), "the solid hands");
+      if (p.kind === "add") assert.equal(rot.length, 2, "adding, only the start's hands: the end hand waits");
+      if (p.kind === "long") assert.ok(elapsedSvg(p, { hint: true }).includes('class="ghost"'), "the start faint");
+    } else {
+      const jumps = [...elapsedSvg(p, { hint: true }).matchAll(/class="jump">([^<]*)</g)].map((m) => m[1]);
+      assert.equal(jumps.filter((j) => j !== "?").length, 1, "one hop labeled before answering");
+      assert.ok(!jumps.includes("+" + p.d));
+      if (p.kind === "add") assert.ok(![...elapsedSvg(p, { hint: true }).matchAll(/class="stop">([^<]*)</g)].some((m) => m[1] === digital(p.h2, p.m2)), "the end time is hidden");
+    }
     assert.ok(!/NaN|undefined/.test(elapsedSvg(p, { hint: true, worked: true })));
   }
 }
@@ -146,7 +164,19 @@ assert.equal(spokenElapsed({ kind: "long", h: 3, m: 10, h2: 3, m2: 45, d: 35 }),
 assert.equal(spokenElapsed({ kind: "add", h: 3, m: 15, d: 20 }), "It's three fifteen. What time is it twenty minutes later?");
 assert.equal(spokenElapsedAnswer({ kind: "long", d: 35 }), "Thirty-five minutes.");
 assert.equal(timeWords(3, 0), "three o'clock");
-assert.equal(elapsedHint({ kind: "long", h: 3, m: 10, h2: 3, m2: 45, d: 35 }, false).say, "3:10 → 3:15 is 5, then to 3:45?");
-assert.equal(elapsedHint({ kind: "long", h: 3, m: 10, h2: 3, m2: 45, d: 35 }, true).say, "3:10 → 3:15 is 5, 3:15 → 3:45 is 30. 5 + 30 = 35 minutes.");
+// Within the hour, around the clock; across it, the open number line.
+assert.equal(elapsedHint({ kind: "long", h: 3, m: 10, h2: 3, m2: 45, d: 35 }, false).say, "From the 2 to the 9: 5, 10, 15, … How many minutes?");
+assert.equal(elapsedHint({ kind: "long", h: 3, m: 10, h2: 3, m2: 45, d: 35 }, true).say, "From the 2 to the 9: 5, 10, 15, 20, 25, 30, 35. 35 minutes.");
+assert.equal(elapsedHint({ kind: "long", h: 2, m: 50, h2: 3, m2: 20, d: 30 }, false).say, "2:50 → 3:00 is 10, then to 3:20?");
+assert.equal(elapsedHint({ kind: "long", h: 2, m: 50, h2: 3, m2: 20, d: 30 }, true).say, "2:50 → 3:00 is 10, 3:00 → 3:20 is 20. 10 + 20 = 30 minutes.");
+// A whole time in two slots: every h:mm from 1:00 to 12:59 can be entered and reads right, the
+// minutes typed with or without their leading zero (1:05, 10:05, 1:20, 12:00).
+for (let h = 1; h <= 12; h++) for (let m = 0; m < 60; m++) {
+  assert.deepEqual(readTime(String(h), String(m).padStart(2, "0")), { h, m });
+  assert.deepEqual(readTime(String(h), String(m)), { h, m });
+}
+assert.deepEqual(readTime("1", "05"), { h: 1, m: 5 });
+assert.deepEqual(readTime("10", "05"), { h: 10, m: 5 });
+assert.deepEqual(readTime("12", "00"), { h: 12, m: 0 });
 
 console.log("✓ clock: hands, problems, words and hints; elapsed time");

@@ -32,11 +32,6 @@
   .pp-head .pp-mon{flex:none;width:44px;height:44px}
   .pp-head .pp-mon svg{width:100%;height:100%;overflow:visible}
   .pp-head .mname{font:400 15px Bungee,sans-serif}
-  .pp-tools{margin-left:auto;display:flex;align-items:center;gap:6px}
-  .pp-tools[hidden]{display:none}
-  .pp-tools{gap:4px}
-  .pp-tools button{min-height:28px;padding:0 8px;border-radius:999px;border:1.5px solid var(--line);background:var(--dark);color:var(--muted);font:900 11px Nunito,sans-serif;white-space:nowrap}
-  .pp-tools button::before{color:var(--gold);margin-right:3px}
   .pp-pic{flex:1;min-height:0;container-type:size;display:grid;place-items:center;padding:4px 8px 8px}
   /* The clock is Tick-Tockus: its tentacles spill out of the drawing into the room beside and
      under it (proto.js measures it and tells clockSvg how far they can reach). Where width is
@@ -55,9 +50,11 @@
   .pp.drawing .pp-pic{flex:none;height:96px}
   .pp.drawing .pad{flex:1;min-height:0;grid-template-rows:minmax(0,1fr) auto}
   .pp.drawing .pad.spell .sigil{grid-row:auto;height:100%;min-height:180px}
-  .pp .blank.now{box-shadow:0 0 0 3px var(--gold)}
-  .pp-tools button[hidden]{display:none}
-  #moneyStyle::before{content:"⇄"}
+  /* Two slots (an hour then minutes, dollars then cents): the one being entered glows; the one
+     still to come waits, dim. */
+  .pp .blank.now{border-style:dashed;animation:blankglow 1.2s ease-in-out infinite alternate;box-shadow:0 0 0 3px var(--gold)}
+  .pp .blank.wait{opacity:.4;animation:none}
+  .pp .pad .longkey{font-size:16px}
   .pp .prob .frac{font-size:.8em}
   /* True or false: two keys filling the pad (four rows of keys tall), answered with one tap; then
      one gold Next › in their place, the same height. */
@@ -75,6 +72,14 @@
   .seg button{padding:0 5px;font-size:17px}
   .pp-pic svg.nl{width:100%;max-height:100cqh;display:block}
   .pp-pic svg.money,.pp-pic svg.tf{width:100%;height:100%;max-height:100cqh;display:block}
+  /* Fix it: the wrong number, crossed out, lifts above its place, small and red; the "?" takes
+     its place on the line. */
+  .pp .fixslot{position:relative;display:inline-block}
+  .pp .fixslot .was{position:absolute;left:50%;bottom:92%;transform:translateX(-50%);font-size:.42em;line-height:1;margin:0;animation:fixlift .5s ease-out both}
+  @keyframes fixlift{from{transform:translate(-50%,1.6em) scale(2.3);opacity:1}to{transform:translateX(-50%)}}
+  .pp .fixslot.settled .was{animation:fixfade .6s ease-out forwards}
+  @keyframes fixfade{to{opacity:0}}
+  @media(prefers-reduced-motion:reduce){.pp .fixslot .was,.pp .fixslot.settled .was{animation:none}.pp .fixslot.settled .was{opacity:0}}
   .pp .prob s{color:var(--coral);text-decoration-thickness:.12em;margin-right:.15em;opacity:.85}
   .pp .prob small{font:900 .5em Nunito,sans-serif;color:var(--muted);vertical-align:middle}
   .pp-pic .pb-blank{animation:pbglow 1.2s ease-in-out infinite alternate}
@@ -117,7 +122,7 @@
     <select class="pp-level" id="level" aria-label="Level"></select>
   </div>
   <section class="pp-box" id="box">
-    <div class="pp-head"><span class="pp-mon" id="mon"></span><span class="mname" id="mName"></span><span class="pp-tools" id="tools"><button type="button" id="moneyStyle" aria-label="How money is written">$3 and 25¢</button></span></div>
+    <div class="pp-head"><span class="pp-mon" id="mon"></span><span class="mname" id="mName"></span></div>
     <div class="pp-pic" id="pic"></div>
   </section>
   <!-- One line between the box and the problem: the hint's words, or after an answer ✓ or Oops
