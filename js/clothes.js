@@ -1,7 +1,7 @@
 // Clothing for the digit heroes (DESIGN.md §6.3 "Clothing", §14.2): hats, glasses, bows and the
 // like, one piece per spot (head, face, neck), drawn over a hero at its anchors in the house style
-// (a dark outline, a color, a sheen). Art only for now: nothing in the game wears them yet (the
-// clothing bag and the wardrobe come later). heroSvg(h, { wear }) in heroes.js draws a hero
+// (a dark outline, a color, a sheen). Worn in the game: the clothing bag and the wardrobe are in
+// loot.js (DESIGN.md §6.3 steps 3–4). heroSvg(h, { wear }) in heroes.js draws a hero
 // wearing them. No DOM, so the check can run it in Node.
 import { DK, defs } from "./monsters.js";
 

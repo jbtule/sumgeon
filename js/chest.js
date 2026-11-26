@@ -1,7 +1,7 @@
 // The art for chests and money (DESIGN.md §6.3), in the house style (monsters.js solid and line:
 // a dark outline, a fill, a white sheen). No DOM: SVG strings, so it runs in Node.
 // The padlock with its problem is HTML over the chest (app.js), so any problem fits in it.
-import { DK, solid, line } from "./monsters.js";
+import { DK, solid, line, MON } from "./monsters.js";
 import { coinsSvg, COINS } from "./coins.js";
 import { fewest } from "./loot.js";
 
@@ -33,6 +33,20 @@ export function chestSvg(state) {
   // The hasp the padlock hangs from.
   s += sheen(solid(`<rect x="88" y="76" width="24" height="22" rx="5"/>`, BAND));
   return `<svg class="chest-art${open ? " open" : ""}" viewBox="0 0 200 180" aria-hidden="true">${DEFS}${s}</svg>`;
+}
+
+// The Pie item (loot.js): a whole pie in its tin, a golden crimped crust, with a bold π cut into
+// the top crust the way bakers cut vents, the cherry filling showing through. Drawn to read at a
+// quick-use slot's size (about 32 px). 100 × 80.
+export function pieSvg() {
+  const tin = sheen(solid(`<path d="M6 44 L15 68 Q50 78 85 68 L94 44 Z"/>`, "#9aa8ae"));
+  const crust = sheen(solid(`<ellipse cx="50" cy="42" rx="45" ry="23"/>`, "#e9a94f"))
+    + `<ellipse cx="50" cy="42" rx="39" ry="18.5" fill="none" stroke="#f8d38a" stroke-width="7" stroke-dasharray="5 5"/>`
+    + `<ellipse cx="50" cy="42" rx="39" ry="18.5" fill="none" stroke="#b9722c" stroke-width="1.5" opacity=".6"/>`;
+  // The π: a top bar and two legs (the right one curling out), cut deep, filling showing.
+  const pi = `<path d="M31 35 Q50 30 69 34 M42 35 Q42 46 36 51 M58 35 Q57 47 59 50 Q61 52 64 50"/>`;
+  const vent = `<g fill="none" stroke-linecap="round" stroke-linejoin="round"><g stroke="${DK}" stroke-width="11">${pi}</g><g stroke="#b3263a" stroke-width="6">${pi}</g></g>`;
+  return `<svg class="pie-art" viewBox="0 0 100 80" role="img" aria-label="Pie">${DEFS}${tin}${crust}${vent}</svg>`;
 }
 
 // A coin purse (the start and pause screens' button): a round pouch with a clasp.
@@ -70,4 +84,34 @@ export function walletMini(cents) {
   if (f.bills) out.push(`<span class="wm">${billSvg()}<b>${f.bills}</b></span>`);
   COINS.forEach((t) => { if (f[t.k]) out.push(`<span class="wm">${coinsSvg([{ k: t.k }])}<b>${f[t.k]}</b></span>`); });
   return out.join("");
+}
+
+/* ---------- Trollar's shop (DESIGN.md §6.3, shop.js) ---------- */
+// Trollar's stall by the Sumgeon's door (the start scene, descent.js surfaceHTML): a striped
+// awning on two posts, Trollar behind a wooden counter with a gold ¢ sign. 200 × 210.
+export function stallSvg() {
+  const troll = MON.find((m) => m.n === "Trollar");
+  const post = sheen(solid(`<rect x="16" y="36" width="13" height="166" rx="4"/><rect x="171" y="36" width="13" height="166" rx="4"/>`, "#8a5a2e"));
+  // Trollar, smaller, standing behind the counter: his head and the top of his S show over it.
+  const him = `<g transform="translate(46 54) scale(.54)">${sheen(troll.d(troll.c))}</g>`;
+  const counter = sheen(solid(`<rect x="10" y="136" width="180" height="64" rx="6"/>`, WOOD))
+    + `<path d="M14 158H186M14 180H186" stroke="${DK}" stroke-width="2.5" opacity=".35"/>`
+    + sheen(solid(`<rect x="2" y="126" width="196" height="14" rx="5"/>`, LID))
+    + sheen(solid(`<circle cx="100" cy="170" r="17"/>`, BAND))
+    + `<text x="100" y="179" text-anchor="middle" font-family="Bungee,sans-serif" font-size="24" fill="${DK}">¢</text>`
+    // A few coins on the counter.
+    + `<ellipse cx="150" cy="126" rx="10" ry="4" fill="#c9d3d8" stroke="${DK}" stroke-width="2.5"/><ellipse cx="160" cy="121" rx="9" ry="3.6" fill="#d08347" stroke="${DK}" stroke-width="2.5"/>`;
+  // The awning: stripes in coral and chalk, each with a scalloped bottom edge.
+  let awn = sheen(solid(`<rect x="0" y="10" width="200" height="14" rx="6"/>`, "#c8343a"));
+  for (let i = 0; i < 8; i++) {
+    const x = i * 25;
+    awn += sheen(solid(`<path d="M${x} 20 H${x + 25} V48 Q${x + 12.5} 66 ${x} 48 Z"/>`, i % 2 ? "#f3efe4" : "#ff5a4e"));
+  }
+  return `<svg class="stall-art" viewBox="-6 -4 212 220" aria-hidden="true">${DEFS}<ellipse cx="100" cy="204" rx="104" ry="9" fill="#0005"/>${post}${him}${counter}${awn}</svg>`;
+}
+// A price as money: the fewest coins (or a bill) for it, small, over "35¢".
+export function priceTag(c) {
+  const f = fewest(c), coins = { q: f.q, d: f.d, n: f.n, p: f.p };
+  const bills = f.bills ? Array.from({ length: f.bills }, () => billSvg()).join("") : "";
+  return `<span class="ptag"><span class="pcoins">${bills}${f.q + f.d + f.n + f.p ? coinsSvg(coins) : ""}</span><b>${c}¢</b></span>`;
 }

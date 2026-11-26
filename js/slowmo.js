@@ -96,7 +96,7 @@ export async function playMoment(o) {
   layer.className = "hm";
   layer.setAttribute("aria-hidden", "true");
   layer.innerHTML = `<div class="hm-dim"></div><div class="hm-edge"></div><div class="hm-lines"></div><div class="hm-flash"></div>
-    <div class="hm-hero">${heroSvg(h, { color: o.color || null })}</div><div class="hm-fx">${move.fx}</div><div class="hm-bubble"></div>`;
+    <div class="hm-hero">${heroSvg(h, { color: o.color || null, wear: o.wear })}</div><div class="hm-fx">${move.fx}</div><div class="hm-bubble"></div>`;
   document.body.appendChild(layer);
   const q = (c) => layer.querySelector(c), hero = q(".hm-hero"), bub = q(".hm-bubble"), dim = q(".hm-dim"), edge = q(".hm-edge"), lines = q(".hm-lines"), fx = q(".hm-fx"), flash = q(".hm-flash");
   bub.textContent = o.quip;
@@ -224,9 +224,9 @@ async function playTeamUp(o) {
   const layer = document.createElement("div");
   layer.className = "hm";
   layer.setAttribute("aria-hidden", "true");
-  const colors = [o.color || null, o.partnerColor || null];
+  const colors = [o.color || null, o.partnerColor || null], wears = [o.wear, o.partnerWear];
   layer.innerHTML = `<div class="hm-dim"></div><div class="hm-edge"></div><div class="hm-lines"></div><div class="hm-flash"></div>
-    ${ds.map((d, i) => `<div class="hm-hero">${heroSvg(HEROES[d], { color: colors[i] })}</div>`).join("")}
+    ${ds.map((d, i) => `<div class="hm-hero">${heroSvg(HEROES[d], { color: colors[i], wear: wears[i] })}</div>`).join("")}
     ${ds.map((d) => `<div class="hm-fx">${MOVES[d].fx}</div>`).join("")}<div class="hm-bubble"></div>`;
   document.body.appendChild(layer);
   const q = (c) => layer.querySelector(c), all = (c) => [...layer.querySelectorAll(c)];

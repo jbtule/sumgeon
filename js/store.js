@@ -22,7 +22,7 @@ export var STORAGE_VERSION = 2;
 // for their debut, and the chance building toward the next moment.
 // "wallet": money found in chests, in cents (loot.js), never lost, not even on a loss.
 // "items": the inventory (loot.js freshItems): { have: { id: count }, slots: [id or null] × 3 }.
-export var OWN_KEYS = ["settings", "best", "facts", "heroes", "wings", "bestiary", "dungeon", "spells", "told", "moments", "wallet", "items"];
+export var OWN_KEYS = ["settings", "best", "facts", "heroes", "wings", "bestiary", "dungeon", "spells", "told", "moments", "wallet", "items", "wardrobe", "shop"];
 // band: a grade band, "kinder" to "third" (learn.js BANDS); start: the band opened from the start; grade:
 // 0 = K … 5, picked by the player (wings.js withGrade), missing until they pick. ops and diff are the prototype's, kept only to
 // pick a band for a player who had them.
