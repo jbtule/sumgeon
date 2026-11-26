@@ -257,7 +257,7 @@ Replaces the between-floor choice. Clearing a floor still heals 1 heart.
 - **The lock** is a problem with a padlock drawn round it ("7 + 5"), answered on the number pad like any other.
   - It's a quick win, not a test: a learned fact from the stratum's band, said aloud for a pre-reader.
   - Right: the lock pops and the lid opens with a fanfare.
-  - Wrong: the lock jams (a clunk, the fact goes to the retry queue), no heart is lost, and the chest tries a second lock. A second miss leaves it shut until next time.
+  - Wrong: the lock jams (a clunk, the fact goes to the retry queue), and the chest tries a second lock. A missed lock never costs anything (no heart, no streak), so a chest is always a happy moment. A second miss leaves it shut until next time.
   - A lock counts as practice: it records the fact like any answer, with no damage.
 - **What's inside**, one thing a chest:
   - **Money**, about half the time: a few coins, shown as a pile (`coins.js`), and counted aloud ("Two dimes and three pennies. Twenty-three cents!"). The Cellar's chests hold single coins, the Mines' and the Tower's more.
@@ -275,11 +275,11 @@ Replaces the between-floor choice. Clearing a floor still heals 1 heart.
 - 🧲 **Hero Magnet:** the next right answer with a team hero's digit is a Hero Moment (§8.4).
 - Later: √ Shrink Ray (the monster loses a quarter of its HP), 0️⃣ Nullifier (no monster trait this floor), 💡 Hint scroll.
 
-**Clothing.** Hats, glasses, bows and the like from the looks kit (`KIT` in `monsters.js`), worn by your heroes: on the start scene, in fights and in Hero Moments. One piece per spot (head, face, neck) per hero, changed in a wardrobe on the start screen. Saved per player (`wardrobe`).
+**Clothing.** Hats, glasses, bows and the like from the looks kit (`KIT` in `monsters.js`). A piece from a chest or the shop goes into your clothing bag (no limit, apart from the 3 items). You dress your **captain** from it, one piece per spot (head, face, neck), in a wardrobe on the start screen. A hero keeps what they're wearing after they stop being captain, and wears it on the start scene, in fights and in Hero Moments, so the team slowly gets its own looks. Saved per player (`wardrobe`: the bag, and what each hero wears).
 
 **Trollar's shop.** Trollar keeps a stall by the Sumgeon's door on the start screen, open outside a run.
 - Items and clothing with prices in coins, read aloud: "The pie costs thirty-five cents."
-- **Paying is the math:** you drag (or tap) coins from your purse onto the counter until there's enough. The game never pays for you. Trollar gives change if you put down too much ("Here's ten cents back!"). A K player pays with single coins (prices are one coin); a 2nd grader counts mixed coins.
+- **Paying is the math:** you tap coins in your purse to put them on the counter (tap one on the counter to take it back) until there's enough. The game never pays for you. No dragging: taps are easier for a kindergartner. Trollar gives change if you put down too much ("Here's ten cents back!"). A K player pays with single coins (prices are one coin); a 2nd grader counts mixed coins.
 - Prices are set so a few runs buy an item and clothing takes saving up.
 
 **Saved per player:** `wallet` (cents), `items` (up to 3), `wardrobe` (what's found and what each hero wears). Each goes in `OWN_KEYS`.
