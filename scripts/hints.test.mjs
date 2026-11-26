@@ -194,6 +194,12 @@ const opening = { "Ten-frame": /^Put together/, "Draw and cross out": /^Take awa
   "True or false?": /^4 \+ 2 is 6, not 7\. False\.$/, "Fix it": /^4 \+ 2 is 6\.$/,
   "Hundreds, tens and ones": /^300 \+ 40 \+ 5 = 345$/, "Tens in a number": /^Every 10 tens make a hundred: 34 tens is 3 hundreds and 4 tens\. 3 hundreds, 4 tens, 3 ones = 343$/,
   "Counting dollars": /^Count on from the biggest bill: 20, 25, 26 dollars\.$/, "Dollars and cents": /^Count on from the biggest bill: 10, 11 dollars\. Then the coins: 25, 35, 36, 37 cents\.$/,
+  // Within 1000, comparing three-digit numbers, and adding up to four numbers (2nd grade).
+  "Add each place": /^Add each place: 200 \+ 300 = 500, 80 \+ 50 = 130, 7 \+ 9 = 16\. 500 \+ 130 \+ 16 = 646$/,
+  "Take away each place": /^Take away each place: 800 − 500 = 300, 20 − 10 = 10, 1 − 1 = 0\. 300 \+ 10 = 310$/,
+  "Count up to subtract": /^Think addition: count up from 158 to 403\. 2 \+ 40 \+ 200 \+ 3 = 245$/,
+  "Compare hundreds, tens, ones": /^Same hundreds\. Then the tens: 4 tens and 5 tens\. 345 < 354$/,
+  "Adding up to four numbers": /^Find a ten: 23 \+ 17 = 40\. 40 \+ 14 \+ 31 = 85$/,
   "Fractions on a number line": /^Each jump is 1\/4\. Count the jumps from 0 to the dot: 1\/4, 2\/4, 3\/4$/, "Equal parts": /^1, 2, 3, 4\. 4 equal parts: fourths\.$/ };
 assert.equal(STRATEGIES.length, Object.keys(opening).length);
 for (const s of STRATEGIES) {

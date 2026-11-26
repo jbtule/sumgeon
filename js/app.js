@@ -381,7 +381,9 @@ function probUI() {
   // An array (Squaresquatch), drawn: rows of dots, and "5 + 5 + 5 = □" under them.
   else if (p.op === "▦") box.innerHTML = arraySvg(p) + `<span class="find">${esc(p.q).replace("□", BLANK)}</span>`;
   // Three numbers (Triceraplus), a little smaller so "4 + 6 + 3 =" fits beside the buttons on a small phone.
-  else if (p.op === "Σ") box.innerHTML = `<span class="sum3">${esc(p.q)} =</span>`;
+  // Four two-digit numbers (Triceraplus in the Mines) smaller still, so the line fits an iPhone SE.
+  // (Thin spaces round the + signs for four numbers.)
+  else if (p.op === "Σ") { const four = p.nums && p.nums.length > 3; box.innerHTML = `<span class="sum3${four ? " sum4" : Math.max(...(p.nums || [0])) >= 10 ? " sum3w" : ""}">${four ? esc(p.q).replace(/ \+ /g, "\u2009+\u2009") : esc(p.q)} =</span>`; }
   // Dice (Pipsqueak's Flash): each number as a die, until diceFlash turns them into numbers.
   else if (p.dice) box.innerHTML = `<span class="dn" data-n="${p.x}">${dieSvg(p.x)}</span> + <span class="dn" data-n="${p.y}">${dieSvg(p.y)}</span> =`;
   // "How many quarters?": the pile, then "quarters = ?" with a □ that fills as you type, as a
@@ -390,6 +392,8 @@ function probUI() {
   else if (p.op === "¢") box.innerHTML = coinsSvg(p.pile) + " =";
   // Flipped by Judo Judy: each number in its own box, so the throw can swap them (judoThrow).
   else if (p.flipped) box.innerHTML = `<span class="jn">${p.x}</span> <span class="jop">+</span> <span class="jn">${p.y}</span> =`;
+  // Three-digit numbers on one line ("287 + 359 ="), a little smaller so it fits an iPhone SE.
+  else if ((p.op === "+" || p.op === "-") && Math.max(p.x, p.y) >= 100) box.innerHTML = `<span class="wide3">${esc(p.q)} =</span>`;
   else box.textContent = p.q + " =";
   document.querySelector(".game").classList.toggle("missing", !!p.blank || !!p.sym || p.op === "=" || !!p.find || !!p.stacked || "/≈▭▦⌚…◐✓✎↔#$".includes(p.op));
   padUI(p.spell ? "spell" : p.op === "✓" ? "tf" : p.sym ? "cmp" : "num");
@@ -414,9 +418,11 @@ function fixLine(p) {
 }
 // Stacked in columns: each number right-aligned over the other, the sign at the left of the second,
 // a line, and the answer's □ under it, right-aligned, as wide as the widest number.
+// Adding up to four numbers (Triceraplus in the Mines) stacks them all, the + by the last.
 function stackHTML(p) {
-  const w = Math.max(String(p.x).length, String(p.y).length, String(p.ans).length);
-  return `<span class="stacked" style="--w:${w}" role="img" aria-label="${esc(p.q)}"><span class="sop"></span><span class="snum">${p.x}</span><span class="sop">${p.op === "-" ? "−" : "+"}</span><span class="snum">${p.y}</span><span class="sbar"></span><span class="sop"></span><span class="snum sans"><span class="blank" id="blank">?</span></span></span>`;
+  const nums = p.nums || [p.x, p.y], w = Math.max(...nums.map((n) => String(n).length), String(p.ans).length);
+  const rows = nums.map((n, i) => `<span class="sop">${i === nums.length - 1 ? (p.op === "-" ? "−" : "+") : ""}</span><span class="snum">${n}</span>`).join("");
+  return `<span class="stacked${nums.length > 2 ? " rows" + nums.length : ""}" style="--w:${w}" role="img" aria-label="${esc(p.q)}">${rows}<span class="sbar"></span><span class="sop"></span><span class="snum sans"><span class="blank" id="blank">?</span></span></span>`;
 }
 // How often a two- or three-digit + or − is stacked (always on Margot-Rythm's floor: her art is a
 // stacked sum with a carried 1). ?stacked stacks every one, for testing.
@@ -621,8 +627,9 @@ function newProblem() {
   // Flash (Pipsqueak): 3 + 5 comes as two dice, which turn into the numbers (traits.js flashOf).
   const dice = flashOf(m, G.cur);
   if (dice) G.cur = dice;
-  // Stacked in columns (two- and three-digit + and −): a quarter of the time, always on
-  // Margot-Rythm's floor. The same fact and record, only laid out differently.
+  // Stacked in columns (two- and three-digit + and −, and up to four numbers added): a quarter of
+  // the time for two-digit numbers, half for three-digit ones and for adding several (twodigit.js
+  // stackShare), always on Margot-Rythm's floor. The same fact and record, only laid out differently.
   G.cur = stackOf(G.cur, STACK_ALWAYS || (m.base || m.n) === "Margot-Rythm");
   G.recent = [key].concat(G.recent).slice(0, RECENT);
   G.input = ""; G.busy = false; G.hinted = false; G.t0 = performance.now();

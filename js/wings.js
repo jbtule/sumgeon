@@ -11,8 +11,11 @@ const mon = (n) => MON.find((m) => m.n === n);
 // floors: a monster's name, "rescue" (a cursed digit, or a pool monster once all are free) or
 // "pool" (any pool monster). The boss is always last. strands: monsters that ask a strand of their
 // own here instead of the band (learn.js BANDS: Trollar's coins, Chompers' "which is more?",
-// Triceraplus's three numbers, Squaresquatch's arrays, Tick-Tockus's time and Slimelipsis's
-// patterns, each the stratum's grade of it). Slimelipsis only visits the Cellar and the Hall
+// Triceraplus's three numbers (up to four two-digit ones in the Mines), Squaresquatch's arrays,
+// Tick-Tockus's time and Slimelipsis's patterns, each the stratum's grade of it; Chompers compares
+// three-digit numbers in the Mines, and Margot-Rythm brings 3rd grade's adding and subtracting
+// within 1000 to the Tower, which is otherwise × and ÷). Chompers and Triceraplus visit the Mines,
+// and Margot-Rythm the Tower, from the pool (depth 2 and deeper). Slimelipsis only visits the Cellar and the Hall
 // (their pools), and Tick-Tockus and Slimelipsis take a depth-1 floor in the rest, the monster
 // they replace staying in the pool. Depth 1's floors bring each monster in
 // once; deeper, every floor but the rescue floor comes from the pool (runFloors).
@@ -21,10 +24,10 @@ export const WINGS = [
     pool: ["Plusquito", "Minustaur", "Pipsqueak", "Chompers", "Trollar", "Slimelipsis"], floors: ["Plusquito", "Pipsqueak", "rescue", "Chompers", "Trollar"], boss: "Make-Ten Golem" },
   { id: "hall", name: "The Balance Hall", band: "first", after: "cellar", strands: { Triceraplus: "three", "Tick-Tockus": "timeH", Slimelipsis: "patH" },
     pool: ["Quizard", "Chompers", "Equal Twins", "Doublet", "Triceraplus", "Tick-Tockus", "Slimelipsis"], floors: ["Quizard", "Equal Twins", "rescue", "Tick-Tockus", "Triceraplus"], boss: "Judo Judy" },
-  { id: "mines", name: "The Crystal Mines", band: "second", after: "hall", strands: { Trollar: "coins", Squaresquatch: "arrays", Slimelipsis: "patM", "Tick-Tockus": "timeM" },
-    pool: ["Haberhasher", "Margot-Rythm", "Trollar", "Squaresquatch", "Slimelipsis", "Tick-Tockus"], floors: ["Haberhasher", "Squaresquatch", "rescue", "Trollar", "Margot-Rythm"], boss: "The Centipede" },
-  { id: "tower", name: "The Tables Tower", band: "third", after: "mines", strands: { "Tick-Tockus": "timeT" },
-    pool: ["Timesaur", "Divvy", "Starbot", "Halfling", "Tick-Tockus"], floors: ["Timesaur", "Divvy", "rescue", "Tick-Tockus", "Halfling"], boss: "Sigma Rex" }
+  { id: "mines", name: "The Crystal Mines", band: "second", after: "hall", strands: { Trollar: "coins", Squaresquatch: "arrays", Slimelipsis: "patM", "Tick-Tockus": "timeM", Chompers: "cmpM", Triceraplus: "sumsM" },
+    pool: ["Haberhasher", "Margot-Rythm", "Trollar", "Squaresquatch", "Slimelipsis", "Tick-Tockus", "Chompers", "Triceraplus"], floors: ["Haberhasher", "Squaresquatch", "rescue", "Trollar", "Margot-Rythm"], boss: "The Centipede" },
+  { id: "tower", name: "The Tables Tower", band: "third", after: "mines", strands: { "Tick-Tockus": "timeT", "Margot-Rythm": "addT" },
+    pool: ["Timesaur", "Divvy", "Starbot", "Halfling", "Tick-Tockus", "Margot-Rythm"], floors: ["Timesaur", "Divvy", "rescue", "Tick-Tockus", "Halfling"], boss: "Sigma Rex" }
 ];
 // The band a monster asks in a Wing: its strand there, or the Wing's band.
 export const bandOf = (wing, m) => (wing.strands || {})[m.base || m.n] || wing.band;

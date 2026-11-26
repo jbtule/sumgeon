@@ -93,8 +93,9 @@ export function spokenProblem(p) {
   if (p.op === "more") return "Which is more, " + spoken(p.x) + " or " + spoken(p.y) + "?";
   // Fractions: "one half equals what fourths"; "one equals what fourths".
   if (p.op === "/") return fractionWords(p.a, p.b, spoken) + " equals what " + unitName(p.d);
-  // Three numbers (Triceraplus): "four plus three plus six".
-  if (p.op === "Σ") return spoken(p.a) + " plus " + spoken(p.b) + " plus " + spoken(p.c);
+  // Three numbers (Triceraplus): "four plus three plus six"; in the Mines up to four two-digit
+  // ones, "twenty-three plus fourteen plus thirty-one plus twelve".
+  if (p.op === "Σ") return (p.nums || [p.a, p.b, p.c]).map(spoken).join(" plus ");
   // An array (Squaresquatch): "Three rows of five. How many in all?"
   if (p.op === "▦") return capital(spoken(p.r)) + " rows of " + spoken(p.c) + ". How many in all?";
   if (p.op === "≈") return "Round " + spoken(p.n) + " to the nearest " + spoken(p.to).replace("one ", "") + ".";

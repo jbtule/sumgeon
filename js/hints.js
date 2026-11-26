@@ -2,7 +2,7 @@ import { coinsSvg, coinFact, findFact, coinOf, pileOf, COINS } from "./coins.js"
 import { unitName, fractionFact, roundFact, rectFact } from "./third.js";
 import { hiddenFact } from "./missing.js";
 import { moreFact } from "./balance.js";
-import { threeFact, tenOf } from "./three.js";
+import { threeFact, tenOf, tenPairOf, sumFact } from "./three.js";
 import { arrayFact } from "./arrays.js";
 import { clockSvg, clockFact, clockFactHint, elapsedSvg, inHour } from "./clock.js";
 import { patternSvg, patternFact, patternFactHint, oddEvenSvg, oddEvenFact } from "./patterns.js";
@@ -427,6 +427,137 @@ function hundredsHint(f, worked) {
   return { model: placeChart(n, step === 100 ? 0 : 1), say: `${say} ${x} ${op === "+" ? "+" : "−"} ${y} = ${end}`, grownups };
 }
 
+/* ---------- within 1000 (2nd grade, 2.NBT.B.7; 3rd grade's fluency, 3.NBT.A.2) ----------
+   Adding: each number as hundreds, tens and ones on a place-value mat (flats, rods and cubes, the
+   first number gold, the second coral), each place added, then the places together: partial sums
+   (287 + 359: 200 + 300 = 500, 80 + 50 = 130, 7 + 9 = 16, then 500 + 130 + 16). Subtracting
+   without regrouping: take away each place, crossed out on the mat. With regrouping: think
+   addition on an open number line, counting up from the smaller number to the next ten, the next
+   hundred, by hundreds, then the rest (403 − 158: +2, +40, +200, +3). Never the carrying or
+   borrowing algorithm (4th grade), and before answering never the total. */
+const FL = 20, RW = 4, CU = 4, GAPB = 2;
+const digitsOf = (n) => [Math.floor(n / 100), Math.floor(n / 10) % 10, n % 10];
+// One place's blocks: n flats (rows of 5), rods or cubes (rows of 5), bottom-aligned at y, from x.
+// cross: how many of them (the last ones) are crossed out. Returns { s, w, h }.
+function placeBlocks(place, n, x, y, color, cross) {
+  let s = "";
+  const X = (x0, y0, w, h) => `<path d="M${x0 - 1} ${y0 - 1}L${x0 + w + 1} ${y0 + h + 1}M${x0 + w + 1} ${y0 - 1}L${x0 - 1} ${y0 + h + 1}" stroke="${C.ink}" stroke-width="1.8" stroke-linecap="round"/>`;
+  const crossed = (i) => cross && i >= n - cross;
+  if (place === 0) {
+    for (let i = 0; i < n; i++) {
+      const fx = x + (i % 5) * (FL + GAPB), fy = y - FL - Math.floor(i / 5) * (FL + GAPB);
+      s += `<rect x="${fx}" y="${fy}" width="${FL}" height="${FL}" rx="1.5" fill="${color}"/>`;
+      for (let k = 1; k < 5; k++) s += `<line x1="${fx + k * 4}" y1="${fy}" x2="${fx + k * 4}" y2="${fy + FL}" stroke="var(--dark)" stroke-width=".6"/><line x1="${fx}" y1="${fy + k * 4}" x2="${fx + FL}" y2="${fy + k * 4}" stroke="var(--dark)" stroke-width=".6"/>`;
+      if (crossed(i)) s += X(fx, fy, FL, FL);
+    }
+    return { s, w: n ? Math.min(n, 5) * (FL + GAPB) - GAPB : 0, h: n ? Math.ceil(n / 5) * (FL + GAPB) - GAPB : 0 };
+  }
+  if (place === 1) {
+    for (let i = 0; i < n; i++) {
+      const rx = x + i * (RW + GAPB);
+      s += `<rect x="${rx}" y="${y - FL}" width="${RW}" height="${FL}" rx="1" fill="${color}"/>`;
+      for (let k = 1; k < 5; k++) s += `<line x1="${rx}" y1="${y - FL + k * 4}" x2="${rx + RW}" y2="${y - FL + k * 4}" stroke="var(--dark)" stroke-width=".6"/>`;
+      if (crossed(i)) s += X(rx, y - FL, RW, FL);
+    }
+    return { s, w: n ? n * (RW + GAPB) - GAPB : 0, h: n ? FL : 0 };
+  }
+  for (let i = 0; i < n; i++) {
+    const cx = x + (i % 5) * (CU + GAPB), cy = y - CU - Math.floor(i / 5) * (CU + GAPB);
+    s += `<rect x="${cx}" y="${cy}" width="${CU}" height="${CU}" rx=".8" fill="${color}"/>`;
+    if (crossed(i)) s += X(cx, cy, CU, CU);
+  }
+  return { s, w: n ? Math.min(n, 5) * (CU + GAPB) - GAPB : 0, h: n ? FL : 0 };
+}
+// The mat: a column for hundreds, tens and ones, each row a number ([{ n, color, cross: [h, t, o] }]),
+// and under each column a label (labels: three strings, or none).
+function placeMat(rows, labels, label) {
+  const colW = [0, 1, 2].map((p) => Math.max(p ? 24 : 40, ...rows.map((r) => placeBlocks(p, digitsOf(r.n)[p], 0, 0, "").w)) + 14);
+  const rowH = rows.map((r) => Math.max(FL, placeBlocks(0, digitsOf(r.n)[0], 0, 0, "").h));
+  const top = 16, H = top + rowH.reduce((t, h) => t + h + 8, 0) + (labels ? 20 : 2), W = colW.reduce((t, w) => t + w, 0);
+  let s = "", x = 0;
+  ["hundreds", "tens", "ones"].forEach((name, p) => {
+    if (p) s += `<line x1="${x}" y1="4" x2="${x}" y2="${H - 4}" stroke="${C.line}" stroke-width="1.5"/>`;
+    s += txt(x + colW[p] / 2, 11, name, 9, C.muted);
+    let y = top;
+    rows.forEach((r, i) => { y += rowH[i] + 4; s += placeBlocks(p, digitsOf(r.n)[p], x + 7, y, r.color, (r.cross || [])[p]).s; y += 4; });
+    if (labels && labels[p]) s += txt(x + colW[p] / 2, H - 5, labels[p], 13, C.a);
+    x += colW[p];
+  });
+  return svg(W, H, s, label);
+}
+function threeDigitHint(f, worked) {
+  const { op, x, y, ans } = f, end = worked ? ans : "?", PLACE = [100, 10, 1];
+  const dx = digitsOf(x), dy = digitsOf(y);
+  if (op === "+") {
+    const sums = PLACE.map((p, i) => (dx[i] + dy[i]) * p);
+    const steps = PLACE.map((p, i) => (dx[i] && dy[i] ? `${dx[i] * p} + ${dy[i] * p} = ${sums[i]}` : "")).filter(Boolean);
+    return { model: placeMat([{ n: x, color: C.a }, { n: y, color: C.b }], sums.map((v) => (v ? String(v) : "")), `${x} and ${y} in hundreds, tens and ones`),
+      say: `Add each place: ${steps.join(", ")}. ${sums.filter(Boolean).join(" + ")} = ${end}`,
+      grownups: "Adding within 1000 (place value): kids add the hundreds, the tens and the ones, then put the parts together (287 + 359 is 500 + 130 + 16). Ten ones make a ten and ten tens a hundred, which is all regrouping is; the carrying algorithm waits for 4th grade." };
+  }
+  // Enough in every place: take away each place, crossed out on the mat.
+  if (dx.every((d, i) => d >= dy[i])) {
+    const parts = PLACE.map((p, i) => (dy[i] ? `${dx[i] * p} − ${dy[i] * p}` + (worked ? ` = ${(dx[i] - dy[i]) * p}` : "") : "")).filter(Boolean);
+    const left = PLACE.map((p, i) => (dx[i] - dy[i]) * p).filter(Boolean);
+    return { model: placeMat([{ n: x, color: C.a, cross: dy }], null, `${x} in hundreds, tens and ones, take away ${y}`),
+      say: `Take away each place: ${parts.join(", ")}.${worked && left.length > 1 ? ` ${left.join(" + ")} = ${ans}` : ` ${x} − ${y} = ${end}`}`,
+      grownups: "Taking away by place: when each place has enough, kids take the hundreds from the hundreds, the tens from the tens and the ones from the ones (821 − 511: 800 − 500, 20 − 10, 1 − 1)." };
+  }
+  // Count up from y: to the next ten, the next hundred, by hundreds, then the rest.
+  const ten = Math.ceil(y / 10) * 10, hundred = Math.ceil(y / 100) * 100, base = Math.floor(x / 100) * 100;
+  const stops = [y, ten, hundred, base, x].filter((v, i, a) => a.indexOf(v) === i && v >= y && v <= x).sort((a, b) => a - b);
+  const jumps = stops.slice(1).map((v, i) => v - stops[i]);
+  return { model: hops(y, x, stops.slice(1, -1), worked),
+    say: `Think addition: count up from ${y} to ${x}. ${jumps.length > 1 ? jumps.join(" + ") : x + " − " + y} = ${end}`,
+    grownups: "Think addition on an open number line: when a place doesn't have enough (403 − 158), kids count up from the smaller number, to the next ten, the next hundred, by hundreds, then the rest, and add up the jumps. Borrowing waits for 4th grade." };
+}
+
+// Comparing three-digit numbers (2nd grade): the two numbers in a place-value chart, one over the
+// other. Before answering the place that decides is outlined (the first that's different, from
+// the hundreds); worked, the bigger digit there is ringed in gold and the comparison written.
+function compare1000Hint(f, worked) {
+  const a = Number(f.l), b = Number(f.r), da = String(a).split(""), db = String(b).split("");
+  const at = [0, 1, 2].find((i) => da[i] !== db[i]), names = ["hundreds", "tens", "ones"];
+  let s = "";
+  names.forEach((name, i) => {
+    const x = 6 + i * 50, on = i === at;
+    s += txt(x + 22, 11, name, 9, C.muted);
+    if (on) s += `<rect x="${x - 2}" y="15" width="48" height="66" rx="8" fill="none" stroke="${C.b}" stroke-width="3"/>`;
+    [[da[i], 20], [db[i], 50]].forEach(([d, y], k) => {
+      const big = worked && on && Number(d) > Number((k ? da : db)[i]);
+      s += `<rect x="${x + 2}" y="${y}" width="40" height="26" rx="5" fill="none" stroke="${big ? C.a : C.line}" stroke-width="${big ? 3 : 1.5}"/>` + txt(x + 22, y + 20, d, 20, big ? C.a : C.ink);
+    });
+  });
+  if (worked) s += compareLine(81, 104, f);
+  const model = svg(162, worked ? 112 : 86, s, `${a} and ${b} in hundreds, tens and ones`);
+  const D = (d, place) => `${d} ${d === "1" ? place.slice(0, -1) : place}`;
+  const same = at == null ? "Same hundreds, tens and ones." : at === 0 ? "" : `Same ${at === 1 ? "hundreds" : "hundreds and tens"}. `;
+  const look = at == null ? "" : `${at === 0 ? "Compare the hundreds first" : `Then the ${names[at]}`}: ${D(da[at], names[at])} and ${D(db[at], names[at])}.`;
+  return { model, say: `${same}${look} ${worked ? f.l + " " + f.sym + " " + f.r : f.l + " ? " + f.r}`.replace(/\s+/g, " ").trim(),
+    grownups: "Comparing three-digit numbers: kids look at the hundreds first; if they're the same, the tens; then the ones. The bigger digit in the first place that's different makes the bigger number, and the open side of < or > faces it." };
+}
+
+// Adding up to four two-digit numbers (2nd grade, 2.NBT.B.7): each number in tens and ones. When
+// two numbers' ones make a ten (23 + 17), find that ten first; otherwise add the tens, then the ones.
+function sumsHint(f, worked) {
+  const nums = f.nums, end = worked ? f.ans : "?", pair = tenPairOf(nums);
+  let s = "", x = 4;
+  nums.forEach((n, i) => {
+    const b = blocks(n, x, i % 2 ? C.b : C.a);
+    if (pair && pair.includes(i)) s += `<rect x="${x - 3}" y="1" width="${b.w + 6}" height="56" rx="5" fill="none" stroke="${C.a}" stroke-width="2" stroke-dasharray="4 3"/>`;
+    s += b.s + txt(x + b.w / 2, 72, n, 13);
+    x += b.w + 14;
+  });
+  const model = svg(x - 6, 78, s, `${nums.join(", ")} in tens and ones`);
+  const grownups = "Adding several numbers: numbers can be added in any order, so kids look for two whose ones make a ten (23 + 17 = 40) and add those first; otherwise they add all the tens, then all the ones, then put them together.";
+  if (pair) {
+    const [i, j] = pair, ten = nums[i] + nums[j], rest = nums.filter((_, k) => k !== i && k !== j);
+    return { model, say: `Find a ten: ${nums[i]} + ${nums[j]} = ${ten}. ${[ten, ...rest].join(" + ")} = ${end}`, grownups };
+  }
+  const tens = nums.map((n) => n - (n % 10)), ones = nums.map((n) => n % 10), T = tens.reduce((t, n) => t + n, 0), O = ones.reduce((t, n) => t + n, 0);
+  return { model, say: `Add the tens: ${tens.join(" + ")} = ${T}. Add the ones: ${ones.join(" + ")} = ${O}. ${T} + ${O} = ${end}`, grownups };
+}
+
 // × tens (3rd grade): 4 × 30 is 3 tens (rods), 4 times: 12 tens. One row of rods and "× 4",
 // so it stays short on a phone.
 function timesTensHint(f, worked) {
@@ -601,7 +732,8 @@ export function hintFor(f, worked) {
   if (f.op === "⌚") return timeHintFor(f, worked);
   if (f.op === "…" || f.op === "◐") return patternHintFor(f, worked);
   if (f.op === "¢") return coinHint(f, worked);
-  if (f.op === "Σ") return threeHint(f, worked);
+  if (f.op === "Σ") return f.nums && Math.max(...f.nums) >= 10 ? sumsHint(f, worked) : threeHint(f, worked);
+  if (f.op === "○" && Math.max(Number(f.l), Number(f.r)) >= 100) return compare1000Hint(f, worked);
   if (f.op === "▦") return arrayHint(f, worked);
   if (f.op === "○" || f.op === "=") return balanceHint(f, worked);
   if (f.op === "more") return moreHint(f, worked);
@@ -614,6 +746,7 @@ export function hintFor(f, worked) {
   if ((f.op === "+" || f.op === "-") && (step === 10 || step === 100) && from > 100) return hundredsHint(f, worked);
   if (f.op === "×" && Math.min(f.x, f.y) >= 2 && Math.max(f.x, f.y) >= 20) return timesTensHint(f, worked);
   if (f.x === 0 || f.y === 0 || (f.op === "-" && f.x === f.y)) return zeroHint(f, worked);
+  if ((f.op === "+" || f.op === "-") && Math.max(f.x, f.y) > 100) return threeDigitHint(f, worked);
   if ((f.op === "+" && f.ans > 20) || (f.op === "-" && f.x > 20)) return twoDigitHint(f, worked);
   const { op, x, y, ans } = f, end = (t) => (worked ? t : "?");
   if (op === "+") {
@@ -816,6 +949,11 @@ export const STRATEGIES = [
   { title: "Back to a ten", grade: "2nd", f: { op: "-", x: 52, y: 7 } },
   { title: "Count up by tens", grade: "2nd", f: { op: "-", x: 52, y: 28 } },
   { title: "10 and 100 more", grade: "2nd", f: { op: "+", x: 345, y: 100 } },
+  { title: "Add each place", grade: "2nd–3rd", f: { op: "+", x: 287, y: 359, ans: 646 } },
+  { title: "Take away each place", grade: "2nd–3rd", f: { op: "-", x: 821, y: 511, ans: 310 } },
+  { title: "Count up to subtract", grade: "2nd–3rd", f: { op: "-", x: 403, y: 158, ans: 245 } },
+  { title: "Compare hundreds, tens, ones", grade: "2nd", f: { op: "○", l: "345", r: "354", sym: "<", ans: 354, q: "345 □ 354" } },
+  { title: "Adding up to four numbers", grade: "2nd", f: sumFact([23, 14, 31, 17]) },
   { title: "Compare", grade: "K–1st", f: { op: "○", l: "3 + 4", r: "8", sym: "<", ans: 8, q: "3 + 4 □ 8" } },
   { title: "Balance", grade: "1st", f: { op: "=", l: "3 + 4", r: "□ + 5", ans: 2, q: "3 + 4 = □ + 5" } },
   { title: "Think multiplication", grade: "3rd", f: { op: "÷", x: 32, y: 8 } },
