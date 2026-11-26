@@ -55,18 +55,23 @@ for (const [name, make] of Object.entries(CLEAN)) {
 // A square drawn as four separate lines, in any order, reads.
 const sq = [[0, 0], [100, 0], [100, 100], [0, 100]];
 assert.equal(readShape([[sq[2], sq[3]], [sq[0], sq[1]], [sq[3], sq[0]], [sq[1], sq[2]]]).shape, "square");
-// Square or rectangle, by the aspect: K–2 tells them apart; 3rd grade lets a square be a
-// rectangle or a rhombus (a square is both).
+// Square or rectangle, by the aspect. A square is a rectangle (and a rhombus), so it counts for
+// either in every grade (3rd grade says so; the K and 1st grade guides don't set them apart);
+// a long rectangle is never a square. A quadrilateral is any of them.
 const rect = readShape(closed(CLEAN.rectangle())), square = readShape(closed(sq));
-assert.equal(judgeShape(square, "rectangle", false).outcome, "wrong");
-assert.equal(judgeShape(rect, "square", false).outcome, "wrong");
-assert.equal(judgeShape(square, "rectangle", true).outcome, "hit");
-assert.equal(judgeShape(square, "rhombus", true).outcome, "hit");
-assert.equal(judgeShape(rect, "square", true).outcome, "wrong");
-// Nearly square (1.3): not sure which, so asked for either it counts and shows the clean shape.
+for (const strict of [false, true]) {
+  assert.equal(judgeShape(square, "rectangle", strict).outcome, "hit");
+  assert.equal(judgeShape(square, "rhombus", strict).outcome, "hit");
+  assert.equal(judgeShape(rect, "square", strict).outcome, "wrong");
+  for (const r of [square, rect]) assert.equal(judgeShape(r, "quadrilateral", strict).outcome, "hit");
+  for (const s of ["triangle", "circle", "hexagon"]) assert.equal(judgeShape(rect, s, strict).outcome, "wrong");
+}
+// Nearly square (1.3): not sure which, so asked for a square it counts and shows the clean shape;
+// asked for a rectangle, either one answers, so it's a hit.
 const nearly = readShape(closed([[0, 0], [130, 0], [130, 100], [0, 100]]));
 assert.ok(!nearly.clear);
-for (const s of ["square", "rectangle"]) assert.equal(judgeShape(nearly, s, false).outcome, "show", `nearly square, asked ${s}`);
+assert.equal(judgeShape(nearly, "square", false).outcome, "show");
+assert.equal(judgeShape(nearly, "rectangle", false).outcome, "hit");
 // A tilted rectangle is still long: the aspect is measured at the best turn.
 assert.ok(Math.abs(aspectOf(turn([[[0, 30], [100, 30], [100, 70], [0, 70]]], 30)[0]) - 2.5) < 0.1);
 // A scribble reads as nothing clear, and is "try again".
@@ -119,3 +124,93 @@ const ir = irregular(5, rnd), len = ir.map((p, i) => Math.hypot(p[0] - ir[(i + 1
 assert.ok(Math.max(...len) - Math.min(...len) > 5);
 
 console.log("✓ shapes: templates, drawings, judging and counting");
+
+// In the game (Polly-Gon): fixed samples with keys, in strands per grade (K, 1st, 2nd, 3rd), each
+// level in the school's order; every key its own fact and back; drawing under half of each level
+// (so a mouse or keyboard, which asks only counting, can still open the next level).
+import { shapeFacts, shapeFactOf, SHAPE_STRANDS, isDrawKey, spokenShape, spokenShapeAnswer, squawkLine, squawkBody, drawHintSvg, drawHint, cleanFor, accepts } from "../js/shapes.js";
+import { BANDS, pool, factOf, choose, openLevel, monsterHP, drawHit } from "../js/learn.js";
+import { asks } from "../js/traits.js";
+import { MON } from "../js/monsters.js";
+import { hintFor } from "../js/hints.js";
+import { spokenProblem, spokenFact } from "../js/problems.js";
+{
+  const STRANDS = ["shapesK", "shapesH", "shapesM", "shapesT"];
+  const levels = (b) => BANDS[b].levels.map((l) => l.name), sizes = (b) => BANDS[b].levels.map((_, i) => pool(b).filter((f) => f.level === i).length);
+  assert.deepEqual(STRANDS.map(levels), [
+    ["Circles, squares, triangles, rectangles", "Hexagons, sides and corners"],
+    ["Sides and corners", "Halves and fourths"],
+    ["Sides, corners and faces", "Equal shares", "Rows and columns of squares"],
+    ["Quadrilaterals", "Unit fractions"]]);
+  assert.deepEqual(STRANDS.map(sizes), [[10, 11], [17, 8], [17, 11, 12], [12, 11]]);
+  assert.equal(shapeFacts().length, 64, "each fact once, though strands share some");
+  assert.equal(new Set(shapeFacts().map((f) => f.key)).size, shapeFacts().length);
+  for (const b of STRANDS) {
+    assert.ok(BANDS[b].strand && BANDS[b].unlock === 0.5, `${b} is a strand`);
+    for (let L = 0; L < BANDS[b].levels.length; L++) {
+      const here = pool(b).filter((f) => f.level === L), draws = here.filter((f) => isDrawKey(f.key));
+      assert.ok(draws.length / here.length <= 0.4, `${b} level ${L + 1}: ${draws.length} of ${here.length} drawn`);
+      // Every counting fact learned opens the next level without drawing anything.
+      const recs = {};
+      pool(b).filter((f) => f.level <= L && !isDrawKey(f.key)).forEach((f) => (recs[f.key] = { b: 3, n: 1, c: 1, ms: 1000, t: 0 }));
+      assert.equal(openLevel(b, recs), Math.min(L + 1, BANDS[b].levels.length - 1), `${b}: counting alone opens past level ${L + 1}`);
+    }
+    for (const f of pool(b)) {
+      const g = factOf(f.key, () => 0.3);
+      assert.equal(g.key, f.key, `${f.key} round-trips`);
+      assert.ok(g.op === "◇" && /^◇(draw|sides|corners|faces|parts|squares|unit):/.test(f.key), f.key);
+      assert.ok(Number.isInteger(g.ans) && g.ans >= 0, `${f.key}: a whole number`);
+      if (!g.draw) assert.ok(g.ans >= 2 && g.ans <= 20, `${f.key}: ${g.ans} to type`);
+      // Asked and answered in words, recorded (lines.test checks the plan has them).
+      assert.ok(spokenProblem(g) === spokenShape(g) && spokenFact(g) === spokenShapeAnswer(g) && !/\d|undefined/.test(spokenProblem(g) + spokenFact(g)), `${f.key}: ${spokenProblem(g)} / ${spokenFact(g)}`);
+      assert.ok(/^Squawk! /.test(squawkLine(g)) && squawkLine(g).split(" ").length <= 6, squawkLine(g));
+      const body = squawkBody(g);
+      assert.ok(body.body && !/NaN|undefined/.test(body.body + body.lines), `${f.key}: Polly-Gon's body`);
+      // A hint never gives the count away before answering, and says it worked.
+      if (!g.draw) {
+        const before = hintFor(g, false), after = hintFor(g, true);
+        assert.ok(!new RegExp(`\\b${g.ans}\\b`).test(before.say.replace(/1\/\?/, "")), `${f.key}: ${before.say}`);
+        assert.ok(![...before.model.matchAll(/>([^<]*)<\/text>/g)].some((m) => m[1] === String(g.ans)), `${f.key}: the drawing doesn't count to ${g.ans}`);
+        assert.ok([...after.model.matchAll(/>([^<]*)<\/text>/g)].some((m) => m[1] === String(g.ans) || m[1] === `1/${g.ans}`) || g.kind === "faces", `${f.key}: worked, it counts to ${g.ans}`);
+      }
+    }
+  }
+  // The grades: K draws and counts its four shapes then hexagons; 1st adds halves and fourths;
+  // 2nd pentagons, a cube's faces, thirds, and squares in rows; 3rd rhombuses, quadrilaterals and
+  // unit fractions. Each stratum's own.
+  const keys = (b) => pool(b).map((f) => f.key);
+  assert.ok(["◇draw:circle", "◇draw:sq", "◇draw:tri", "◇draw:rect", "◇draw:hex", "◇sides:tri", "◇corners:5"].every((k) => keys("shapesK").includes(k)));
+  assert.ok(!keys("shapesK").some((k) => /pent|parts|faces|squares|unit|rhom|quad/.test(k)), "K: no pentagons, parts, faces or fractions");
+  assert.ok(keys("shapesH").includes("◇parts:circle4") && !keys("shapesH").some((k) => /circle3|rect3|squares|unit|faces/.test(k)), "1st: halves and fourths, not thirds");
+  assert.ok(["◇draw:pent", "◇faces:cube", "◇faces:pyramid", "◇parts:circle3", "◇squares:3,4"].every((k) => keys("shapesM").includes(k)));
+  assert.ok(["◇draw:quad", "◇draw:rhom", "◇unit:circle8", "◇unit:rect6g"].every((k) => keys("shapesT").includes(k)) && BANDS.shapesT.strict);
+  assert.deepEqual(["◇faces:cube", "◇faces:pyramid", "◇squares:3,4", "◇unit:rect6g", "◇parts:rect2x"].map((k) => factOf(k).ans), [6, 5, 12, 6, 2]);
+  // A drawing hits for its strand's typical answer: the mean of its counting answers.
+  assert.deepEqual(STRANDS.map(drawHit), [4, 4, 6, 5]);
+  // Polly-Gon asks only shapes, and nobody else does.
+  const polly = MON.find((m) => m.n === "Polly-Gon");
+  for (const b of STRANDS) for (const f of pool(b)) assert.ok(asks(polly)(f.op, f.key), f.key);
+  for (const m of MON.filter((x) => x !== polly)) assert.ok(!asks(m)("◇", "◇sides:3") || m.n === "Judo Judy", `${m.n} doesn't ask shapes`);
+  assert.ok(!asks(polly)("+", "+3,4"));
+  // On a mouse or keyboard, drawing is never asked: choose only counting.
+  const noDraw = (o, k) => asks(polly)(o, k) && !isDrawKey(k);
+  for (let i = 0; i < 200; i++) assert.ok(!isDrawKey(choose("shapesK", {}, { now: 0, rnd: Math.random, asks: noDraw })));
+  // Its HP is a fight's worth of its strand's answers, drawings counted at their hit.
+  for (const b of STRANDS) { const hp = monsterHP(polly, b, {}); assert.ok(hp >= 10 && hp <= 30, `${b}: ${hp} HP`); }
+  // Drawing: the hint joins the dots partway, worked it's the whole shape; the clean shape fits.
+  for (const s of ["circle", "triangle", "square", "rectangle", "rhombus", "pentagon", "hexagon", "quadrilateral"]) {
+    for (const w of [false, true]) assert.ok(!/NaN|undefined/.test(drawHintSvg(s, w) + drawHint(s, w).say), s);
+    for (const r of [null, readShape(closed(polygon(3)))]) {
+      const c = cleanFor(r, s, { x: 0, y: 0, w: 200, h: 120 }).flat();
+      assert.ok(c.length > 2 && c.every(([x, y]) => x >= -0.1 && x <= 200.1 && y >= -0.1 && y <= 120.1), `clean ${s}`);
+    }
+  }
+  assert.deepEqual([...accepts("quadrilateral")].sort(), ["quadrilateral", "rectangle", "rhombus", "square"]);
+  assert.equal(spokenShape(shapeFactOf("◇draw:tri")), "Draw a triangle!");
+  assert.equal(spokenShapeAnswer(shapeFactOf("◇unit:circle4")), "Each part is one fourth.");
+  assert.equal(spokenShapeAnswer(shapeFactOf("◇parts:rect2x")), "Two equal parts: halves.");
+  assert.equal(squawkLine(shapeFactOf("◇draw:hex")), "Squawk! Polly want a hexagon!");
+  // Named shapes come turned the ways they're met, and still have their corners.
+  for (let i = 0; i < 40; i++) for (const k of ["◇sides:tri", "◇sides:sq", "◇sides:rect", "◇sides:rhom", "◇sides:pent", "◇sides:hex"]) { const g = shapeFactOf(k); assert.equal(g.pts.length, g.ans, k); }
+}
+console.log("✓ shapes in the game: keys, strands, levels, hints, Polly-Gon");

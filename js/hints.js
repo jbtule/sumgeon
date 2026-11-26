@@ -10,6 +10,7 @@ import { tfSvg, tfHint, tfFactOf } from "./truefalse.js";
 import { lineSvg, lineHint, lineFactOf } from "./numberline.js";
 import { pvSvg, pvHint, pvFactOf } from "./placevalue.js";
 import { dollarSvg, dollarHint, dollarFactOf } from "./dollars.js";
+import { countSvg, countHint, drawHintSvg, drawHint, shapeFactOf } from "./shapes.js";
 
 // Hints (DESIGN.md §5.3): the models classrooms use now, with the classroom's words, and a line
 // for grown-ups who learned it another way. No DOM: returns { model, say, grownups } where model
@@ -724,7 +725,29 @@ function dollarHintFor(f, worked) {
     grownups: "Dollars and cents: count on from the biggest bill (20, 25, 26 dollars), then the coins in cents. 2nd grade writes it as $26 and 41¢; the decimal ($26.41) waits for 4th grade." };
 }
 
+// Shapes (Polly-Gon, js/shapes.js). Drawing: the shape's corners as dots to join, the first sides
+// drawn; worked, the whole shape with its sides numbered. Counting: drawn on the problem's own
+// picture in a fight (app.js), numbering the sides, corners or parts about halfway; a cube's faces
+// as the 3 you see and the 3 behind; squares by rows, partway.
+const SHAPE_WHY = {
+  draw: "Drawing shapes: kids name a shape by its sides and corners (a triangle has 3 of each), whatever its size or which way it's turned. A square is a rectangle too, so it counts for one.",
+  sides: "Sides and corners: go round the shape with a finger, counting each side (or corner) once, starting at the top. The count names it: 3 is a triangle, 5 a pentagon, 6 a hexagon.",
+  faces: "Faces of a solid: count the flat faces you can see, then the ones hiding at the back (a cube has 3 you can see and 3 behind).",
+  parts: "Equal shares: a whole cut into same-size parts. 2 equal parts are halves, 3 thirds, 4 fourths (or quarters); more parts make each one smaller.",
+  squares: "Rows and columns: a rectangle cut into same-size squares. Kids count a row, then count on by rows (4, 8, 12), the start of area and multiplication.",
+  unit: "Unit fractions: a whole cut into equal parts. Each part is 1 over the number of parts: 4 equal parts, each is 1/4 of the whole."
+};
+function shapeHintFor(f, worked) {
+  if (f.kind === "draw") {
+    return { model: fitted(drawHintSvg(f.shape, worked), 130, worked ? `${f.shape}` : "dots to join"), say: drawHint(f.shape, worked).say, grownups: SHAPE_WHY.draw };
+  }
+  // A tall one (4 rows of 2 squares) is kept short, as every hint's drawing is.
+  const pic = countSvg(f, { hint: true, worked }), [, , w, h] = pic.match(/viewBox="([-\d.]+ ){2}([\d.]+) ([\d.]+)"/).map(Number);
+  return { model: fitted(pic, h > w * 1.2 ? 80 : 130, "the shape, with the hint on it"), say: countHint(f, worked).say, grownups: SHAPE_WHY[f.kind === "corners" ? "sides" : f.kind] };
+}
+
 export function hintFor(f, worked) {
+  if (f.op === "◇") return shapeHintFor(f, worked);
   if (f.op === "✓" || f.op === "✎") return tfHintFor(f, worked);
   if (f.op === "↔") return lineHintFor(f, worked);
   if (f.op === "#") return pvHintFor(f, worked);
@@ -967,6 +990,12 @@ export const STRATEGIES = [
   { title: "Dollars and cents", grade: "2nd", f: dollarFactOf("$10,1+1,1,0,2") },
   { title: "Fractions on a number line", grade: "3rd", f: lineFactOf("↔3/4") },
   { title: "Equal parts", grade: "3rd", f: lineFactOf("↔p4") },
+  { title: "Drawing shapes", grade: "K–3rd", f: shapeFactOf("◇draw:tri") },
+  { title: "Counting sides", grade: "K–2nd", f: shapeFactOf("◇sides:hex", () => 0) },
+  { title: "Faces of a cube", grade: "2nd", f: shapeFactOf("◇faces:cube") },
+  { title: "Equal shares", grade: "1st–2nd", f: shapeFactOf("◇parts:rect4g") },
+  { title: "Rows and columns of squares", grade: "2nd", f: shapeFactOf("◇squares:3,4") },
+  { title: "Unit fractions", grade: "3rd", f: shapeFactOf("◇unit:circle4") },
   { title: "Equal fractions", grade: "3rd", f: fractionFact(1, 2, 4) },
   { title: "Rounding", grade: "3rd", f: roundFact(47, 10) },
   { title: "Area", grade: "3rd", f: rectFact("a", 4, 3) },

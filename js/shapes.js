@@ -1,5 +1,6 @@
-// Shapes (K–3 geometry, Missouri Learning Standards): a prototype for the review page
-// (review/proto/); nothing in the game reads it yet, and it has no fact keys. No DOM: runs in Node.
+// Shapes (K–3 geometry, Missouri Learning Standards): Polly-Gon's problems in the game (its
+// strands shapesK, shapesH, shapesM and shapesT in learn.js; the facts at the end of this file),
+// and the prototype on the review page (review/proto/). No DOM: runs in Node.
 //
 // Two kinds of problem, neither multiple choice:
 // - Draw it: "Draw a triangle!" on the spell pad, read with the same $P recognizer as the spells
@@ -8,8 +9,10 @@
 //   the corners counted along the strokes (circle, pentagon and hexagon are close as clouds), and
 //   the bounding box's aspect for a square or a rectangle (one family of four-sided shapes here).
 // - Count it: how many sides, corners, faces, equal parts or squares, typed on the number pad,
-//   with drawings in the house style.
+//   with drawings in the house style; and 3rd grade's unit fractions (each part is 1/□).
 import { cloud, cloudMatch } from "./sigil.js";
+import { spoken } from "./problems.js";
+import { fractionWords, unitName } from "./third.js";
 
 const DK = "#0c171c", GOLD = "#ffc93c", CORAL = "#ff5a4e", CREAM = "#f3efe4";
 const f1 = (n) => Math.round(n * 10) / 10;
@@ -20,6 +23,7 @@ const rad = (d) => d * Math.PI / 180;
 export const SHAPE_NAMES = ["circle", "triangle", "square", "rectangle", "rhombus", "pentagon", "hexagon"];
 export const CORNERS = { circle: 0, triangle: 3, square: 4, rectangle: 4, rhombus: 4, pentagon: 5, hexagon: 6 };
 export const article = (s) => (/^[aeiou]/.test(s) ? "an " : "a ");
+const cap = (t) => t[0].toUpperCase() + t.slice(1);
 
 // Points of a regular polygon (n corners) in a 100 box, its first corner straight up turned by
 // rot degrees, stretched by sx and sy.
@@ -48,6 +52,9 @@ const BASES = [
   ["circle", "circle", ellipse(1, 1), true],
   ["circle", "round, a little wide", ellipse(1, 0.85), true],
   ["circle", "round, a little tall", ellipse(0.85, 1), true],
+  // A kid's circle on the wide drawing pad often comes out an oval.
+  ["circle", "oval, wide", ellipse(1, 0.68), true],
+  ["circle", "oval, tall", ellipse(0.68, 1), true],
   ["triangle", "triangle", polygon(3)],
   ["triangle", "triangle, point down", polygon(3, 180)],
   ["triangle", "right triangle", [[18, 15], [18, 85], [82, 85]]],
@@ -169,7 +176,7 @@ function even(s, step) {
 // too few counts against a family, and the aspect (long side ÷ short side of the drawing's box)
 // that makes a four-sided shape a square or a rectangle. 3rd grade is stricter.
 export const SHAPE_CLEAR = { fit: 0.3, margin: 0.15 };
-export const CORNER_WEIGHT = 0.3;
+export const CORNER_WEIGHT = 0.3, CIRCLE_CORNERS = 2;
 export const ASPECT = { k: { square: 1.25, rectangle: 1.4 }, third: { square: 1.15, rectangle: 1.3 } };
 const fitOf = (d) => Math.max(0, 1 - d / 3);
 const FAMILY_CORNERS = { circle: 0, triangle: 3, quad: 4, rhombus: 4, pentagon: 5, hexagon: 6 };
@@ -190,7 +197,10 @@ export function readShape(strokes, opt = {}) {
     const d = cloudMatch(c, t.points);
     if (!best[t.family] || d < best[t.family].raw) best[t.family] = { raw: d, t };
   }
-  for (const f in best) best[f].d = best[f].raw * (1 + CORNER_WEIGHT * Math.min(3, Math.abs(corners - FAMILY_CORNERS[f])));
+  // (A round shape is allowed a couple of corners: an oval's tight ends, or where a circle's
+  // stroke meets itself, can count as one.)
+  const off = (f) => (f === "circle" ? Math.max(0, corners - CIRCLE_CORNERS) : Math.abs(corners - FAMILY_CORNERS[f]));
+  for (const f in best) best[f].d = best[f].raw * (1 + CORNER_WEIGHT * Math.min(3, off(f)));
   const ranked = Object.entries(best).sort((a, b) => a[1].d - b[1].d);
   const [fam, top] = ranked[0], next = ranked[1][1];
   const fit = fitOf(top.d), margin = Math.max(0, (next.d - top.d) / next.d);
@@ -223,11 +233,16 @@ export function aspectOf(pts) {
   }
   return best.aspect;
 }
-// Which shapes answer for the one asked. In 3rd grade a square is a rectangle and a rhombus too
-// (3.G.A.1), so drawing one counts; before that, a square and a rectangle are told apart.
-export function accepts(asked, strict) {
+// Which shapes answer for the one asked. A square is a rectangle (four square corners) and a
+// rhombus (four equal sides), so drawing one counts for either: 3rd grade says so (3.G.A.1), and
+// the K and 1st grade guides don't set a square apart from a rectangle either, so a
+// kindergartner's square for "rectangle" isn't marked wrong. A long rectangle is never a square.
+// A quadrilateral (3rd grade) is any four-sided shape. strict (3rd grade) only tightens the
+// aspect line that tells a square from a rectangle (ASPECT).
+export function accepts(asked) {
   const ok = new Set([asked]);
-  if (strict && (asked === "rectangle" || asked === "rhombus")) ok.add("square");
+  if (asked === "rectangle" || asked === "rhombus") ok.add("square");
+  if (asked === "quadrilateral") ["square", "rectangle", "rhombus"].forEach((s) => ok.add(s));
   return ok;
 }
 // Judging a drawing, knowing what was asked (as judge in sigil.js):
@@ -242,14 +257,18 @@ export function judgeShape(r, asked, strict) {
   const ok = accepts(asked, strict);
   if (r.clear && !ok.has(r.shape)) return { outcome: "wrong", fit: r.fit };
   const own = Math.max(...[...ok].map((s) => r.fits[s] || 0));
-  if (ok.has(r.shape) && own >= SHAPE_ACCEPT.good && (r.clear || r.margin >= SHAPE_ACCEPT.near) && r.aspectSure !== false) return { outcome: "hit", fit: own };
+  // Not sure whether it's a square or a rectangle only matters when just one of them answers.
+  const either = ok.has("square") && ok.has("rectangle") && r.family === "quad";
+  if (ok.has(r.shape) && own >= SHAPE_ACCEPT.good && (r.clear || r.margin >= SHAPE_ACCEPT.near || either) && (r.aspectSure !== false || either)) return { outcome: "hit", fit: own };
   if (own >= SHAPE_ACCEPT.floor && (ok.has(r.shape) || own >= r.fit - SHAPE_ACCEPT.gap)) return { outcome: "show", fit: own };
   return { outcome: "retry", fit: own };
 }
 // The clean shape to glow over a drawing: the asked shape's closest template, fitted to the
 // drawing's box (a square and a circle stay square, centered).
 export function cleanShape(r, asked, box) {
-  const t = r && r.template[asked] ? r.template[asked] : SHAPE_TEMPLATES.find((x) => x.family === (asked === "square" || asked === "rectangle" ? "quad" : asked) && x.name.startsWith(asked === "rectangle" ? "wide rectangle" : asked === "square" ? "square" : asked));
+  // (A rhombus's first template is the tall diamond: none is named "rhombus" first.)
+  const fam = asked === "square" || asked === "rectangle" ? "quad" : asked;
+  const t = r && r.template[asked] ? r.template[asked] : SHAPE_TEMPLATES.find((x) => x.family === fam && x.name.startsWith(asked === "rectangle" ? "wide rectangle" : asked === "square" ? "square" : asked)) || SHAPE_TEMPLATES.find((x) => x.family === fam);
   let strokes = t.strokes;
   if (asked === "square") strokes = closed([[15, 15], [85, 15], [85, 85], [15, 85]]);
   if (asked === "rectangle" && box.w < box.h * 1.2 && box.h < box.w * 1.2) strokes = closed([[5, 28], [95, 28], [95, 72], [5, 72]]);
@@ -352,10 +371,17 @@ function badge(x, y, label, strong) {
 }
 const svgBox = (w, h, body, label, pad = 18) => `<svg viewBox="${-pad} ${-pad} ${w + 2 * pad} ${h + 2 * pad}" class="shape" role="img" aria-label="${label}">${sheen}${body}</svg>`;
 
-// The counting drawing. opt.hint: number what's counted; opt.worked: the last one too (before,
-// the last is "?").
+// How many of n things (sides, corners, equal parts) the hint counts before answering: about
+// half (none of 2, just the first of 3), so it never counts to the end; worked, all of them.
+export const partsCounted = (n, worked) => (worked ? n : Math.floor(n / 2));
+// The label on thing i of n: its number while counted, "?" on the last before answering, and
+// nothing on the ones still to count (drawn dimmer).
+const labelOf = (i, n, worked) => (i < partsCounted(n, worked) ? i + 1 : i === n - 1 ? "?" : null);
+
+// The counting drawing. opt.hint: number what's counted, partway (partsCounted); opt.worked: all
+// of it.
 export function countSvg(p, opt = {}) {
-  const hint = opt.hint, worked = opt.worked, lab = (i, n) => (i === n - 1 && !worked ? "?" : i + 1);
+  const hint = opt.hint, worked = opt.worked;
   if (p.kind === "sides" || p.kind === "corners") {
     let s = house(poly(p.pts), COLORS[p.n]);
     if (hint) {
@@ -365,19 +391,20 @@ export function countSvg(p, opt = {}) {
       const cw = convexTurns(p.pts)[0] >= 0 && clockwise(p.pts);
       const order = Array.from({ length: p.n }, (_, i) => (cw ? start + i : start - i + p.n) % p.n);
       order.forEach((idx, i) => {
+        const lab = labelOf(i, p.n, worked), dim = lab == null || lab === "?" ? ' opacity=".45"' : "";
         if (p.kind === "corners") {
           const [x, y] = p.pts[idx], d = Math.hypot(x - cx, y - cy);
-          s += `<circle cx="${f1(x)}" cy="${f1(y)}" r="7" fill="${GOLD}" stroke="${DK}" stroke-width="2.5"/>` + badge(x + (x - cx) / d * 24, y + (y - cy) / d * 24, lab(i, p.n), i === p.n - 1);
+          s += `<circle cx="${f1(x)}" cy="${f1(y)}" r="7" fill="${GOLD}" stroke="${DK}" stroke-width="2.5"${dim}/>` + (lab == null ? "" : badge(x + (x - cx) / d * 24, y + (y - cy) / d * 24, lab, i === p.n - 1));
         } else {
           const a = p.pts[idx], b = p.pts[(idx + (cw ? 1 : -1) + p.n) % p.n], mx = (a[0] + b[0]) / 2, my = (a[1] + b[1]) / 2, d = Math.hypot(mx - cx, my - cy) || 1;
-          s += `<path d="M${f1(a[0])} ${f1(a[1])} L${f1(b[0])} ${f1(b[1])}" stroke="${GOLD}" stroke-width="5" stroke-linecap="round" opacity=".9"/>` + badge(mx + (mx - cx) / d * 22, my + (my - cy) / d * 22, lab(i, p.n), i === p.n - 1);
+          s += `<path d="M${f1(a[0])} ${f1(a[1])} L${f1(b[0])} ${f1(b[1])}" stroke="${GOLD}" stroke-width="5" stroke-linecap="round"${dim || ' opacity=".9"'}/>` + (lab == null ? "" : badge(mx + (mx - cx) / d * 22, my + (my - cy) / d * 22, lab, i === p.n - 1));
         }
       });
     }
     return svgBox(200, 200, s, `a shape with ${p.kind === "sides" ? "sides" : "corners"} to count`, 30);
   }
   if (p.kind === "faces") return solidSvg(p.solid, hint);
-  if (p.kind === "parts") return partsSvg(p, hint, worked);
+  if (p.kind === "parts" || p.kind === "unit") return partsSvg(p, hint, worked);
   return gridSvg(p, hint, worked);
 }
 function clockwise(pts) { let a = 0; pts.forEach((p, i) => { const q = pts[(i + 1) % pts.length]; a += p[0] * q[1] - q[0] * p[1]; }); return a > 0; }
@@ -402,37 +429,49 @@ function solidSvg(solid, hint) {
   if (hint) s += badge(86, 120, 1, false) + badge(128, 105, 2, false);
   return svgBox(180, 170, s, "a square pyramid");
 }
-// A circle or a rectangle cut into n equal parts; the hint shades and numbers them one by one.
+// A circle or a rectangle cut into n equal parts (cut: "across", "down", "diagonal" for 2, or
+// "grid", 2 rows: 4, 6 or 8). The hint shades and numbers them one by one, partway before
+// answering (partsCounted). A unit fraction (kind "unit") has its first part shaded gold all along;
+// worked, that part says 1/n.
 function partsSvg(p, hint, worked) {
   let s = "";
-  const shade = (i) => (hint ? (i % 2 ? "#ff8a7f" : GOLD) : "#5cc8ff");
-  const lab = (i) => (i === p.n - 1 && !worked ? "?" : i + 1);
+  const unit = p.kind === "unit";
+  const shade = (i) => (unit ? (i === 0 ? GOLD : null) : hint && labelOf(i, p.n, worked) != null && labelOf(i, p.n, worked) !== "?" ? (i % 2 ? "#ff8a7f" : GOLD) : null);
+  const label = (i) => (unit && worked && i === 0 ? `1/${p.n}` : labelOf(i, p.n, worked));
+  const tag = (x, y, i) => { const l = label(i); if (!hint || l == null) return ""; return String(l).includes("/") ? fracBadge(x, y, l) : badge(x, y, l, i === p.n - 1); };
   if (p.whole === "circle") {
     const c = 100, r = 85;
     s += house(`<circle cx="${c}" cy="${c}" r="${r}"/>`, "#5cc8ff");
     for (let i = 0; i < p.n; i++) {
-      const a0 = rad(-90 + i * 360 / p.n), a1 = rad(-90 + (i + 1) * 360 / p.n), mid = (a0 + a1) / 2;
-      if (hint) s += `<path d="M${c} ${c} L${f1(c + r * Math.cos(a0))} ${f1(c + r * Math.sin(a0))} A${r} ${r} 0 0 1 ${f1(c + r * Math.cos(a1))} ${f1(c + r * Math.sin(a1))} Z" fill="${shade(i)}" opacity=".85"/>`;
-      if (hint) s += badge(c + r * 0.55 * Math.cos(mid), c + r * 0.55 * Math.sin(mid), lab(i), i === p.n - 1);
+      const a0 = rad(-90 + i * 360 / p.n), a1 = rad(-90 + (i + 1) * 360 / p.n);
+      if (shade(i)) s += `<path d="M${c} ${c} L${f1(c + r * Math.cos(a0))} ${f1(c + r * Math.sin(a0))} A${r} ${r} 0 0 1 ${f1(c + r * Math.cos(a1))} ${f1(c + r * Math.sin(a1))} Z" fill="${shade(i)}" opacity=".85"/>`;
     }
     for (let i = 0; i < p.n; i++) { const a = rad(-90 + i * 360 / p.n); s += `<path d="M${c} ${c} L${f1(c + r * Math.cos(a))} ${f1(c + r * Math.sin(a))}" stroke="${DK}" stroke-width="5" stroke-linecap="round"/>`; }
     s += `<circle cx="${c}" cy="${c}" r="${r}" fill="none" stroke="${DK}" stroke-width="5"/>`;
+    for (let i = 0; i < p.n; i++) { const mid = rad(-90 + (i + 0.5) * 360 / p.n), k = p.n > 6 ? 0.66 : 0.55; s += tag(c + r * k * Math.cos(mid), c + r * k * Math.sin(mid), i); }
     return svgBox(200, 200, s, `a circle in ${p.n} equal parts`);
   }
   const W = 200, H = 130, parts = [];
-  if (p.cut === "grid") for (let i = 0; i < 4; i++) parts.push([[(i % 2) * W / 2, Math.floor(i / 2) * H / 2], [(i % 2 + 1) * W / 2, Math.floor(i / 2) * H / 2], [(i % 2 + 1) * W / 2, (Math.floor(i / 2) + 1) * H / 2], [(i % 2) * W / 2, (Math.floor(i / 2) + 1) * H / 2]]);
-  else if (p.cut === "diagonal") parts.push([[0, 0], [W, 0], [0, H]], [[W, 0], [W, H], [0, H]]);
+  if (p.cut === "grid") {
+    const cols = p.n / 2;
+    for (let i = 0; i < p.n; i++) { const x0 = (i % cols) * W / cols, y0 = Math.floor(i / cols) * H / 2; parts.push([[x0, y0], [x0 + W / cols, y0], [x0 + W / cols, y0 + H / 2], [x0, y0 + H / 2]]); }
+  } else if (p.cut === "diagonal") parts.push([[0, 0], [W, 0], [0, H]], [[W, 0], [W, H], [0, H]]);
   else for (let i = 0; i < p.n; i++) {
     if (p.cut === "down") parts.push([[i * W / p.n, 0], [(i + 1) * W / p.n, 0], [(i + 1) * W / p.n, H], [i * W / p.n, H]]);
     else parts.push([[0, i * H / p.n], [W, i * H / p.n], [W, (i + 1) * H / p.n], [0, (i + 1) * H / p.n]]);
   }
   s += house(poly([[0, 0], [W, 0], [W, H], [0, H]]), "#5cc8ff");
   parts.forEach((q, i) => {
-    if (hint) s += `<g fill="${shade(i)}" opacity=".85">${poly(q)}</g>`;
+    if (shade(i)) s += `<g fill="${shade(i)}" opacity=".85">${poly(q)}</g>`;
     s += `<g fill="none" stroke="${DK}" stroke-width="5" stroke-linejoin="round">${poly(q)}</g>`;
-    if (hint) { const cx = q.reduce((t, v) => t + v[0], 0) / q.length, cy = q.reduce((t, v) => t + v[1], 0) / q.length; s += badge(cx, cy, lab(i), i === p.n - 1); }
   });
+  // A diagonal half's middle is a third of the way in from its square corner.
+  parts.forEach((q, i) => { const cx = q.reduce((t, v) => t + v[0], 0) / q.length, cy = q.reduce((t, v) => t + v[1], 0) / q.length; s += tag(cx, cy, i); });
   return svgBox(W, H, s, `a rectangle in ${p.n} equal parts`);
+}
+// "1/4" in a gold rounded tag, for the shaded part of a unit fraction, worked.
+function fracBadge(x, y, label) {
+  return `<rect x="${f1(x - 22)}" y="${f1(y - 14)}" width="44" height="28" rx="10" fill="${GOLD}" stroke="${DK}" stroke-width="2.5"/><text x="${f1(x)}" y="${f1(y)}" dy=".35em" text-anchor="middle" font-family="Nunito, sans-serif" font-weight="900" font-size="16" fill="${DK}">${label}</text>`;
 }
 // Rows × columns of squares. The hint numbers the first row's squares, then counts on by rows
 // (4, 8 …) only partway before answering: to the halfway row, or just the first row with 2 or 3
@@ -454,16 +493,226 @@ function gridSvg(p, hint, worked) {
 }
 
 // The hint's words (the drawing comes from countSvg with hint on).
+// Before answering, sides, corners and parts are counted about halfway ("1, 2, … How many?");
+// worked, all the way, and the shape's name when it has one ("A hexagon has 6 sides.").
 export function countHint(p, worked) {
-  const list = (n) => Array.from({ length: n }, (_, i) => i + 1).slice(0, worked ? n : n - 1).join(", ") + (worked ? "" : ", ?");
-  if (p.kind === "sides") return { say: `Count each side, going round: ${list(p.n)}${worked ? `. ${p.n} sides.` : ""}` };
-  if (p.kind === "corners") return { say: `Count each corner, going round: ${list(p.n)}${worked ? `. ${p.n} corners.` : ""}` };
+  const upto = partsCounted(p.n, worked), nums = Array.from({ length: upto }, (_, i) => i + 1).join(", ");
+  const count = (what) => (worked ? `${what}: ${nums}.` : upto ? `${what}: ${nums}, … How many?` : `${what}. How many?`);
+  const whose = p.shape ? `${cap(article(p.shape))}${p.shape} has` : "It has";
+  if (p.kind === "sides") return { say: `${count("Count each side, going round")}${worked ? ` ${whose} ${p.n} sides.` : ""}` };
+  if (p.kind === "corners") return { say: `${count("Count each corner, going round")}${worked ? ` ${whose} ${p.n} corners.` : ""}` };
   if (p.kind === "faces") return p.solid === "cube"
     ? { say: `You can see 3 faces. 3 more hide on the back. 3 + 3 = ${worked ? 6 : "?"}` }
     : { say: `4 triangles go round, and a square is on the bottom. 4 + 1 = ${worked ? 5 : "?"}` };
-  if (p.kind === "parts") return { say: `Count the parts: ${list(p.n)}${worked ? `. ${p.n} equal parts.` : ""}` };
+  if (p.kind === "parts") return { say: `${count("Count the parts")}${worked ? ` ${p.n} equal parts.` : ""}` };
+  if (p.kind === "unit") return { say: worked ? `Count the equal parts: ${nums}. Each part is 1/${p.n}.` : `Count the equal parts${upto ? `: ${nums}, …` : "."} Each part is 1/?` };
   // "Each row has 4: 4, 8, … How many in 3 rows?"; worked, "4 + 4 + 4 = 12".
   if (worked) return { say: `${Array.from({ length: p.rows }, () => p.cols).join(" + ")} = ${p.ans}` };
   const run = Array.from({ length: rowsCounted(p, false) }, (_, i) => (i + 1) * p.cols);
   return { say: `Each row has ${p.cols}: ${run.join(", ")}, … How many in ${p.rows} rows?` };
+}
+
+/* ---------- the game's facts (Polly-Gon's strands: learn.js shapesK, shapesH, shapesM, shapesT) ----------
+   Fixed samples with keys, so a level can be learned and every problem is recorded:
+   - "◇draw:tri": draw a triangle (touch screens, on the spell pad). Shapes: circle, tri, sq,
+     rect, rhom, pent, hex, and quad (any four-sided shape, 3rd grade).
+   - "◇sides:tri", "◇corners:hex": the sides (or corners) of a named shape, drawn; "◇sides:5": a
+     shape with 5 sides, drawn uneven and turned any way, so it's counting, not knowing a name.
+   - "◇faces:cube" (6), "◇faces:pyramid" (a square pyramid, 5).
+   - "◇parts:circle4", "◇parts:rect2a": how many equal parts? A rectangle is cut across (a), down
+     (d), corner to corner (x), or in a grid of 2 rows (g).
+   - "◇squares:3,4": 3 rows of 4 squares, how many in all?
+   - "◇unit:circle4", "◇unit:rect6g": one of the equal parts shaded, "each part is 1/□" (3rd grade).
+   A fact: { op: "◇", kind, key, q, ans, … }. A drawing's ans here is its sides (a circle's 0); in
+   a fight it hits for the strand's typical answer instead (learn.js drawHit). */
+export const SHAPE_CODE = { circle: "circle", tri: "triangle", sq: "square", rect: "rectangle", rhom: "rhombus", pent: "pentagon", hex: "hexagon", quad: "quadrilateral" };
+const SIDES = { circle: 0, triangle: 3, square: 4, rectangle: 4, rhombus: 4, pentagon: 5, hexagon: 6, quadrilateral: 4 };
+export const isDrawKey = (key) => String(key).startsWith("◇draw:");
+const x2 = (pts) => pts.map(([x, y]) => [f1(x * 2), f1(y * 2)]);
+// A named shape's corners in a 200 box, turned one of the ways it's met: a triangle point up or
+// down, a square upright or on its corner, a rectangle wide or tall, a rhombus as a diamond or
+// slanted (every side 110 long).
+function namedPts(shape, rnd) {
+  const r = rnd();
+  if (shape === "triangle") return x2(polygon(3, r < 0.7 ? 0 : 180));
+  if (shape === "square") return r < 0.75 ? [[30, 30], [170, 30], [170, 170], [30, 170]] : x2(polygon(4, 0));
+  if (shape === "rectangle") return r < 0.6 ? [[10, 50], [190, 50], [190, 150], [10, 150]] : [[50, 10], [150, 10], [150, 190], [50, 190]];
+  if (shape === "rhombus") return r < 0.5 ? [[100, 8], [160, 100], [100, 192], [40, 100]] : [[10, 145], [120, 145], [175, 49.7], [65, 49.7]];
+  if (shape === "quadrilateral") return [[40, 60], [170, 35], [160, 170], [25, 150]];
+  if (shape === "pentagon") return x2(polygon(5, r < 0.75 ? 0 : 180));
+  return x2(polygon(6, r < 0.5 ? 0 : 30));
+}
+const PARTS = /^(circle|rect)(\d)([adxg]?)$/, CUT = { a: "across", d: "down", x: "diagonal", g: "grid" };
+// A fact from its key; rnd turns a named shape and draws an uneven one.
+export function shapeFactOf(key, rnd = Math.random) {
+  const [kind, arg] = key.slice(1).split(":"), base = { op: "◇", kind, key };
+  if (kind === "draw") { const shape = SHAPE_CODE[arg]; return Object.assign(base, { draw: true, shape, ans: SIDES[shape], q: `Draw ${article(shape)}${shape}` }); }
+  if (kind === "sides" || kind === "corners") {
+    const shape = SHAPE_CODE[arg] || null, n = shape ? SIDES[shape] : Number(arg);
+    return Object.assign(base, { shape, n, pts: shape ? namedPts(shape, rnd) : irregular(n, rnd), ans: n, q: `${cap(kind)} = □` });
+  }
+  if (kind === "faces") return Object.assign(base, { solid: arg, ans: arg === "cube" ? 6 : 5, q: "Faces = □" });
+  if (kind === "squares") { const [rows, cols] = arg.split(",").map(Number); return Object.assign(base, { rows, cols, ans: rows * cols, q: "Squares = □" }); }
+  const m = PARTS.exec(arg), n = Number(m[2]), whole = m[1] === "circle" ? "circle" : "rectangle";
+  return Object.assign(base, { whole, n, cut: whole === "circle" ? "slices" : CUT[m[3]], ans: n, q: kind === "unit" ? "1/□" : "Equal parts = □" });
+}
+// Each strand's levels, in the school's order, as their keys. Drawing is never more than 40% of a
+// level, so on a mouse or keyboard (no drawing: app.js asks counting instead) every level can
+// still be half learned and open the next.
+const K = (kind, list) => list.map((a) => `◇${kind}:${a}`);
+export const SHAPE_STRANDS = {
+  // K (K.GM.A): name and draw circles, squares, triangles and rectangles, then hexagons; their
+  // sides and corners.
+  shapesK: [
+    { name: "Circles, squares, triangles, rectangles", keys: [...K("draw", ["circle", "sq", "tri", "rect"]), ...K("sides", ["tri", "sq", "rect"]), ...K("corners", ["tri", "sq", "rect"])] },
+    { name: "Hexagons, sides and corners", keys: [...K("draw", ["hex"]), ...K("sides", ["hex", 3, 4, 5, 6]), ...K("corners", ["hex", 3, 4, 5, 6])] }
+  ],
+  // 1st (1.GM.A.1, A.3): defining attributes (sides and corners, whatever the shape's size or
+  // turn), then halves and fourths of circles and rectangles.
+  shapesH: [
+    { name: "Sides and corners", keys: [...K("draw", ["circle", "tri", "sq", "rect", "hex"]), ...K("sides", ["tri", "sq", "rect", "hex", 3, 4, 5, 6]), ...K("corners", [3, 4, 5, 6])] },
+    { name: "Halves and fourths", keys: K("parts", ["circle2", "circle4", "rect2a", "rect2d", "rect2x", "rect4a", "rect4d", "rect4g"]) }
+  ],
+  // 2nd (2.GM.A.1–3): shapes with a given number of sides or angles (triangles, quadrilaterals,
+  // pentagons, hexagons) and a cube's faces; equal shares of circles and rectangles in 2, 3 or 4
+  // (a priority standard); a rectangle in rows and columns of squares, counted.
+  shapesM: [
+    { name: "Sides, corners and faces", keys: [...K("draw", ["tri", "sq", "rect", "pent", "hex"]), ...K("sides", ["pent", 3, 4, 5, 6]), ...K("corners", ["pent", 3, 4, 5, 6]), ...K("faces", ["cube", "pyramid"])] },
+    { name: "Equal shares", keys: K("parts", ["circle2", "circle3", "circle4", "rect2a", "rect2d", "rect2x", "rect3a", "rect3d", "rect4a", "rect4d", "rect4g"]) },
+    { name: "Rows and columns of squares", keys: K("squares", [2, 3, 4].flatMap((r) => [2, 3, 4, 5].map((c) => `${r},${c}`))) }
+  ],
+  // 3rd (3.G.A.1, A.2): quadrilaterals (a square is a rectangle and a rhombus), then shapes cut
+  // into equal areas, each part a unit fraction of the whole.
+  shapesT: [
+    { name: "Quadrilaterals", keys: [...K("draw", ["quad", "sq", "rect", "rhom"]), ...K("sides", ["rhom", 4, 5, 6]), ...K("corners", ["rhom", 4, 5, 6])] },
+    { name: "Unit fractions", keys: K("unit", ["circle2", "circle3", "circle4", "circle6", "circle8", "rect2a", "rect3d", "rect4a", "rect4g", "rect6g", "rect8g"]) }
+  ]
+};
+let factCache = null;
+// Every shape fact once (the strands share some: a triangle's sides are K's and 1st grade's).
+export function shapeFacts() {
+  if (factCache) return factCache;
+  const keys = [...new Set(Object.values(SHAPE_STRANDS).flat().flatMap((l) => l.keys))];
+  return (factCache = keys.map((k) => shapeFactOf(k, () => 0.5)));
+}
+
+/* ---------- what's said ---------- */
+// Asked: "Draw a triangle!", "How many sides does this hexagon have?", "How many corners?",
+// "How many faces does this cube have?", "How many equal parts?", "How many squares in all?",
+// and 3rd grade's "The whole is cut into equal parts. Each part is one what?"
+export function spokenShape(p) {
+  if (p.kind === "draw") return spokenDraw(p.shape);
+  if (p.kind === "sides" || p.kind === "corners") return p.shape ? `How many ${p.kind} does this ${p.shape} have?` : `How many ${p.kind}?`;
+  if (p.kind === "faces") return `How many faces does this ${p.solid === "cube" ? "cube" : "pyramid"} have?`;
+  if (p.kind === "parts") return "How many equal parts?";
+  if (p.kind === "squares") return "How many squares in all?";
+  return "The whole is cut into equal parts. Each part is one what?";
+}
+// Said after a miss: what the shape is ("A triangle has three sides and three corners."), or the
+// count ("A hexagon has six sides.", "It has five corners.", "Four equal parts: fourths.",
+// "Three rows of four make twelve squares.", "Each part is one fourth.").
+const DRAWN = { circle: "A circle is round, with no corners.", triangle: "A triangle has three sides and three corners.", square: "A square has four sides, all the same length.",
+  rectangle: "A rectangle has four sides and four square corners.", rhombus: "A rhombus has four sides, all the same length.", pentagon: "A pentagon has five sides and five corners.",
+  hexagon: "A hexagon has six sides and six corners.", quadrilateral: "A quadrilateral has four sides and four corners." };
+export function spokenShapeAnswer(p) {
+  if (p.kind === "draw") return DRAWN[p.shape];
+  if (p.kind === "sides" || p.kind === "corners") return `${p.shape ? cap(article(p.shape)) + p.shape : "It"} has ${spoken(p.n)} ${p.kind}.`;
+  if (p.kind === "faces") return p.solid === "cube" ? "A cube has six faces." : "A square pyramid has five faces.";
+  if (p.kind === "parts") return `${cap(spoken(p.n))} equal parts: ${unitName(p.n)}.`;
+  if (p.kind === "squares") return `${cap(spoken(p.rows))} rows of ${spoken(p.cols)} make ${spoken(p.ans)} squares.`;
+  return `Each part is ${fractionWords(1, p.n, spoken)}.`;
+}
+// Polly-Gon's squawk as its body flashes the shape (🦜 Squawk Back): "Squawk! Polly want a
+// triangle!" for a drawing, the shape's name for a named one, else what's counted.
+export function squawkLine(p) {
+  if (p.kind === "draw") return `Squawk! Polly want ${article(p.shape)}${p.shape}!`;
+  if (p.shape) return `Squawk! ${cap(p.shape)}!`;
+  if (p.kind === "faces") return p.solid === "cube" ? "Squawk! Cube!" : "Squawk! Pyramid!";
+  if (p.kind === "parts" || p.kind === "unit") return "Squawk! Equal parts!";
+  if (p.kind === "squares") return "Squawk! Squares!";
+  return "Squawk! Count with me!";
+}
+// The screen's words for a count (app.js): "Sides = □".
+export const SHAPE_LINE = { sides: "Sides", corners: "Corners", faces: "Faces", parts: "Equal parts", squares: "Squares" };
+
+/* ---------- Polly-Gon's body (🦜 Squawk Back) ----------
+   While it squawks, Polly-Gon's hexagon body becomes the problem's shape (monsters.js draws
+   m.squawk in its place): the shape to draw, or the one to count with its cuts or grid on it, in
+   its body's frame (about 104 across, round (100, 120)). Returns { body, lines }: the shape, filled
+   in Polly-Gon's color, and dark lines over it. */
+const BODY_K = 0.52;
+const toBody = (pts) => pts.map(([x, y]) => [f1(100 + (x - 100) * BODY_K), f1(120 + (y - 100) * BODY_K)]);
+const pathOf = (pts) => `<path d="M${pts.map(([x, y]) => `${x} ${y}`).join(" L")} Z"/>`;
+const ink = (d) => `<path d="${d}" fill="none" stroke="${DK}" stroke-width="4" stroke-linecap="round"/>`;
+export function squawkBody(p) {
+  if (p.shape === "circle") return { body: `<circle cx="100" cy="120" r="48"/>`, lines: "" };
+  if (p.shape) return { body: pathOf(toBody(p.pts || namedPts(p.shape, () => 0))), lines: "" };
+  if (p.kind === "sides" || p.kind === "corners") return { body: pathOf(toBody(p.pts)), lines: "" };
+  if (p.kind === "faces") {
+    if (p.solid === "cube") {
+      // The faces' shared edges drawn over them (the outline goes round the whole).
+      const F = [[52, 98], [126, 98], [126, 172], [52, 172]], up = (q) => [q[0] + 26, q[1] - 24];
+      return { body: pathOf([F[0], F[1], up(F[1]), up(F[0])]) + pathOf([F[1], up(F[1]), up(F[2]), F[2]]) + pathOf(F), lines: ink(`M${F[0].join(" ")} L${F[1].join(" ")} L${F[2].join(" ")} M${F[1].join(" ")} L${up(F[1]).join(" ")}`) };
+    }
+    return { body: pathOf([[46, 164], [118, 164], [100, 70]]) + pathOf([[118, 164], [154, 140], [100, 70]]), lines: ink("M118 164 L100 70") };
+  }
+  if (p.kind === "squares") {
+    const x0 = 48, y0 = 88, w = 104, h = 64;
+    let d = "";
+    for (let c = 1; c < p.cols; c++) d += `M${f1(x0 + c * w / p.cols)} ${y0} V${y0 + h} `;
+    for (let r = 1; r < p.rows; r++) d += `M${x0} ${f1(y0 + r * h / p.rows)} H${x0 + w} `;
+    return { body: `<rect x="${x0}" y="${y0}" width="${w}" height="${h}" rx="3"/>`, lines: ink(d.trim()) };
+  }
+  // Equal parts (and a unit fraction's): the whole with its cuts.
+  if (p.whole === "circle") {
+    const d = Array.from({ length: p.n }, (_, i) => { const a = rad(-90 + i * 360 / p.n); return `M100 120 L${f1(100 + 48 * Math.cos(a))} ${f1(120 + 48 * Math.sin(a))}`; }).join(" ");
+    return { body: `<circle cx="100" cy="120" r="48"/>`, lines: ink(d) };
+  }
+  const x0 = 46, y0 = 88, w = 108, h = 66;
+  let d = "";
+  if (p.cut === "diagonal") d = `M${x0 + w} ${y0} L${x0} ${y0 + h}`;
+  else if (p.cut === "grid") { const cols = p.n / 2; for (let c = 1; c < cols; c++) d += `M${f1(x0 + c * w / cols)} ${y0} V${y0 + h} `; d += `M${x0} ${y0 + h / 2} H${x0 + w}`; }
+  else for (let i = 1; i < p.n; i++) d += p.cut === "down" ? `M${f1(x0 + i * w / p.n)} ${y0} V${y0 + h} ` : `M${x0} ${f1(y0 + i * h / p.n)} H${x0 + w} `;
+  return { body: `<rect x="${x0}" y="${y0}" width="${w}" height="${h}" rx="3"/>`, lines: ink(d.trim()) };
+}
+
+/* ---------- drawing it: the hint and the clean shape ---------- */
+// The hint for a drawing: the shape's corners as dots to join, numbered going round, the first
+// sides drawn and the rest left to do (a circle: its first half traced, the rest dotted).
+// Worked: the whole shape, each side numbered.
+export function drawHintSvg(shape, worked) {
+  let s = "";
+  if (shape === "circle") {
+    s += worked ? house(`<circle cx="100" cy="100" r="80"/>`, "#5cc8ff")
+      : `<circle cx="100" cy="100" r="80" fill="none" stroke="${CREAM}" stroke-width="4" stroke-dasharray="3 10" stroke-linecap="round" opacity=".7"/><path d="M100 20 A80 80 0 0 1 100 180" fill="none" stroke="${GOLD}" stroke-width="7" stroke-linecap="round"/><circle cx="100" cy="20" r="8" fill="${GOLD}" stroke="${DK}" stroke-width="2.5"/>`;
+    return svgBox(200, 200, s, worked ? "a circle" : "a circle, half traced");
+  }
+  const pts = namedPts(shape, () => 0), n = pts.length, cx = pts.reduce((t, q) => t + q[0], 0) / n, cy = pts.reduce((t, q) => t + q[1], 0) / n;
+  if (worked) s += house(poly(pts), COLORS[n]);
+  else {
+    s += `<path d="M${pts.map(([x, y]) => `${f1(x)} ${f1(y)}`).join(" L")} Z" fill="none" stroke="${CREAM}" stroke-width="4" stroke-dasharray="3 10" stroke-linecap="round" opacity=".7"/>`;
+    for (let i = 0; i < Math.floor(n / 2); i++) { const a = pts[i], b = pts[(i + 1) % n]; s += `<path d="M${f1(a[0])} ${f1(a[1])} L${f1(b[0])} ${f1(b[1])}" stroke="${GOLD}" stroke-width="7" stroke-linecap="round"/>`; }
+  }
+  pts.forEach(([x, y], i) => {
+    const d = Math.hypot(x - cx, y - cy) || 1;
+    s += `<circle cx="${f1(x)}" cy="${f1(y)}" r="8" fill="${GOLD}" stroke="${DK}" stroke-width="2.5"/>`;
+    if (!worked) s += badge(x + (x - cx) / d * 24, y + (y - cy) / d * 24, i + 1, false);
+  });
+  // Worked: each side numbered, at its middle.
+  if (worked) pts.forEach((a, i) => { const b = pts[(i + 1) % n], mx = (a[0] + b[0]) / 2, my = (a[1] + b[1]) / 2, d = Math.hypot(mx - cx, my - cy) || 1; s += badge(mx + (mx - cx) / d * 22, my + (my - cy) / d * 22, i + 1, i === n - 1); });
+  return svgBox(200, 200, s, worked ? `${article(shape)}${shape}` : `${n} dots to join`, 30);
+}
+// The hint's words: "A triangle has 3 corners. Join the dots!"; worked, "A triangle has 3 sides
+// and 3 corners."
+export function drawHint(shape, worked) {
+  if (shape === "circle") return { say: worked ? "A circle is round all the way, with no corners." : "A circle is round. Keep going all the way round!" };
+  const n = SIDES[shape], A = cap(article(shape)) + shape;
+  if (worked) return { say: shape === "square" || shape === "rhombus" ? `${A} has 4 sides, all the same length.` : `${A} has ${n} sides and ${n} corners.` };
+  return { say: `${A} has ${n} corners. Join the dots!` };
+}
+// The clean shape to glow over a drawing (cleanShape), for the shape that answered: what they drew
+// when it counts (a square for "rectangle"), or the one asked (a rectangle for "quadrilateral").
+export function cleanFor(r, asked, box) {
+  const ok = accepts(asked), mine = r && ok.has(r.shape);
+  return cleanShape(mine ? r : null, mine ? r.shape : asked === "quadrilateral" ? "rectangle" : asked, box);
 }

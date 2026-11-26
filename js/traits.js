@@ -30,7 +30,9 @@ export const TRAITS = {
   "Halfling": { icon: "½", name: "Halves", text: "Fractions on a line, and equal ones" },
   // Batch 1 of the strands (time and patterns): each asks only its own strand.
   "Tick-Tockus": { icon: "🕒", name: "Tick Tock", text: "Asks the time" },
-  "Slimelipsis": { icon: "🫧", name: "What's Next", text: "Counts in patterns" }
+  "Slimelipsis": { icon: "🫧", name: "What's Next", text: "Counts in patterns" },
+  // Shapes: its body flashes the shape it asks for as it squawks (app.js squawk).
+  "Polly-Gon": { icon: "🦜", name: "Squawk Back", text: "Squawks the shape it wants" }
 };
 
 // A fact key's two numbers: "+3,8" and "□+7,7" (7 + □ = 14) give [3, 8] and [7, 7].
@@ -68,9 +70,11 @@ export function asks(m) {
   // Tick-Tockus tells time, Slimelipsis counts in patterns (and odd and even): their strands'.
   if (k === "Tick-Tockus") return (op) => op === "⌚";
   if (k === "Slimelipsis") return (op) => op === "…" || op === "◐";
+  // Polly-Gon: shapes, drawn and counted (its strand in each stratum).
+  if (k === "Polly-Gon") return (op) => op === "◇";
   // True or false and fix it are the Equal Twins' (and Judo Judy's, who asks the Hall's whole mix).
-  if (k === "Quizard") return (op) => !"○Σ⌚…◐✓✎".includes(op);
-  return (op) => !"○=Σ⌚…◐✓✎".includes(op);
+  if (k === "Quizard") return (op) => !"○Σ⌚…◐✓✎◇".includes(op);
+  return (op) => !"○=Σ⌚…◐✓✎◇".includes(op);
 }
 
 // A monster's trait, or null. Cursed digits have Lucky Number (DESIGN.md §6.6).

@@ -19,6 +19,7 @@ import { tfFacts } from "./truefalse.js";
 import { lineFacts } from "./numberline.js";
 import { pvFacts } from "./placevalue.js";
 import { dollarFacts } from "./dollars.js";
+import { shapeFacts, squawkLine } from "./shapes.js";
 import { traitOf } from "./traits.js";
 import { QUIPS, FINALS, CRIT, TEAM_LINES, TEAM_NUMBERS, CAPTAIN_LINES, captainNames } from "./moments.js";
 import { fewest, ITEMS } from "./loot.js";
@@ -46,6 +47,10 @@ export var PHRASE = {
   nowCents: "Now the cents!",
   // True or false (the Equal Twins): the two big keys, the first couple of times.
   tfHow: "Is it true? Tap True or False!",
+  // Drawing a shape (Polly-Gon), the first few times; and when a drawing can't be read twice,
+  // a counting problem takes its place.
+  drawHow: "Draw the shape with your finger, then tap Cast!",
+  countInstead: "Let's count instead!",
   deeper: "Go deeper for tougher monsters, or play again!",
   paused: "Paused. Tap the big button to keep fighting.",
   exitSure: "Tap again to leave the dungeon.",
@@ -127,8 +132,12 @@ export var TRAIT_LINE = {
   "Arrays": "Count the rows! Every row is the same.",
   "Halves": "Fractions! Find the one that's the same size.",
   "Tick Tock": "What time is it? Read the clock!",
-  "What's Next": "What comes next? Count the pattern!"
+  "What's Next": "What comes next? Count the pattern!",
+  "Squawk Back": "Listen for the squawk! Its body shows the shape."
 };
+// Polly-Gon's squawk as its body flashes the problem's shape (shapes.js squawkLine): "Squawk! Polly
+// want a triangle!", in its monster sprite.
+export function squawk(p) { return squawkLine(p); }
 export function luckyLine(d) { return "Answers with " + aDigit(d) + " hit double!"; }
 // The line for monster m's trait, or null (Plusquito has none).
 export function traitLine(m) {
@@ -250,7 +259,7 @@ export function changeLine(c) { return "Here's " + cents(c) + " back!"; }
 
 // [{ kind, text }], each once.
 // The groups the listen check (review/listen/) plays lines in.
-export var GROUPS = ["Phrases", "Monsters & heroes", "Add & subtract", "Times & divide", "Missing numbers", "Which is more", "Coins", "Two-digit", "Three-digit", "Balance Hall", "Compare to 1000", "Three numbers", "Up to four numbers", "Arrays", "Time", "Patterns", "True or false", "Place value", "Dollars", "Number line", "Fractions", "Rounding", "Area & perimeter", "Hero quips", "Team-ups", "Captain lines", "Boss forms", "Chests & items", "Money", "Shop", "Clothing"];
+export var GROUPS = ["Phrases", "Monsters & heroes", "Add & subtract", "Times & divide", "Missing numbers", "Which is more", "Coins", "Two-digit", "Three-digit", "Balance Hall", "Compare to 1000", "Three numbers", "Up to four numbers", "Arrays", "Time", "Patterns", "True or false", "Place value", "Dollars", "Number line", "Shapes", "Fractions", "Rounding", "Area & perimeter", "Hero quips", "Team-ups", "Captain lines", "Boss forms", "Chests & items", "Money", "Shop", "Clothing"];
 
 // [{ kind, text, group, sprite? }], each once.
 export function spokenLines() {
@@ -326,6 +335,9 @@ export function spokenLines() {
   [[tfFacts, "True or false"], [pvFacts, "Place value"], [dollarFacts, "Dollars"], [lineFacts, "Number line"]].forEach(function (set) {
     set[0]().forEach(function (f) { add("q", spokenProblem(f), set[1]); add("q", spokenFact(f), set[1]); });
   });
+  // Shapes (Polly-Gon): "Draw a triangle!", "How many sides does this hexagon have?", and what the
+  // shape is or how many after a miss; and its squawks, in its monster sprite ("names").
+  shapeFacts().forEach(function (f) { add("q", spokenProblem(f), "Shapes"); add("q", spokenFact(f), "Shapes"); add("m", squawk(f), "Shapes", "names"); });
   // Coins (Trollar): "two dimes and three pennies. How many cents?", and the answer.
   coinFacts().forEach(function (f) { add("q", spokenProblem(f), "Coins"); add("q", spokenFact(f), "Coins"); });
   // The two-digit problems (Haberhasher): "thirty-eight plus twenty-five", and "… is sixty-three";
@@ -383,7 +395,7 @@ export function estSeconds(text) { return text.length / CHARS_PER_S + SPRITE_GAP
 // (runSprites).
 export var ALWAYS = ["phrases-start", "phrases-fight", "phrases-explain", "heroes", "quips", "captains", "bosses", "loot", "money", "depths", "shop", "change", "clothes"];
 var slug = function (t) { return t.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, ""); };
-var KIND = { "+": "add", "-": "sub", "×": "mul", "÷": "div", "□": "bonds", "○": "cmp", "=": "bal", "¢": "coins", "M": "more", "/": "frac", "≈": "round", "▭": "rect", "Σ": "three", "▦": "arrays", "✓": "tf", "✎": "fix", "↔": "line", "#": "pv", "$": "dollars" };
+var KIND = { "+": "add", "-": "sub", "×": "mul", "÷": "div", "□": "bonds", "○": "cmp", "=": "bal", "¢": "coins", "M": "more", "/": "frac", "≈": "round", "▭": "rect", "Σ": "three", "▦": "arrays", "✓": "tf", "✎": "fix", "↔": "line", "#": "pv", "$": "dollars", "◇": "shapes" };
 var memo = null;
 function index() {
   if (memo) return memo;
@@ -392,10 +404,12 @@ function index() {
   // it's in; the heroes' (and the cursed digits') in "heroes", which every stratum can need.
   MON.concat(allLooks()).forEach(function (m) { [monsterName(m), monsterCleared(m), monsterWon(m)].forEach(function (t) { names[t] = names[t] || "m-" + slug(m.base || m.n); }); });
   HEROES.forEach(function (h) { [heroName(h), monsterName(cursedMonster(h.d)), heroJoins(h), heroCursed(h), heroRescue(h), heroAlmost(h), heroHelps(h)].forEach(function (t) { names[t] = "heroes"; }); });
+  // Polly-Gon's squawks are only said on its floor, so they're in its sprite.
+  shapeFacts().forEach(function (f) { names[squawk(f)] = "m-polly-gon"; });
   // Phrases by when they're said: the start screen and a run's end, explanations, and the fight.
   [PHRASE.enter, PHRASE.pickGrade, PHRASE.pickHero, PHRASE.heroFirst, PHRASE.deeper, PHRASE.exitSure, PHRASE.unlocked, PHRASE.win]
     .concat(WINGS.map(wingCleared), WINGS.map(wingOpened)).forEach(function (t) { phrases[t] = "phrases-start"; });
-  [PHRASE.hitHow, PHRASE.cmpHow, PHRASE.cmpSame, PHRASE.spellHow, PHRASE.paused, PHRASE.tfHow]
+  [PHRASE.hitHow, PHRASE.cmpHow, PHRASE.cmpSame, PHRASE.spellHow, PHRASE.paused, PHRASE.tfHow, PHRASE.drawHow]
     .concat(Object.values(TRAIT_LINE), HEROES.map(function (h) { return luckyLine(h.d); }), REVERSIBLE.map(reversedLine), [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map(howToWriteLine))
     .forEach(function (t) { phrases[t] = "phrases-explain"; });
   // Problems: every line a band can say, found from its facts the way the game asks them (both

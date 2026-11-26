@@ -3,10 +3,11 @@
 import { MON, svg, LOOKS, lookOf, allLooks, CHOMP_SHUT } from "./monsters.js";
 import { chompPose, morePose, mouthOf, SNAP, FLIP_MS, SNAP_MS, EAT_MS } from "./chomp.js";
 import { spokenProblem, spokenFact } from "./problems.js";
-import { BANDS, choose, factOf, record as recordAnswer, helpFor, openLevel, monsterHP, probeKey, tierOf, skipTo, SKIP_PROBES, SKIP_WINDOW, MAX_LEAP, fluentTime, spellKey, RECENT } from "./learn.js";
+import { BANDS, choose, factOf, record as recordAnswer, helpFor, openLevel, monsterHP, probeKey, tierOf, skipTo, SKIP_PROBES, SKIP_WINDOW, MAX_LEAP, fluentTime, spellKey, RECENT, pool, drawHit } from "./learn.js";
+import { countSvg, readShape, judgeShape, cleanFor, squawkBody, isDrawKey, SHAPE_LINE, SHAPE_CODE, article } from "./shapes.js";
 import { hintFor, STRATEGIES } from "./hints.js";
 import { openStore, displayName } from "./store.js";
-import { PHRASE, monsterName, monsterCleared, monsterWon, heroJoins, heroCursed, heroRescue, heroAlmost, heroHelps, traitLine, BARK, wingCleared, wingOpened, depthLine, DEPTH_MAX_SPOKEN, reversedLine, howToWriteLine, quipLine } from "./lines.js";
+import { PHRASE, monsterName, monsterCleared, monsterWon, heroJoins, heroCursed, heroRescue, heroAlmost, heroHelps, traitLine, BARK, wingCleared, wingOpened, depthLine, DEPTH_MAX_SPOKEN, reversedLine, howToWriteLine, quipLine, squawk } from "./lines.js";
 import { WINGS, wingOf, runFloors, openWings, toOpen, floorStars, wingStars, depthScale, depthHP, deepest, MAP_DEPTHS, GRADES, gradeLabel, gradeName, withGrade, bandOf, gradeBand, OLD_BANDS } from "./wings.js";
 import { missingOf, pickBlank, filled, spokenMissing, MISSING_SHARE, canHide } from "./missing.js";
 import { rectSvg } from "./third.js";
@@ -356,6 +357,9 @@ function probUI() {
   else if (p.op === "#") box.innerHTML = pvSvg(p, { hint: G.hinted }) + `<span class="find pvline">${pvLine(p).map((x) => (x === null ? BLANK : esc(x))).join("")}</span>`;
   // Dollars (Trollar): the bills (and coins), and "$□" or "$□ and □¢" in two slots.
   else if (p.op === "$") box.innerHTML = dollarSvg(p, { hint: G.hinted }) + `<span class="find tline">${dollarLine(p).map((x, i, a) => (x !== null ? esc(x) : slotHTML(a.slice(0, i).filter((y) => y === null).length, p))).join("")}</span>`;
+  // Shapes (Polly-Gon): "Draw a triangle" over the drawing pad, or the shape to count over its
+  // line ("Sides = □", "Each part = 1/□"), the hint drawn on the shape.
+  else if (p.op === "◇") box.innerHTML = shapeHTML(p);
   // A two- or three-digit sum or difference, stacked in columns (G.cur.stacked): ones under ones,
   // a line, and the answer filling in under it, right-aligned.
   else if (p.stacked) box.innerHTML = stackHTML(p);
@@ -395,10 +399,11 @@ function probUI() {
   // Three-digit numbers on one line ("287 + 359 ="), a little smaller so it fits an iPhone SE.
   else if ((p.op === "+" || p.op === "-") && Math.max(p.x, p.y) >= 100) box.innerHTML = `<span class="wide3">${esc(p.q)} =</span>`;
   else box.textContent = p.q + " =";
-  document.querySelector(".game").classList.toggle("missing", !!p.blank || !!p.sym || p.op === "=" || !!p.find || !!p.stacked || "/≈▭▦⌚…◐✓✎↔#$".includes(p.op));
-  padUI(p.spell ? "spell" : p.op === "✓" ? "tf" : p.sym ? "cmp" : "num");
+  document.querySelector(".game").classList.toggle("missing", !!p.blank || !!p.sym || p.op === "=" || !!p.find || !!p.stacked || "/≈▭▦⌚…◐✓✎↔#$◇".includes(p.op));
+  padUI(p.spell ? "spell" : p.draw ? "draw" : p.op === "✓" ? "tf" : p.sym ? "cmp" : "num");
   document.querySelector(".game").classList.toggle("cents", p.op === "¢" && !p.find);
-  document.querySelector(".game").classList.toggle("find", !!p.find || "▭▦⌚◐✓✎↔#$".includes(p.op));
+  document.querySelector(".game").classList.toggle("find", !!p.find || "▭▦⌚◐✓✎↔#$".includes(p.op) || (p.op === "◇" && !p.draw));
+  document.querySelector(".game").classList.toggle("shape", p.op === "◇" && !p.draw);
   document.querySelector(".game").classList.toggle("stack", !!p.stacked);
   // A wide picture over its line (batch 2's): on phones the 🔊 and 💡 buttons stack beside it.
   document.querySelector(".game").classList.toggle("pic", "✓✎↔#$".includes(p.op));
@@ -423,6 +428,14 @@ function stackHTML(p) {
   const nums = p.nums || [p.x, p.y], w = Math.max(...nums.map((n) => String(n).length), String(p.ans).length);
   const rows = nums.map((n, i) => `<span class="sop">${i === nums.length - 1 ? (p.op === "-" ? "−" : "+") : ""}</span><span class="snum">${n}</span>`).join("");
   return `<span class="stacked${nums.length > 2 ? " rows" + nums.length : ""}" style="--w:${w}" role="img" aria-label="${esc(p.q)}">${rows}<span class="sbar"></span><span class="sop"></span><span class="snum sans"><span class="blank" id="blank">?</span></span></span>`;
+}
+// A shape problem (Polly-Gon): what to draw (the voice says it too; the body flashes it), or the
+// shape to count over its line, with the hint drawn on it once it's open.
+function shapeHTML(p) {
+  if (p.draw) return `<span class="drawask">Draw ${article(p.shape)}<b>${esc(p.shape)}</b></span>`;
+  const pic = countSvg(p, { hint: G.hinted });
+  if (p.kind === "unit") return pic + `<span class="find">Each part = <span class="frac"><span>1</span><span>${BLANK}</span></span></span>`;
+  return pic + `<span class="find">${SHAPE_LINE[p.kind]} = ${BLANK}</span>`;
 }
 // How often a two- or three-digit + or − is stacked (always on Margot-Rythm's floor: her art is a
 // stacked sum with a carried 1). ?stacked stacks every one, for testing.
@@ -463,6 +476,14 @@ function shownFact(p, ans) {
   if (p.op === "↔") return p.kind === "parts" ? `${b(p.d)} equal parts` : `${b(p.n)}/${p.d}`;
   if (p.op === "#") return pvLine(p).map((x) => (x !== null ? esc(x) : b(p.ans))).join("");
   if (p.op === "$") return b(moneyText(p));
+  // Shapes: "Here's a triangle." (a drawing), "A hexagon has 6 sides", "Corners = 5",
+  // "Each part = 1/4".
+  if (p.op === "◇") {
+    if (p.draw) return `Here's ${article(p.shape)}${b(p.shape)}.`;
+    if (p.kind === "unit") return `Each part = 1/${b(p.ans)}`;
+    if (p.shape) return `${esc(article(p.shape).trim().replace(/^a/, "A"))} ${esc(p.shape)} has ${b(p.ans)} ${p.kind}`;
+    return `${SHAPE_LINE[p.kind]} = ${b(p.ans)}`;
+  }
   if (p.sym) return p.q.replace("□", typeof ans === "string" && ans.startsWith("<b>") ? `<b>${esc(p.sym)}</b>` : p.sym);
   if (p.blank || p.op === "=" || p.op === "/" || p.op === "≈" || p.op === "▦") return filled(p, ans);
   if (p.op === "▭") return p.w + " by " + p.h + ": " + filled(p, ans);
@@ -587,7 +608,10 @@ function newProblem() {
   const m = G.floors[G.floor];
   // Skipping ahead: while you answer fluently, each problem is a probe from a tier above.
   // And not the same kind of problem with the same answer as the last two, when there's a choice.
-  const bk = strandOf(m), f = flowOf(bk), avoidAns = G.recentAns || [], op = m.op === "mix" || bk !== st.band ? null : m.op, kinds = asks(m);
+  // Drawing a shape (Polly-Gon) needs a touch screen, as spells do: on a mouse or keyboard it's
+  // never asked, and the shape strands' counting problems carry on (shapes.js keeps drawing under
+  // half of every level, so each can still open the next).
+  const bk = strandOf(m), f = flowOf(bk), avoidAns = G.recentAns || [], op = m.op === "mix" || bk !== st.band ? null : m.op, kinds = drawable(asks(m));
   // Spell casting: about 1 problem in 6 is drawn as a sigil instead of typed (touch screens;
   // ?spells for every one): a fact already learned with a one-digit answer. It's picked before
   // probing, since a fluent player is probing nearly every problem and would never get one.
@@ -607,6 +631,9 @@ function newProblem() {
   $("charge").hidden = !G.charged;
   if (G.charged) { sfx.charge(); say("p", PHRASE.charged, false, () => G.charged && !G.busy); }
   G.cur = factOf(key);
+  // A shape to draw hits for its strand's typical answer (learn.js drawHit). Without a touch screen
+  // (a missed one coming back, or ?fact=), a counting problem about it instead.
+  if (G.cur.draw) { if (canSpell()) G.cur.ans = drawHit(bk); else G.cur = factOf(countFor(G.cur, bk)); }
   G.cur.probe = !!probe;
   G.recentAns = [G.cur.op + " " + G.cur.ans].concat(G.recentAns || []).slice(0, 2);
   // Quizard hides a number in every problem; other monsters sometimes do, for facts in review.
@@ -615,9 +642,10 @@ function newProblem() {
   // canHide), and not a fact that already has its □.)
   if (!spell && !G.cur.blank && "+-×÷".includes(G.cur.op) && canHide(G.cur) && (m.blank || (rec && rec.b >= 3 && Math.random() < MISSING_SHARE))) G.cur = missingOf(G.cur, pickBlank());
   // ?spells makes every one-digit problem a spell, for testing.
-  const digit = !G.cur.sym && Number.isInteger(G.cur.ans) && G.cur.ans >= 0 && G.cur.ans <= 9;
+  // (Not shapes: a drawn shape is drawn already, and a count has its picture.)
+  const digit = !G.cur.sym && G.cur.op !== "◇" && Number.isInteger(G.cur.ans) && G.cur.ans >= 0 && G.cur.ans <= 9;
   G.cur.spell = !!spell || (SPELLS_ALWAYS && canSpell() && !probe && digit);
-  G.spellFails = 0;
+  G.spellFails = 0; G.drawFails = 0; G.drawn = null;
   // Coins lie as they fall: sides at random (a single coin shows the side asked), a pile shuffled.
   if (G.cur.op === "¢") G.cur.pile = pileOf(G.cur, Math.random);
   // Flip (Judo Judy): 3 + 8 is thrown so it shows 8 + 3, the same fact (traits.js flipOf). The
@@ -644,12 +672,17 @@ function newProblem() {
   if (onChompers() && G.chomp !== G.chompFace) chompTurn(G.chompFace);
   if (flipped) judoThrow(G.cur);
   if (dice) diceFlash(G.cur);
+  // Polly-Gon squawks the shape as its body flashes it (🦜 Squawk Back), before it's asked.
+  squawkFlash(G.cur);
   // Coins ("How many dimes?") and comparisons can't be read off the screen by a pre-reader, so
   // the voice reads them, after the monster's name. Skipped if it's answered first.
   // Time and patterns too: "What time is it?" isn't on the screen, and a row of slimes is read
   // like counting out loud ("Two, four, six. What comes next?").
-  // Batch 2's too: an equation to judge, a number line, blocks, and money are read out.
-  if ("¢○⌚…◐✓✎↔#$".includes(G.cur.op) || G.cur.op === "more") say("q", spokenProblem(G.cur), false, asked(G.cur));
+  // Batch 2's too: an equation to judge, a number line, blocks, and money are read out; and
+  // shapes ("Draw a triangle!", "How many sides?").
+  if ("¢○⌚…◐✓✎↔#$◇".includes(G.cur.op) || G.cur.op === "more") say("q", spokenProblem(G.cur), false, asked(G.cur));
+  // Drawing a shape: how, the first few times.
+  if (G.cur.draw) { setMsg(`Draw ${article(G.cur.shape)}${G.cur.shape}!`, "good"); if (once("draw", 3)) say("p", PHRASE.drawHow, false, asked(G.cur)); }
   // The first true or false problems: how the two big keys work.
   if (G.cur.op === "✓" && once("truefalse", 2)) say("p", PHRASE.tfHow, false, asked(G.cur));
   // The first comparison: how the < = > keys work.
@@ -833,7 +866,8 @@ function openHint() {
   G.hinted = true;
   // Time and patterns draw the hint on the problem's own picture (Tick-Tockus's clock, the
   // slimes), so only its words open here.
-  const inline = "⌚…◐✓✎↔#$".includes(G.cur.op);
+  // (A shape to count too; a shape to draw shows its dots to join in the hint.)
+  const inline = "⌚…◐✓✎↔#$".includes(G.cur.op) || (G.cur.op === "◇" && !G.cur.draw);
   if (inline) { probUI(); ansUI(); clockArt(h.layer); }
   // An equation in their words doesn't break across lines ("35 + 2 = ?").
   box.innerHTML = (inline ? "" : `<div class="model">${h.model}</div>`) + `<p class="hsay">${esc(inline ? h.say.replace(/ ([=+−→]) /g, "\u00a0$1\u00a0") : h.say)}</p>`;
@@ -892,14 +926,17 @@ function submit() {
   // takes the number and levels.
   if (G.cur.op === "✓") { G.tfDone = true; probUI(); }
   // A comparison's answer is its symbol (<, = or >); everything else is a number.
-  const right = G.cur.slots ? G.slot.vals.every((v, i) => v !== "" && Number(v) === G.cur.slots[i]) : G.cur.sym ? G.input === G.cur.sym : Number(G.input) === G.cur.ans;
+  // A drawn shape was judged as it was cast (castShape).
+  unsquawk();
+  const right = G.cur.draw ? G.drawn === "right" : G.cur.slots ? G.slot.vals.every((v, i) => v !== "" && Number(v) === G.cur.slots[i]) : G.cur.sym ? G.input === G.cur.sym : Number(G.input) === G.cur.ans;
   if (right && G.fix) { G.fix.done = true; probUI(); ansUI(); }
   if (right) {
     G.busy = true; G.solved++;
     if (!G.hinted) G.streak++;
     G.floorStreak = Math.max(G.floorStreak, G.streak);
-    // A comparison hits with the bigger number (Chompers eats it), so its digits are what fly.
-    const typed = G.cur.sym ? String(G.cur.ans) : G.input, crit = G.streak >= 3, bonus = heroBonus(typed), m = G.floors[G.floor];
+    // A comparison hits with the bigger number (Chompers eats it), so its digits are what fly; a
+    // drawn shape, with what it hits for.
+    const typed = G.cur.sym || G.cur.draw ? String(G.cur.ans) : G.input, crit = G.streak >= 3, bonus = heroBonus(typed), m = G.floors[G.floor];
     // The monster's trait: Lucky Number, Ten Smash, Armor, Carry the One (traits.js).
     const trait = hitBy(m, G.cur.ans, typed, G.halved, G.cur);
     // A spell drawn backwards fizzles at half damage.
@@ -953,6 +990,8 @@ function submit() {
   } else {
     // Chompers snaps at the picked side, clacks, and turns to the right way, then the usual miss.
     const pose = chompFor(G.cur, G.input);
+    // A drawing read clearly as another shape: "That looks like a square!"
+    if (G.cur.draw && G.drawRead) return miss(`That looks like ${article(G.drawRead)}${G.drawRead}!`);
     if (!pose) return miss("Oops!");
     G.busy = true;
     chompAct(pose).then(() => miss("Oops!"));
@@ -2232,8 +2271,9 @@ async function chompAct(pose) {
 function press(k) {
   if (G.next && k === "go") return nextAfterMiss();
   if (G.busy) return;
-  if (G.cur && G.cur.spell) {
-    if (k === "go") return castSpell();
+  unsquawk(); // Polly-Gon's flash ends as soon as anything's pressed
+  if (G.cur && (G.cur.spell || G.cur.draw)) {
+    if (k === "go") return G.cur.draw ? castShape() : castSpell();
     if (k === "clear" || k === "del") { sfx.tick(); sigilReset(); }
     return; // digits wait for the number pad
   }
@@ -2326,7 +2366,7 @@ let strokes = [], drawing = null;
 function sigilSetup() {
   const c = $("sigil");
   sigilReset();
-  c.onpointerdown = (e) => { if (G.busy) return; e.preventDefault(); c.setPointerCapture(e.pointerId); drawing = [sigilPoint(e)]; strokes.push(drawing); paintSigil(); };
+  c.onpointerdown = (e) => { if (G.busy) return; e.preventDefault(); unsquawk(); c.setPointerCapture(e.pointerId); drawing = [sigilPoint(e)]; strokes.push(drawing); paintSigil(); };
   c.onpointermove = (e) => { if (!drawing) return; drawing.push(sigilPoint(e)); paintSigil(); };
   c.onpointerup = c.onpointercancel = () => { drawing = null; };
 }
@@ -2413,22 +2453,113 @@ function castSpell() {
   submit();
 }
 
+/* ---------- drawing a shape (Polly-Gon, js/shapes.js) ----------
+   "Draw a triangle!" on the spell pad, read with the shape templates and judged knowing the shape
+   asked (shapes.js judgeShape), as a spell is. Unlike a spell it's the math here, so it records
+   the fact like any answer. Touch screens only (canSpell).
+   - Right (a good or a rough match, or a square for "rectangle"): a hit, for the strand's typical
+     answer (learn.js drawHit), and a clean shape glows over the drawing.
+   - Read clearly as another shape: a miss, "That looks like a square!", with the right shape
+     glowing over it and the worked hint on the Oops card.
+   - Can't tell: try again, no cost; after two, a counting problem about it instead, the way a
+     spell falls back to the number pad. */
+const drawable = (kinds) => (canSpell() ? kinds : (o, key) => kinds(o, key) && !isDrawKey(key));
+// A counting problem in place of a drawing: the shape's own sides or corners when its strand has
+// them open, else any counting problem open there.
+function countFor(p, bk) {
+  const code = Object.keys(SHAPE_CODE).find((c) => SHAPE_CODE[c] === p.shape), L = openLevel(bk, recs);
+  const counts = pool(bk).filter((f) => f.op === "◇" && !isDrawKey(f.key)), open = counts.filter((f) => f.level <= L);
+  const own = open.filter((f) => f.key === "◇sides:" + code || f.key === "◇corners:" + code);
+  const list = own.length ? own : open.length ? open : counts.length ? counts : pool("shapesK").filter((f) => !isDrawKey(f.key));
+  return list[Math.floor(Math.random() * list.length)].key;
+}
+function castShape() {
+  if (G.busy || !strokes.length) return;
+  const p = G.cur, strict = !!(BANDS[strandOf(G.floors[G.floor])] || {}).strict;
+  const r = readShape(strokes, { strict }), j = judgeShape(r, p.shape, strict);
+  if (j.outcome === "retry") {
+    G.drawFails++;
+    sfx.crack();
+    if (G.drawFails >= 2) return drawToCount();
+    setMsg("Hmm, I can't tell what that is. Try again!", "bad"); sigilReset();
+    say("p", PHRASE.spellAgain, true);
+    return;
+  }
+  // The clean shape glows over the drawing, theirs dimmed: what they drew when it counts, or the
+  // shape asked. A tiny drawing gets it in the middle of the pad.
+  const c = $("sigil").getBoundingClientRect(), pts = strokes.flat(), xs = pts.map((v) => v[0]), ys = pts.map((v) => v[1]);
+  const w = Math.max(...xs) - Math.min(...xs), h = Math.max(...ys) - Math.min(...ys);
+  const box = w + h > 40 ? { x: Math.min(...xs), y: Math.min(...ys), w, h } : { x: c.width * 0.3, y: c.height * 0.15, w: c.width * 0.4, h: c.height * 0.7 };
+  const clean = cleanFor(j.outcome === "wrong" ? null : r, p.shape, box);
+  paintSigil((g) => {
+    g.shadowColor = "#7fdc8a"; g.shadowBlur = 20; g.strokeStyle = "#e8ffe9"; g.lineWidth = 7;
+    for (const s of clean) { g.beginPath(); s.forEach(([x, y], i) => (i ? g.lineTo(x, y) : g.moveTo(x, y))); g.stroke(); }
+  }, 0.35);
+  G.drawn = j.outcome === "wrong" ? "wrong" : "right";
+  G.drawRead = j.outcome === "wrong" ? r.shape : null;
+  G.input = "◇";
+  submit();
+}
+// Two drawings that couldn't be read: a counting problem takes its place (no heart lost, and the
+// drawing's record unchanged).
+function drawToCount() {
+  const key = countFor(G.cur, strandOf(G.floors[G.floor]));
+  G.cur = factOf(key);
+  G.recent = [key].concat(G.recent).slice(0, RECENT);
+  G.input = ""; G.hinted = false; G.drawn = null; G.t0 = performance.now();
+  probUI(); ansUI();
+  squawkFlash(G.cur, true);
+  setMsg("Let's count instead!", "bad");
+  say("p", PHRASE.countInstead, true);
+  say("q", spokenProblem(G.cur), false, asked(G.cur));
+  showHelp(helpFor(recs[key]));
+}
+
+/* ---------- Polly-Gon's Squawk Back (🦜, traits.js) ----------
+   Before each of its problems, Polly-Gon squawks and its hexagon body becomes the problem's shape
+   (the shape to draw, or the one to count, with its cuts or grid: shapes.js squawkBody), with a
+   little hop, then turns back after SQUAWK_MS. Never during input: the first tap, key or stroke
+   turns it back at once, and a hit does too. With reduced motion, no hop: the body just changes
+   and changes back. */
+const onPolly = () => { const m = G.floors && G.floors[G.floor]; return !!m && (m.base || m.n) === "Polly-Gon" && G.hp > 0; };
+const SQUAWK_MS = 1300;
+let squawkTimer = null;
+function squawkFlash(p, quiet) {
+  if (!onPolly() || !p || p.op !== "◇") return;
+  $("mon").innerHTML = monsterArt(Object.assign({}, G.floors[G.floor], { squawk: squawkBody(p) }));
+  G.squawking = p;
+  if (!reduced()) restartAnim($("mon"), "squawk");
+  sfx.squawk();
+  if (!quiet) say("m", squawk(p), false, asked(p));
+  clearTimeout(squawkTimer);
+  squawkTimer = setTimeout(unsquawk, SQUAWK_MS);
+}
+function unsquawk() {
+  clearTimeout(squawkTimer);
+  if (!G.squawking) return;
+  G.squawking = null;
+  $("mon").classList.remove("squawk");
+  if (onPolly()) $("mon").innerHTML = monsterArt(G.floors[G.floor]);
+}
+
 // The number pad, or for a comparison (Chompers) the < = > keys, filling the same space.
 // Delete is drawn (a ⌫ from a font came out far smaller than the Bungee digits), sized in em so
 // it scales with the pad's digits on every layout.
 const DEL_ICON = `<svg class="del-icon" viewBox="0 0 30 22" aria-hidden="true"><path d="M10 2.5h16a2.5 2.5 0 0 1 2.5 2.5v12a2.5 2.5 0 0 1-2.5 2.5H10L1.8 11z" fill="none" stroke="currentColor" stroke-width="3" stroke-linejoin="round"/><path d="M14 7l8 8M22 7l-8 8" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg>`;
 const KEY_LABEL = { del: [DEL_ICON, "Delete"], go: ["Hit!", "Attack"], "<": ["<", "Less than"], "=": ["=", "Equal to"], ">": [">", "Greater than"] };
-// mode: "num", "cmp", "tf" (True and False, two big keys filling the pad) or "spell" (the drawing pad).
+// mode: "num", "cmp", "tf" (True and False, two big keys filling the pad), "spell" (the drawing
+// pad) or "draw" (the same pad, for a shape: Polly-Gon).
 function padUI(mode) {
-  const pad = $("pad"), cmp = mode === "cmp";
-  if (pad.dataset.mode === mode) { if (mode === "spell") sigilReset(); return; }
-  pad.dataset.mode = mode; pad.classList.toggle("cmp", cmp); pad.classList.toggle("spell", mode === "spell"); pad.classList.toggle("tfpad", mode === "tf");
+  const pad = $("pad"), cmp = mode === "cmp", drawn = mode === "spell" || mode === "draw";
+  if (pad.dataset.mode === mode) { if (drawn) sigilReset(); return; }
+  pad.dataset.mode = mode; pad.classList.toggle("cmp", cmp); pad.classList.toggle("spell", drawn); pad.classList.toggle("tfpad", mode === "tf");
   if (mode === "tf") {
     pad.innerHTML = `<button type="button" data-k="T" class="tfk yes" aria-label="True"><b>✓</b>True</button><button type="button" data-k="F" class="tfk no" aria-label="False"><b>✗</b>False</button>`;
     return;
   }
-  if (mode === "spell") {
-    pad.innerHTML = `<canvas id="sigil" class="sigil" aria-label="Draw the answer here"></canvas><button type="button" data-k="clear" class="del" aria-label="Clear the drawing">Clear</button><button type="button" data-k="go" class="go" aria-label="Cast the spell">Cast!</button>`;
+  if (drawn) {
+    const shape = mode === "draw";
+    pad.innerHTML = `<canvas id="sigil" class="sigil" aria-label="${shape ? "Draw the shape here" : "Draw the answer here"}"></canvas><button type="button" data-k="clear" class="del" aria-label="Clear the drawing">Clear</button><button type="button" data-k="go" class="go" aria-label="${shape ? "Cast the shape" : "Cast the spell"}">Cast!</button>`;
     sigilSetup();
     return;
   }

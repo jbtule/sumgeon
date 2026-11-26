@@ -18,6 +18,7 @@ import { tfFacts, tfFactOf } from "./truefalse.js";
 import { lineFacts, lineFactOf } from "./numberline.js";
 import { pvFacts, pvFactOf, PV_GAME_LEVELS } from "./placevalue.js";
 import { dollarFacts, dollarFactOf, DOLLAR_GAME_LEVELS } from "./dollars.js";
+import { shapeFacts, shapeFactOf, SHAPE_STRANDS, isDrawKey } from "./shapes.js";
 import { asks as asksOf } from "./traits.js";
 
 // One band per grade, K to 3rd (DESIGN.md §2, §4.1), each the facts of one stratum, with its
@@ -146,8 +147,31 @@ export const BANDS = {
   // and by 5s in the Hall (1st), by 2s and 100s, what's missing, and odd and even in the Mines (2nd).
   patK: { label: "Patterns: count on", strand: true, unlock: 0.5, hearts: 7, fluentMs: 5000, facts: patternFacts, levels: levelsOf(PATTERN_GAME_LEVELS, "cellar") },
   patH: { label: "Patterns: to 120", strand: true, unlock: 0.5, hearts: 7, fluentMs: 5000, facts: patternFacts, levels: levelsOf(PATTERN_GAME_LEVELS, "hall") },
-  patM: { label: "Patterns: skip counting", strand: true, unlock: 0.5, hearts: 5, fluentMs: 6000, facts: patternFacts, levels: levelsOf(PATTERN_GAME_LEVELS, "mines") }
+  patM: { label: "Patterns: skip counting", strand: true, unlock: 0.5, hearts: 5, fluentMs: 6000, facts: patternFacts, levels: levelsOf(PATTERN_GAME_LEVELS, "mines") },
+  // Shapes (Polly-Gon, js/shapes.js), a strand in each stratum: drawing and naming circles,
+  // squares, triangles, rectangles and hexagons, their sides and corners, in the Cellar (K);
+  // sides and corners whatever the shape, then halves and fourths, in the Hall (1st); sides,
+  // corners and a cube's faces, equal shares, and rows and columns of squares in the Mines (2nd);
+  // quadrilaterals and unit fractions in the Tower (3rd, strict: its square and rectangle are told
+  // apart more closely). Drawing a shape takes longer than tapping a number: 6 s (7 s in the
+  // Mines, where the squares in all are counted by rows).
+  shapesK: { label: "Shapes", strand: true, unlock: 0.5, hearts: 7, fluentMs: 6000, facts: shapeFacts, levels: shapeLevels("shapesK") },
+  shapesH: { label: "Shapes: halves and fourths", strand: true, unlock: 0.5, hearts: 7, fluentMs: 6000, facts: shapeFacts, levels: shapeLevels("shapesH") },
+  shapesM: { label: "Shapes: equal shares", strand: true, unlock: 0.5, hearts: 5, fluentMs: 7000, facts: shapeFacts, levels: shapeLevels("shapesM") },
+  shapesT: { label: "Shapes: quadrilaterals", strand: true, unlock: 0.5, hearts: 5, fluentMs: 6000, strict: true, facts: shapeFacts, levels: shapeLevels("shapesT") }
 };
+// A shape strand's levels (shapes.js SHAPE_STRANDS), each holding its keys.
+function shapeLevels(strand) { return SHAPE_STRANDS[strand].map((l) => ({ name: l.name, has: (f) => l.keys.includes(f.key) })); }
+// What a drawn shape hits for (app.js; shapes.js): the strand's typical answer, the mean of its
+// counting facts' answers (4 in the Cellar and the Hall, 6 in the Mines, 5 in the Tower), so a
+// drawing is neither a weak nor a big hit and a fight lasts the same; a shape's sides would make a
+// circle (none) a wasted turn and a hexagon worth twice a triangle.
+const hitCache = {};
+export function drawHit(bandKey) {
+  if (hitCache[bandKey]) return hitCache[bandKey];
+  const counts = pool(bandKey).filter((f) => !isDrawKey(f.key));
+  return (hitCache[bandKey] = Math.max(1, Math.round(counts.reduce((t, f) => t + f.ans, 0) / (counts.length || 1))));
+}
 // A strand's levels from a module's level list (TIME_LEVELS, PATTERN_GAME_LEVELS): the ones for
 // one stratum, each holding the facts of its set.
 function levelsOf(list, stratum) { return list.filter((l) => l.stratum === stratum).map((l) => ({ name: l.name, has: (f) => f.set === l.id })); }
@@ -166,7 +190,7 @@ export function keyOf(f) {
 }
 // A problem for a key, turned around half the time for + and ×.
 export function factOf(key, rnd) {
-  const own = { "¢": coinFactOf, "○": balanceFactOf, "=": balanceFactOf, "□": hiddenFactOf, "M": moreFactOf, "/": fractionFactOf, "≈": roundFactOf, "▭": rectFactOf, "Σ": threeFactOf, "▦": arrayFactOf, "⌚": clockFactOf, "…": patternFactOf, "◐": oddEvenFactOf, "✓": tfFactOf, "✎": tfFactOf, "↔": lineFactOf, "#": pvFactOf, "$": dollarFactOf }[key[0]];
+  const own = { "¢": coinFactOf, "○": balanceFactOf, "=": balanceFactOf, "□": hiddenFactOf, "M": moreFactOf, "/": fractionFactOf, "≈": roundFactOf, "▭": rectFactOf, "Σ": threeFactOf, "▦": arrayFactOf, "⌚": clockFactOf, "…": patternFactOf, "◐": oddEvenFactOf, "✓": tfFactOf, "✎": tfFactOf, "↔": lineFactOf, "#": pvFactOf, "$": dollarFactOf, "◇": shapeFactOf }[key[0]];
   if (own) return own(key, rnd);
   const op = key[0], [a, b] = key.slice(1).split(",").map(Number);
   const flip = (op === "+" || op === "×") && (rnd || Math.random)() < 0.5;
@@ -409,7 +433,8 @@ export function monsterHP(m, bandKey, recs) {
   const mine = open.filter((f) => f.op === m.op);
   // A monster that hides a number (m.blank, Quizard) is hit by the hidden number: on average,
   // the mean of the fact's two numbers.
-  const val = (f) => { if (!m.blank || !"+-×÷".includes(f.key[0])) return f.ans; const [a, b] = f.key.slice(1).split(",").map(Number); return (a + b) / 2; };
+  // A drawn shape hits for its strand's typical answer (drawHit).
+  const val = (f) => { if (isDrawKey(f.key)) return drawHit(bandKey); if (!m.blank || !"+-×÷".includes(f.key[0])) return f.ans; const [a, b] = f.key.slice(1).split(",").map(Number); return (a + b) / 2; };
   const avg = (fs) => { const v = fs.map(val).sort((a, b) => a - b), cap = Math.max(10, 3 * v[v.length >> 1]); return v.reduce((s, x) => s + Math.min(x, cap), 0) / v.length; };
   const mean = mine.length ? avg(mine) * 0.7 + avg(open) * 0.3 : avg(open);
   return Math.max(10, Math.round(mean * m.hits));

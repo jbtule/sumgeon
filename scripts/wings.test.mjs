@@ -11,10 +11,10 @@ assert.deepEqual(WINGS.map((w) => w.after || null), [null, "cellar", "hall", "mi
 assert.equal(mines.name, "The Crystal Mines");
 // Each stratum's monsters, and what they ask there.
 const M = (w) => w.pool.concat([w.boss]);
-assert.deepEqual(M(cellar), ["Plusquito", "Minustaur", "Pipsqueak", "Chompers", "Trollar", "Slimelipsis", "Make-Ten Golem"]);
-assert.deepEqual(M(hall), ["Quizard", "Chompers", "Equal Twins", "Doublet", "Triceraplus", "Tick-Tockus", "Slimelipsis", "Judo Judy"]);
-assert.deepEqual(M(mines), ["Haberhasher", "Margot-Rythm", "Trollar", "Squaresquatch", "Slimelipsis", "Tick-Tockus", "Chompers", "Triceraplus", "The Centipede"], "the Mines' own monsters, with Chompers and Triceraplus visiting");
-assert.deepEqual(M(tower), ["Timesaur", "Divvy", "Starbot", "Halfling", "Tick-Tockus", "Margot-Rythm", "Sigma Rex"], "Margot-Rythm visits the Tower");
+assert.deepEqual(M(cellar), ["Plusquito", "Minustaur", "Pipsqueak", "Chompers", "Trollar", "Slimelipsis", "Polly-Gon", "Make-Ten Golem"]);
+assert.deepEqual(M(hall), ["Quizard", "Chompers", "Equal Twins", "Doublet", "Triceraplus", "Tick-Tockus", "Slimelipsis", "Polly-Gon", "Judo Judy"]);
+assert.deepEqual(M(mines), ["Haberhasher", "Margot-Rythm", "Trollar", "Squaresquatch", "Slimelipsis", "Tick-Tockus", "Chompers", "Triceraplus", "Polly-Gon", "The Centipede"], "the Mines' own monsters, with Chompers and Triceraplus visiting");
+assert.deepEqual(M(tower), ["Timesaur", "Divvy", "Starbot", "Halfling", "Tick-Tockus", "Margot-Rythm", "Polly-Gon", "Sigma Rex"], "Margot-Rythm visits the Tower");
 // Three-digit numbers: Chompers compares them in the Mines and Triceraplus adds up to four
 // two-digit numbers there; Margot-Rythm brings 3rd grade's adding and subtracting to the Tower.
 assert.deepEqual([bandOf(mines, named0("Chompers")), bandOf(mines, named0("Triceraplus")), bandOf(tower, named0("Margot-Rythm")), bandOf(mines, named0("Margot-Rythm"))], ["cmpM", "sumsM", "addT", "second"]);
@@ -24,7 +24,7 @@ function named0(n) { return { n }; }
 assert.deepEqual(WINGS.map((w) => w.floors), [
   ["Plusquito", "Pipsqueak", "rescue", "Chompers", "Trollar"],
   ["Quizard", "Equal Twins", "rescue", "Tick-Tockus", "Triceraplus"],
-  ["Haberhasher", "Squaresquatch", "rescue", "Trollar", "Margot-Rythm"],
+  ["Haberhasher", "Squaresquatch", "rescue", "Trollar", "Polly-Gon"],
   ["Timesaur", "Divvy", "rescue", "Tick-Tockus", "Halfling"]]);
 for (const w of WINGS) {
   assert.ok(w.floors.every((f) => f === "rescue" || f === "pool" || w.pool.includes(f)), `${w.id}: every floor is in the pool`);
@@ -52,12 +52,19 @@ assert.equal(bandOf(hall, { n: "Grandfather Tockus", base: "Tick-Tockus" }), "ti
 for (const b of ["patK", "patH", "patM", "timeH", "timeM", "timeT"]) assert.ok(BANDS[b].strand && BANDS[b].unlock === 0.5, `${b} is a strand`);
 assert.ok(!cellar.floors.includes("Slimelipsis") && !hall.floors.includes("Slimelipsis"), "Slimelipsis visits the Cellar and the Hall from their pools");
 for (const w of [hall, tower]) assert.ok(w.floors.includes("Tick-Tockus"), `Tick-Tockus has a depth-1 floor in ${w.id}`);
-// The Mines' depth-1 floors are 2nd grade's priority standards (the school's guide): two- and
-// three-digit work (Haberhasher, Margot-Rythm), arrays (Squaresquatch) and money (Trollar). Time to
-// 5 minutes and skip counting aren't priorities there, so Tick-Tockus and Slimelipsis come from the
-// pool, from depth 2.
-assert.deepEqual(mines.floors.filter((n) => n !== "rescue").sort(), ["Haberhasher", "Margot-Rythm", "Squaresquatch", "Trollar"]);
-assert.ok(mines.pool.includes("Tick-Tockus") && mines.pool.includes("Slimelipsis"));
+// The Mines' depth-1 floors are 2nd grade's priority standards (the school's guide): place value
+// and two- and three-digit work (Haberhasher), arrays (Squaresquatch), money (Trollar) and equal
+// shares (Polly-Gon). Margot-Rythm's adding and subtracting within 1000 is the Mines' own band
+// (Haberhasher and the boss ask it), so she comes from the pool; so do time to 5 minutes and skip
+// counting, which aren't priorities there (Tick-Tockus and Slimelipsis), from depth 2.
+assert.deepEqual(mines.floors.filter((n) => n !== "rescue").sort(), ["Haberhasher", "Polly-Gon", "Squaresquatch", "Trollar"]);
+assert.ok(["Tick-Tockus", "Slimelipsis", "Margot-Rythm"].every((n) => mines.pool.includes(n)));
+// Shapes (Polly-Gon): a strand in each stratum, each its grade's; shapes aren't a priority in K,
+// 1st or 3rd grade, so it visits the Cellar, the Hall and the Tower from their pools.
+assert.deepEqual(WINGS.map((w) => bandOf(w, named("Polly-Gon"))), ["shapesK", "shapesH", "shapesM", "shapesT"]);
+assert.equal(bandOf(cellar, { n: "Baby Polly", base: "Polly-Gon" }), "shapesK");
+for (const w of [cellar, hall, tower]) assert.ok(w.pool.includes("Polly-Gon") && !w.floors.includes("Polly-Gon"), `Polly-Gon visits ${w.id} from the pool`);
+assert.equal(learnedShare(cellar, Object.fromEntries(pool("shapesK").map((f) => [f.key, { b: 4 }]))), 0, "shapes don't count toward opening the next stratum");
 // Strands don't count toward opening the next stratum: the share is of the stratum's band only.
 assert.equal(learnedShare(hall, Object.fromEntries(pool("timeH").map((f) => [f.key, { b: 4 }]))), 0);
 const run = runFloors(cellar, { captain: 5, rescued: [] }, () => 0);
@@ -132,7 +139,7 @@ assert.equal(deepest(cellar, { cellar: { depth: 4 } }), 4);
 // Trollar's dollars in the Mines' coin strand (its pool), and true or false, place value and the
 // number line count toward their stratum's 60% (they're band facts), dollars don't (a strand).
 {
-  assert.ok(hall.floors.includes("Equal Twins") && mines.floors.includes("Haberhasher") && mines.floors.includes("Margot-Rythm") && tower.floors.includes("Halfling"));
+  assert.ok(hall.floors.includes("Equal Twins") && mines.floors.includes("Haberhasher") && mines.pool.includes("Margot-Rythm") && tower.floors.includes("Halfling"));
   assert.ok(mines.pool.includes("Trollar") && bandOf(mines, { n: "Trollar" }) === "coins");
   assert.ok(pool("first").some((f) => f.op === "✓") && pool("second").some((f) => f.op === "#") && pool("third").some((f) => f.op === "↔"));
   assert.ok(!pool("second").some((f) => f.op === "$") && pool("coins").some((f) => f.op === "$"));

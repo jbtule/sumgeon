@@ -5,7 +5,7 @@ import { pool } from "../js/learn.js";
 import { WINGS, cursedMonster } from "../js/wings.js";
 
 const r = roster();
-assert.deepEqual(r.map((x) => x.m.n), ["Plusquito", "Minustaur", "Pipsqueak", "Chompers", "Trollar", "Slimelipsis", "Make-Ten Golem", "Quizard", "Equal Twins", "Doublet", "Triceraplus", "Tick-Tockus", "Judo Judy",
+assert.deepEqual(r.map((x) => x.m.n), ["Plusquito", "Minustaur", "Pipsqueak", "Chompers", "Trollar", "Slimelipsis", "Polly-Gon", "Make-Ten Golem", "Quizard", "Equal Twins", "Doublet", "Triceraplus", "Tick-Tockus", "Judo Judy",
   "Haberhasher", "Margot-Rythm", "Squaresquatch", "The Centipede", "Timesaur", "Divvy", "Starbot", "Halfling", "Sigma Rex"]);
 assert.ok(r.every((x) => x.m && x.wing));
 assert.equal(new Set(r.map((x) => x.m.n)).size, r.length, "a monster in two strata is listed once, in the first");
