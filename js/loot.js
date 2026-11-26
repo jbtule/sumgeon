@@ -114,9 +114,15 @@ export function moneyFor(wingId, boss, rnd) {
   return lo + Math.floor(r() * (hi - lo + 1));
 }
 // The fewest coins (and $1 bills past a dollar) for an amount: { bills, q, d, n, p }.
-export function fewest(cents) {
+// Whether money is shown with dollar bills (app.js billsOK: 2nd grade counts bills, or a younger
+// player who has answered a dollar problem). Without bills, a dollar or more is all coins: $1.35
+// is 5 quarters and a dime.
+let BILLS = true;
+export function setBills(on) { BILLS = !!on; }
+export const billsOn = () => BILLS;
+export function fewest(cents, bills = BILLS) {
   let c = Math.max(0, Math.round(cents));
-  const out = { bills: Math.floor(c / 100) }; c %= 100;
+  const out = { bills: bills ? Math.floor(c / 100) : 0 }; if (bills) c %= 100;
   out.q = Math.floor(c / 25); c %= 25;
   out.d = Math.floor(c / 10); c %= 10;
   out.n = Math.floor(c / 5); out.p = c % 5;

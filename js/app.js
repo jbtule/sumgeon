@@ -25,7 +25,7 @@ import { byLevel, offlineLine } from "./offline.js";
 import { freshState as freshMoments, freshRun, decide as decideMoment, joined, heardOf, nameLine } from "./moments.js";
 import { playMoment } from "./slowmo.js";
 import { playDescent, descending, surfaceHTML } from "./descent.js";
-import { chestAfter, lockKey, lockOf, contents, moneyFor, fewest, ITEMS, itemOf, SLOTS, freshItems, countOf, gain, putInSlot, clearSlot, useSlot, eatPie, arm, blockMiss, totemMult, magnetSpent, freshWardrobe, addPiece, wearOf, putOn, ownedFor, unowned } from "./loot.js";
+import { chestAfter, lockKey, lockOf, contents, moneyFor, fewest, setBills, ITEMS, itemOf, SLOTS, freshItems, countOf, gain, putInSlot, clearSlot, useSlot, eatPie, arm, blockMiss, totemMult, magnetSpent, freshWardrobe, addPiece, wearOf, putOn, ownedFor, unowned } from "./loot.js";
 import { kPrices, priceOf, freshShop, restock, forSale, TOKENS, valueOf, empty as emptyCounter, total as counterTotal, left as purseLeft, purseFor, putDown, takeBack, enough, pay, canAfford } from "./shop.js";
 import { CLOTHES, SPOTS, clothesById, pieceSvg } from "./clothes.js";
 import { LOOT, askLine, itemName, itemWhat, itemUse, moneyLine, purseLine, ALWAYS, runSprites, SHOP, clothingName, priceLine, changeLine } from "./lines.js";
@@ -1209,7 +1209,15 @@ function moneyOK() {
   if (wallet > 0 || (st.grade != null && st.grade >= 1)) return true;
   return Object.keys(recs).some((k) => k[0] === "¢" && recs[k] && recs[k].c > 0);
 }
+// Bills come in 2nd grade (counting dollar bills and coins), or for a younger player who has
+// answered a dollar problem ($ keys) right. Before that the purse, the shop's coins and change are
+// coins only (loot.js setBills).
+function billsOK() {
+  if (st.grade != null && st.grade >= 2) return true;
+  return Object.keys(recs).some((k) => k[0] === "$" && recs[k] && recs[k].c > 0);
+}
 function lootRowHTML() {
+  setBills(billsOK());
   const money = moneyOK();
   return `<div class="loot-row${money ? "" : " no-money"}">
     ${money ? `<button type="button" class="small purse-btn" id="openPurse" aria-label="Your purse">${purseSvg()}<span class="wmini">${walletMini(wallet) || "<small>Empty</small>"}</span></button>` : ""}
@@ -1271,6 +1279,7 @@ const tokenArt = (k) => (k === "b" ? billSvg() : coinsSvg([{ k }]));
 const tokensOf = (c) => TOKENS.flatMap((t) => Array.from({ length: c[t.k] || 0 }, (_, i) => ({ k: t.k, i })));
 function shopRestock() { shop.stock = restock(wardrobe.owned, Math.random, shop.stock); saveShop(); }
 function shopCard(view) {
+  setBills(billsOK());
   G.onMenu = false;
   if (!shop.stock.length && unowned(wardrobe.owned).length) shopRestock();
   const k = kPrices(st.grade), S = G.shopping = G.shopping || {};
@@ -1370,6 +1379,7 @@ function shopCard(view) {
 }
 // fromPause: Back returns to the pause screen; otherwise to the start screen.
 function purseCard(fromPause) {
+  setBills(billsOK());
   if (!fromPause) G.onMenu = false;
   const dollars = Math.floor(wallet / 100), cents = wallet % 100;
   const total = wallet >= 100 ? `$${dollars}.${String(cents).padStart(2, "0")}` : `${wallet}¢`;
@@ -1418,6 +1428,7 @@ function itemsCard(fromPause, quiet) {
    Settings, or Exit to
    the start screen (a second tap confirms, since it ends the run). */
 function pause() {
+  setBills(billsOK());
   const justPaused = !G.paused; // not coming back from Settings or the book
   if (justPaused) {
     if (!G.running || G.busy || G.next) return;

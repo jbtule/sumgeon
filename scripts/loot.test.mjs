@@ -235,3 +235,13 @@ console.log("✓ loot");
   const all = findable().map((p) => p.id);
   for (let i = 0; i < 200; i++) assert.equal(contents(rnd, all, false).kind, "item", "every piece owned: items, never money");
 }
+
+// Without bills (before 2nd grade or a dollar problem), a dollar or more is all coins.
+{
+  const { setBills } = await import("../js/loot.js");
+  setBills(false);
+  assert.deepEqual(fewest(135), { bills: 0, q: 5, d: 1, n: 0, p: 0 }, "$1.35 as coins: 5 quarters and a dime");
+  setBills(true);
+  assert.deepEqual(fewest(135), { bills: 1, q: 1, d: 1, n: 0, p: 0 });
+  assert.deepEqual(fewest(135, false), { bills: 0, q: 5, d: 1, n: 0, p: 0 });
+}
