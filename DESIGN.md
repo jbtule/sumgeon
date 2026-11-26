@@ -555,7 +555,7 @@ Each milestone should be playable and shippable on its own. Revised 2026-11-25 f
    - the Fraction Forge;
    - the Parenthesis Pyramid (Shoutandcomma with *Unwrap*);
    - Pirate Cavern (π Pirate).
-7. **M7 — Replay.** Hero Moments, the slow-motion hero close-ups with quips in a second voice (§8.4; small enough to build any time). Achievements with spoken cards, the 🏆 sheet and share cards (§14), math-locked chests with money, items and clothing, and Trollar's shop (§6.3; next, decided 2026-11-25), Endless Descent (the Endless Specter) and Daily Dungeon.
+7. **M7 — Replay.** Hero Moments, the slow-motion hero close-ups with quips in a second voice (§8.4; small enough to build any time). Achievements (§14, revised 2026-11-25: mostly secret, each with coins or an item, shown before the next descent, with spoken and share cards), math-locked chests with money, items and clothing, and Trollar's shop (§6.3; next, decided 2026-11-25), Endless Descent (the Endless Specter) and Daily Dungeon.
 8. **M8 — Grown-ups' corner and offline.** Progress heat-maps, custom practice, export, offline play with saved voice clips (the manifest and Home Screen icon are done), and device linking and sync (§15.2–15.4).
 
 ---
@@ -600,58 +600,55 @@ A pre-reader can't use a menu she can't hear, and the device voice is hit and mi
 
 ## 14. Achievements
 
-_Copies sound-box-crosswords `js/achievements.js`: worked out from saved progress, never taken away, tiered picture stories, secrets shown as ???, a big spoken card, and a share card._
+_Revised with the user on 2026-11-25. Sumgeon already rewards play in many ways (stars, depths, Hero Moments, rescued heroes, chests, clothing), so achievements are fewer than in Sound Box, where they were the big reward. They mark two things nothing else does: **learning the math** and **delightful surprises**. The mechanics still copy sound-box-crosswords `js/achievements.js`: worked out from saved progress, never taken away, secrets shown as ???, a spoken card and a share card._
 
-### 14.1 Rules (same as Sound Box)
-- **Computed from progress** (`catalog(state)` with no DOM), and `award()` records newly met ones as `{id: time}`. Earned achievements are **never taken away**. There are **no daily streaks** to lose. The in-run 3-in-a-row crit is a combat mechanic, not an achievement.
-- **Tiered tracks show only the next tier.** Each track is a **little picture story** whose emoji grows tier by tier, so a pre-reader sees progress before reading the name. The detail line says plainly what it took, for grown-ups.
-- **The big card:** after the floor-clear moment, each new achievement gets its own card with the `sparkle()` chime, then **spoken lines**: "New achievement!", then its title, then its detail. `spokenLines()` lists every line so the audio build records them all, and a check keeps it in step with `catalog`.
-- **🏆 sheet:** earned, next goals, and secrets as ??? with no hint. Secrets that count up show "12 of 50" once started.
-- **Secrets earned outside a fight** (opening the Bestiary, sharing) wait behind a 🕵️ pill instead of interrupting.
-- **Share card:** a PNG of the achievement (app name, emoji, title, detail, date, the monsters involved), shared from the card. It never includes the player's name.
-- Achievements unlock **cosmetics only**: captain hats, capes, chalk trails and arena chalk colors (like Sound Box's palettes). They never unlock power.
+### 14.1 Rules
+- **Computed from progress** (`catalog(state)` with no DOM), and `award()` records newly met ones as `{id: time}`. Earned achievements are **never taken away**, and there are **no daily streaks** to lose.
+- **Most are secret:** ??? on the 🏆 sheet until earned, with no hint, and the card says "Secret achievement!". Only the stratum ones (§14.2) show ahead, since they're the long goals. Secrets that count up show "12 of 50" once started.
+- **When they're shown: before the next descent.** An achievement earned mid-run is recorded quietly and never interrupts a fight or a floor's end. The next time the player taps Enter the dungeon (or Go deeper), every achievement not yet seen plays first, one card each, then the descent (§8.3) starts. A player who leaves without going back in sees them on the 🏆 sheet, marked new.
+- **Every card is read aloud:** "New achievement!" (or "Secret achievement!"), its title, then what it took, in lines of 12 words or fewer, recorded like every other line (their own small sprite, CLAUDE.md's sprite rule).
+- **Each comes with a reward:** coins for the wallet, or an item for the inventory (§6.3), shown and said on its card ("You got a shield!"). Stratum Champion and Legend also give a piece of clothing that can't be found or bought (§14.2).
+- **Share card:** a PNG of the achievement (app name, emoji, title, what it took, date, the monsters or heroes involved), shared from its card or the 🏆 sheet through the share sheet. It never includes the player's name.
 
-### 14.2 Per Wing (like Sound Box's per-pack Champion / Legend)
-| Achievement | Icon | Earned by |
-|---|---|---|
-| *Counting Cellar* **Champion** | 🏆 | Beat the Wing's boss |
-| *Counting Cellar* **Legend Loading…** | ⏳ | Over 60% of the Wing's facts mastered |
-| *Counting Cellar* **Legend** | 🌟 | Every fact in the Wing mastered |
-| **Champion of Champions** / **Legend of Legends** | 👑 / 🌠 | Every Wing in the band |
+### 14.2 The big ones: each stratum's Champion and Legend
+The strata are deep, so these are the game's biggest moments, with the biggest card (the stratum's wall behind it, a fanfare, the boss and the captain), always shown, never secret.
+| Achievement | Icon | Earned by | Reward |
+|---|---|---|---|
+| *Counting Cellar* **Champion** | 🏆 | Beat the stratum's boss | coins and the stratum's champion badge, worn by the captain (a clothing piece only from here) |
+| *Counting Cellar* **Legend** | 🌟 | Every fact in the stratum's band mastered (box 4) | a golden crown for the captain, one per stratum in that stratum's colors |
+| **Champion of Champions** / **Legend of Legends** | 👑 / 🌠 | Every stratum open to the player | a cape |
 
-Spoken parts are shared, as in Sound Box ("Champion!", the Wing's name, "Beat the boss of this wing"), so a new Wing only needs its name recorded.
+### 14.3 Mastery (secret)
+One per kind of math, earned when every fact of it is mastered. They come up as the learning engine fills in, so they're a surprise: "Secret achievement! Table Master: the 7s!"
+- **Table Master ×N** 🧮, one per table (×0 to ×12, in the Tower's teaching order).
+- **Make-Ten Master** 🔟, **Doubles Master** 👯, **Number Bonds** 🔗 (K and 1st).
+- **Coin Counter** 🪙 (the coin strands), **Time Teller** 🕒, **Pattern Finder** 🫧, **Shape Spotter** 🔷 (once those are built).
+- **Fraction Finder** ½, **Rounder** 🎯, **Area Ace** ▭ (3rd).
 
-### 14.3 Fact mastery (fits the learning engine)
-- **Table Master ×N** 🧮: every ×N fact (N×1 to N×12) mastered. There's one per table, shown in the order the band teaches them.
-- **Make-Ten Master** 🔟 (Sprout): every pair that makes ten, mastered.
-- **Doubles Master** 👯 (Sprout): doubles to 10 + 10, mastered.
-
-### 14.4 Tiered tracks (each a picture story)
+### 14.4 Learning tracks (secret, counting up once started)
 | Track | Tiers | Story |
 |---|---|---|
-| Practice days (1, 3, 7, 14, 30, 60, 100) | 🕯️ First Torch → 🗝️ Key Finder → 🚪 Door Opener → 🪜 Deeper Down → 🏰 Castle Keeper → 🐉 Dragon's Den → 👑 Dungeon Royalty | Going deeper into the dungeon |
-| Flawless floors, no hearts lost (1, 5, 10, 25, 50, 100) | 🪵 Wooden Shield → 🛡️ Iron Shield → ✨ Shining Shield → 💎 Crystal Shield → 🌟 Starlight Shield → 🌈 Unbreakable | A shield that gets stronger |
-| Comebacks, a missed fact later right first try (1, 5, 10, 25, 50) | 🌧️ Through the Rain → 🌦️ Clearing Up → 🌈 Rainbow After → ☀️ Sunny Side → 🦅 Soaring | Weather clearing |
-| Fluent facts, known by heart: right, unhinted and quick (25, 100, 250, 500, 1000) | 🔋 Charged Up → ⚡ Quick Spark → 🌩️ Thunderclap → 🌪️ Whirlwind → ☄️ Lightning Legend | Fluency, for any player in any stratum (§6.7) |
-| Total damage (1k, 5k, 25k, 100k, 500k) | 💨 Chalk Dust → 🌪️ Chalk Storm → ⚡ Chalk Lightning → ☄️ Chalk Comet → 🌋 Chalkcano | Bigger chalk power |
-| Monsters met, the Bestiary (5, 10, 20, all) | 📓 Field Notes → 🔍 Monster Spotter → 🗺️ Explorer → 📚 Monsterologist | A growing notebook |
-| Heroes rescued (1, 3, 6, 9) | 🔓 Curse Breaker → 🤝 Team-Up → 🎪 Big Band → 🎉 Full House | A party that fills up; Full House means all ten digits are free |
+| Fluent facts, known by heart: right, unhinted and quick (25, 100, 250, 500, 1000) | 🔋 Charged Up → ⚡ Quick Spark → 🌩️ Thunderclap → 🌪️ Whirlwind → ☄️ Lightning Legend | Fluency, for any player in any stratum |
+| Comebacks, a missed fact later right first try (1, 5, 10, 25, 50) | 🌧️ Through the Rain → 🌦️ Clearing Up → 🌈 Rainbow After → ☀️ Sunny Side → 🦅 Soaring | Weather clearing, for bouncing back |
+| Practice days (1, 3, 7, 14, 30, 60, 100), never a streak | 🕯️ First Torch → 🗝️ Key Finder → 🚪 Door Opener → 🪜 Deeper Down → 🏰 Castle Keeper → 🐉 Dragon's Den → 👑 Dungeon Royalty | Going deeper into the dungeon |
+| Deep Diver: deepest depth reached (10, 25, 50, 100) | 🤿 → 🐙 → 🐋 → 🌋 | Down past where the voice counts |
 
-### 14.5 Secrets (??? until earned, card says "Secret achievement!")
+### 14.5 Surprises (secret)
 - 🎯 **Exactly Zero**: the finishing hit leaves the monster at exactly 0 HP.
-- 7️⃣ **Lucky Seven**: break Sevenstein's curse with an answer containing a 7.
-- 🦸 **Captain's Call**: three power hits (your captain's digit) in one floor.
-- 🎆 **All Hands**: an answer of three or more digits where every digit is a rescued hero.
-- 🪞🖐️ **Double High Five**: summon two of the same hero at once, like 55.
-- 💯 **Triple Digits**: a single hit of 100 or more.
 - 🪞 **Palindrome**: an answer that reads the same backward, like 121.
+- 💯 **Triple Digits**: a single hit of 100 or more.
+- 🪞🖐️ **Double High Five**: two of the same hero at once, like 55.
+- 🎆 **All Hands**: an answer of three or more digits where every digit is a rescued hero.
+- 7️⃣ **Lucky Seven**: break Sevenstein's curse with an answer containing a 7.
 - 🧊 **Ice Cold Boss**: beat a boss without losing a heart.
 - ♻️ **Never Gave Up**: win a floor while on your last heart.
-- 📅 **Weekend Warrior**: cleared a floor on a weekend.
+- 🪙 **Exact Change**: pay Trollar with no change back.
+- 🐷 **Piggy Bank**: a whole dollar in the purse at once.
+- 💬 **Every Quip**: heard all of one hero's quips.
 - 🦃 **Gobble Gobble** / ⛄ **Snow Much Fun** / 🏖️ **Summer Sums**: holiday play, reusing Sound Box's `holidaysOn` dates.
-- 📣 **Show-Off**: shared an achievement.
-- 👀 **Monster Watcher**: opened the Bestiary.
-- 🎨 **New Look**: changed your captain's look.
+
+### 14.6 Left out (they repeat something the game already shows)
+Flawless floors (the ★ for no hearts lost), monsters met and heroes rescued (Monsters & Heroes fills up), total damage (a number with no learning behind it), and Monster Watcher, Show-Off and Weekend Warrior (filler).
 
 ---
 
