@@ -223,3 +223,25 @@ assert.ok(chestSvg("locked").includes("<svg") && chestSvg("open").includes("open
   assert.ok(/DUNGEON_KEYS = \["wings", "bestiary", "best"\]/.test(app), "a dungeon reset keeps the wallet and items");
 }
 console.log("✓ loot");
+
+// Before money (a kindergartner who hasn't done a coin problem), a chest never holds coins: items
+// and clothing only, clothing at its usual share.
+{
+  let seed = 3; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+  const kinds = { item: 0, clothing: 0, money: 0 };
+  for (let i = 0; i < 6000; i++) kinds[contents(rnd, [], false).kind]++;
+  assert.equal(kinds.money, 0, "no money before money");
+  assert.ok(kinds.clothing > 600 && kinds.clothing < 1400, `clothing keeps its share (${kinds.clothing} of 6000)`);
+  const all = findable().map((p) => p.id);
+  for (let i = 0; i < 200; i++) assert.equal(contents(rnd, all, false).kind, "item", "every piece owned: items, never money");
+}
+
+// Without bills (before 2nd grade or a dollar problem), a dollar or more is all coins.
+{
+  const { setBills } = await import("../js/loot.js");
+  setBills(false);
+  assert.deepEqual(fewest(135), { bills: 0, q: 5, d: 1, n: 0, p: 0 }, "$1.35 as coins: 5 quarters and a dime");
+  setBills(true);
+  assert.deepEqual(fewest(135), { bills: 1, q: 1, d: 1, n: 0, p: 0 });
+  assert.deepEqual(fewest(135, false), { bills: 0, q: 5, d: 1, n: 0, p: 0 });
+}

@@ -41,8 +41,15 @@ export const lockOf = (key, rnd) => factOf(key, rnd);
 // What's inside: "money", an item (one of ITEMS' ids), or clothing: a findable piece (never a
 // special one) not in owned yet, and money once every piece is owned.
 export const MONEY_SHARE = 0.5, ITEM_SHARE = 1 / 3, CLOTHING_READY = true;
-export function contents(rnd, owned) {
+// money: false before the player has met money (a kindergartner who hasn't done a coin problem,
+// app.js moneyOK): then a chest holds an item or clothing, never coins.
+export function contents(rnd, owned, money = true) {
   const r = rnd || Math.random, roll = r();
+  const item = () => ({ kind: "item", item: ITEMS[Math.floor(r() * ITEMS.length)].id });
+  if (!money) {
+    const left = CLOTHING_READY ? unowned(owned) : [];
+    return roll < MONEY_SHARE + ITEM_SHARE || !left.length ? item() : { kind: "clothing", piece: left[Math.floor(r() * left.length)].id };
+  }
   if (roll < MONEY_SHARE) return { kind: "money" };
   if (roll < MONEY_SHARE + ITEM_SHARE) return { kind: "item", item: ITEMS[Math.floor(r() * ITEMS.length)].id };
   const left = CLOTHING_READY ? unowned(owned) : [];
@@ -107,9 +114,15 @@ export function moneyFor(wingId, boss, rnd) {
   return lo + Math.floor(r() * (hi - lo + 1));
 }
 // The fewest coins (and $1 bills past a dollar) for an amount: { bills, q, d, n, p }.
-export function fewest(cents) {
+// Whether money is shown with dollar bills (app.js billsOK: 2nd grade counts bills, or a younger
+// player who has answered a dollar problem). Without bills, a dollar or more is all coins: $1.35
+// is 5 quarters and a dime.
+let BILLS = true;
+export function setBills(on) { BILLS = !!on; }
+export const billsOn = () => BILLS;
+export function fewest(cents, bills = BILLS) {
   let c = Math.max(0, Math.round(cents));
-  const out = { bills: Math.floor(c / 100) }; c %= 100;
+  const out = { bills: bills ? Math.floor(c / 100) : 0 }; if (bills) c %= 100;
   out.q = Math.floor(c / 25); c %= 25;
   out.d = Math.floor(c / 10); c %= 10;
   out.n = Math.floor(c / 5); out.p = c % 5;
