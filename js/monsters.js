@@ -41,8 +41,8 @@ export const MON=[
  {n:'Starbot',op:'×',c:'#9fb6c9',hits:4,quip:'powers down with a sparkly fizzle.',
   d:c=>`${foot(78,182,16)}${foot(122,182,16)}<path d="M70 168 V178 M130 168 V178" stroke="${DK}" stroke-width="10" stroke-linecap="round"/>`+line(`<path d="M44 108 L22 132 M156 108 L178 132"/>`,c,12)+solid(`<rect x="50" y="86" width="100" height="84" rx="16"/>`,c)+line(`<path d="M100 8 V72 M72 24 L128 56 M128 24 L72 56"/>`,'#ffc93c',16)+`<rect x="66" y="100" width="68" height="44" rx="10" fill="#0c171c"/><circle cx="86" cy="118" r="7" fill="#45d6e6"/><circle cx="114" cy="118" r="7" fill="#45d6e6"/><path d="M88 132 Q100 139 112 132" stroke="#45d6e6" stroke-width="3" fill="none" stroke-linecap="round"/><circle cx="100" cy="160" r="4" fill="#ff5a4e"/>`}
 ];
-// The Crystal Mines' boss, a stand-in: the Make-Ten Golem's shape in crystal violet, until the
-// Centipede is drawn (DESIGN.md §4.1, build step 3).
+// The Crystal Mines' boss. Its art comes from NEW_MON's Centipede, swapped in below; this
+// Golem-shaped stand-in is only the fallback.
 MON.push({n:'The Centipede',op:'mix',c:'#a78bfa',hits:6,boss:1,quip:'curls up into a hundred pieces.',
   d:(c)=>MON.find((m)=>m.n==='Make-Ten Golem').d(c)});
 
@@ -166,6 +166,12 @@ export const NEW_MON=[
    +`<rect x="88" y="88" width="26" height="24" rx="5" fill="${GOLD}" stroke="${DK}" stroke-width="3.5"/>`
    +`${eye(93,50,8)}${eye(111,50,8)}<path d="M96 66 Q102 71 108 66" ${ds} stroke-width="3"/>`}
 ];
+// The Crystal Mines' boss gets its real art: the approved Centipede replaces the stand-in above
+// (the Golem's shape), keeping its game data, and leaves NEW_MON, since it's in the game now.
+{
+  const real = NEW_MON.find((m) => m.n === "The Centipede"), i = MON.findIndex((m) => m.n === "The Centipede");
+  if (real && i >= 0) { MON[i] = Object.assign({}, MON[i], { c: real.c, d: real.d, quip: real.quip }); NEW_MON.splice(NEW_MON.indexOf(real), 1); }
+}
 
 /* ---------- looks: the same monster with different extras ----------
    Each regular monster has four more looks with alliterative names (Minustaur's Mom, Mighty
