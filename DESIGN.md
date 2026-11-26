@@ -624,6 +624,17 @@ The strata are deep, so these are the game's biggest moments, with the biggest c
 
 The mega and Legend forms are looks of the four bosses (new art and lines, no new monsters): Make-Ten Golem, Judo Judy, The Centipede and Sigma Rex, and each later stratum's boss.
 
+**Drawn, not wired yet** (`BOSS_FORMS` in `monsters.js`, shown on the gallery page; names, beaten and won lines recorded in the "bosses" sprite):
+
+| Boss | Mega form (every 10th depth) | Its second trait (planned) | Legend form (after mastery) |
+|---|---|---|---|
+| Make-Ten Golem | **Mega-Ten Golem**: crystal armor, its whole ten-frame lit gold, a crown | 👑 Second wind (Sigma Rex's): armors up at half HP | **Golden Golem**, smiling |
+| Judo Judy | **Mega Judy**: a power burst, the black belt glowing gold, fierce brows, a crown | ⚡ Black Belt (new): every 4th problem is a big throw, a miss costs 2 hearts | **Golden Judy** |
+| The Centipede | **The Megapede**: twelve rods, crystal spikes inside its curl, a crown | 🐛 Curl Up (new): at half HP it curls into a ring, hits under 20 do half damage | **Golden Centipede** |
+| Sigma Rex | **Mega Sigma Rex**: a thicker Σ, a mane of Σ tufts, a gold crown | 🥋 Flip (Judo Judy's): flips times facts, same answer | **Golden Sigma Rex** |
+
+Beaten lines: "Mega-Ten Golem crumbles into a hundred tidy pebbles.", "Mega Judy bows low and hands over the black belt.", "The Megapede drops its crystals and scuttles off.", "Mega Sigma Rex roars once more, then sums to zero."; "Golden Golem shines, bows, and crumbles into gold dust.", "Golden Judy bows to a true math master.", "Golden Centipede waves a hundred golden legs goodbye.", "Golden Sigma Rex bows to the new ruler of the Tower." Still to do when they're wired: the second traits' rules and trait lines, "Mega boss ahead!" and "A legend awaits!".
+
 ### 14.3 Mastery (secret)
 One per kind of math, earned when every fact of it is mastered. They come up as the learning engine fills in, so they're a surprise: "Secret achievement! Table Master: the 7s!"
 - **Table Master ×N** 🧮, one per table (×0 to ×12, in the Tower's teaching order).

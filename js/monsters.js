@@ -340,3 +340,164 @@ function dress(m) {
   return `<g transform="translate(100 ${a.ground}) scale(.72) translate(-100 ${-a.ground})">${art}${extras}</g>`;
 }
 export const svg=(m,cls='')=>`<svg viewBox="-10 -10 220 220" class="${cls}" role="img" aria-label="${m.n}">${defs}${m.look ? dress(m) : m.d(m.c)}</svg>`;
+
+/* ---------- boss forms: mega and Legend (DESIGN.md §14.2) ----------
+   Each boss has two more forms, drawn here as data; nothing in the game uses them yet.
+   - mega, on every 10th depth: the same boss powered up, crowned, with its own name and a
+     planned second trait (trait2, not wired: traits.js still gives every form the boss's own).
+   - legend, once every fact in its stratum is mastered: the boss in gold, with a warm glow and
+     sparkles, the golden language of the gold-outlined mastery rings. Celebratory, not scary.
+   A form is the boss's own drawing with parts added (mega) or its colors turned to gold
+   (legend), so it's clearly the same character. bossForm(m, "mega") gives a monster to draw
+   with svg(), its base the boss (so traits.js still finds the boss's trait). */
+const ICE = '#9ef0ff', ICE3 = '#56c8e8';
+// A big gold crown with three gems: its band's middle at (x, y), w wide, its points h tall.
+const bigCrown = (x, y, w, h, gem = CORAL) => {
+  const l = x - w / 2, r = x + w / 2, k = w / 4;
+  return solid(`<path d="M${l} ${y} L${l - 3} ${y - h} L${f1(l + k)} ${f1(y - h * .45)} L${x} ${y - h - 4} L${f1(r - k)} ${f1(y - h * .45)} L${r + 3} ${y - h} L${r} ${y} Z"/>`, GOLD)
+    + `<path d="M${l + 1} ${f1(y - 5)} H${r - 1}" stroke="${DK}" stroke-width="2.5" opacity=".45"/>`
+    + `<circle cx="${x}" cy="${f1(y - h * .5)}" r="4.5" fill="${gem}" stroke="${DK}" stroke-width="2.5"/><circle cx="${f1(l + k * .55)}" cy="${f1(y - h * .28)}" r="3" fill="${ICE}" stroke="${DK}" stroke-width="2"/><circle cx="${f1(r - k * .55)}" cy="${f1(y - h * .28)}" r="3" fill="${ICE}" stroke="${DK}" stroke-width="2"/>`;
+};
+// A crystal: a shard from (x, y) pointing at angle deg, len long and w wide, with a darker face
+// and a glint.
+const shard = (x, y, deg, len, w) => {
+  const a = deg * Math.PI / 180, ux = Math.cos(a), uy = Math.sin(a), px = -uy, py = ux, p = (s, t) => `${f1(x + ux * s + px * t)} ${f1(y + uy * s + py * t)}`;
+  return { body: `<path d="M${p(0, -w / 2)} L${p(len * .78, -w / 2)} L${p(len, 0)} L${p(len * .78, w / 2)} L${p(0, w / 2)} Z"/>`,
+    face: `<path d="M${p(0, 0)} L${p(len, 0)} L${p(len * .78, w / 2)} L${p(0, w / 2)} Z" fill="${ICE3}" opacity=".55"/><path d="M${p(len * .1, -w / 4)} L${p(len * .7, -w / 4)}" stroke="#fff" stroke-width="2" stroke-linecap="round" opacity=".8"/>` };
+};
+const shards = (list) => { const s = list.map(([x, y, d, l, w]) => shard(x, y, d, l, w)); return solid(s.map((q) => q.body).join(''), ICE) + s.map((q) => q.face).join(''); };
+// A four-point sparkle, light with a gold edge so it shows on gold and on every wall.
+const twinkle = (x, y, r) => `<path d="M${x} ${y - r} Q${f1(x + r * .18)} ${f1(y - r * .18)} ${x + r} ${y} Q${f1(x + r * .18)} ${f1(y + r * .18)} ${x} ${y + r} Q${f1(x - r * .18)} ${f1(y + r * .18)} ${x - r} ${y} Q${f1(x - r * .18)} ${f1(y - r * .18)} ${x} ${y - r} Z" fill="#fffbe6" stroke="#c98a1a" stroke-width="1.5" stroke-linejoin="round"/>`;
+
+// The gold of a Legend: the boss's own color becomes polished metal (one gradient across the
+// whole figure), and every other color a shade of gold by how light it was. Outlines (DK) and eye
+// whites stay, so it never loses its edges against the gold.
+const GOLD_DEFS = `<defs><linearGradient id="bf-gold" gradientUnits="userSpaceOnUse" x1="20" y1="-10" x2="120" y2="210"><stop offset="0" stop-color="#fff2b0"/><stop offset=".3" stop-color="#ffd23f"/><stop offset=".5" stop-color="#ffe892"/><stop offset=".72" stop-color="#f4b625"/><stop offset="1" stop-color="#d48d17"/></linearGradient>`
+  + `<radialGradient id="bf-glow"><stop offset="0" stop-color="#ffd84d" stop-opacity=".55"/><stop offset=".6" stop-color="#ffc93c" stop-opacity=".22"/><stop offset="1" stop-color="#ffc93c" stop-opacity="0"/></radialGradient></defs>`;
+export const GOLDS = ['#8a5a14', '#b97a16', '#e0a222', '#ffc93c', '#ffdc6e', '#ffeeb0'];
+const lumOf = (h) => { const v = h.length === 4 ? h.slice(1).split('').map((x) => parseInt(x + x, 16)) : [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16)); return (.3 * v[0] + .59 * v[1] + .11 * v[2]) / 255; };
+export const goldify = (s) => s.replace(/#(?:[0-9a-fA-F]{6}|[0-9a-fA-F]{3})(?![0-9a-fA-F])/g, (h) => {
+  const k = h.toLowerCase();
+  if (k === DK || k === '#fff' || k === '#ffffff') return h;
+  return GOLDS[Math.min(GOLDS.length - 1, Math.floor(lumOf(k) * GOLDS.length))];
+});
+// The Legend's stage: a warm glow and a thin gold ring behind, sparkles in front.
+// extra is drawn over it as it is (not turned gold): a happier face, say.
+const legend = (art, twinkles, extra = '') => GOLD_DEFS + `<circle cx="100" cy="100" r="112" fill="url(#bf-glow)"/><circle cx="100" cy="100" r="104" fill="none" stroke="${GOLD}" stroke-width="3" opacity=".55"/>`
+  + goldify(art) + extra + twinkles.map(([x, y, r]) => twinkle(x, y, r)).join('');
+
+const bossArt = (n) => (c) => MON.find((m) => m.n === n).d(c);
+const golemArt = bossArt('Make-Ten Golem'), rexArt = bossArt('Sigma Rex'), centiArt = bossArt('The Centipede');
+
+export const BOSS_FORMS = {
+  'Make-Ten Golem': {
+    mega: { n: 'Mega-Ten Golem', c: '#a9b6ba',
+      trait2: { icon: '👑', name: 'Second wind', text: 'Armors up at half HP' },
+      quip: 'crumbles into a hundred tidy pebbles.',
+      // Crystal armor: shards jutting from its back and shoulders, crystal pauldrons, gauntlets
+      // and knee guards; all ten of its ten-frame lit gold (it made ten); angry brows; a crown.
+      d: (c) => shards([[34, 82, -128, 46, 18], [166, 82, -52, 46, 18], [50, 70, -105, 34, 14], [150, 70, -75, 34, 14], [24, 84, -160, 30, 12], [176, 84, -20, 30, 12]])
+        + golemArt(c)
+        + [0, 1, 2, 3, 4, 5, 6].map((i) => `<rect x="${47 + (i % 5) * 22}" y="${73 + Math.floor(i / 5) * 36}" width="18" height="30" rx="5" fill="${GOLD}" stroke="${DK}" stroke-width="3"/>`).join('')
+        + `<path d="${[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((i) => `M${52 + (i % 5) * 22} ${79 + Math.floor(i / 5) * 36} v9`).join(' ')}" stroke="#fff" stroke-width="3" stroke-linecap="round" opacity=".7"/>`
+        + solid(`<path d="M6 76 L25 64 L44 76 L40 98 L10 98 Z M156 76 L175 64 L194 76 L190 98 L160 98 Z"/>`, ICE)
+        + `<path d="M25 66 V96 M175 66 V96" stroke="${ICE3}" stroke-width="3" opacity=".7"/><path d="M14 78 L25 70 M164 78 L175 70" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/>`
+        + solid(`<path d="M8 120 H42 V144 L25 152 L8 144 Z M158 120 H192 V144 L175 152 L158 144 Z"/>`, ICE)
+        + `<path d="M25 122 V150 M175 122 V150" stroke="${ICE3}" stroke-width="3" opacity=".7"/><path d="M13 126 h8 M163 126 h8" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/>`
+        + solid(`<path d="M56 154 L73 146 L90 154 L86 168 L60 168 Z M110 154 L127 146 L144 154 L140 168 L114 168 Z"/>`, ICE)
+        + `<path d="M76 16 L96 22 M124 16 L104 22" stroke="${DK}" stroke-width="4.5" stroke-linecap="round"/>`
+        + bigCrown(100, 10, 54, 18) },
+    legend: { n: 'Golden Golem', quip: 'shines, bows, and crumbles into gold dust.',
+      // Its flat mouth turned up into a smile, and its eyes shining.
+      d: () => legend(golemArt('url(#bf-gold)').replace('<path d="M86 46 H114"', '<path d="M86 43 Q100 54 114 43"'), [[16, 30, 11], [184, 34, 9], [190, 156, 7], [10, 164, 8], [150, 4, 6]],
+        `<rect x="80" y="24" width="14" height="10" rx="3" fill="#fffbe6" stroke="${DK}" stroke-width="3"/><rect x="106" y="24" width="14" height="10" rx="3" fill="#fffbe6" stroke="${DK}" stroke-width="3"/><path d="M84 29 h4 M110 29 h4" stroke="${DK}" stroke-width="3" stroke-linecap="round"/>`) }
+  },
+  'Judo Judy': {
+    mega: { n: 'Mega Judy',
+      trait2: { icon: '⚡', name: 'Black Belt', text: 'Every 4th problem is a big throw: a miss costs 2 hearts' },
+      quip: 'bows low and hands over the black belt.',
+      // Fiercer: a burst of power behind, steeper brows, a crown on the top-knot, and the black
+      // belt glowing gold with longer, flying tails.
+      d: (c) => {
+        const rays = [];
+        for (let i = 0; i < 16; i++) { const a = i * 22.5 + 11, [x1, y1] = at(100, 102, i % 2 ? 90 : 102, a), [xl, yl] = at(100, 102, 66, a - 8), [xr, yr] = at(100, 102, 66, a + 8); rays.push(`M${f1(xl)} ${f1(yl)} L${f1(x1)} ${f1(y1)} L${f1(xr)} ${f1(yr)} Z`); }
+        // The belt's glow: soft gold halos round the belt and its tails.
+        const belt = `<path d="M62 119 H134 M88 124 L80 154 M112 124 L120 154"/>`;
+        return solid(`<path d="${rays.join(' ')}"/>`, CORAL) + `<circle cx="100" cy="102" r="70" fill="${GOLD}" opacity=".28"/>`
+          + judy(c)
+          + `<g fill="none" stroke="${GOLD}" stroke-linecap="round" stroke-linejoin="round"><g stroke-width="34" opacity=".18">${belt}</g><g stroke-width="24" opacity=".3">${belt}</g></g>`
+          + solid(`<path d="M94 122 L80 158 L91 160 L100 126 Z M106 122 L120 158 L109 160 L100 126 Z"/>`, '#23232b')
+          + solid(`<rect x="58" y="112" width="80" height="14" rx="4"/>`, '#23232b')
+          + `<path d="M62 116 H136 M84 154 L95 126 M116 154 L105 126" stroke="${GOLD}" stroke-width="2.5" stroke-linecap="round"/>`
+          + solid(`<rect x="90" y="108" width="20" height="22" rx="5"/>`, '#23232b') + `<rect x="94" y="112" width="12" height="14" rx="3" fill="none" stroke="${GOLD}" stroke-width="2.5"/>`
+          + `<path d="M76 42 L95 50 M124 42 L105 50" stroke="${DK}" stroke-width="5.5" stroke-linecap="round"/>`
+          + bigCrown(100, 16, 40, 18);
+      } },
+    legend: { n: 'Golden Judy', quip: 'bows to a true math master.',
+      d: () => legend(judy('url(#bf-gold)'), [[20, 34, 10], [176, 150, 9], [186, 22, 7], [28, 192, 7], [150, 196, 6]]) }
+  },
+  'The Centipede': {
+    mega: { n: 'The Megapede', c: '#ff5a3a',
+      trait2: { icon: '🐛', name: 'Curl Up', text: 'Curls into a ring at half HP: hits under 20 do half damage' },
+      quip: 'drops its crystals and scuttles off.',
+      d: (c) => megapede(c) },
+    legend: { n: 'Golden Centipede', quip: 'waves a hundred golden legs goodbye.',
+      d: () => legend(centiArt('url(#bf-gold)'), [[150, 12, 10], [190, 60, 7], [104, 100, 9], [12, 120, 7], [200, 186, 6]]) }
+  },
+  'Sigma Rex': {
+    mega: { n: 'Mega Sigma Rex',
+      trait2: { icon: '🥋', name: 'Flip', text: 'Flips your times facts: same answer' },
+      quip: 'roars once more, then sums to zero.',
+      d: (c) => megaRex(c) },
+    legend: { n: 'Golden Sigma Rex', quip: 'bows to the new ruler of the Tower.',
+      d: () => legend(rexArt('url(#bf-gold)'), [[20, 100, 10], [176, 100, 8], [180, 196, 7], [30, 192, 6], [186, 12, 7]]) }
+  }
+};
+
+// The Megapede: the Centipede with twelve rods instead of ten, crystal spikes on every rod's
+// back, angry brows and a crown on its miner's helmet.
+function megapede(c) {
+  const cx = 102, cy = 100, r = 62, N = 12, step = 212 / (N - 1), rodA = (i) => 194 - i * step, rods = [], legs = [], tips = [], spine = [], spikes = [];
+  for (let i = 0; i < N; i++) {
+    const a = rodA(i), [x, y] = at(cx, cy, r, a).map(f1); spine.push(`${x} ${y}`);
+    const [ox, oy] = at(cx, cy, r + 20, a);
+    for (const s of [-1, 1]) {
+      const [lx, ly] = at(cx, cy, r + 34, a + s * 6); legs.push(`<path d="M${f1(ox)} ${f1(oy)} L${f1(lx)} ${f1(ly)}"/>`);
+      const [qx, qy] = at(lx, ly, 5, a); tips.push(`<path transform="rotate(${f1(a + 90)} ${f1(qx)} ${f1(qy)})" d="M${f1(qx)} ${f1(qy - 6)} l4.5 6 l-4.5 6 l-4.5 -6 Z"/>`);
+    }
+    if (i) { const [sx, sy] = at(cx, cy, r - 18, a); spikes.push([f1(sx), f1(sy), a + 180, i % 2 ? 26 : 17, 12]); }
+    rods.push(`<g transform="rotate(${f1(a)} ${x} ${y})">${solid(`<rect x="${f1(x - 23)}" y="${f1(y - 9)}" width="46" height="18" rx="5"/>`, c)}<path d="${[1, 2, 3, 4, 5, 6, 7, 8, 9].map((k) => `M${f1(x - 23 + k * 4.6)} ${f1(y - 7)} v14`).join(' ')}" stroke="${DK}" stroke-width="1.3" opacity=".42"/></g>`);
+  }
+  const [ex, ey] = at(cx, cy, r, rodA(N - 1) - 12).map(f1), [hx, hy] = at(cx, cy, r, rodA(0) + 12).map(f1);
+  return line(legs.join(''), DK, 1) + `<g fill="${ICE}" stroke="${DK}" stroke-width="2.5" stroke-linejoin="round">${tips.join('')}</g>`
+    + shards(spikes)
+    + line(`<path d="M${hx} ${hy} L${spine.join(' L')} L${ex} ${ey}"/>`, '#c4532a', 20) + line(`<path d="M${ex} ${ey} l-4 -16 M${ex} ${ey} l12 -10"/>`, '#c4532a', 5)
+    + rods.join('')
+    + line(`<path d="M30 24 Q18 4 4 4 M60 24 Q72 2 88 0"/>`, '#c4532a', 5) + `<g fill="${ICE}" stroke="${DK}" stroke-width="2.5" stroke-linejoin="round"><path d="M0 -4 l5 8 l-5 8 l-5 -8Z"/><path d="M92 -8 l5 8 l-5 8 l-5 -8Z"/></g>`
+    + solid(`<circle cx="46" cy="58" r="34"/>`, c) + solid(`<path d="M10 56 Q10 16 46 16 Q82 16 82 56 Z"/>`, GOLD)
+    + `<path d="M55 27 Q46 22 40 29 Q35 36 40 43 Q46 49 55 45 M46 20 V52" ${thin(3.5)} fill="none"/>`
+    + `<path d="M24 56 L42 62 M68 56 L50 62" stroke="${DK}" stroke-width="4.5" stroke-linecap="round"/>${eye(34, 66, 9)}${eye(58, 66, 9)}<path d="M32 82 Q46 92 60 82" ${ds} stroke-width="3"/><path d="M36 84 l2 9 l4 -7 M56 84 l-2 9 l-4 -7" fill="${CREAM}" stroke="${DK}" stroke-width="2" stroke-linejoin="round"/>`
+    + bigCrown(46, 18, 36, 14);
+}
+
+// Mega Sigma Rex: a coral mane round the back of its head, each tuft marked with a Σ, a big
+// gold crown in place of its red one, angrier brows and a third fang.
+function megaRex(c) {
+  const tufts = [138, 172, 206, 240].map((d) => at(62, 52, 44, d).map(f1)), spikes = [];
+  for (const [d, len] of [[122, 70], [155, 74], [189, 72], [222, 70], [252, 60]]) { const [x, y] = at(62, 52, len, d), [xl, yl] = at(62, 52, 34, d - 12), [xr, yr] = at(62, 52, 34, d + 12); spikes.push(`M${f1(xl)} ${f1(yl)} L${f1(x)} ${f1(y)} L${f1(xr)} ${f1(yr)} Z`); }
+  return solid(`<path d="${spikes.join(' ')}"/>`, '#d9433a') + solid(tufts.map(([x, y]) => `<circle cx="${x}" cy="${y}" r="16"/>`).join(''), CORAL)
+    + `<g fill="none" stroke="${DK}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">${tufts.map(([x, y]) => `<path d="M${f1(x + 6)} ${f1(y - 7.5)} H${f1(x - 6)} L${f1(x + 1.5)} ${y} L${f1(x - 6)} ${f1(y + 7.5)} H${f1(x + 6)}"/>`).join('')}</g>`
+    // Its body drawn thicker (the Σ's stroke 38, not 30), and its red crown left off.
+    + rexArt(c).replace(/<path d="M62 26 L70 2[^>]*>/, '').replace(/stroke-width="39"/, 'stroke-width="47"').replace(/stroke-width="30"/g, 'stroke-width="38"')
+    + `<path d="M120 112 l4 9 l4 -9" fill="#fff" stroke="${DK}" stroke-width="2.5" stroke-linejoin="round"/>`
+    + `<path d="M64 27 L84 35 M112 27 L94 35" stroke="${DK}" stroke-width="4.5" stroke-linecap="round"/>`
+    + bigCrown(100, 22, 62, 22);
+}
+// Boss m in its mega or legend form (null when it has none): a monster to draw with svg(), named
+// for the form, its base the boss, with the form's own color, drawing, beaten line (quip) and,
+// for a mega, its planned second trait.
+export function bossForm(m, form) {
+  const f = (BOSS_FORMS[m.base || m.n] || {})[form];
+  if (!f) return null;
+  return Object.assign({}, m, { n: f.n, base: m.base || m.n, form, c: f.c || m.c, d: f.d, quip: f.quip, trait2: f.trait2 || null });
+}

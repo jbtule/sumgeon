@@ -4,9 +4,12 @@
 // sizes the game uses, to judge contrast and readability. Flags like the moments page's: ⚑ marks
 // a drawing with tags and a note, and Report copies the flags or opens a GitHub issue.
 // Marks live in localStorage ("sumgeon:gallery"), keyed by name: { s: "bad", tags, note, t }.
-import { MON, NEW_MON, RETIRED, svg } from "../../js/monsters.js";
+// Boss forms: each boss beside its mega and Legend forms (monsters.js BOSS_FORMS, not in the game
+// yet), with their names, traits and lines, always at the small sizes too.
+import { MON, NEW_MON, RETIRED, svg, bossForm } from "../../js/monsters.js";
 import { HEROES, heroSvg } from "../../js/heroes.js";
 import { TRAITS } from "../../js/traits.js";
+import { monsterName, monsterCleared, monsterWon } from "../../js/lines.js";
 
 const $ = (id) => document.getElementById(id);
 const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
@@ -21,7 +24,7 @@ const SHORT = { cellar: "Cellar", hall: "Hall", mines: "Mines", tower: "Tower" }
 const OLD = {
   Plusquito: ["+", "cellar"], Minustaur: ["−", "cellar"], Trollar: ["$", "cellar, mines"], "Make-Ten Golem": ["10", "cellar"],
   Quizard: ["?", "hall"], Chompers: ["< >", "hall, cellar"], "Equal Twins": ["=", "hall"], "Judo Judy": ["⇄", "hall"],
-  Haberhasher: ["#", "mines"], Timesaur: ["×", "tower"], Divvy: ["÷", "tower"], Starbot: ["*", "tower"], "Sigma Rex": ["Σ", "tower"],
+  Haberhasher: ["#", "mines"], "The Centipede": ["¢ 100", "mines"], Timesaur: ["×", "tower"], Divvy: ["÷", "tower"], Starbot: ["*", "tower"], "Sigma Rex": ["Σ", "tower"],
   Sevenstein: ["7", "cursed"], Octoloop: ["8", "cursed"]
 };
 const strataOf = (m) => (m.stratum || (OLD[m.n] || [])[1] || "plain").split(", ");
@@ -63,16 +66,48 @@ function card(it) {
     </div></article>`;
 }
 const ITEMS = { newGrid: NEW_MON.map(monItem), oldGrid: MON.map(monItem), heroGrid: HEROES.map(heroItem), retiredGrid: RETIRED.map(monItem) };
-const byKey = Object.fromEntries(Object.values(ITEMS).flat().map((it) => [it.key, it]));
+
+/* ---------- boss forms ---------- */
+// One row per boss: the boss, its mega form and its Legend form, side by side on its stratum's
+// wall (or the wall picked above; "All four" keeps its own), big and at 72 px and 26 px.
+const BOSS_ORDER = ["Make-Ten Golem", "Judo Judy", "The Centipede", "Sigma Rex"];
+const BOSSES = MON.filter((m) => m.boss).sort((a, b) => BOSS_ORDER.indexOf(a.n) - BOSS_ORDER.indexOf(b.n));
+const FORM_TAG = { boss: ["g-boss", "Boss"], mega: ["g-mega", "Mega"], legend: ["g-legend", "Legend"] };
+const formItem = (m) => ({ key: m.form ? "form:" + m.n : m.n, name: m.n, m, isForm: !!m.form, form: m.form || "boss" });
+const FORMS = BOSSES.map((b) => [b, bossForm(b, "mega"), bossForm(b, "legend")].map(formItem));
+function formCol(it, wall) {
+  const k = marks[it.key], m = it.m, t = traitOf(MON.find((x) => x.n === (m.base || m.n)));
+  const lines = [monsterName(m), monsterCleared(m), monsterWon(m)];
+  return `<div class="g-form${k ? " g-bad" : ""}" data-key="${esc(it.key)}">
+    <div class="g-stage" style="--wall:var(--wall-${wall})"><div class="g-big">${svg(m)}</div>
+      <div class="g-smalls"><span class="g-s72">${svg(m)}</span><span class="g-s26">${svg(m)}</span></div></div>
+    <div class="g-info">
+      <div class="g-title"><b>${esc(it.name)}</b><span class="${FORM_TAG[it.form][0]}">${esc(FORM_TAG[it.form][1])}</span></div>
+      ${t ? `<div class="g-trait">${esc(t.icon)} <b>${esc(t.name)}</b>: ${esc(t.text)}</div>` : ""}
+      ${m.trait2 ? `<div class="g-trait">+ ${esc(m.trait2.icon)} <b>${esc(m.trait2.name)}</b>: ${esc(m.trait2.text)} <span class="g-meta">(planned)</span></div>` : ""}
+      ${it.isForm ? `<div class="g-lines">${lines.map((l) => `<div class="g-quip">"${esc(l)}"</div>`).join("")}</div>` : `<div class="g-quip">"${esc(lines[1])}"</div>`}
+      ${k ? `<div class="g-note">⚑ ${esc([...(k.tags || []), k.note].filter(Boolean).join(" · ") || "Flagged")}</div>` : ""}
+      <div class="g-row"><span></span><span>${k ? `<button type="button" class="flagbtn g-ok" data-act="ok">✓ Fine now</button> ` : ""}<button type="button" class="flagbtn" data-act="flag">⚑ ${k ? "Edit" : "Flag"}</button></span></div>
+    </div></div>`;
+}
+function formsHTML() {
+  return FORMS.map((row) => {
+    const home = homeWall(row[0].m), wall = view.wall === "home" || view.wall === "all" ? home : view.wall;
+    return `<article class="g-formrow">${row.map((it) => formCol(it, wall)).join("")}</article>`;
+  }).join("");
+}
+
+const byKey = Object.fromEntries(Object.values(ITEMS).concat(FORMS).flat().map((it) => [it.key, it]));
 function render() {
   for (const [id, items] of Object.entries(ITEMS)) $(id).innerHTML = items.map(card).join("");
+  $("formsGrid").innerHTML = formsHTML();
   document.querySelectorAll("#walls button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.wall === view.wall)));
   document.querySelectorAll("#sizes button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.small === (view.small ? "1" : "0"))));
 }
 $("walls").onclick = (e) => { const b = e.target.closest("button"); if (b) { view.wall = b.dataset.wall; keepView(); render(); } };
 $("sizes").onclick = (e) => { const b = e.target.closest("button"); if (b) { view.small = b.dataset.small === "1"; keepView(); render(); } };
 document.querySelector(".wrap").addEventListener("click", (e) => {
-  const b = e.target.closest(".flagbtn"), c = b && b.closest(".gcard");
+  const b = e.target.closest(".flagbtn"), c = b && b.closest("[data-key]");
   if (!c) return;
   const key = c.dataset.key;
   if (b.dataset.act === "ok") { delete marks[key]; save(); render(); } else flag(key);
