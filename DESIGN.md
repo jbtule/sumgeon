@@ -268,21 +268,21 @@ Replaces the between-floor choice. Clearing a floor still heals 1 heart.
 - Kept per player in cents (`wallet`), never lost, not even on a loss.
 - Shown as a coin purse: the fewest coins for the amount (quarters, dimes, nickels, pennies; dollar bills past a dollar, §4.1 2nd grade), never just a number, so it's coin practice every time you look.
 
-**Items** (carried 3 at a time, kept between runs). Tap one by the hearts to use it; the voice says what it does the first time ("The shield blocks one miss!"). Each helps you get to the math and none replaces it:
+**Items.** Every item found or bought goes into your inventory, with no limit, kept between runs. **Three quick-use slots** sit by the hearts in a fight: tap one to use it. You fill the slots from the inventory before a run (on the start screen), and when a slot is used, the next of that item from the inventory fills it at the next floor. The voice says what an item does the first time ("The shield blocks one miss!"). Each helps you get to the math and none replaces it:
 - 🥧 **Pie:** heals a heart.
 - 🛡️ **Shield:** blocks the next miss.
 - ✖️ **Times Two Totem:** the next right answer hits double.
 - 🧲 **Hero Magnet:** the next right answer with a team hero's digit is a Hero Moment (§8.4).
 - Later: √ Shrink Ray (the monster loses a quarter of its HP), 0️⃣ Nullifier (no monster trait this floor), 💡 Hint scroll.
 
-**Clothing.** Hats, glasses, bows and the like from the looks kit (`KIT` in `monsters.js`). A piece from a chest or the shop goes into your clothing bag (no limit, apart from the 3 items). You dress your **captain** from it, one piece per spot (head, face, neck), in a wardrobe on the start screen. A hero keeps what they're wearing after they stop being captain, and wears it on the start scene, in fights and in Hero Moments, so the team slowly gets its own looks. Saved per player (`wardrobe`: the bag, and what each hero wears).
+**Clothing.** Hats, glasses, bows and the like from the looks kit (`KIT` in `monsters.js`). A piece from a chest or the shop goes into your clothing bag (no limit). You dress your **captain** from it, one piece per spot (head, face, neck), in a wardrobe on the start screen. A hero keeps what they're wearing after they stop being captain, and wears it on the start scene, in fights and in Hero Moments, so the team slowly gets its own looks. Saved per player (`wardrobe`: the bag, and what each hero wears).
 
 **Trollar's shop.** Trollar keeps a stall by the Sumgeon's door on the start screen, open outside a run.
 - Items and clothing with prices in coins, read aloud: "The pie costs thirty-five cents."
 - **Paying is the math:** you tap coins in your purse to put them on the counter (tap one on the counter to take it back) until there's enough. The game never pays for you. No dragging: taps are easier for a kindergartner. Trollar gives change if you put down too much ("Here's ten cents back!"). A K player pays with single coins (prices are one coin); a 2nd grader counts mixed coins.
 - Prices are set so a few runs buy an item and clothing takes saving up.
 
-**Saved per player:** `wallet` (cents), `items` (up to 3), `wardrobe` (what's found and what each hero wears). Each goes in `OWN_KEYS`.
+**Saved per player:** `wallet` (cents), `items` (the inventory's counts and the 3 quick-use slots), `wardrobe` (what's found and what each hero wears). Each goes in `OWN_KEYS`.
 
 ### 6.4 Endless Descent
 - Unlocked after you clear any Wing once.
