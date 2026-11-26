@@ -7,8 +7,8 @@ import { BANDS, choose, factOf, record as recordAnswer, helpFor, monsterHP, prob
 import { countSvg, readShape, judgeShape, cleanFor, squawkBody, isDrawKey, SHAPE_LINE, SHAPE_CODE, article } from "./shapes.js";
 import { hintFor, STRATEGIES } from "./hints.js";
 import { openStore, displayName } from "./store.js";
-import { PHRASE, monsterName, monsterCleared, monsterWon, heroJoins, heroCursed, heroRescue, heroAlmost, heroHelps, traitLine, BARK, wingCleared, wingOpened, depthLine, DEPTH_MAX_SPOKEN, reversedLine, howToWriteLine, quipLine, squawk, trait2Line } from "./lines.js";
-import { WINGS, wingOf, runFloors, openWings, toOpen, floorStars, wingStars, depthScale, depthHP, deepest, MAP_DEPTHS, GRADES, gradeLabel, gradeName, withGrade, bandOf, gradeBand, OLD_BANDS, PATHS, chapterOf, stepsOpen, bossStage, isMega, BOSS_HP, MEGA_EVERY, megasOf } from "./wings.js";
+import { PHRASE, monsterName, monsterCleared, monsterWon, heroJoins, heroCursed, heroRescue, heroAlmost, heroHelps, traitLine, BARK, wingCleared, wingOpened, depthLine, DEPTH_MAX_SPOKEN, reversedLine, howToWriteLine, quipLine, squawk, trait2Line, newMonsterLine } from "./lines.js";
+import { WINGS, wingOf, runFloors, openWings, toOpen, floorStars, wingStars, depthScale, depthHP, deepest, MAP_DEPTHS, GRADES, gradeLabel, gradeName, withGrade, bandOf, gradeBand, OLD_BANDS, PATHS, chapterOf, stepsOpen, bossStage, isMega, BOSS_HP, MEGA_EVERY, megasOf, stepMonsters } from "./wings.js";
 import { missingOf, pickBlank, filled, spokenMissing, MISSING_SHARE, canHide } from "./missing.js";
 import { rectSvg } from "./third.js";
 import { arraySvg } from "./arrays.js";
@@ -475,6 +475,23 @@ const CHAPTER_AT = Number(new URLSearchParams(location.search).get("chapter")) |
 const chapterNow = (w = wing()) => (CHAPTER_AT ? Math.min(CHAPTER_AT, chaptersOf(PATHS[w.id])) : chapterOf(w, progress));
 const stepsNow = (w = wing()) => stepsOpen(w, progress, recs, chapterNow(w));
 const levelsFor = (bk, w = wing()) => openLevels(PATHS[w.id], stepsNow(w).open, bk);
+// Monsters arriving as their step opens (DESIGN.md §4.3): kept for the next floor-cleared or end
+// card ("A new monster appears in the Mines: Squaresquatch!"), and they take a depth-1 floor from
+// the next run.
+function arrived(before, after) {
+  const path = PATHS[wing().id], was = stepMonsters(path, before);
+  for (const n of stepMonsters(path, after)) if (!was.includes(n) && !(G.news || []).includes(n)) (G.news ||= []).push(n);
+}
+// The card's announcement of the monsters that arrived, said aloud; then they've been announced.
+function newsHTML() {
+  const names = G.news || [], w = wing();
+  G.news = [];
+  return names.map((n) => {
+    const m = MON.find((x) => x.n === n);
+    say("p", newMonsterLine(m, w));
+    return `<div class="newmon" role="status"><div class="cardmon small">${monsterArt(m)}</div><p><b>A new monster appears!</b>${esc(n)} joins ${esc(wing().name.replace(/^The /, "the "))}.</p></div>`;
+  }).join("");
+}
 // A step that joined stays open: the most that ever joined is saved with the stratum's progress.
 function keepSteps(w = wing()) {
   const n = stepsNow(w).joined, p = progress[w.id] || (progress[w.id] = { boss: 0, best: 0 });
@@ -549,7 +566,10 @@ $("dive").addEventListener("click", (e) => {
 // depth: how deep into this Wing (wings.js); the deepest reached when not given.
 function newRun(depth) {
   document.body.dataset.stratum = wing().id; // its wall and colors (styles.css)
-  G.depth = depth || deepest(wing(), progress); G.floors = runFloors(wing(), team, null, G.depth);
+  // The floors' monsters are the ones whose step is open (DESIGN.md §4.3): the newest steps' at
+  // depth 1, any of them deeper.
+  // (A first run in the stratum meets them in the path's order.)
+  G.depth = depth || deepest(wing(), progress); G.floors = runFloors(wing(), team, null, G.depth, stepMonsters(PATHS[wing().id], stepsNow().open, !(progress[wing().id] || {}).best));
   diveUI();
   spritesFor(wing());
   // The room darkens as you go deeper: 8% per depth, up to 48% at depth 7.
@@ -973,7 +993,7 @@ function learnFrom(ok) {
   store.player(PID).set("facts", recs);
   // A step joins the path's window (DESIGN.md §4.3) when the oldest new one is partly learned.
   const after = stepsNow().open, joined = after.filter((i) => !before.includes(i));
-  if (joined.length) keepSteps();
+  if (joined.length) { keepSteps(); arrived(before, after); }
   if (skipped) { say("p", PHRASE.skip); return "Skipping ahead! You already know these."; }
   if (joined.length) { say("p", BARK.level); return `New level: ${PATHS[wing().id][joined[0]].name}!`; }
   return null;
@@ -1139,7 +1159,7 @@ function cleared(chestDone) {
   if (healed) G.hearts++;
   record();
   sfx.victory(); // a floor cleared gets the fanfare (the user liked it better than the jingle)
-  const nx = G.floors[G.floor + 1];
+  const nx = G.floors[G.floor + 1], news = newsHTML();
   const next = `<div class="cardmon">${monsterArt(nx)}</div>
   <p>Next down the stairs: <strong>${nx.n}</strong>${nx.form === "mega" ? ", the 👑 mega boss" : nx.boss ? ", the boss" : ""}.${healed ? " You found a heart (+1)." : ""}</p>`;
   if (m.cursed != null && !crackCurse(team, m.cursed).freed) {
@@ -1152,6 +1172,7 @@ function cleared(chestDone) {
     <div class="cardmon rescued">${heroSvg(h, { cursed: true, cracks: r.cracks })}</div>
     <p><strong>${r.cracks} of ${CURSE_HITS}</strong> cracks in the curse on ${h.n}. Beat it ${CURSE_HITS - r.cracks === 1 ? "once more" : `${CURSE_HITS - r.cracks} more times`} to set ${h.n} free.</p>
     ${stars}
+    ${news}
     ${next.replace('class="cardmon"', 'class="cardmon small"')}
     <div class="btns"><button class="big" id="next">Floor ${G.floor + 2}</button></div>`, "float");
   } else if (m.cursed != null) {
@@ -1165,12 +1186,14 @@ function cleared(chestDone) {
     <div class="cardmon rescued">${heroArt(h.d)}</div>
     <p><strong>${h.n} joins your team.</strong> When your answer has a ${h.d}, ${h.n} jumps in and hits harder.</p>
     ${stars}
+    ${news}
     ${next.replace('class="cardmon"', 'class="cardmon small"')}
     <div class="btns"><button class="big" id="next">Floor ${G.floor + 2}</button></div>`, "float");
   } else {
     say("p", monsterCleared(m));
     show(`<h2>${m.n} ${m.quip}</h2>
   ${stars}
+  ${news}
   ${next}
   <div class="btns"><button class="big" id="next">Floor ${G.floor + 2}</button></div>`, "float");
   }
@@ -1182,13 +1205,15 @@ function cleared(chestDone) {
 function end(win) {
   G.running = false;
   refundArmed();
-  const w = wing(), before = openWings(progress, recs, st.start), chBefore = chapterNow(w);
+  const w = wing(), before = openWings(progress, recs, st.start), chBefore = chapterNow(w), stepsBefore = stepsNow(w).open;
   if (win) { progress[w.id] = progress[w.id] || { boss: 0, best: 0 }; progress[w.id].boss++; }
   // A mega boss beaten (DESIGN.md §4.3): the next chapter is reached. Counted by the depths whose
   // mega boss is beaten, so beating the same one again doesn't count twice.
   const megaWin = win && G.floors[G.floor].form === "mega";
   if (megaWin) { const p = progress[w.id]; p.megas = Math.max(megasOf(p), Math.floor(G.depth / MEGA_EVERY)); keepSteps(w); }
   const chOpened = chapterNow(w) > chBefore ? chapterNow(w) : 0;
+  if (megaWin) arrived(stepsBefore, stepsNow(w).open);
+  const news = newsHTML();
   const stars = win ? earnStars() : "";
   if (win) { beat(seen, G.floors[G.floor], Date.now()); store.player(PID).set("bestiary", seen); }
   const f = record(), acc = G.tries ? Math.round(G.solved / G.tries * 100) : 0, m = G.floors[G.floor];
@@ -1220,6 +1245,7 @@ function end(win) {
   ${cursedLine}
   ${stars}
   ${left}
+  ${news}
   <div class="stats"><div><b>${f}</b><small>floors cleared</small></div><div><b>${G.solved}</b><small>solved</small></div><div><b>${acc}%</b><small>accuracy</small></div></div>
   <p>Best run: <strong>${progress[w.id].best} of ${G.floors.length} floors</strong></p>
   ${captainHTML("Next run")}
@@ -2207,7 +2233,7 @@ function start(depth, enter, voiced, pause) {
   shopRestock(); // Trollar's clothing changes after each run
   G.shopping = null;
   Object.assign(G, { hearts: band().hearts, streak: 0, solved: 0, tries: 0, running: true, retry: [], recent: [], next: false, paused: null, runStars: 0,
-    fx: {}, chest: null });
+    fx: {}, chest: null, news: [] });
   MR = freshRun();
   if (!voiced) { stopSpeech(); openingLines(enter, G.depth); }
   const go = () => {

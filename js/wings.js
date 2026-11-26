@@ -31,7 +31,7 @@ export const WINGS = [
   { id: "cellar", name: "The Counting Cellar", band: "kinder", strands: { Trollar: "coinsK", Chompers: "more", Slimelipsis: "patK", "Polly-Gon": "shapesK", Pipsqueak: "flashK" },
     pool: ["Plusquito", "Minustaur", "Pipsqueak", "Chompers", "Trollar", "Slimelipsis", "Polly-Gon"], floors: ["Plusquito", "Pipsqueak", "rescue", "Chompers", "Trollar"], boss: "Make-Ten Golem" },
   { id: "hall", name: "The Balance Hall", band: "first", after: "cellar", strands: { Triceraplus: "three", "Tick-Tockus": "timeH", Slimelipsis: "patH", "Polly-Gon": "shapesH" },
-    pool: ["Quizard", "Chompers", "Equal Twins", "Doublet", "Triceraplus", "Tick-Tockus", "Slimelipsis", "Polly-Gon"], floors: ["Quizard", "Equal Twins", "rescue", "Tick-Tockus", "Triceraplus"], boss: "Judo Judy" },
+    pool: ["Plusquito", "Minustaur", "Quizard", "Chompers", "Equal Twins", "Doublet", "Triceraplus", "Haberhasher", "Tick-Tockus", "Slimelipsis", "Polly-Gon"], floors: ["Quizard", "Equal Twins", "rescue", "Tick-Tockus", "Triceraplus"], boss: "Judo Judy" },
   { id: "mines", name: "The Crystal Mines", band: "second", after: "hall", strands: { Trollar: "coins", Squaresquatch: "arrays", Slimelipsis: "patM", "Tick-Tockus": "timeM", Chompers: "cmpM", Triceraplus: "sumsM", "Polly-Gon": "shapesM" },
     pool: ["Haberhasher", "Margot-Rythm", "Trollar", "Squaresquatch", "Slimelipsis", "Tick-Tockus", "Chompers", "Triceraplus", "Polly-Gon"], floors: ["Haberhasher", "Squaresquatch", "rescue", "Trollar", "Polly-Gon"], boss: "The Centipede" },
   { id: "tower", name: "The Tables Tower", band: "third", after: "mines", strands: { "Tick-Tockus": "timeT", "Margot-Rythm": "addT", "Polly-Gon": "shapesT" },
@@ -145,18 +145,40 @@ export function cursedMonster(d) {
   return { n: "Cursed " + h.n, op: "mix", c: h.c, hits: 4, cursed: d, quip: "is free!" };
 }
 
-// One run's floors, as monsters. At depth 2 and deeper (DESIGN.md §6.3), every floor but the
-// rescue floor and the boss is drawn from the pool, never the same monster twice in a row, so
-// each run down mixes them differently.
-export function runFloors(wing, team, rnd, depth) {
-  const r = rnd || Math.random;
-  let last = null;
+// The monsters with an open step (DESIGN.md §4.3), newest step first: a monster arrives as its
+// step opens, and one with no open step doesn't appear (bosses aside). first: the player's first
+// run in the stratum, which meets them in the path's order instead (the first step's monster
+// first: Plusquito in the Cellar, not Trollar's coins).
+export function stepMonsters(path, open, first) {
+  const out = [];
+  for (const i of [...open].sort((a, b) => (first ? a - b : b - a))) for (const n of path[i].monsters) if (!out.includes(n)) out.push(n);
+  return out;
+}
+
+// One run's floors, as monsters. avail (the path's open steps' monsters, newest first,
+// stepMonsters): at depth 1 the floors are the newest steps' monsters in that order, so a new
+// monster takes a depth-1 floor from the next run; at depth 2 and deeper (DESIGN.md §6.3) every
+// floor but the rescue floor and the boss is drawn from them. Without avail, the Wing's own floors
+// and pool. Variety: never the same monster twice in a row, and none twice in a run while there
+// are others, so each run down mixes them differently.
+export function runFloors(wing, team, rnd, depth, avail) {
+  const r = rnd || Math.random, list = avail && avail.length ? avail : null, all = list || wing.pool, used = new Set();
+  let last = null, next = 0;
   const pick = () => {
-    const options = wing.pool.length > 1 ? wing.pool.filter((n) => n !== last) : wing.pool;
-    return mon((last = options[Math.floor(r() * options.length)]));
+    let options = all.filter((n) => n !== last && !used.has(n));
+    if (!options.length) options = all.length > 1 ? all.filter((n) => n !== last) : all;
+    last = options[Math.floor(r() * options.length)];
+    used.add(last);
+    return mon(last);
   };
   return wing.floors.map((f, i) => {
     if (f === "rescue") { const d = nextRescue(team); last = null; return d == null ? pick() : cursedMonster(d); }
+    if (list && (depth || 1) <= 1) {
+      while (next < list.length && (list[next] === last || used.has(list[next]))) next++;
+      if (next >= list.length) return pick();
+      last = list[next++]; used.add(last);
+      return mon(last);
+    }
     if (f === "pool" || (depth || 1) > 1) return dressed(pick(), wing, depth, i);
     last = f;
     return mon(f);

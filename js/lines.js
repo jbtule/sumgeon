@@ -178,6 +178,20 @@ export var BARK = {
   curl: "Curled up!"
 };
 export function wingCleared(w) { return "You cleared " + w.name + "!"; }
+// A monster arriving as its step of the path opens (DESIGN.md §4.3), said on the floor-cleared or
+// end card: "A new monster appears in the Mines: Squaresquatch!" One per monster per stratum it
+// arrives in, in the monster's own sprite.
+var SHORT = { cellar: "the Cellar", hall: "the Hall", mines: "the Mines", tower: "the Tower" };
+export function newMonsterLine(m, w) { return sayAs("A new monster appears in " + SHORT[w.id] + ": " + (m.base || m.n) + "!"); }
+// Every monster that arrives with a step, per stratum: [{ m, w }].
+export function arrivals() {
+  var out = [];
+  WINGS.forEach(function (w) {
+    var seen = {};
+    PATHS[w.id].forEach(function (s) { s.monsters.forEach(function (n) { if (!seen[n]) { seen[n] = 1; out.push({ m: MON.find(function (x) { return x.n === n; }), w: w }); } }); });
+  });
+  return out;
+}
 export function wingOpened(w) { return w.name + " is open!"; }
 // A spell drawn backwards (sigil.js): "Your three is facing backwards. It faces this way." The
 // screen adds an arrow. For the digits whose mirror image looks different.
@@ -302,6 +316,7 @@ export function spokenLines() {
     add("p", monsterCleared(m), "Boss forms", "bosses");
     add("p", monsterWon(m), "Boss forms", "bosses");
   });
+  arrivals().forEach(function (a) { add("p", newMonsterLine(a.m, a.w), N, S); });
   HEROES.forEach(function (h) {
     add("m", heroName(h), N, S);
     add("m", monsterName(cursedMonster(h.d)), N, S);
@@ -432,6 +447,7 @@ function index() {
   // A monster's lines (and its looks') in a sprite of its own, "m-minustaur", loaded by the strata
   // it's in; the heroes' (and the cursed digits') in "heroes", which every stratum can need.
   MON.concat(allLooks()).forEach(function (m) { [monsterName(m), monsterCleared(m), monsterWon(m)].forEach(function (t) { names[t] = names[t] || "m-" + slug(m.base || m.n); }); });
+  arrivals().forEach(function (a) { names[newMonsterLine(a.m, a.w)] = "m-" + slug(a.m.n); });
   HEROES.forEach(function (h) { [heroName(h), monsterName(cursedMonster(h.d)), heroJoins(h), heroCursed(h), heroRescue(h), heroAlmost(h), heroHelps(h)].forEach(function (t) { names[t] = "heroes"; }); });
   // Polly-Gon's squawks are only said on its floor, so they're in its sprite.
   shapeFacts().forEach(function (f) { names[squawk(f)] = "m-polly-gon"; });

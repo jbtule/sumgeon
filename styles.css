@@ -84,6 +84,11 @@ h1 b{color:var(--coral);font-weight:400}
 .unlocked{display:grid;gap:2px;text-align:center;padding:12px 14px;border-radius:16px;background:#ffc93c22;border:2px solid var(--gold);box-shadow:0 0 18px #ffc93c55;animation:unlockpop .6s ease-out}
 .unlocked b{font:400 20px Bungee,sans-serif;color:var(--gold)}
 .unlocked span{font-weight:800}
+/* A monster arriving as its step of the path opens (DESIGN.md §4.3). */
+.newmon{display:flex;align-items:center;gap:10px;text-align:left;padding:8px 12px;margin:6px 0;border-radius:16px;background:var(--dark);border:2px solid var(--gold)}
+.card .newmon .cardmon.small{width:64px;flex:none;margin:0}
+.newmon p{margin:0;display:grid}
+.newmon b{font:400 15px Bungee,sans-serif;color:var(--gold)}
 @keyframes unlockpop{0%{transform:scale(.8);opacity:0}70%{transform:scale(1.05);opacity:1}100%{transform:none}}
 @media(prefers-reduced-motion:reduce){.unlocked{animation:none}}
 .card.page .btns.deeper{flex-wrap:wrap}

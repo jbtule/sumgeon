@@ -12,7 +12,7 @@ assert.equal(mines.name, "The Crystal Mines");
 // Each stratum's monsters, and what they ask there.
 const M = (w) => w.pool.concat([w.boss]);
 assert.deepEqual(M(cellar), ["Plusquito", "Minustaur", "Pipsqueak", "Chompers", "Trollar", "Slimelipsis", "Polly-Gon", "Make-Ten Golem"]);
-assert.deepEqual(M(hall), ["Quizard", "Chompers", "Equal Twins", "Doublet", "Triceraplus", "Tick-Tockus", "Slimelipsis", "Polly-Gon", "Judo Judy"]);
+assert.deepEqual(M(hall), ["Plusquito", "Minustaur", "Quizard", "Chompers", "Equal Twins", "Doublet", "Triceraplus", "Haberhasher", "Tick-Tockus", "Slimelipsis", "Polly-Gon", "Judo Judy"], "the Hall gets Plusquito and Minustaur (within 20, crossing 10) and Haberhasher visiting (tens)");
 assert.deepEqual(M(mines), ["Haberhasher", "Margot-Rythm", "Trollar", "Squaresquatch", "Slimelipsis", "Tick-Tockus", "Chompers", "Triceraplus", "Polly-Gon", "The Centipede"], "the Mines' own monsters, with Chompers and Triceraplus visiting");
 assert.deepEqual(M(tower), ["Timesaur", "Divvy", "Starbot", "Halfling", "Tick-Tockus", "Margot-Rythm", "Polly-Gon", "Chompers", "Sigma Rex"], "Margot-Rythm and Chompers visit the Tower");
 // Three-digit numbers: Chompers compares them in the Mines and Triceraplus adds up to four

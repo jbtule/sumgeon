@@ -1,7 +1,7 @@
 // Paths (DESIGN.md §4.3): each stratum's steps, the window of new steps, and chapters.
 import assert from "node:assert/strict";
 import { BANDS, pool, openSteps, openLevels, reachOf, stepFacts, stepShare, chaptersOf, WINDOW, JOIN_AT, choose, probeKey } from "../js/learn.js";
-import { WINGS, PATHS, chapterOf, megasOf, stepsOpen } from "../js/wings.js";
+import { WINGS, PATHS, chapterOf, megasOf, stepsOpen, stepMonsters, runFloors } from "../js/wings.js";
 import { MON } from "../js/monsters.js";
 
 const learnedRec = { b: 3, n: 1, c: 1, ms: 1000, t: 0 };
@@ -102,5 +102,37 @@ const cellar = PATHS.cellar;
   assert.equal(chapterOf(c, { cellar: { depth: 40 } }), chaptersOf(cellar), "past the last chapter, it stays the last");
   assert.equal(megasOf({ depth: 11 }), 2);
   assert.equal(stepsOpen(c, { cellar: { depth: 7, steps: 4 } }, {}).joined, 4, "what joined stays open");
+}
+// Monsters arrive as their step opens: a stratum's pool is exactly its steps' monsters, a run has
+// only monsters with an open step (and the boss and the rescue floor), depth 1 the newest steps'
+// first, and no monster twice in a row.
+{
+  for (const w of WINGS) {
+    const names = new Set(PATHS[w.id].flatMap((s) => s.monsters));
+    assert.deepEqual([...names].sort(), [...w.pool].sort(), `${w.id}: its pool is its steps' monsters`);
+  }
+  let seed = 11; const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+  for (const w of WINGS) {
+    const path = PATHS[w.id];
+    for (let t = 0; t < 40; t++) {
+      const r = {}, share = rnd();
+      for (const s of path) for (const f of stepFacts(s)) if (rnd() < share) r[f.key] = learnedRec;
+      const o = openSteps(path, r, 1 + Math.floor(rnd() * chaptersOf(path))), avail = stepMonsters(path, o.open);
+      for (const depth of [1, 2, 4, 7]) {
+        const floors = runFloors(w, { captain: 5, rescued: [] }, rnd, depth, avail);
+        assert.ok(floors.every((m) => m.boss || m.cursed != null || avail.includes(m.base || m.n)), `${w.id}: only monsters with an open step (${floors.map((m) => m.n)})`);
+        const ns = floors.map((m) => m.base || m.n);
+        assert.ok(ns.every((n, i) => !i || n !== ns[i - 1]), `${w.id}: never twice in a row`);
+        if (depth === 1) assert.equal(ns[0], avail[0], "the newest step's monster first");
+      }
+    }
+  }
+  // A new K player meets them in the path's order on a first run (Plusquito first), newest first
+  // after that (Trollar's coins, the window's newest step); Polly-Gon (chapter 2) not at all yet.
+  const open = openSteps(cellar, {}, 1).open, avail = stepMonsters(cellar, open);
+  assert.deepEqual(stepMonsters(cellar, open, true), ["Pipsqueak", "Chompers", "Plusquito", "Minustaur", "Slimelipsis", "Trollar"]);
+  assert.deepEqual(avail, ["Trollar", "Plusquito", "Minustaur", "Pipsqueak", "Chompers", "Slimelipsis"]);
+  assert.deepEqual(runFloors(WINGS[0], { captain: 5, rescued: [] }, () => 0, 1, avail).map((m) => m.n), ["Trollar", "Plusquito", "Cursed Zeroic", "Minustaur", "Pipsqueak", "Make-Ten Golem"]);
+  assert.ok(!avail.includes("Polly-Gon"));
 }
 console.log(`✓ paths (${Object.entries(PATHS).map(([id, p]) => `${id} ${p.length} steps in ${chaptersOf(p)} chapters`).join(", ")})`);
