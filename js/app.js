@@ -1615,7 +1615,10 @@ function castSpell() {
 }
 
 // The number pad, or for a comparison (Chompers) the < = > keys, filling the same space.
-const KEY_LABEL = { del: ["⌫", "Delete"], go: ["Hit!", "Attack"], "<": ["<", "Less than"], "=": ["=", "Equal to"], ">": [">", "Greater than"] };
+// Delete is drawn (a ⌫ from a font came out far smaller than the Bungee digits), sized in em so
+// it scales with the pad's digits on every layout.
+const DEL_ICON = `<svg class="del-icon" viewBox="0 0 30 22" aria-hidden="true"><path d="M10 2.5h16a2.5 2.5 0 0 1 2.5 2.5v12a2.5 2.5 0 0 1-2.5 2.5H10L1.8 11z" fill="none" stroke="currentColor" stroke-width="3" stroke-linejoin="round"/><path d="M14 7l8 8M22 7l-8 8" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg>`;
+const KEY_LABEL = { del: [DEL_ICON, "Delete"], go: ["Hit!", "Attack"], "<": ["<", "Less than"], "=": ["=", "Equal to"], ">": [">", "Greater than"] };
 // mode: "num", "cmp" or "spell" (the drawing pad).
 function padUI(mode) {
   const pad = $("pad"), cmp = mode === "cmp";
