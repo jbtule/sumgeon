@@ -16,7 +16,7 @@ const root = fileURLToPath(new URL("..", import.meta.url));
 const port = Number(process.argv[2]) || 8791;
 const TYPES = { ".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".mjs": "text/javascript; charset=utf-8",
   ".css": "text/css; charset=utf-8", ".json": "application/json", ".webmanifest": "application/manifest+json", ".svg": "image/svg+xml",
-  ".png": "image/png", ".jpg": "image/jpeg", ".mp3": "audio/mpeg", ".md": "text/markdown; charset=utf-8", ".txt": "text/plain; charset=utf-8" };
+  ".png": "image/png", ".woff2": "font/woff2", ".jpg": "image/jpeg", ".mp3": "audio/mpeg", ".md": "text/markdown; charset=utf-8", ".txt": "text/plain; charset=utf-8" };
 
 // The version: the newest change among the files the pages load (js/, styles.css, the pages).
 function version() {

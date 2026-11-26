@@ -19,7 +19,8 @@ import { traitOf, charged, prefers, hitBy, atHalf, asks, flipOf, flashOf, dieSvg
 import { roster, mastery, meet, beat } from "./bestiary.js";
 import { HEROES, CHALK, heroSvg, freePick, pickHero, curseCaptain, crackCurse, CURSE_HITS, resetTeam } from "./heroes.js";
 import * as sfx from "./sfx.js";
-import { say, stopSpeech, setVoice, speaking, cutOff, needSprites, spriteStatus } from "./speech.js";
+import { say, stopSpeech, setVoice, speaking, cutOff, needSprites, spriteStatus, saveVoice, offlineStatus } from "./speech.js";
+import { byLevel, offlineLine } from "./offline.js";
 import { freshState as freshMoments, freshRun, decide as decideMoment, joined, heardOf, nameLine } from "./moments.js";
 import { playMoment } from "./slowmo.js";
 import { playDescent, descending, surfaceHTML } from "./descent.js";
@@ -444,6 +445,14 @@ function spritesFor(w) {
   const upto = {};
   [w.band].concat(Object.values(w.strands || {})).forEach((b) => { upto[b] = openLevel(b, recs) + 1; });
   needSprites(ALWAYS.concat(runSprites(w, upto)));
+  voicePlan();
+}
+// The order the whole voice is saved in for offline play (speech.js saveVoice): the sprites every
+// stratum needs, this stratum's lowest level first, then the other open strata's in WINGS order;
+// the rest of audio.json after them.
+function voicePlan() {
+  const w = wing(), open = openWings(progress, recs, st.start);
+  saveVoice(ALWAYS.concat(byLevel(runSprites(w)), ...WINGS.filter((x) => x !== w && open.includes(x.id)).map((x) => byLevel(runSprites(x)))));
 }
 // Bosses roar every so often while you're working on a problem: a growl, and they rear up and
 // shake while the room flickers. Never during an attack, a card, a hint or the pause.
@@ -1344,6 +1353,7 @@ function menu() {
   // With no hero yet, the first tap here asks for one out loud (below), once per player a visit.
   if ((!hasCaptain() || st.grade == null) && G.askedFor !== PID) G.askHero = true;
   if (updateReady && !G.running) { reloadForUpdate(); return; } // a new version is waiting
+  voicePlan();
   const list = store.profiles();
   // The scene-gap is the window onto the start scene (drawScene): the door and your team show
   // there, between the title and the rest of the card.
@@ -1483,8 +1493,14 @@ function settings(paused, tab) {
   // decoded (speech.js spriteStatus).
   const soundState = () => {
     const a = sfx.status(), v = spriteStatus(), mb = (b) => (b / 1e6).toFixed(1);
-    if ($("soundState")) $("soundState").textContent = `Audio: ${a.state}\nPlayed: ${a.played}  Restarted: ${a.remade || 0}\nError: ${a.error || "none"}\nVoice sprites: ${v.loaded} of ${v.wanted} in (${v.listed} in all), ${mb(v.bytes)} MB\nDecoded: ${v.decodedLines} lines, ${mb(v.decodedBytes)} MB`;
+    if ($("soundState")) $("soundState").textContent = `Audio: ${a.state}\nPlayed: ${a.played}  Restarted: ${a.remade || 0}\nError: ${a.error || "none"}\nVoice sprites: ${v.loaded} of ${v.wanted} in (${v.listed} in all), ${mb(v.bytes)} MB\nDecoded: ${v.decodedLines} lines, ${mb(v.decodedBytes)} MB\n${offlineLine(offlineStatus())}${storageNote}`;
   };
+  // How much the device holds for the game (offline play), when the browser says.
+  let storageNote = "";
+  try {
+    navigator.storage.estimate().then((e) => { storageNote = `\nStorage: ${(e.usage / 1e6).toFixed(0)} MB used`; }).catch(() => {});
+    navigator.storage.persisted().then((p) => { storageNote += p ? ", kept for good" : ""; }).catch(() => {});
+  } catch (e) { /* not offered */ }
   soundState(); const soundTimer = setInterval(() => { if (!$("soundState")) clearInterval(soundTimer); else soundState(); }, 800);
   $("soundTest").onclick = () => { sfx.restart(sfx.victory); setTimeout(soundState, 300); };
   wireSwatches();
@@ -1519,7 +1535,7 @@ function aboutHTML() {
   <div class="grp"><span>Credits</span><div class="credits">
     <p><b>Sumgeon</b> by James Tuley.<br>Copyright © 2026 James Tuley. Licensed under the ${a("https://github.com/jbtule/sumgeon/blob/main/LICENSE.md", "PolyForm Noncommercial License 1.0.0")}.</p>
     <ul>
-      <li><b>Fonts:</b> ${a("https://fonts.google.com/specimen/Bungee", "Bungee")} and ${a("https://fonts.google.com/specimen/Nunito", "Nunito")} from Google Fonts (SIL Open Font License 1.1).</li>
+      <li><b>Fonts:</b> ${a("https://fonts.google.com/specimen/Bungee", "Bungee")} and ${a("https://fonts.google.com/specimen/Nunito", "Nunito")} (SIL Open Font License 1.1: ${a("fonts/Bungee-OFL.txt", "Bungee's")}, ${a("fonts/Nunito-OFL.txt", "Nunito's")}), from Google Fonts, served with the game so it plays offline.</li>
       <li><b>Voice:</b> recorded with ${a("https://huggingface.co/hexgrad/Kokoro-82M", "Kokoro-82M")} (Apache License 2.0).</li>
       <li><b>Coins:</b> the portraits are traced from public-domain photos of US Mint coins on Wikimedia Commons. The coin backs are drawn for the game.</li>
       <li><b>Dollar bills:</b> drawn for the game, with the coins' traced portraits of Washington and Lincoln, and Hamilton and Jackson traced from the Bureau of Engraving and Printing's public-domain engraved portraits on Wikimedia Commons.</li>
@@ -1797,6 +1813,20 @@ document.addEventListener("visibilitychange", () => { if (!document.hidden) chec
 addEventListener("focus", checkUpdate);
 addEventListener("pageshow", checkUpdate);
 setInterval(checkUpdate, 15 * 60e3);
+
+/* ---------- offline play ----------
+   sw.js keeps the game and its voice for offline play (CLAUDE.md "Offline"). A new version takes
+   over as soon as it's installed: every file the page loads is stamped with its version, so an
+   open page keeps working, and checkUpdate still reloads at the start screen as above. Locally
+   ("dev") the worker is network-first for everything; the page tells it what loaded before it took
+   over, so even the first visit works offline. */
+if ("serviceWorker" in navigator && /^https?:$/.test(location.protocol)) {
+  navigator.serviceWorker.register("sw.js").catch(() => { /* no offline play: the game still works */ });
+  if (BUILD === "dev") navigator.serviceWorker.ready.then((reg) => {
+    const here = location.origin, urls = [location.href].concat(performance.getEntriesByType("resource").map((e) => e.name).filter((u) => u.startsWith(here)));
+    if (reg.active) reg.active.postMessage({ warm: urls });
+  }).catch(() => {});
+}
 
 /* ---------- no accidental zoom ----------
    Safari zooms on a pinch even with maximum-scale=1, so pinches are stopped here. Double-tap zoom

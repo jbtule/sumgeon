@@ -14,7 +14,7 @@ _Last updated 2026-11-23. Companion to `CLAUDE.md`. That file describes what the
 3. **One game, ages 5 to 14.** The same dungeon and the same monsters work for a kindergartner doing 3 + 4 and an eighth-grader doing −3 × (4 − 9). Difficulty comes from *content bands*, not separate games.
 4. **Short sessions and instant start.** A floor takes 1–2 minutes and a full run about 10–15. Opening the page gets you into play within two taps.
 5. **Chalkboard charm.** The monsters are living glyphs drawn in chalk-and-slate style. New content keeps the existing look: SVG shapes, thick dark outlines, flat fills with a sheen, and the Bungee/Nunito fonts.
-6. **Private, offline, free of manipulation.** No accounts, no ads, and no dark patterns such as loot boxes, energy timers or streak-shaming. Progress is saved on the device. The only network use is fonts, recorded voice clips, and **optional** device linking, which is end-to-end encrypted so the server can't read it (§15).
+6. **Private, offline, free of manipulation.** No accounts, no ads, and no dark patterns such as loot boxes, energy timers or streak-shaming. Progress is saved on the device. The only network use is the recorded voice (saved on the device for offline play), and **optional** device linking, which is end-to-end encrypted so the server can't read it (§15).
 
 ---
 
@@ -533,6 +533,7 @@ The corner holds:
 - **Seeded RNG** (e.g. mulberry32) replaces `Math.random` wherever reproducibility matters: Daily Dungeon, tests and bug reports.
 - **Hosting:** GitHub Pages at `tools.tuley.name/sumgeon/` (§16), so every path is relative to that subfolder: the manifest's `start_url` and `scope`, the service worker's scope, and `#link=` links.
 - **PWA:** add a manifest and a small service worker so the game installs to a tablet home screen and runs fully offline. Self-host the two fonts at that point.
+  - *Done (2026-11-26):* `sw.js` precaches each deployed version's shell (stamped by `stamp.mjs`), the two fonts are self-hosted under `fonts/`, and the whole voice (every sprite, about 97 MB) is saved in the background in the order it's needed (CLAUDE.md "Offline").
 
 ---
 
@@ -563,7 +564,7 @@ Each milestone should be playable and shippable on its own. Revised 2026-11-25 f
    
    - **Every line in an audio sprite** (decided 2026-11-25): convert the remaining single-clip lines (phrases, problems and facts, coins, quips) into small sprites grouped by related text, each well under 25 MiB. A sprite is loaded only when it can be needed (the phrases and names always; a stratum's problem sprites when its run starts) and dropped after, so the decoded audio on a phone stays small; measure it on the iPhone. Once every line is in a sprite, stop deploying the single clips, so the audio host stays well under Cloudflare Pages' limit on files per deployment.
      - *Done (2026-11-25):* every line is in a sprite (`spriteFor` in `lines.js`; about 125 sprites, none over 3 minutes or 1.4 MB), loaded per stratum (`runSprites`) and let go on a change. A sprite is now the clips' bytes joined, held compressed (about 8 KB a second of speech) and decoded a line at a time when it's said, since decoding whole sprites would have held over 100 MB a stratum: about 16 MB is held in a new player's run. Sound check shows it.
-     - *Still to do:* measure it on the iPhone; then stop deploying the single clips, which are still the fallback while a sprite loads. That needs a line's bytes fetched from its sprite with a `Range` request when the sprite isn't in yet, checked in Safari (CLAUDE.md, "The fallback").
+     - *Still to do:* measure it on the iPhone; then stop deploying the single clips, which are still the fallback while a sprite loads. Once offline play (M8) is confirmed on the iPhone, every sprite is saved on the device in the background, so a device that has saved the voice never needs them; the fallback for one that hasn't is a line's bytes fetched from its sprite with a `Range` request, checked in Safari (CLAUDE.md, "The fallback"). Single clips are still deployed for now.
    
    A spell reader that handles real handwriting, trained on recorded drawings from the spell check, belongs here too.
 6. **M6 — Grade strata, 4–6.** The new answer keys (−, ., R and the stacked fraction input) and fraction, decimal and percent answers hitting for their percent (§7.2), then:
@@ -572,6 +573,7 @@ Each milestone should be playable and shippable on its own. Revised 2026-11-25 f
    - Pirate Cavern (π Pirate).
 7. **M7 — Replay.** Hero Moments, the slow-motion hero close-ups with quips in a second voice (§8.4; small enough to build any time). Achievements (§14, revised 2026-11-25: mostly secret, each with coins or an item, shown before the next descent, with spoken and share cards), math-locked chests with money and items (§6.3, built 2026-11-25), then clothing and Trollar's shop, Endless Descent (the Endless Specter) and Daily Dungeon.
 8. **M8 — Grown-ups' corner and offline.** Progress heat-maps, custom practice, export, offline play with saved voice clips (the manifest and Home Screen icon are done), and device linking and sync (§15.2–15.4).
+   - *Offline play, done (2026-11-26):* a service worker (`sw.js`) precaches each version's shell, the fonts are self-hosted, and every voice sprite is saved in the background, the ones needed first; Settings → Game says how far it's got (CLAUDE.md "Offline"). *Still to do:* confirm it on the iPhone's Home Screen app (airplane mode after "Offline: ready").
 
 ---
 
@@ -587,7 +589,7 @@ A pre-reader can't use a menu she can't hear, and the device voice is hit and mi
 - Clip names hash model + voice + speed + method + text, so only new or changed lines are recorded.
 - A single **`say(kind, text)`** plays the recorded clip, or falls back to the device voice when there's no clip, the device is offline before the clip was saved, or during local dev. The device voice is ranked the same way Sound Box does it: Premium > Enhanced > basic, en-US, no novelty voices.
 - **iOS only plays sound after a tap**, so a launch shows one big **Start / Continue** button, like Sound Box's. That tap also unlocks the Web Audio context for sound effects.
-- The service worker saves a band's clips in the background after launch (`saveGently`), so offline play keeps the recorded voice.
+- The service worker keeps the voice for offline play: after the first tap the game saves every sprite in the background, the ones it needs first (`saveVoice` in `speech.js`, CLAUDE.md "Offline").
 - A **listen check** page (`/review/listen/`, a grown-up tool, `noindex`, not linked from the game) plays every clip with ✓/✗ marks, so mispronunciations get caught by ear instead of guessed.
 
 ### 13.2 Kinds of speech

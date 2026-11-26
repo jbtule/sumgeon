@@ -1,4 +1,5 @@
 import { audioContext } from "./sfx.js";
+import { saveOrder, VOICE_CACHE } from "./offline.js";
 
 // Speech, patterned on sound-box-crosswords' speech.js. say(kind, text) plays a recorded clip
 // when audio.json has one (Kokoro, recorded by scripts/audio/build.mjs), or falls back to the
@@ -88,6 +89,7 @@ var RATE = { p: 0.95, m: 0.95, n: 0.95, q: 0.85, h: 1 }, PITCH = { h: 1.3 };
         sprites = (m.sprites || []).map(function (s) { return { name: s.name || "", fam: (s.name || "").replace(/\.\d+$/, ""), url: s.url, lines: s.lines, bytes: null, loading: false, size: 0 }; });
         sprites.forEach(function (s) { Object.keys(s.lines).forEach(function (id) { s.size += s.lines[id][1]; spriteOf[id] = { s: s, id: id, off: s.lines[id][0], len: s.lines[id][1] }; }); });
         loadSprites();
+        saveSome();
       })
       .catch(function () {});
   } catch (e) {}
@@ -102,6 +104,7 @@ function unlock() {
   document.removeEventListener("keydown", unlock, true);
   // sfx.js made the shared context on this same tap (its listener runs first).
   setTimeout(loadSprites, 0);
+  unlocked = true; setTimeout(saveSome, 1500); // the voice's saving starts a moment after the game's own
   var a = getPlayer();
   if (a.src) return;
   a.src = SILENCE;
@@ -138,8 +141,77 @@ function loadSprites() {
     fetch(s.url).then(function (r) { return r.ok ? r.arrayBuffer() : Promise.reject(); })
       .then(function (data) { if (need[s.fam]) s.bytes = new Uint8Array(data); })
       .catch(function () { /* its lines stay single clips */ })
-      .then(function () { s.loading = false; fetching--; loadSprites(); });
+      .then(function () { s.loading = false; fetching--; loadSprites(); saveSome(); });
   });
+}
+
+/* ---------- saving the voice for offline play ----------
+   Every sprite is saved in the Cache API (offline.js VOICE_CACHE), in the order app.js gives
+   (saveVoice: the sprites every stratum needs, this stratum's lowest level first, the other open
+   strata's, then the rest, offline.js saveOrder), a couple at a time in the background after the
+   first tap, and never while the game is fetching a sprite it needs now (needSprites). With the
+   service worker in charge (sw.js), fetching a sprite is what saves it: the worker keeps it
+   cache-first before answering. Sprites an update dropped from audio.json are deleted. */
+var unlocked = false, plan = [], saved = null, saveQueue = null, saving = 0, SAVE_AT_ONCE = 2, saveFailed = false, asked = false;
+var canCache = typeof caches !== "undefined";
+export function saveVoice(families) { plan = families || []; saveQueue = null; saveSome(); }
+function busy() { return sprites.some(function (s) { return need[s.fam] && s.loading; }); }
+function saveSome() {
+  if (!canCache || !unlocked || !sprites.length) return;
+  if (!saved) { scanSaved(); return; }
+  if (!saveQueue) { saveFailed = false; saveQueue = saveOrder(plan, sprites).filter(function (u) { return !saved[u]; }); }
+  while (saving < SAVE_AT_ONCE && saveQueue.length && !busy()) saveOne(saveQueue.shift());
+}
+// What's in the cache already, once; sprites no longer in audio.json are let go.
+var scanning = false;
+function scanSaved() {
+  if (scanning) return;
+  scanning = true;
+  var listed = {};
+  sprites.forEach(function (s) { listed[new URL(s.url, location.href).href] = s.url; });
+  caches.open(VOICE_CACHE).then(function (c) {
+    return c.keys().then(function (keys) {
+      var have = {};
+      return Promise.all(keys.map(function (k) {
+        if (listed[k.url]) { have[listed[k.url]] = true; return null; }
+        return c.delete(k);
+      })).then(function () { saved = have; });
+    });
+  }).catch(function () { saved = {}; })
+    .then(function () { scanning = false; keepStorage(); saveSome(); });
+}
+// Asks once, quietly, for the saved files to be kept even when the device is short of space.
+function keepStorage() {
+  if (asked) return;
+  asked = true;
+  try {
+    if (navigator.storage && navigator.storage.persist) navigator.storage.persisted().then(function (p) { if (!p) return navigator.storage.persist(); }).catch(function () {});
+  } catch (e) { /* not offered */ }
+}
+function saveOne(url) {
+  saving++;
+  // Through the service worker, which keeps it; without one (before it takes over), kept here.
+  var worker = navigator.serviceWorker && navigator.serviceWorker.controller;
+  fetch(url).then(function (r) {
+    if (!r.ok) throw new Error(r.status);
+    if (worker) return r.arrayBuffer();
+    return caches.open(VOICE_CACHE).then(function (c) { return c.put(url, r); });
+  }).then(function () { saved[url] = true; })
+    .catch(function () { saveFailed = true; if (saveQueue) saveQueue.length = 0; /* offline or the host is down: again on the next plan */ })
+    .then(function () { saving--; saveSome(); });
+}
+if (typeof addEventListener === "function") addEventListener("online", function () { saveQueue = null; saveSome(); });
+// For Settings → Game: how much of the voice is saved (offline.js offlineLine).
+export function offlineStatus() {
+  var total = 0, totalBytes = 0, n = 0, bytes = 0;
+  sprites.forEach(function (s) { total++; totalBytes += s.size; if (saved && saved[s.url]) { n++; bytes += s.size; } });
+  return {
+    supported: canCache && typeof navigator !== "undefined" && "serviceWorker" in navigator,
+    ready: !!(navigator.serviceWorker && navigator.serviceWorker.controller),
+    total: total, saved: n, bytes: bytes, totalBytes: totalBytes,
+    saving: saving > 0 || !!(saveQueue && saveQueue.length) || busy(), failed: saveFailed,
+    online: navigator.onLine
+  };
 }
 // A line out of a loaded sprite, decoded: its bytes are its whole clip. A promise of an AudioBuffer.
 function lineBuffer(hit) {

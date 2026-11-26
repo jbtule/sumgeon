@@ -3,6 +3,11 @@
    PICTURE: the current glyph monster, large, bobbing over a lit stone floor
    COLOUR and TYPE: slate chalkboard, chalk white, coral + gold accents; Bungee + Nunito
    LAYOUT: arena on top, problem + number pad below; side by side when wide */
+/* The two fonts, self-hosted for offline play (fonts/, SIL Open Font License 1.1: fonts/*-OFL.txt),
+   latin only, as Google Fonts serves them. Nunito is one variable file for every weight used.
+   scripts/stamp.mjs adds ?v=<sha> to each url at deploy (stamping.mjs stampCss). */
+@font-face{font-family:"Bungee";font-style:normal;font-weight:400;font-display:swap;src:url("fonts/bungee-latin.woff2") format("woff2")}
+@font-face{font-family:"Nunito";font-style:normal;font-weight:200 1000;font-display:swap;src:url("fonts/nunito-latin.woff2") format("woff2")}
 :root{color-scheme:dark;--hint-empty:var(--edge);--hint-line:var(--edge);--bg:#12242b;--panel:#1a313a;--line:#2a4852;--btn:#24414b;--btn2:#2f4f5a;--edge:#3a5560;--ink:#f3efe4;--muted:#a9bec1;--coral:#ff5a4e;--gold:#ffc93c;--dark:#0c171c}
 *{box-sizing:border-box;min-width:0}
 body{margin:0;background:var(--bg);color:var(--ink);font:600 16px/1.5 Nunito,system-ui,sans-serif;overflow-x:clip;min-height:100vh}

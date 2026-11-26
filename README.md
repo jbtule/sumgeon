@@ -19,8 +19,9 @@ This covers the code and the monster and hero art. Third-party parts keep their 
 licenses:
 
 - [Bungee](https://fonts.google.com/specimen/Bungee) and
-  [Nunito](https://fonts.google.com/specimen/Nunito) (SIL Open Font License 1.1), loaded
-  from Google Fonts.
+  [Nunito](https://fonts.google.com/specimen/Nunito) (SIL Open Font License 1.1), from Google
+  Fonts, served with the game for offline play (`fonts/`, with their license texts,
+  `fonts/Bungee-OFL.txt` and `fonts/Nunito-OFL.txt`).
 - The coin portraits in `js/coins.js` (Washington, Roosevelt, Jefferson, Lincoln) are traced
   from photos of US Mint coins on Wikimedia Commons, which are in the public domain as works of
   the US government: "2006 Quarter Proof.png", "Dime Obverse 13.png",
