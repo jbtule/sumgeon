@@ -434,15 +434,22 @@ function partsSvg(p, hint, worked) {
   });
   return svgBox(W, H, s, `a rectangle in ${p.n} equal parts`);
 }
-// Rows × columns of squares; the hint counts the rows: 4, 8, ? (a running total by each row).
+// Rows × columns of squares. The hint numbers the first row's squares, then counts on by rows
+// (4, 8 …) only partway before answering: to the halfway row, or just the first row with 2 or 3
+// rows; the rows still to go are dimmed and unnumbered, so it never counts to the end. Worked,
+// every row has its running total.
+export const rowsCounted = (p, worked) => (worked ? p.rows : p.rows <= 3 ? 1 : Math.floor(p.rows / 2));
 function gridSvg(p, hint, worked) {
-  const u = Math.min(200 / p.cols, 150 / p.rows), W = u * p.cols, H = u * p.rows;
+  const u = Math.min(200 / p.cols, 150 / p.rows), W = u * p.cols, H = u * p.rows, upto = rowsCounted(p, worked);
   let s = house(poly([[0, 0], [W, 0], [W, H], [0, H]]), "#7fdc8a");
   for (let r = 0; r < p.rows; r++) {
-    if (hint && r % 2 === 0) s += `<rect x="0" y="${f1(r * u)}" width="${f1(W)}" height="${f1(u)}" fill="${GOLD}" opacity=".35"/>`;
+    if (hint && r < upto && r % 2 === 0) s += `<rect x="0" y="${f1(r * u)}" width="${f1(W)}" height="${f1(u)}" fill="${GOLD}" opacity=".35"/>`;
+    if (hint && r >= upto) s += `<rect x="0" y="${f1(r * u)}" width="${f1(W)}" height="${f1(u)}" fill="${DK}" opacity=".45"/>`;
     for (let c = 0; c < p.cols; c++) s += `<rect x="${f1(c * u)}" y="${f1(r * u)}" width="${f1(u)}" height="${f1(u)}" fill="none" stroke="${DK}" stroke-width="4"/>`;
-    if (hint) s += badge(W + 26, r * u + u / 2, r === p.rows - 1 && !worked ? "?" : (r + 1) * p.cols, r === p.rows - 1);
+    if (hint && r < upto) s += badge(W + 26, r * u + u / 2, (r + 1) * p.cols, false);
   }
+  // The first row's squares, numbered.
+  if (hint) for (let c = 0; c < p.cols; c++) s += `<text x="${f1(c * u + u / 2)}" y="${f1(u / 2)}" dy=".35em" text-anchor="middle" font-family="Nunito, sans-serif" font-weight="900" font-size="${f1(Math.min(18, u * 0.45))}" fill="${DK}" class="cnt">${c + 1}</text>`;
   return svgBox(W + (hint ? 40 : 0), H, s, `${p.rows} rows of ${p.cols} squares`);
 }
 
@@ -455,6 +462,8 @@ export function countHint(p, worked) {
     ? { say: `You can see 3 faces. 3 more hide on the back. 3 + 3 = ${worked ? 6 : "?"}` }
     : { say: `4 triangles go round, and a square is on the bottom. 4 + 1 = ${worked ? 5 : "?"}` };
   if (p.kind === "parts") return { say: `Count the parts: ${list(p.n)}${worked ? `. ${p.n} equal parts.` : ""}` };
-  const run = Array.from({ length: p.rows }, (_, i) => (i + 1) * p.cols);
-  return { say: `${p.rows} rows of ${p.cols}. Count by ${p.cols}s: ${worked ? run.join(", ") : run.slice(0, -1).concat("?").join(", ")}` };
+  // "Each row has 4: 4, 8, … How many in 3 rows?"; worked, "4 + 4 + 4 = 12".
+  if (worked) return { say: `${Array.from({ length: p.rows }, () => p.cols).join(" + ")} = ${p.ans}` };
+  const run = Array.from({ length: rowsCounted(p, false) }, (_, i) => (i + 1) * p.cols);
+  return { say: `Each row has ${p.cols}: ${run.join(", ")}, … How many in ${p.rows} rows?` };
 }

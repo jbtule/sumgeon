@@ -95,7 +95,18 @@ for (let i = 0; i < 300; i++) {
     }
     if (kind === "faces") assert.equal(p.ans, p.solid === "cube" ? 6 : 5);
     if (kind === "parts") assert.ok(p.ans === p.n && p.n >= 2 && p.n <= 4);
-    if (kind === "squares") assert.equal(p.ans, p.rows * p.cols);
+    if (kind === "squares") {
+      assert.equal(p.ans, p.rows * p.cols);
+      // Before answering the hint counts on only partway (to the halfway row, or the first row
+      // with 2 or 3 rows): no number in the drawing or the words reaches the answer, and the
+      // last counted row is at most half the rows. Worked: every row, "4 + 4 + 4 = 12".
+      const before = countSvg(p, { hint: true }), nums = [...before.matchAll(/>(\d+)<\/text>/g)].map((m) => Number(m[1]));
+      assert.ok(nums.every((n) => n < p.ans), `${p.rows} × ${p.cols}: the hint shows ${nums}`);
+      assert.ok(Math.max(...nums) <= Math.max(p.cols, Math.floor(p.rows / 2) * p.cols));
+      assert.ok(!new RegExp(`\\b${p.ans}\\b`).test(countHint(p, false).say), countHint(p, false).say);
+      assert.equal(countHint(p, true).say, `${Array(p.rows).fill(p.cols).join(" + ")} = ${p.ans}`);
+      assert.ok([...countSvg(p, { hint: true, worked: true }).matchAll(/>(\d+)<\/text>/g)].some((m) => Number(m[1]) === p.ans));
+    }
     for (const opt of [{}, { hint: true }, { hint: true, worked: true }]) assert.ok(!/NaN|undefined/.test(countSvg(p, opt)), kind);
     const before = countHint(p, false).say, after = countHint(p, true).say;
     assert.ok(before.endsWith("?"), `${kind}: the hint stops at ?: ${before}`);
