@@ -12,6 +12,7 @@ import { NEW_MON, MON as GAME_MON, svg } from "../../js/monsters.js";
 import { CLOCK_LEVELS, clockProblem, clockLine, clockQuestion, spokenClock, spokenTime, clockSvg, clockHint, digital } from "../../js/clock.js";
 import { PATTERN_LEVELS, patternProblem, spokenPattern, spokenPatternAnswer, patternSvg, patternHint, ODD_LEVELS, isOddEven, oddEvenProblem, oddEvenSvg, oddEvenHint, spokenOddEven } from "../../js/patterns.js";
 import { TF_LEVELS, tfProblem, tfSvg, tfHint, spokenTF, fixParts, eqWords } from "../../js/truefalse.js";
+import { LINE_LEVELS, lineProblem, lineSvg, lineHint, spokenLine, spokenLineAnswer } from "../../js/numberline.js";
 import { DOLLAR_LEVELS, dollarProblem, dollarSvg, dollarHint, spokenDollars, sayMoney } from "../../js/dollars.js";
 import { SHAPE_LEVELS, shapeLevel, isDraw, countProblem, countSvg, countHint, spokenCount, spokenDraw, readShape, judgeShape, cleanShape, article, CORNERS, COUNT_LINE } from "../../js/shapes.js";
 
@@ -63,6 +64,16 @@ const TYPES = {
     hint: tfHint, spoken: spokenTF,
     missed: (p) => (p.kind === "count" ? `${p.ans} ${p.ans === 1 ? "is" : "are"} true.` : eqWords({ ...p.eq, [p.eq.fix]: p.eq[p.eq.fix].slice(0, -1).concat(p.ans) }) + "."),
     answer: (p) => p.ans
+  },
+  numberline: {
+    icon: "½", label: "Number line", mon: "Halfling", levels: LINE_LEVELS, stratum: () => "tower",
+    problem: (lv, rnd) => lineProblem(lv.id, rnd),
+    picture: (p, st) => lineSvg(p, { hint: !!st.hint, worked: st.hint && st.worked }),
+    // "□/4", stacked like the Tower's fractions; or "Equal parts: □".
+    line: (p, slot) => (p.kind === "parts" ? `Equal parts: ${slot(0)}` : `<span class="frac"><span>${slot(0)}</span><span>${p.d}</span></span>`),
+    words: (p) => p.kind === "parts",
+    hint: lineHint, spoken: spokenLine, missed: spokenLineAnswer,
+    answer: (p) => (p.kind === "parts" ? p.d : `${p.n}/${p.d}`)
   },
   dollars: {
     icon: "💵", label: "Dollars", mon: "Trollar", levels: DOLLAR_LEVELS,
@@ -269,6 +280,9 @@ function next(speak) {
   const tm = !S && view.type === "clock" && /^(\d{1,2}):(\d\d)$/.exec(q.get("time") || "");
   if (tm) { const h = Number(tm[1]), m = Number(tm[2]); p = { level: lv.id, h, m, ask: m && q.get("ask") !== "hour" ? "minutes" : "hour", ans: m && q.get("ask") !== "hour" ? m : h }; }
   if (!S && p.draw && q.get("shape")) p.shape = q.get("shape");
+  // ?frac=5/8 puts the number line's dot there first.
+  const fr = !S && view.type === "numberline" && p.kind === "where" && /^(\d+)\/(\d+)$/.exec(q.get("frac") || "");
+  if (fr) { p.n = Number(fr[1]); p.d = Number(fr[2]); p.ans = p.n; }
   S = { p, typed: Array.from({ length: [].concat(p.ans).length }, () => ""), at: 0, done: null, hint: null, note: "" };
   strokes = []; drawing = null; overlay = null;
   draw();
