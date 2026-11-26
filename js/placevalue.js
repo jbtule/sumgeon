@@ -1,5 +1,5 @@
 // Place value with base-ten blocks (2nd grade, 2.NBT.A.1–4, Missouri Learning Standards), for the
-// Crystal Mines: a prototype for the review page (review/proto/); nothing in the game reads it yet.
+// Crystal Mines: in the game (the Mines' band) and on the review page (review/proto/).
 // No DOM: runs in Node.
 //
 // The school's guide teaches "How many tens are in 120? (12)", "34 tens and 3 ones is 343",
@@ -144,13 +144,68 @@ export function pvSvg(p, opt = {}) {
 export function pvHint(p, worked) {
   const end = worked ? p.ans : "?";
   const place = (h, t, o) => `${h} hundred${h === 1 ? "" : "s"}, ${t} ten${t === 1 ? "" : "s"}, ${o} one${o === 1 ? "" : "s"}`;
-  if (p.kind === "tens") return { say: `${p.h === 1 ? "1 hundred is" : `${p.h} hundreds are`} ${p.h * 10} tens. ${p.h * 10} + ${p.t} = ${worked ? `${p.ans} tens` : "?"}` };
+  // Tens in a number: each hundred is 10 tens. Before answering, more than one hundred is counted
+  // by 10s only partway ("10, …"), since "2 hundreds are 20 tens" would be the answer for 200.
+  if (p.kind === "tens") {
+    if (worked) return { say: `${p.h === 1 ? "1 hundred is" : `${p.h} hundreds are`} ${p.h * 10} tens.${p.t ? ` ${p.h * 10} + ${p.t} = ${p.ans} tens` : ""}` };
+    if (p.h === 1) return { say: `1 hundred is 10 tens. 10 + ${p.t} = ?` };
+    return { say: `Each hundred is 10 tens. Count the tens by 10s: 10, …${p.t ? ` then ${p.t} more.` : ""} ?` };
+  }
   if (p.kind === "odd") {
     const H = p.h + Math.floor(p.t / 10), T = p.t % 10;
     return { say: `Every 10 tens make a hundred: ${p.t} tens is ${Math.floor(p.t / 10)} hundred${Math.floor(p.t / 10) === 1 ? "" : "s"} and ${T} ten${T === 1 ? "" : "s"}. ${place(H, T, p.o)} = ${end}` };
   }
   if (p.kind === "expanded") return { say: `Each part is a place: ${place(p.h, p.t, p.o)} = ${end}` };
-  return { say: `${p.h * 100} + ${p.t * 10} + ${p.o} = ${end}` };
+  // A place with nothing in it adds nothing: 807 is 800 + 7.
+  return { say: `${[p.h * 100, p.t * 10, p.o].filter((v) => v).join(" + ")} = ${end}` };
 }
+
+/* ---------- the game's facts (Haberhasher, in the Mines' band: learn.js BANDS.second) ----------
+   Fixed samples, so 70% of a level can be learned and every problem is recorded. Keys:
+   - "#b345": blocks to a number; "#e345": expanded form (200 + 40 + 5 = □).
+   - "#t120": how many tens in 120?
+   - "#o34,3": 34 tens and 3 ones; "#o1,14,5": 1 hundred + 14 tens + 5 ones.
+   A fact: { op: "#", set, kind, form?, h, t, o, ans, key, q }. The answer, and the damage, is the
+   number (or the tens). */
+export function pvFact(kind, h, t, o, form) {
+  const p = { op: "#", set: kind, kind, h, t, o, ans: kind === "tens" ? h * 10 + t : h * 100 + t * 10 + o };
+  if (kind === "odd") p.form = form || (h ? "hundred" : "tens");
+  p.key = "#" + kind[0] + (kind === "tens" ? h * 100 + t * 10 : kind === "odd" ? (p.form === "tens" ? `${t},${o}` : `${h},${t},${o}`) : p.ans);
+  p.q = pvLine(p).map((x) => (x === null ? "□" : x)).join("");
+  return p;
+}
+export function pvFactOf(key) {
+  const k = key[1], rest = key.slice(2);
+  const kind = { b: "blocks", e: "expanded", t: "tens", o: "odd" }[k];
+  if (kind === "odd") { const v = rest.split(",").map(Number); return v.length === 2 ? pvFact("odd", 0, v[0], v[1], "tens") : pvFact("odd", v[0], v[1], v[2], "hundred"); }
+  const n = Number(rest);
+  return pvFact(kind, Math.floor(n / 100), Math.floor(n / 10) % 10, kind === "tens" ? 0 : n % 10);
+}
+// The levels the game asks, in the school's order (2nd grade, place value before three-digit
+// work): three-digit numbers as blocks and in expanded form, then tens in a number and the odd
+// splits (composing and decomposing in more than one way).
+export const PV_GAME_LEVELS = [
+  { name: "Hundreds, tens and ones", sets: ["blocks", "expanded"] },
+  { name: "Tens in a number", sets: ["tens", "odd"] }
+];
+const PV_SIZES = { blocks: 20, expanded: 20, tens: 16, odd: 20 };
+function seeded(seed) { let s = seed; return () => (s = (s * 1103515245 + 12345) % 2147483648) / 2147483648; }
+let factCache = null;
+export function pvFacts() {
+  if (factCache) return factCache;
+  const out = [], seen = new Set();
+  for (const lv of PV_LEVELS) {
+    const rnd = seeded({ blocks: 11, expanded: 22, tens: 33, odd: 44 }[lv.id]);
+    for (let n = 0, guard = 0; n < PV_SIZES[lv.id] && guard < 5000; guard++) {
+      const p = pvProblem(lv.id, rnd), f = pvFact(lv.id, p.h, p.t, p.o, p.form);
+      // Not 100 as 10 tens: any hint for it would say the answer.
+      if (f.key === "#t100") continue;
+      if (seen.has(f.key)) continue;
+      seen.add(f.key); out.push(f); n++;
+    }
+  }
+  return (factCache = out);
+}
+
 // The blocks a picture draws, for the tests: { flats, rods, cubes }.
 export const blockCounts = (svg) => ({ flats: (svg.match(/class="flat"/g) || []).length, rods: (svg.match(/class="rod"/g) || []).length, cubes: (svg.match(/class="cube"/g) || []).length });

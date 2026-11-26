@@ -364,13 +364,14 @@ h1 b{color:var(--coral);font-weight:400}
    even puts its slimes over "Even numbers = □". */
 .prob svg.pattern{display:block;width:min(calc(100vw - 132px),400px);height:auto;max-height:22dvh;overflow:visible}
 @media (max-width: 759px) and (max-height: 700px){.prob svg.pattern{max-height:19dvh}}
-.game.slimes .probrow{justify-self:center}
+.game.slimes .probrow,.game.pic .probrow{justify-self:center}
 /* On phones the 🔊 and 💡 buttons stack beside the slimes, so the row gets the width. */
 @media (max-width: 759px){
-  .game.slimes .probrow{display:grid;grid-template-columns:auto minmax(0,1fr);grid-template-rows:auto auto;grid-auto-flow:column;align-items:center;gap:6px;justify-self:stretch}
-  .game.slimes .probrow .icon-btn{grid-column:1}
-  .game.slimes .prob{grid-column:2;grid-row:1/3;justify-self:center}
+  .game.slimes .probrow,.game.pic .probrow{display:grid;grid-template-columns:auto minmax(0,1fr);grid-template-rows:auto auto;grid-auto-flow:column;align-items:center;gap:6px;justify-self:stretch}
+  .game.slimes .probrow .icon-btn,.game.pic .probrow .icon-btn{grid-column:1}
+  .game.slimes .prob,.game.pic .prob{grid-column:2;grid-row:1/3;justify-self:center}
   .game.slimes .prob svg.pattern{width:min(calc(100vw - 84px),400px)}
+  .game.pic.find .prob svg.tf,.game.pic.find .prob svg.pv,.game.pic.find .prob svg.money,.game.pic.find .prob svg.nl{width:min(calc(100vw - 84px),340px)}
 }
 /* A hint drawn on the problem's own picture (the clock, the slimes) opens with only its words. */
 .hint.words .model{display:none}
@@ -378,6 +379,48 @@ h1 b{color:var(--coral);font-weight:400}
 /* Comparisons (Chompers): < = > keys fill the number pad's space, three rows tall, so nothing moves */
 .pad.cmp .sym{grid-row:span 3;min-height:calc(var(--key) * 3 + var(--gap) * 2);font-size:clamp(44px,12vw,64px);background:#2b4f3a}
 .pad.cmp .go{grid-column:span 2}
+
+/* Batch 2's pictures over their line: the scale (true or false, fix it), the number line, the
+   blocks on their place-value mat, and bills and coins. Short enough to leave the monster room. */
+.game.find .prob svg.tf,.game.find .prob svg.pv,.game.find .prob svg.money{display:block;width:min(84vw,340px);height:auto;max-height:min(24dvh,220px);overflow:visible}
+.game.find .prob svg.nl{display:block;width:min(82vw,360px);height:auto;max-height:18dvh;overflow:visible}
+@media (min-width: 760px){.game.find .prob svg.tf,.game.find .prob svg.pv,.game.find .prob svg.money{width:min(36vw,380px);max-height:min(26dvh,250px)}.game.find .prob svg.nl{width:min(36vw,380px);max-height:22dvh}
+  /* With a hint open, the picture shrinks so the hint's words fit the room above it. */
+  .game.hinted.find .prob svg.tf,.game.hinted.find .prob svg.pv,.game.hinted.find .prob svg.money{max-height:min(13dvh,130px)}.game.hinted.find .prob svg.nl{max-height:14dvh}}
+@media (max-width: 759px) and (max-height: 700px){.game.find .prob svg.tf,.game.find .prob svg.pv,.game.find .prob svg.money{max-height:21dvh}.game.find .prob svg.nl{max-height:15dvh}}
+.prob .tfline{font-size:.75em}
+.prob .tfask{font:900 .42em Nunito,sans-serif;color:var(--muted)}
+.prob .pvline{font-size:.5em}
+.prob .pvline .blank{font-size:1.5em}
+/* Fix it: the wrong number, crossed out, lifts above its place, small and red; the □ takes its
+   place on the line. Right, the number drops in and the crossed-out one fades. */
+.prob .fixline{font-size:.75em}
+.prob .fixslot{position:relative;display:inline-block}
+.prob .fixslot .was{position:absolute;left:50%;bottom:92%;transform:translateX(-50%);font-size:.5em;line-height:1;color:var(--coral);text-decoration-thickness:.12em;animation:fixlift .5s ease-out both}
+@keyframes fixlift{from{transform:translate(-50%,1.6em) scale(2);opacity:1}to{transform:translateX(-50%)}}
+.prob .fixslot.settled .was{animation:fixfade .6s ease-out forwards}
+@keyframes fixfade{to{opacity:0}}
+.prob .fixslot .fixin{animation:fixdrop .35s cubic-bezier(.3,1.4,.6,1) both}
+@keyframes fixdrop{from{transform:translateY(-.8em);opacity:0}}
+@media(prefers-reduced-motion:reduce){.prob .fixslot .was,.prob .fixslot.settled .was,.prob .fixslot .fixin{animation:none}.prob .fixslot.settled .was{opacity:0}}
+/* True or false: two big keys, True ✓ and False ✗, filling the number pad's space (four rows),
+   so nothing moves. A tap presses the key in for a moment, then it's answered. */
+.pad.tfpad{grid-template-columns:repeat(2,minmax(0,1fr))}
+.pad.tfpad .tfk{min-height:calc(var(--key) * 4 + var(--gap) * 3);display:grid;place-content:center;gap:2px;font:400 clamp(22px,6.4vw,30px) Bungee,sans-serif}
+.pad.tfpad .tfk b{font:900 clamp(40px,12vw,64px)/1 Nunito,sans-serif}
+.pad.tfpad .yes{background:#2b4f3a}.pad.tfpad .yes b{color:#7fdc8a}
+.pad.tfpad .no{background:#4f2b2f}.pad.tfpad .no b{color:#ff8a7f}
+.pad.tfpad .pressed{transform:translateY(3px) scale(.97);box-shadow:0 1px 0 var(--dark);filter:brightness(1.3)}
+.pad.locked{pointer-events:none}
+/* A two- or three-digit sum stacked in columns (app.js stackHTML): the sign in its own column,
+   the numbers right-aligned in a column --w digits wide, a line, and the answer's □ under it,
+   right-aligned. Smaller than a one-line problem, so three rows fit an iPhone SE. */
+.prob .stacked{display:inline-grid;grid-template-columns:auto calc(var(--w) * .82em + .3em);column-gap:.18em;font-size:.72em;line-height:1;text-align:right;font-variant-numeric:tabular-nums;vertical-align:middle}
+.prob .stacked .sop{text-align:left}
+.prob .stacked .sbar{grid-column:1/-1;height:.09em;margin:.08em 0 .1em;background:currentColor;border-radius:.05em}
+.prob .stacked .sans{display:flex;justify-content:flex-end}
+.prob .stacked .sans .blank{min-width:calc(var(--w) * .82em);text-align:right;padding:0 .08em;border-radius:10px}
+.game.stack .probrow{justify-self:center}
 
 /* Deeper in a Wing, the room gets darker (--murk, set by app.js from the depth). */
 .game{--murk:0}

@@ -2,6 +2,10 @@ import { coinWords, coinOf, isValue } from "./coins.js";
 import { fractionWords, unitName } from "./third.js";
 import { spokenClockFact, spokenClockAnswer } from "./clock.js";
 import { spokenPatternFact, spokenPatternFactAnswer } from "./patterns.js";
+import { spokenTF, spokenTFAnswer } from "./truefalse.js";
+import { spokenLine, spokenLineAnswer } from "./numberline.js";
+import { spokenPV, spokenPVAnswer } from "./placevalue.js";
+import { spokenDollars, spokenDollarAnswer } from "./dollars.js";
 
 // Problem generation and spoken text. No DOM: runs in Node for the tests and, later, the
 // audio build (which records the same spoken text the app asks for).
@@ -77,6 +81,14 @@ export function spokenProblem(p) {
   // "Two, four, six. What comes next?", "How many even numbers?".
   if (p.op === "⌚") return spokenClockFact(p);
   if (p.op === "…" || p.op === "◐") return spokenPatternFact(p);
+  // True or false (the Equal Twins): "Four plus two equals seven. True or false?", "Fix it! Four
+  // plus two equals what?"; the number line (Halfling): "Where is the dot? What fourths?"; place
+  // value (Haberhasher): "Three hundreds, four tens and five ones. What number?"; dollars
+  // (Trollar): "How many dollars?", "How much money? Dollars, then cents."
+  if (p.op === "✓" || p.op === "✎") return spokenTF(p);
+  if (p.op === "↔") return spokenLine(p);
+  if (p.op === "#") return spokenPV(p);
+  if (p.op === "$") return spokenDollars(p);
   // Which is more (K): "Which is more, seven or four?"
   if (p.op === "more") return "Which is more, " + spoken(p.x) + " or " + spoken(p.y) + "?";
   // Fractions: "one half equals what fourths"; "one equals what fourths".
@@ -100,6 +112,10 @@ export function spokenProblem(p) {
 export function spokenFact(p) {
   if (p.op === "⌚") return spokenClockAnswer(p);
   if (p.op === "…" || p.op === "◐") return spokenPatternFactAnswer(p);
+  if (p.op === "✓" || p.op === "✎") return spokenTFAnswer(p);
+  if (p.op === "↔") return spokenLineAnswer(p);
+  if (p.op === "#") return spokenPVAnswer(p);
+  if (p.op === "$") return spokenDollarAnswer(p);
   if (p.op === "more") return capital(spoken(p.ans)) + " is more than " + spoken(Math.min(p.x, p.y)) + ".";
   if (p.op === "/") return fractionWords(p.a, p.b, spoken) + " equals " + fractionWords(p.ans, p.d, spoken);
   if (p.op === "▦") return capital(spoken(p.r)) + " rows of " + spoken(p.c) + " make " + spoken(p.ans) + ".";

@@ -30,7 +30,7 @@ assert.ok(!/finger/.test(h("×", 9, 7).say), "the finger trick isn't taught");
 assert.match(h("÷", 32, 8).say, /^Think multiplication: how many 8s make 32\? 32 ÷ 8 = \?$/, "one ? only");
 
 import { clockAnswer, digital } from "../js/clock.js";
-const TALKS = ["⌚", "◐"];
+const TALKS = ["⌚", "◐"], BATCH2 = ["✓", "✎", "#", "$", "↔"];
 // A worked hint says the answer: a time ("3:35", "half past 3", "3 o'clock"), its minutes, or the
 // count of odd or even numbers.
 const saysAnswer = (f, say) => (f.op === "◐" ? say.includes(`${f.ans} ${f.ask}`)
@@ -45,6 +45,16 @@ for (const band of Object.keys(BANDS)) {
     // "Pair up the dots."); worked, they say the answer: the time, or the count.
     if (TALKS.includes(f.op)) {
       assert.ok(saysAnswer(f, after.say), `${p.key}: ${after.say}`);
+      continue;
+    }
+    // Batch 2. True or false: "Work out each side." before, "… True." or "… False." after. Fix it,
+    // place value, dollars and the number line stop at "?" before, and say the answer after.
+    if (BATCH2.includes(f.op)) {
+      assert.ok(before.say.includes("?") || f.op === "✓" || f.kind === "parts", `${p.key}: ${before.say}`);
+      if (f.op === "✓") assert.ok(!/True|False/.test(before.say) && after.say.endsWith(f.sym === "T" ? "True." : "False."), `${p.key}: ${after.say}`);
+      else if (f.op === "$") assert.ok(after.say.includes(`${f.slots ? f.slots[0] : f.ans} dollars`) && (!f.slots || after.say.includes(`${f.slots[1]} cents`)), `${p.key}: ${after.say}`);
+      else if (f.op === "↔") assert.ok(after.say.includes(f.kind === "parts" ? `${f.d} equal parts` : ` ${f.n}/${f.d}`), `${p.key}: ${after.say}`);
+      else assert.ok(new RegExp(`\\b${f.ans}\\b`).test(after.say), `${p.key}: ${after.say}`);
       continue;
     }
     // A comparison's answer is its symbol: "3 + 4 ? 8" before, "3 + 4 < 8" after.
@@ -113,7 +123,7 @@ for (const band of Object.keys(BANDS)) {
       if (f.op === "×" && Math.max(f.x, f.y) >= 10) assert.ok(!/× 5 \+/.test(say), `${label}: ${say}`);
       if (f.op === "+" && f.x === f.y && f.ans > 10 && f.ans < 20) assert.match(say, /^Doubles:/, label);
       if (f.op === "×" && Math.min(f.x, f.y) === 2 && Math.max(f.x, f.y) < 10) assert.match(say, /^Doubles:/, label);
-      if (f.x !== 0 && f.y !== 0) assert.ok(!/ \+ 0\b|\b0 \+ /.test(say), `${label}: ${say}`);
+      if (f.x !== 0 && f.y !== 0 && !f.eq) assert.ok(!/ \+ 0\b|\b0 \+ /.test(say), `${label}: ${say}`);
     }
   }
 }
@@ -140,6 +150,10 @@ for (const band of Object.keys(BANDS)) {
     // A comparison's answer is its symbol (its ans is the damage, the bigger number).
     if (f.sym) { const hb = hintFor(f, false); assert.ok(!/[<>]|&[lg]t;/.test(hb.say + hb.model.replace(/<[^>]*>/g, "")), `${key}: ${hb.say}`); continue; }
     const known = new Set(numbersIn((f.blank && f.op !== "…" ? [f.q] : [f.q, f.l, f.r, f.x, f.y, f.step && Math.abs(f.step)]).filter((v) => v != null).join(" ")));
+    // Bills and coins show their own values; the number line its wholes (0, 1, 2) and how many
+    // parts it's cut into.
+    if (f.op === "$") [...f.bills, 1, 5, 10, 25].forEach((n) => known.add(n));
+    if (f.op === "↔") [0, 1, f.wholes, f.d, f.d * f.wholes].forEach((n) => known.add(n));
     // A clock's face numbers ("from the 2 to the 9") and its 12 are on it.
     if (f.op === "⌚") [5, 12, f.m / 5, f.m2 / 5].forEach((n) => known.add(n)); // and "count by 5s"
     // and so are their digits and tens (73 is 7 tens and 3 ones).
@@ -175,12 +189,17 @@ const opening = { "Ten-frame": /^Put together/, "Draw and cross out": /^Take awa
   "Telling the hour": /^The short hand points to the 3\. It's 3 o'clock\.$/, "Half past": /^The short hand is between 3 and 4\. It just passed the 3: half past 3\.$/,
   "Writing the time": /^The short hand just passed the 4\. Count by 5s: 5, 10, 15, 20, 25\. It's 4:25\.$/, "Minutes by 5s": /^Count by 5s from the 12: 5, 10, 15, 20, 25, 30, 35\. 35 minutes past 3\.$/,
   "To the minute": /^By 5s to 35, then 2 more: 35 \+ 2 = 37\.$/, "How long? Round the clock": /^From the 2 to the 9: 5, 10, 15, 20, 25, 30, 35\. 35 minutes\.$/,
-  "How long? An open number line": /^3:50 → 4:00 is 10, 4:00 → 4:25 is 25\. 10 \+ 25 = 35 minutes\.$/, "Minutes later": /^3:50 \+ 10 \+ 15 = 4:15\.$/ };
+  "How long? An open number line": /^3:50 → 4:00 is 10, 4:00 → 4:25 is 25\. 10 \+ 25 = 35 minutes\.$/, "Minutes later": /^3:50 \+ 10 \+ 15 = 4:15\.$/,
+  // Batch 2.
+  "True or false?": /^4 \+ 2 is 6, not 7\. False\.$/, "Fix it": /^4 \+ 2 is 6\.$/,
+  "Hundreds, tens and ones": /^300 \+ 40 \+ 5 = 345$/, "Tens in a number": /^Every 10 tens make a hundred: 34 tens is 3 hundreds and 4 tens\. 3 hundreds, 4 tens, 3 ones = 343$/,
+  "Counting dollars": /^Count on from the biggest bill: 20, 25, 26 dollars\.$/, "Dollars and cents": /^Count on from the biggest bill: 10, 11 dollars\. Then the coins: 25, 35, 36, 37 cents\.$/,
+  "Fractions on a number line": /^Each jump is 1\/4\. Count the jumps from 0 to the dot: 1\/4, 2\/4, 3\/4$/, "Equal parts": /^1, 2, 3, 4\. 4 equal parts: fourths\.$/ };
 assert.equal(STRATEGIES.length, Object.keys(opening).length);
 for (const s of STRATEGIES) {
   const h = hintFor(s.f, true);
   assert.match(h.say, opening[s.title], s.title);
-  assert.ok(h.grownups && (TALKS.includes(s.f.op) || "…".includes(s.f.op) && h.say.endsWith("= " + s.f.ans) || h.say.endsWith(s.f.sym ? s.f.l + " " + s.f.sym + " " + s.f.r : "= " + s.f.ans)), s.title);
+  assert.ok(h.grownups && (TALKS.includes(s.f.op) || BATCH2.includes(s.f.op) || "…".includes(s.f.op) && h.say.endsWith("= " + s.f.ans) || h.say.endsWith(s.f.sym ? s.f.l + " " + s.f.sym + " " + s.f.r : "= " + s.f.ans)), s.title);
 }
 console.log("✓ hint strategies");
 

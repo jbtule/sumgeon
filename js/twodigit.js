@@ -68,3 +68,15 @@ export function twoDigitFacts() {
   });
   return cache;
 }
+
+/* ---------- stacked in columns ----------
+   Two- and three-digit + and − are sometimes shown stacked (ones under ones, a line, the answer
+   under it), as 2nd grade writes them: STACK_SHARE of the time, and always on Margot-Rythm's floor
+   (her art is a stacked sum with a carried 1). The same fact, key and record: only a flag on the
+   problem (stacked), like Judo Judy's flipped. The hint stays the place-value strategy (tens and
+   ones, then together), not the carrying algorithm, which waits for 4th grade. */
+export const STACK_SHARE = 0.25;
+// Can this problem be stacked? A plain + or − past 20 (not a □, a throw, dice or a spell).
+export const stackable = (p) => !!p && (p.op === "+" || p.op === "-") && !p.blank && !p.flipped && !p.dice && !p.spell && Number.isInteger(p.x) && Number.isInteger(p.y) && Math.max(p.x, p.y, p.ans) > 20;
+// The problem stacked, or as it was: always when `always` (Margot-Rythm, ?stacked), else STACK_SHARE.
+export function stackOf(p, always, rnd) { return stackable(p) && (always || (rnd || Math.random)() < STACK_SHARE) ? Object.assign({}, p, { stacked: true }) : p; }

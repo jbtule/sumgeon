@@ -10,8 +10,8 @@ export const TRAITS = {
   "Timesaur": { icon: "🛡️", name: "Armor", text: "Hits under 10 do half damage" },
   "Divvy": { icon: "✂️", name: "Split", text: "Splits in two at half HP" },
   "Quizard": { icon: "❓", name: "Mystery", text: "Hides a number: find the one that's missing" },
-  "Trollar": { icon: "🪙", name: "Toll", text: "Pays only in coins: count them up" },
-  "Haberhasher": { icon: "🔢", name: "Tens and ones", text: "Asks two-digit sums and differences" },
+  "Trollar": { icon: "🪙", name: "Toll", text: "Pays in coins and bills: count up" },
+  "Haberhasher": { icon: "🔢", name: "Tens and ones", text: "Two-digit sums and place value" },
   "Chompers": { icon: "🐊", name: "Big Bite", text: "Eats the bigger number: that's your hit" },
   "Equal Twins": { icon: "⚖️", name: "Balance", text: "Both sides must match" },
   "Judo Judy": { icon: "🥋", name: "Flip", text: "Flips your sums: same answer" },
@@ -27,7 +27,7 @@ export const TRAITS = {
   "Triceraplus": { icon: "🦕", name: "Three horns", text: "Add three: find a ten" },
   "Margot-Rythm": { icon: "🔁", name: "Carry the One", text: "Regroup: double hit" },
   "Squaresquatch": { icon: "🟩", name: "Arrays", text: "Add up the equal rows" },
-  "Halfling": { icon: "½", name: "Halves", text: "Equal fractions: 1/2 = □/4" },
+  "Halfling": { icon: "½", name: "Halves", text: "Fractions on a line, and equal ones" },
   // Batch 1 of the strands (time and patterns): each asks only its own strand.
   "Tick-Tockus": { icon: "🕒", name: "Tick Tock", text: "Asks the time" },
   "Slimelipsis": { icon: "🫧", name: "What's Next", text: "Counts in patterns" }
@@ -52,19 +52,25 @@ export const isDice = (op, key) => op === "+" && /^\+[1-6],[1-6]$/.test(String(k
 export function asks(m) {
   const k = kind(m);
   if (k === "Chompers") return (op) => op === "○" || op === "more";
-  if (k === "Equal Twins") return (op) => op === "=";
+  // The Equal Twins balance, and say whether an equation is true (and fix a false one).
+  if (k === "Equal Twins") return (op) => op === "=" || op === "✓" || op === "✎";
   // Judo Judy, the Hall's boss, asks the Hall's whole mix: adding (and flipping it), taking
   // away, comparing, balancing and missing numbers.
   if (k === "Judo Judy") return () => true;
   if (k === "Pipsqueak") return isDice;
   if (k === "Doublet") return isDouble;
   if (k === "Triceraplus") return (op) => op === "Σ";
-  if (k === "Halfling") return (op) => op === "/";
+  // Halfling: fractions, on the number line too.
+  if (k === "Halfling") return (op) => op === "/" || op === "↔";
+  // Margot-Rythm (Carry the One, always stacked) asks only the Mines' sums and differences, not
+  // its place value.
+  if (k === "Margot-Rythm") return (op) => op === "+" || op === "-";
   // Tick-Tockus tells time, Slimelipsis counts in patterns (and odd and even): their strands'.
   if (k === "Tick-Tockus") return (op) => op === "⌚";
   if (k === "Slimelipsis") return (op) => op === "…" || op === "◐";
-  if (k === "Quizard") return (op) => op !== "○" && op !== "Σ" && op !== "⌚" && op !== "…" && op !== "◐";
-  return (op) => op !== "○" && op !== "=" && op !== "Σ" && op !== "⌚" && op !== "…" && op !== "◐";
+  // True or false and fix it are the Equal Twins' (and Judo Judy's, who asks the Hall's whole mix).
+  if (k === "Quizard") return (op) => !"○Σ⌚…◐✓✎".includes(op);
+  return (op) => !"○=Σ⌚…◐✓✎".includes(op);
 }
 
 // A monster's trait, or null. Cursed digits have Lucky Number (DESIGN.md §6.6).

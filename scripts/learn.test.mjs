@@ -30,8 +30,8 @@ const names = (b) => BANDS[b].levels.map((l) => l.name);
 const at = (b, L) => pool(b).filter((p) => p.level === L).map((p) => factOf(p.key, () => 0.9));
 assert.deepEqual(names("kinder"), ["Within 5, with zero", "Within 10", "Make 10 and number bonds", "10 and some more"]);
 assert.deepEqual(names("first"), ["Within 20, not crossing 10", "Crossing 10", "Missing numbers and the equal sign", "Add and subtract tens"]);
-assert.deepEqual(names("second"), ["Add and subtract, no regrouping", "Add and subtract, regrouping", "10 and 100 more or less"]);
-assert.deepEqual(names("third"), ["× 0, 1, 2, 5 and 10", "÷ 1, 2, 5 and 10", "× 3, 4 and 6", "÷ 3, 4 and 6", "× 7, 8 and 9", "÷ 7, 8 and 9", "× tens", "Fractions", "Rounding", "Area and perimeter", "× and ÷ 11 and 12"]);
+assert.deepEqual(names("second"), ["Add and subtract, no regrouping", "Add and subtract, regrouping", "Hundreds, tens and ones", "Tens in a number", "10 and 100 more or less"]);
+assert.deepEqual(names("third"), ["× 0, 1, 2, 5 and 10", "÷ 1, 2, 5 and 10", "× 3, 4 and 6", "÷ 3, 4 and 6", "× 7, 8 and 9", "÷ 7, 8 and 9", "× tens", "Fractions on a number line", "Equal fractions", "Rounding", "Area and perimeter", "× and ÷ 11 and 12"]);
 // K: + and − to 20, with zero, make 10 and number bonds as □ problems.
 assert.ok(pool("kinder").every((p) => (p.op === "+" || p.op === "-") && factOf(p.key).ans <= 20), "the Cellar is + and − to 20");
 assert.ok(at("kinder", 0).every((f) => Math.max(f.x, f.y, f.ans) <= 5), "within 5");
@@ -45,11 +45,21 @@ assert.ok(pool("first").every((p) => !"×÷¢".includes(p.op) && factOf(p.key).a
 assert.ok(at("first", 0).filter((f) => "+-".includes(f.op)).every((f) => (f.op === "+" ? f.ans > 10 && (f.x % 10) + (f.y % 10) <= 10 : f.x > 10 && f.y % 10 <= f.x % 10)), "not crossing 10");
 assert.ok(at("first", 1).filter((f) => "+-".includes(f.op)).every((f) => (f.op === "+" ? (f.x % 10) + (f.y % 10) > 10 : f.y % 10 > f.x % 10)), "crossing 10");
 assert.ok(at("first", 0).some((f) => f.op === "○") && at("first", 0).some((f) => f.op === "="), "comparing and balancing from the start");
+// True or false (the Equal Twins, batch 2): to 10 from the start, to 20 with crossing 10, and
+// fixing a false one with the missing numbers.
+assert.deepEqual([0, 1, 2, 3].map((L) => at("first", L).filter((f) => f.op === "✓").length), [24, 24, 0, 0], "true or false: to 10, then to 20");
+assert.deepEqual([0, 1, 2, 3].map((L) => at("first", L).filter((f) => f.op === "✎").length), [0, 0, 32, 0], "fix it with the missing numbers");
 assert.ok(at("first", 2).some((f) => f.blank) && at("first", 3).some((f) => f.ans > 20));
 // 2nd: two-digit and three-digit + and −. 3rd: × and ÷ only (and fractions, rounding, area).
-assert.ok(pool("second").every((p) => (p.op === "+" || p.op === "-") && factOf(p.key).ans > 0), "the Mines are + and −");
-assert.ok(pool("second").every((p) => { const f = factOf(p.key); return Math.max(f.x, f.y) > 20 || f.ans > 20; }), "past 20");
-assert.ok(pool("third").every((p) => "×÷/≈▭".includes(p.op)), "the Tower is × and ÷, no + or −");
+assert.ok(pool("second").every((p) => (p.op === "+" || p.op === "-" || p.op === "#") && factOf(p.key).ans > 0), "the Mines are + and −, and place value");
+assert.ok(pool("second").filter((p) => p.op !== "#").every((p) => { const f = factOf(p.key); return Math.max(f.x, f.y) > 20 || f.ans > 20; }), "past 20");
+// Place value (batch 2) after the two-digit work and before the three-digit work.
+assert.deepEqual([0, 1, 2, 3, 4].map((L) => at("second", L).filter((f) => f.op === "#").length), [0, 0, 40, 36, 0], "place value before 10 and 100 more or less");
+assert.ok(at("second", 2).every((f) => f.kind === "blocks" || f.kind === "expanded") && at("second", 3).every((f) => f.kind === "tens" || f.kind === "odd"));
+assert.ok(pool("third").every((p) => "×÷/≈▭↔".includes(p.op)), "the Tower is × and ÷, no + or −");
+// The number line (batch 2) before equal fractions, its 0 to 2 line with them.
+assert.ok(at("third", 7).every((f) => f.op === "↔" && f.wholes === 1) && at("third", 7).length === 23, "where's the dot, and equal parts");
+assert.ok(at("third", 8).some((f) => f.op === "/") && at("third", 8).filter((f) => f.op === "↔").length === 12 && at("third", 8).filter((f) => f.op === "↔").every((f) => f.wholes === 2), "past 1 with equal fractions");
 assert.ok(at("third", 0).some((f) => f.x === 0 || f.y === 0) && at("third", 0).some((f) => f.x === 1 || f.y === 1), "× 0 and × 1 come first");
 assert.ok(pool("third").some((p) => p.key === "×11,12" && p.level === BANDS.third.levels.length - 1), "11s and 12s at the bottom");
 assert.ok(pool("third").some((p) => p.key === "÷0,5") && !pool("third").some((p) => /^÷\d+,0$/.test(p.key)), "0 ÷ 5, never ÷ 0");
@@ -100,7 +110,7 @@ assert.equal(openLevel("kinder", recs), 1);
   pool("third").filter((p) => p.level < 7).forEach((p) => (r[p.key] = { b: 3, n: 3, c: 3, ms: 2000, t: 1e12 }));
   const s = (() => { let x = 5; return () => ((x = (x * 16807) % 2147483647) / 2147483647); })();
   let fr = 0;
-  for (let i = 0; i < 400; i++) if (choose("third", r, { now: 1e12, rnd: s, op: "×", asks: asks(MON[3]) })[0] === "/") fr++;
+  for (let i = 0; i < 400; i++) if ("/↔".includes(choose("third", r, { now: 1e12, rnd: s, op: "×", asks: asks(MON[3]) })[0])) fr++;
   assert.ok(fr > 40, `fractions come up under Timesaur: ${fr} of 400`);
 }
 

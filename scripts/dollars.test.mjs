@@ -25,7 +25,7 @@ for (let i = 0; i < 500; i++) {
       const s = dollarSvg(p, opt);
       assert.ok(!/NaN|undefined/.test(s));
       const texts = [...s.matchAll(/<text[^>]*>([^<]*)<\/text>/g)].map((m) => m[1]);
-      assert.ok(texts.every((t) => /^[$\d?,¢ ]+$/.test(t)), `only numerals: ${texts.join(" | ")}`);
+      assert.ok(texts.every((t) => /^[$\d?,¢ …]+$/.test(t)), `only numerals: ${texts.join(" | ")}`);
       assert.ok(!/UNITED|STATES|AMERICA|DOLLAR|TREASURY|FEDERAL|RESERVE|WE TRUST|SERIES|LEGAL TENDER/i.test(s.replace(/aria-label="[^"]*"/g, "")), "no currency lettering");
     }
     const before = dollarHint(p, false).say, after = dollarHint(p, true).say;
@@ -43,7 +43,11 @@ for (const v of BILLS) {
 // the page shows at most three across a phone.
 assert.ok(BILL.w <= 100 && Math.abs(BILL.w / BILL.h - 2.35) < 0.01);
 assert.deepEqual(runningTotals([20, 5, 1]), [20, 25, 26]);
-assert.equal(dollarHint({ bills: [20, 5, 1] }, false).say, "Count on from the biggest bill: 20, 25, ? dollars.");
+// Before answering it counts only part of the way: the first of 2 or 3 bills, half of more.
+assert.equal(dollarHint({ bills: [20, 5, 1] }, false).say, "Count on from the biggest bill: 20, … ? dollars.");
+assert.equal(dollarHint({ bills: [20, 10, 5, 1] }, false).say, "Count on from the biggest bill: 20, 30, … ? dollars.");
+assert.equal(dollarHint({ bills: [5] }, false).say, "Count on from the biggest bill: ? dollars.");
+assert.equal(dollarHint({ bills: [20, 5, 1] }, true).say, "Count on from the biggest bill: 20, 25, 26 dollars.");
 assert.equal(spokenDollars({ kind: "bills" }), "How many dollars?");
 assert.equal(sayMoney(2, 25), "Two dollars and twenty-five cents.");
 assert.equal(sayMoney(1, 1), "One dollar and one cent.");

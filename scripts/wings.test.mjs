@@ -117,6 +117,16 @@ assert.equal(depthHP(1), 1);
 assert.ok(Math.abs(depthHP(3) - 1.3) < 1e-9);
 assert.equal(deepest(cellar, {}), 1);
 assert.equal(deepest(cellar, { cellar: { depth: 4 } }), 4);
+// Batch 2's monsters at depth 1: the Equal Twins (true or false) in the Hall, Haberhasher (place
+// value) and Margot-Rythm (always stacked) in the Mines, Halfling (the number line) in the Tower;
+// Trollar's dollars in the Mines' coin strand (its pool), and true or false, place value and the
+// number line count toward their stratum's 60% (they're band facts), dollars don't (a strand).
+{
+  assert.ok(hall.floors.includes("Equal Twins") && mines.floors.includes("Haberhasher") && mines.floors.includes("Margot-Rythm") && tower.floors.includes("Halfling"));
+  assert.ok(mines.pool.includes("Trollar") && bandOf(mines, { n: "Trollar" }) === "coins");
+  assert.ok(pool("first").some((f) => f.op === "✓") && pool("second").some((f) => f.op === "#") && pool("third").some((f) => f.op === "↔"));
+  assert.ok(!pool("second").some((f) => f.op === "$") && pool("coins").some((f) => f.op === "$"));
+}
 console.log("✓ wings");
 
 // Stars.

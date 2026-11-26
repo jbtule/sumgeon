@@ -1,6 +1,6 @@
 // Fractions on a number line, for Halfling (3rd grade, 3.NF.A.2: a fraction as a point on the
-// number line, 0 to 1 split into b equal parts). A prototype for the review page
-// (review/proto/); nothing in the game reads it yet. No DOM: runs in Node.
+// number line, 0 to 1 split into b equal parts). In the game (the Tower's band) and on the review page
+// (review/proto/). No DOM: runs in Node.
 //
 // Answers are whole numbers typed, as in the Tower's other fractions (1/2 = □/4):
 // - where: a dot on a tick, "□/4": the denominator shown, type the numerator.
@@ -71,12 +71,14 @@ export function lineSvg(p, opt = {}) {
     s += `<line x1="${f1(x)}" y1="${y - (whole ? 16 : 11)}" x2="${f1(x)}" y2="${y + (whole ? 16 : 11)}" stroke="${DK}" stroke-width="${whole ? 7 : 5}" stroke-linecap="round" class="tick"/><line x1="${f1(x)}" y1="${y - (whole ? 14 : 9)}" x2="${f1(x)}" y2="${y + (whole ? 14 : 9)}" stroke="${INK}" stroke-width="${whole ? 3.5 : 2.5}" stroke-linecap="round"/>`;
     if (whole) s += `<text x="${f1(x)}" y="${y + 36}" text-anchor="middle" font-family="Bungee, sans-serif" font-size="18" fill="${INK}" class="lab">${k / p.d}</text>`;
   }
-  // Hops from 0 to the dot.
+  // Hops from 0 to the dot. Before answering only the first half are counted (hopsCounted); the
+  // rest are drawn, fainter and unlabeled, with "?" over the last. Worked, every hop is counted.
   if (opt.hint && p.kind === "where") {
+    const upto = hopsCounted(p, opt.worked);
     for (let k = 1; k <= p.n; k++) {
-      const a = tickX(p, k - 1), b = tickX(p, k), m = (a + b) / 2, last = k === p.n;
-      s += `<path d="M${f1(a + 2)} ${y - 8} Q${f1(m)} ${y - 30} ${f1(b - 2)} ${y - 8}" fill="none" stroke="${last ? GOLD : "#8eeae4"}" stroke-width="2.5" stroke-linecap="round"/>`;
-      s += frac(m, y - 52, last && !opt.worked ? "?" : k, p.d, last ? GOLD : "#8eeae4", total > 8 ? 11 : 13);
+      const a = tickX(p, k - 1), b = tickX(p, k), m = (a + b) / 2, last = k === p.n, counted = k <= upto;
+      s += `<path d="M${f1(a + 2)} ${y - 8} Q${f1(m)} ${y - 30} ${f1(b - 2)} ${y - 8}" fill="none" stroke="${last ? GOLD : "#8eeae4"}" stroke-width="2.5" stroke-linecap="round"${counted || last ? "" : ' opacity=".5"'}/>`;
+      if (counted || last) s += frac(m, y - 52, counted ? k : "?", p.d, last ? GOLD : "#8eeae4", total > 8 ? 11 : 13);
     }
   }
   // The dot, on its tick.
@@ -92,6 +94,36 @@ export function lineHint(p, worked) {
     if (worked) return { say: `${count(p.d)}. ${p.d} equal parts: ${fractionWords(2, p.d, spoken).replace(/^two /, "")}.` };
     return { say: p.d % 2 ? "Each part is the same size. 1, …" : `${count(p.d / 2)}. That's half the line. How many parts in all?` };
   }
-  const unit = `1/${p.d}`;
-  return { say: `Each jump is ${unit}. Count the jumps from 0 to the dot: ${worked ? `${p.n}/${p.d}` : `?/${p.d}`}` + (worked && p.n % p.d === 0 ? ` = ${p.n / p.d}` : "") };
+  const unit = `1/${p.d}`, upto = hopsCounted(p, worked), counted = Array.from({ length: upto }, (_, i) => `${i + 1}/${p.d}`);
+  if (worked) return { say: `Each jump is ${unit}. Count the jumps from 0 to the dot: ${counted.join(", ")}` + (p.n % p.d === 0 ? `, which is ${p.n / p.d}` : "") };
+  return { say: `Each jump is ${unit}. Count the jumps from 0 to the dot: ${counted.length ? counted.join(", ") + ", … " : ""}?/${p.d}` };
+}
+// How many hops to the dot the hint counts: before answering, about half of them (none for 1 or
+// 2, where any count is the answer); worked, all of them.
+export const hopsCounted = (p, worked) => (worked ? p.n : p.n <= 2 ? 0 : Math.floor(p.n / 2));
+
+/* ---------- the game's facts (Halfling, in the Tower's fractions: learn.js BANDS.third) ----------
+   Fixed samples, every one there is: where's the dot from 0 to 1 (□/2 … □/8, 18), how many equal
+   parts (5), and from 0 to 2 (past 1, and the wholes as fractions: 4/4, 8/4; 12). Keys:
+   - "↔3/4": the dot at 3/4 on a line from 0 to 1; "↔5/4,2": on a line from 0 to 2.
+   - "↔p4": how many equal parts from 0 to 1?
+   A fact: { op: "↔", set, kind: "where" or "parts", d, n, wholes, ans, key, q }. The answer, and
+   the damage, is the numerator (or the number of parts). */
+export function lineFact(set, kind, d, n, wholes) {
+  if (kind === "parts") return { op: "↔", set, kind, d, n: 1, wholes: 1, ans: d, key: "↔p" + d, q: "Equal parts: □" };
+  return { op: "↔", set, kind, d, n, wholes, ans: n, key: "↔" + n + "/" + d + (wholes > 1 ? ",2" : ""), q: "□/" + d };
+}
+export function lineFactOf(key) {
+  if (key[1] === "p") return lineFact("parts", "parts", Number(key.slice(2)), 1, 1);
+  const [fr, w] = key.slice(1).split(","), [n, d] = fr.split("/").map(Number);
+  return w ? lineFact("past1", "where", d, n, 2) : lineFact("where", "where", d, n, 1);
+}
+let factCache = null;
+export function lineFacts() {
+  if (factCache) return factCache;
+  const out = [];
+  for (const d of DENOMS) for (let n = 1; n < d; n++) out.push(lineFact("where", "where", d, n, 1));
+  for (const d of DENOMS) out.push(lineFact("parts", "parts", d, 1, 1));
+  for (const d of [2, 3, 4]) for (let n = d; n <= 2 * d; n++) out.push(lineFact("past1", "where", d, n, 2));
+  return (factCache = out);
 }

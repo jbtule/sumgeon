@@ -40,10 +40,13 @@ assert.deepEqual(pileOf(dimeNickel3).map((c) => c.k).join(""), "dnppp", "counted
 // The kindergarten coins (find the coin, each coin's worth) are the Cellar's strand; counting
 // them is the Mines' (pennies, then nickels, dimes and quarters).
 const pk = pool("coinsK"), pc = pool("coins");
-assert.equal(pk.length + pc.length, fs.length, "every coin fact in one strand");
+// The Mines' strand ends with dollars (dollars.js): bills, then bills and coins.
+assert.equal(pk.length + pc.filter((f) => f.op === "¢").length, fs.length, "every coin fact in one strand");
+assert.deepEqual([4, 5].map((i) => pc.filter((f) => f.level === i && f.op === "$").length), [24, 24], "then dollars");
+assert.ok(pc.every((f) => (f.op === "$") === (f.level >= 4)), "dollars come after counting coins");
 assert.deepEqual([0, 1].map((i) => pk.filter((f) => f.level === i).length), [36, 8]);
 assert.deepEqual([0, 1, 2, 3].map((i) => pc.filter((f) => f.level === i).length), [5, 9, 29, 47]);
-assert.ok(pc.every((f) => !factOf(f.key).find && factOf(f.key).q.includes("+")), "the Mines only count coins");
+assert.ok(pc.filter((f) => f.op === "¢").every((f) => !factOf(f.key).find && factOf(f.key).q.includes("+")), "the Mines only count coins");
 assert.equal(COIN_LEVELS.length, 6);
 assert.equal(openLevel("coinsK", {}), 0);
 assert.match(choose("coinsK", {}, { now: 0, rnd: () => 0.5 }), /^¢\?[qdnp]:/, "a new player finds coins");

@@ -15,6 +15,10 @@ import { threeFacts } from "./three.js";
 import { arrayFacts } from "./arrays.js";
 import { clockFacts, TIME_LEVELS } from "./clock.js";
 import { patternFacts, PATTERN_GAME_LEVELS } from "./patterns.js";
+import { tfFacts } from "./truefalse.js";
+import { lineFacts } from "./numberline.js";
+import { pvFacts } from "./placevalue.js";
+import { dollarFacts } from "./dollars.js";
 import { traitOf } from "./traits.js";
 import { QUIPS, FINALS, CRIT, TEAM_LINES, TEAM_NUMBERS, CAPTAIN_LINES, captainNames } from "./moments.js";
 import { fewest, ITEMS } from "./loot.js";
@@ -38,6 +42,10 @@ export var PHRASE = {
   spellPad: "Use the numbers this time.",
   // A whole time is typed in two slots (Tick-Tockus): the hour, then the minutes.
   nowMinutes: "Now the minutes!",
+  // Bills and coins (Trollar) are typed the same way: the dollars, then the cents.
+  nowCents: "Now the cents!",
+  // True or false (the Equal Twins): the two big keys, the first couple of times.
+  tfHow: "Is it true? Tap True or False!",
   deeper: "Go deeper for tougher monsters, or play again!",
   paused: "Paused. Tap the big button to keep fighting.",
   exitSure: "Tap again to leave the dungeon.",
@@ -242,7 +250,7 @@ export function changeLine(c) { return "Here's " + cents(c) + " back!"; }
 
 // [{ kind, text }], each once.
 // The groups the listen check (review/listen/) plays lines in.
-export var GROUPS = ["Phrases", "Monsters & heroes", "Add & subtract", "Times & divide", "Missing numbers", "Which is more", "Coins", "Two-digit", "Balance Hall", "Three numbers", "Arrays", "Time", "Patterns", "Fractions", "Rounding", "Area & perimeter", "Hero quips", "Team-ups", "Captain lines", "Boss forms", "Chests & items", "Money", "Shop", "Clothing"];
+export var GROUPS = ["Phrases", "Monsters & heroes", "Add & subtract", "Times & divide", "Missing numbers", "Which is more", "Coins", "Two-digit", "Balance Hall", "Three numbers", "Arrays", "Time", "Patterns", "True or false", "Place value", "Dollars", "Number line", "Fractions", "Rounding", "Area & perimeter", "Hero quips", "Team-ups", "Captain lines", "Boss forms", "Chests & items", "Money", "Shop", "Clothing"];
 
 // [{ kind, text, group, sprite? }], each once.
 export function spokenLines() {
@@ -312,6 +320,12 @@ export function spokenLines() {
   var stratumOf = function (list, set) { return list.find(function (l) { return l.id === set; }).stratum; };
   clockFacts().forEach(function (f) { var sp = "time-" + SPRITE_AT[stratumOf(TIME_LEVELS, f.set)]; add("q", spokenProblem(f), "Time", sp); add("q", spokenFact(f), "Time", sp); });
   patternFacts().forEach(function (f) { var sp = "pat-" + SPRITE_AT[stratumOf(PATTERN_GAME_LEVELS, f.set)]; add("q", spokenProblem(f), "Patterns", sp); add("q", spokenFact(f), "Patterns", sp); });
+  // Batch 2: true or false and fix it (the Equal Twins), place value (Haberhasher), dollars
+  // (Trollar) and the fraction number line (Halfling), asked and answered. Their sprites go by
+  // band and level (spriteFor), like every problem's.
+  [[tfFacts, "True or false"], [pvFacts, "Place value"], [dollarFacts, "Dollars"], [lineFacts, "Number line"]].forEach(function (set) {
+    set[0]().forEach(function (f) { add("q", spokenProblem(f), set[1]); add("q", spokenFact(f), set[1]); });
+  });
   // Coins (Trollar): "two dimes and three pennies. How many cents?", and the answer.
   coinFacts().forEach(function (f) { add("q", spokenProblem(f), "Coins"); add("q", spokenFact(f), "Coins"); });
   // The two-digit problems (Haberhasher): "thirty-eight plus twenty-five", and "… is sixty-three".
@@ -364,7 +378,7 @@ export function estSeconds(text) { return text.length / CHARS_PER_S + SPRITE_GAP
 // (runSprites).
 export var ALWAYS = ["phrases-start", "phrases-fight", "phrases-explain", "heroes", "quips", "captains", "bosses", "loot", "money", "depths", "shop", "change", "clothes"];
 var slug = function (t) { return t.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, ""); };
-var KIND = { "+": "add", "-": "sub", "×": "mul", "÷": "div", "□": "bonds", "○": "cmp", "=": "bal", "¢": "coins", "M": "more", "/": "frac", "≈": "round", "▭": "rect", "Σ": "three", "▦": "arrays" };
+var KIND = { "+": "add", "-": "sub", "×": "mul", "÷": "div", "□": "bonds", "○": "cmp", "=": "bal", "¢": "coins", "M": "more", "/": "frac", "≈": "round", "▭": "rect", "Σ": "three", "▦": "arrays", "✓": "tf", "✎": "fix", "↔": "line", "#": "pv", "$": "dollars" };
 var memo = null;
 function index() {
   if (memo) return memo;
@@ -376,7 +390,7 @@ function index() {
   // Phrases by when they're said: the start screen and a run's end, explanations, and the fight.
   [PHRASE.enter, PHRASE.pickGrade, PHRASE.pickHero, PHRASE.heroFirst, PHRASE.deeper, PHRASE.exitSure, PHRASE.unlocked, PHRASE.win]
     .concat(WINGS.map(wingCleared), WINGS.map(wingOpened)).forEach(function (t) { phrases[t] = "phrases-start"; });
-  [PHRASE.hitHow, PHRASE.cmpHow, PHRASE.cmpSame, PHRASE.spellHow, PHRASE.paused]
+  [PHRASE.hitHow, PHRASE.cmpHow, PHRASE.cmpSame, PHRASE.spellHow, PHRASE.paused, PHRASE.tfHow]
     .concat(Object.values(TRAIT_LINE), HEROES.map(function (h) { return luckyLine(h.d); }), REVERSIBLE.map(reversedLine), [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map(howToWriteLine))
     .forEach(function (t) { phrases[t] = "phrases-explain"; });
   // Problems: every line a band can say, found from its facts the way the game asks them (both

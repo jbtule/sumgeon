@@ -144,7 +144,7 @@ import { lookOf, LOOKS } from "../js/monsters.js";
   assert.equal(hitBy(mon("Haberhasher"), 42, "42", false, P("+", 27, 15)).mult, 1, "only Margot-Rythm");
   assert.equal(hitBy(mg, 42, "42", false).mult, 1, "no problem, no double");
   // It asks the Mines' + and −, and the regrouping level has both kinds.
-  assert.ok(asked("Margot-Rythm", "second").length === poolOf("second").length);
+  assert.ok(asked("Margot-Rythm", "second").length === poolOf("second").filter((f) => f.op !== "#").length, "not place value");
   const regroupLevel = poolOf("second").filter((f) => f.level === 1).map((f) => factOf(f.key, () => 0.9));
   assert.ok(regroupLevel.every(regroups), "every fact in the regrouping level regroups");
 
@@ -156,10 +156,12 @@ import { lookOf, LOOKS } from "../js/monsters.js";
   assert.deepEqual(arrayFacts().map((f) => f.ans).sort((a, b) => a - b).slice(0, 2), [4, 6]);
   assert.ok(!poolOf("third").some((f) => f.key[0] === "▦"), "arrays aren't the Tower's times tables");
 
-  // Halfling (Tower): fractions only, even before the fractions level is open.
+  // Halfling (Tower): fractions only, even before the fractions levels are open: the number line
+  // first (batch 2), as the school teaches it.
   const hf = asked("Halfling", "third");
-  assert.ok(hf.length === 24 && hf.every((f) => f.op === "/"));
-  for (let i = 0; i < 100; i++) assert.equal(choose("third", {}, { now: 0, asks: asks(mon("Halfling")) })[0], "/", "fractions from the start");
+  assert.ok(hf.length === 24 + 35 && hf.every((f) => "/↔".includes(f.op)));
+  for (let i = 0; i < 100; i++) assert.equal(choose("third", {}, { now: 0, asks: asks(mon("Halfling")) })[0], "↔", "fractions from the start");
+  assert.ok(asks(mon("Halfling"))("/", "/1,2,4") && !asks(mon("Halfling"))("×", "×3,4"));
   assert.ok(LOOKS.Halfling.length === 4);
 
   // Batch 1: Tick-Tockus asks only the time and Slimelipsis only its patterns (and odd and even),
@@ -175,5 +177,18 @@ import { lookOf, LOOKS } from "../js/monsters.js";
   }
   assert.ok(asks(look("Tick-Tockus"))("⌚", "⌚h3") && asks(look("Slimelipsis"))("◐", "◐e2,3,5,7,8"), "a look asks what its monster does");
   assert.equal(hitBy(tt, 30, "30", false, factOf("⌚t3:30")).mult, 1, "no damage rule: the trait is what it asks");
+
+  // Batch 2: the Equal Twins say whether an equation is true (and fix it), and only they (and
+  // Judo Judy, the Hall's whole mix) do; Margot-Rythm asks the Mines' + and −, not place value,
+  // which Haberhasher asks; Trollar's dollars are his strand's; Halfling's number line.
+  const tw = mon("Equal Twins");
+  assert.ok(asks(tw)("✓", "✓4+2=7") && asks(tw)("✎", "✎4+2=7") && asks(tw)("=", "=3+4,□+5") && !asks(tw)("+", "+3,4"));
+  assert.ok(asks(mon("Judo Judy"))("✓", "✓4+2=7"));
+  for (const n of ["Plusquito", "Quizard", "Chompers", "Doublet", "Triceraplus", "Haberhasher"]) assert.ok(!asks(mon(n))("✓", "✓4+2=7") && !asks(mon(n))("✎", "✎4+2=7"), `${n} never asks true or false`);
+  assert.ok(asks(mon("Haberhasher"))("#", "#b345") && !asks(mon("Margot-Rythm"))("#", "#b345") && asks(mon("Margot-Rythm"))("+", "+38,25"));
+  assert.ok(asks(mon("Trollar"))("$", "$20,5,1"));
+  assert.ok(poolOf("coins").some((f) => f.op === "$") && !poolOf("coinsK").some((f) => f.op === "$"), "dollars are the Mines' coins strand");
+  assert.ok(asked("Equal Twins", "first").every((f) => "=✓✎".includes(f.op)));
+  assert.ok(asked("Haberhasher", "second").every((f) => "+-#".includes(f.op)));
 }
 console.log("✓ new monsters' traits");
