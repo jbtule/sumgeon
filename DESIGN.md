@@ -262,7 +262,7 @@ Replaces the between-floor choice. Clearing a floor still heals 1 heart.
 - **What's inside**, one thing a chest:
   - **Money**, about half the time: a few coins, shown as a pile (`coins.js`), and counted aloud ("Two dimes and three pennies. Twenty-three cents!"). The Cellar's chests hold single coins, the Mines' and the Tower's more.
   - **An item**, about a third of the time.
-  - **Clothing**, the rest (and money instead once everything's found).
+  - **Clothing**, the rest: always a piece you don't have yet (money instead once you have every piece).
 
 **Money.**
 - Kept per player in cents (`wallet`), never lost, not even on a loss.
@@ -275,7 +275,7 @@ Replaces the between-floor choice. Clearing a floor still heals 1 heart.
 - 🧲 **Hero Magnet:** the next right answer with a team hero's digit is a Hero Moment (§8.4).
 - Later: √ Shrink Ray (the monster loses a quarter of its HP), 0️⃣ Nullifier (no monster trait this floor), 💡 Hint scroll.
 
-**Clothing.** Hats, glasses, bows and the like from the looks kit (`KIT` in `monsters.js`). A piece from a chest or the shop goes into your clothing bag (no limit). You dress your **captain** from it, one piece per spot (head, face, neck), in a wardrobe on the start screen. A hero keeps what they're wearing after they stop being captain, and wears it on the start scene, in fights and in Hero Moments, so the team slowly gets its own looks. Saved per player (`wardrobe`: the bag, and what each hero wears).
+**Clothing.** Hats, glasses, bows and the like from the looks kit (`KIT` in `monsters.js`). A piece from a chest or the shop goes into your clothing bag (no limit). No piece comes twice until you have every piece: a chest picks from the ones you don't have yet, and the shop only sells those. Once you have them all, chests that would hold clothing hold money instead (and later perhaps new colors of pieces you have). You dress your **captain** from it, one piece per spot (head, face, neck), in a wardrobe on the start screen. A hero keeps what they're wearing after they stop being captain, and wears it on the start scene, in fights and in Hero Moments, so the team slowly gets its own looks. Saved per player (`wardrobe`: the bag, and what each hero wears).
 
 **Trollar's shop.** Trollar keeps a stall by the Sumgeon's door on the start screen, open outside a run.
 - Items and clothing with prices in coins, read aloud: "The pie costs thirty-five cents."
