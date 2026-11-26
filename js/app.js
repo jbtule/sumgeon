@@ -1442,7 +1442,7 @@ function aboutHTML() {
       <li><b>Fonts:</b> ${a("https://fonts.google.com/specimen/Bungee", "Bungee")} and ${a("https://fonts.google.com/specimen/Nunito", "Nunito")} from Google Fonts (SIL Open Font License 1.1).</li>
       <li><b>Voice:</b> recorded with ${a("https://huggingface.co/hexgrad/Kokoro-82M", "Kokoro-82M")} (Apache License 2.0).</li>
       <li><b>Coins:</b> the portraits are traced from public-domain photos of US Mint coins on Wikimedia Commons. The coin backs are drawn for the game.</li>
-      <li><b>Dollar bills:</b> drawn for the game, with the coins' traced portraits of Washington and Lincoln.</li>
+      <li><b>Dollar bills:</b> drawn for the game, with the coins' traced portraits of Washington and Lincoln, and Hamilton and Jackson traced from the Bureau of Engraving and Printing's public-domain engraved portraits on Wikimedia Commons.</li>
     </ul>
   </div></div>
   ${badgesCopy()}`;

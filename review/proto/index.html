@@ -37,8 +37,6 @@
   .pp-tools{gap:4px}
   .pp-tools button{min-height:28px;padding:0 8px;border-radius:999px;border:1.5px solid var(--line);background:var(--dark);color:var(--muted);font:900 11px Nunito,sans-serif;white-space:nowrap}
   .pp-tools button::before{color:var(--gold);margin-right:3px}
-  #numStyle::before{content:"12"}
-  #handStyle::before{content:"↗"}
   .pp-pic{flex:1;min-height:0;container-type:size;display:grid;place-items:center;padding:4px 8px 8px}
   /* The clock is Tick-Tockus: its tentacles spill out of the drawing into the room beside and
      under it (proto.js measures it and tells clockSvg how far they can reach). Where width is
@@ -114,7 +112,7 @@
     <select class="pp-level" id="level" aria-label="Level"></select>
   </div>
   <section class="pp-box" id="box">
-    <div class="pp-head"><span class="pp-mon" id="mon"></span><span class="mname" id="mName"></span><span class="pp-tools" id="tools"><button type="button" id="handStyle" aria-label="Clock hands">Arrows</button><button type="button" id="numStyle" aria-label="Clock numbers">Bungee</button><button type="button" id="moneyStyle" aria-label="How money is written">$3 and 25¢</button></span></div>
+    <div class="pp-head"><span class="pp-mon" id="mon"></span><span class="mname" id="mName"></span><span class="pp-tools" id="tools"><button type="button" id="moneyStyle" aria-label="How money is written">$3 and 25¢</button></span></div>
     <div class="pp-pic" id="pic"></div>
   </section>
   <!-- One line between the box and the problem: the hint's words, or after an answer ✓ or Oops

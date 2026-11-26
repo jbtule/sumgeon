@@ -95,13 +95,13 @@ const cap = (t) => t[0].toUpperCase() + t.slice(1);
 
 /* ---------- what's picked ---------- */
 const STORE = "sumgeon:proto";
-// The clock's numbers default to school-style handwriting (an open 4, a 1 that's one line), as on
-// a classroom clock; "bungee" is the game's font. Its hands are straight arrows by default;
-// "tentacle" tries Tick-Tockus's tentacles as hands.
+// The clock's look is picked (js/clock.js): handwritten numbers and arrow hands. ?numbers=bungee
+// and ?hands=tentacle still show the others, for comparing; they aren't kept.
 // Money reads "$□ and □¢" by default (2nd grade writes $ and ¢ apart; decimals come in 4th);
 // "dot" tries "$□.□□".
-const view = { type: "clock", clock: "hours", pattern: "ones", shape: "drawK", dollars: "bills", numbers: "hand", hands: "arrow", money: "and" };
+const view = { type: "clock", clock: "hours", pattern: "ones", shape: "drawK", dollars: "bills", money: "and" };
 try { Object.assign(view, JSON.parse(localStorage.getItem(STORE)) || {}); } catch (e) { /* defaults */ }
+Object.assign(view, { numbers: "hand", hands: "arrow" });
 if (!TYPES[view.type]) view.type = "clock";
 const keep = () => { try { localStorage.setItem(STORE, JSON.stringify(view)); } catch (e) { /* this visit only */ } };
 // ?type=pattern&level=twos&numbers=hand opens straight to one (for screenshots and links).
@@ -145,12 +145,9 @@ function drawChrome() {
   $("mName").classList.toggle("placeholder", !m);
   $("types").innerHTML = Object.entries(TYPES).map(([id, x]) => `<button type="button" data-type="${id}" aria-pressed="${id === view.type}" aria-label="${x.label}" title="${x.label}">${x.icon}</button>`).join("");
   $("level").innerHTML = t.levels.map((l) => `<option value="${l.id}"${l.id === lv.id ? " selected" : ""}>${esc(l.name)} · ${l.grade}</option>`).join("");
-  $("tools").hidden = view.type !== "clock" && view.type !== "dollars";
-  for (const id of ["numStyle", "handStyle"]) $(id).hidden = view.type !== "clock";
+  $("tools").hidden = view.type !== "dollars";
   $("moneyStyle").hidden = view.type !== "dollars";
   $("moneyStyle").textContent = view.money === "dot" ? "$3.25" : "$3 and 25¢";
-  $("numStyle").textContent = view.numbers === "hand" ? "Handwritten" : "Bungee";
-  $("handStyle").textContent = view.hands === "tentacle" ? "Tentacles" : "Arrows";
 }
 // How far Tick-Tockus's tentacles can reach past the case, in the clock's drawing units, from the
 // room the picture has beside and under the clock (its size comes from the CSS).
@@ -364,9 +361,7 @@ $("types").addEventListener("click", (e) => {
   view.type = b.dataset.type; keep(); drawChrome(); next(spoke);
 });
 $("level").addEventListener("change", () => { view[view.type] = $("level").value; keep(); drawChrome(); next(spoke); });
-$("handStyle").addEventListener("click", () => { view.hands = view.hands === "tentacle" ? "arrow" : "tentacle"; keep(); drawChrome(); draw(); });
 $("moneyStyle").addEventListener("click", () => { view.money = view.money === "dot" ? "and" : "dot"; keep(); drawChrome(); draw(); });
-$("numStyle").addEventListener("click", () => { view.numbers = view.numbers === "hand" ? "bungee" : "hand"; keep(); drawChrome(); draw(); });
 // After the first tap anywhere, new problems are read aloud as they appear, as the game reads coin
 // and comparing problems for a pre-reader.
 document.addEventListener("pointerdown", () => { spoke = true; }, { once: true, capture: true });

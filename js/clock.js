@@ -5,6 +5,11 @@
 // Missouri Learning Standards: 1st grade tells time to the hour and half hour, 2nd grade to the
 // nearest 5 minutes, 3rd grade to the minute. Every answer is a whole number on the number pad:
 // the hour, or the minutes past it.
+//
+// The look (picked on the review page, 2026-11-25): the clock is Tick-Tockus itself, its
+// tentacles behind the case; school-style handwritten numbers (an open 4, a 1 that's one line, as
+// on a classroom clock) and straight arrow hands, coral short and blue long. opt.numbers "bungee"
+// and opt.hands "tentacle" are kept only for comparing (the page's ?numbers=bungee, ?hands=tentacle).
 import { spoken } from "./problems.js";
 import { HANDWRITING } from "./handwriting.js";
 
@@ -105,7 +110,7 @@ export function clockPoint(a, r) {
 // Bungee's capitals (about 0.72 of it), its digits side by side with a small gap.
 const SPAN = HANDWRITING.map((strokes) => { const xs = strokes.flat().map(([x]) => x); return [Math.min(...xs), Math.max(...xs)]; });
 function numeral(n, x, y, style, size) {
-  if (style !== "hand") {
+  if (style === "bungee") {
     return `<text x="${x}" y="${y}" dy=".36em" text-anchor="middle" font-family="Bungee, sans-serif" font-size="${size}" fill="${DK}">${n}</text>`;
   }
   const ds = String(n).split("").map(Number), k = size * 0.72 / 88, gap = 22;
@@ -226,7 +231,7 @@ function sweep(m) {
     + `<path d="M${c} ${c - r} A${r} ${r} 0 ${m > 30 ? 1 : 0} 1 ${x} ${y}" fill="none" stroke="${CLOCK_COLORS.minute}" stroke-width="4" stroke-dasharray="2 7" stroke-linecap="round"/>`;
 }
 
-// The clock at h:m. opt.numbers: "bungee" (default) or "hand"; opt.hint: a hint layer from
+// The clock at h:m. opt.numbers: "hand" (default, handwritten) or "bungee"; opt.hint: a hint layer from
 // clockHint ({ ring: [hour numbers to ring], glow: "hour", fives: last 5s label, ask: the label
 // at the hand, ones: [minute ticks to light] }); opt.label: the aria label. The clock is
 // Tick-Tockus: its tentacles reach out past the 240 × 240 drawing (shown with overflow visible) as
@@ -251,7 +256,7 @@ export function clockSvg(h, m, opt = {}) {
   }
   // Ringed numbers (the hour hint) go behind the numbers.
   for (const n of hint.ring || []) { const [x, y] = clockPoint(n * 30, num); s += `<circle cx="${x}" cy="${y}" r="17" fill="${GOLD}" opacity=".55" stroke="${GOLD}" stroke-width="3"/>`; }
-  for (let n = 1; n <= 12; n++) { const [x, y] = clockPoint(n * 30, num); s += numeral(n, x, y, opt.numbers, n > 9 && opt.numbers !== "hand" ? 22 : 25); }
+  for (let n = 1; n <= 12; n++) { const [x, y] = clockPoint(n * 30, num); s += numeral(n, x, y, opt.numbers, n > 9 && opt.numbers === "bungee" ? 22 : 25); }
   // The hands: the long minute hand under the short hour hand, so the hour is never hidden.
   // opt.hands: "arrow" (straight, an arrow tip) or "tentacle" (tapered, a gentle bend, a round tip
   // on the exact minute).
