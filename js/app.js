@@ -1050,7 +1050,10 @@ function menu() {
   card.querySelectorAll("input[name=wing]").forEach((i) => i.onchange = () => {
     st.band = wingOf(i.value).band; saveSettings();
     G.running = false; newRun(); loadMonster(0, true);
+    // Redrawing the start screen would scroll it back to the top: keep it where the tap was.
+    const ov = $("ov"), top = ov.scrollTop, inner = card.scrollTop;
     menu();
+    ov.scrollTop = top; card.scrollTop = inner;
   });
   wireCaptain();
   $("openSettings").onclick = () => settings();
