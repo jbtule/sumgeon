@@ -4,7 +4,7 @@ import { readdirSync, readFileSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { join } from "node:path";
-import { PAGES } from "./stamping.mjs";
+import { PAGES, stampWorker, stampCss } from "./stamping.mjs";
 
 const root = fileURLToPath(new URL("..", import.meta.url));
 let failed = false;
@@ -17,6 +17,16 @@ for (const dir of ["js", "scripts", "review/listen", "review/spell", "review/mom
     catch (e) { fail(`${dir}/${f}: ${e.stderr}`); }
   }
 }
+
+// The service worker (offline play): its syntax, and stamp.mjs can fill in its version and shell
+// (stamping.mjs shellFiles: every STAMPED file, every module, the icons and the fonts;
+// scripts/offline.test.mjs checks the list against what the page loads), and stamp the fonts.
+try { execFileSync(process.execPath, ["--check", join(root, "sw.js")], { stdio: "pipe" }); }
+catch (e) { fail(`sw.js: ${e.stderr}`); }
+try { stampWorker(readFileSync(join(root, "sw.js"), "utf8"), root, "0000000"); stampCss(readFileSync(join(root, "styles.css"), "utf8"), "0000000"); }
+catch (e) { fail(e.message); }
+const stampSrc = readFileSync(join(root, "scripts", "stamp.mjs"), "utf8");
+for (const f of ['"sw.js"', '"fonts"']) if (!stampSrc.includes(f)) fail(`stamp.mjs SITE should include ${f}`);
 
 // The tests.
 for (const f of readdirSync(join(root, "scripts")).filter((f) => f.endsWith(".test.mjs")).sort()) {

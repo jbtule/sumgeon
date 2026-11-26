@@ -19,6 +19,7 @@ import { traitOf } from "./traits.js";
 import { QUIPS, FINALS, CRIT, TEAM_LINES, TEAM_NUMBERS, CAPTAIN_LINES, captainNames } from "./moments.js";
 import { fewest, ITEMS } from "./loot.js";
 import { coinWords } from "./coins.js";
+import { BANDS, pool, factOf } from "./learn.js";
 
 export var PHRASE = {
   enter: "Now entering the Sumgeon!",
@@ -299,6 +300,117 @@ export function spokenLines() {
   for (var c = 1; c < 100; c++) add("p", moneyLine(c), "Money", "loot");
   for (c = 100; c <= PURSE_MAX_SPOKEN; c++) add("p", purseLine(c), "Money");
   var seen = {};
-  return out.filter(function (l) { var k = l.kind + ":" + l.text; if (seen[k]) return false; seen[k] = true; return true; });
+  return packSprites(out.filter(function (l) { var k = l.kind + ":" + l.text; if (seen[k]) return false; seen[k] = true; return true; }));
 }
+
+/* ---------- audio sprites (DESIGN.md §12 M5) ----------
+   Every line is in one small sprite: a file of related lines that speech.js decodes with Web
+   Audio when it can be needed. spriteFor(line) names its sprite's family by rule, here only, so
+   new lines fall in without a field of their own; a family longer than SPRITE_MAX_S is cut into
+   parts ("q-third-1-mul.2"), a fact's lines kept together. A line's `sprite` field (the lines
+   added with one: "names", "bosses", "depths", "loot") is where its family starts from; `file`
+   is the sprite it's in. */
+// About 3.5 minutes of speech a sprite: about 20 MB decoded at 24 kHz, and well under Cloudflare's
+// 25 MiB a file as a 64k mp3 (about 1.7 MB). Estimated from the text: about 14 characters a
+// second, and the 0.3 s gap between lines (scripts/audio/build.mjs).
+export var SPRITE_MAX_S = 210, CHARS_PER_S = 14, SPRITE_GAP_S = 0.3;
+export function estSeconds(text) { return text.length / CHARS_PER_S + SPRITE_GAP_S; }
+// Loaded whenever the game has a voice (after the first tap), in any stratum. The purse's dollar
+// amounts ("purse") and every problem and monster sprite wait for a run that needs them
+// (runSprites).
+export var ALWAYS = ["phrases-start", "phrases-fight", "phrases-explain", "heroes", "quips", "captains", "bosses", "loot", "money", "depths"];
+var slug = function (t) { return t.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, ""); };
+var KIND = { "+": "add", "-": "sub", "×": "mul", "÷": "div", "□": "bonds", "○": "cmp", "=": "bal", "¢": "coins", "M": "more", "/": "frac", "≈": "round", "▭": "rect", "Σ": "three", "▦": "arrays" };
+var memo = null;
+function index() {
+  if (memo) return memo;
+  var names = {}, phrases = {}, q = {}, uses = {};
+  // A monster's lines (and its looks') in a sprite of its own, "m-minustaur", loaded by the strata
+  // it's in; the heroes' (and the cursed digits') in "heroes", which every stratum can need.
+  MON.concat(allLooks()).forEach(function (m) { [monsterName(m), monsterCleared(m), monsterWon(m)].forEach(function (t) { names[t] = names[t] || "m-" + slug(m.base || m.n); }); });
+  HEROES.forEach(function (h) { [heroName(h), monsterName(cursedMonster(h.d)), heroJoins(h), heroCursed(h), heroRescue(h), heroAlmost(h), heroHelps(h)].forEach(function (t) { names[t] = "heroes"; }); });
+  // Phrases by when they're said: the start screen and a run's end, explanations, and the fight.
+  [PHRASE.enter, PHRASE.pickGrade, PHRASE.pickHero, PHRASE.heroFirst, PHRASE.deeper, PHRASE.exitSure, PHRASE.unlocked, PHRASE.win]
+    .concat(WINGS.map(wingCleared), WINGS.map(wingOpened)).forEach(function (t) { phrases[t] = "phrases-start"; });
+  [PHRASE.hitHow, PHRASE.cmpHow, PHRASE.cmpSame, PHRASE.spellHow, PHRASE.paused]
+    .concat(Object.values(TRAIT_LINE), HEROES.map(function (h) { return luckyLine(h.d); }), REVERSIBLE.map(reversedLine), [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map(howToWriteLine))
+    .forEach(function (t) { phrases[t] = "phrases-explain"; });
+  // Problems: every line a band can say, found from its facts the way the game asks them (both
+  // turnarounds; a number hidden for the facts that can hide one), in the first band and level
+  // that has it: "q-kinder-2-add", and "q-kinder-2-add-missing" for the same facts with a number
+  // hidden (asked of reviews, and all of Quizard's). uses[band][level] = the families it can say.
+  Object.keys(BANDS).forEach(function (band) {
+    uses[band] = [];
+    pool(band).forEach(function (f) {
+      var fam = "q-" + band + "-" + (f.level + 1) + "-" + (KIND[f.key[0]] || slug(f.op)), mine = uses[band][f.level] = uses[band][f.level] || {};
+      problemLines(f.key).forEach(function (l) {
+        var e = q[l[0]] = q[l[0]] || { family: fam + (l[1] ? "-missing" : ""), unit: band + " " + f.key };
+        mine[e.family] = true;
+      });
+    });
+  });
+  return (memo = { names: names, phrases: phrases, q: q, uses: uses });
+}
+// The lines a fact can be said with: [text, a missing-number line?].
+function problemLines(key) {
+  var out = [], seen = {};
+  [0, 0.9].forEach(function (r) {
+    var v = factOf(key, function () { return r; });
+    if (seen[v.q]) return;
+    seen[v.q] = true;
+    out.push([askLine(v), false], [spokenFact(v.fact || v), false]);
+    if (!v.blank && "+-×÷".includes(v.op) && canHide(v)) ["x", "y"].forEach(function (b) { out.push([spokenMissing(missingOf(v, b)), true]); });
+  });
+  return out;
+}
+// The family of a line's sprite.
+export function spriteFor(l) {
+  var I = index();
+  if (l.kind === "h") return l.group === "Captain lines" ? "captains" : "quips";
+  if (l.sprite === "names") return I.names[l.text] || "names";
+  if (l.sprite === "loot") return l.group === "Money" ? "money" : "loot";
+  // A problem's lines go by its band and level, even when they were given a sprite name of their
+  // own (batch 1's "time-h", "pat-k"…), so a run loads them with the rest of its stratum.
+  if (l.kind === "q" && I.q[l.text]) return I.q[l.text].family;
+  if (l.sprite) return l.sprite;
+  if (l.kind === "q") return "q-" + slug(l.group);
+  if (l.group === "Money") return "purse";
+  if (l.group === "Phrases") return I.phrases[l.text] || "phrases-fight";
+  return slug(l.group);
+}
+// Gives every line its `file`: its family, or a part of it when the family is too long.
+function packSprites(lines) {
+  var I = index(), fams = {};
+  lines.forEach(function (l) {
+    var f = spriteFor(l), fam = fams[f] = fams[f] || { s: 0, units: {}, order: [] };
+    var u = l.kind === "q" && I.q[l.text] ? I.q[l.text].unit : l.kind + ":" + l.text;
+    if (!fam.units[u]) { fam.units[u] = []; fam.order.push(u); }
+    fam.units[u].push(l);
+    fam.s += estSeconds(l.text);
+  });
+  Object.keys(fams).forEach(function (f) {
+    var fam = fams[f], parts = Math.ceil(fam.s / SPRITE_MAX_S), per = fam.s / parts, part = 1, at = 0;
+    fam.order.forEach(function (u) {
+      var s = fam.units[u].reduce(function (a, l) { return a + estSeconds(l.text); }, 0);
+      if (part < parts && at + s / 2 > per * part) part++;
+      at += s;
+      fam.units[u].forEach(function (l) { l.file = parts > 1 ? f + "." + part : f; });
+    });
+  });
+  return lines;
+}
+// The sprite families a run in a stratum (wings.js WINGS) can need, besides ALWAYS: its monsters'
+// lines and its band's and strands' problems. upto (optional): { band: the last level to load },
+// so a run loads the levels open and the next, not a grade's every fact.
+export function runSprites(wing, upto) {
+  var I = index(), out = {};
+  wing.pool.concat(wing.floors, [wing.boss]).forEach(function (n) { if (n !== "rescue" && n !== "pool") out["m-" + slug(n)] = true; });
+  [wing.band].concat(Object.values(wing.strands || {})).forEach(function (band) {
+    var top = upto && upto[band] != null ? upto[band] : Infinity;
+    (I.uses[band] || []).forEach(function (fams, level) { if (fams && level <= top) Object.assign(out, fams); });
+  });
+  return Object.keys(out);
+}
+// A sprite file's family: "q-third-1-mul.2" is in "q-third-1-mul".
+export function familyOf(file) { return file.replace(/\.\d+$/, ""); }
 

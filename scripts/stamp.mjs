@@ -11,7 +11,7 @@
 import { readFileSync, writeFileSync, rmSync, mkdirSync, cpSync, existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { join } from "node:path";
-import { stampGame, stampPage, PAGES } from "./stamping.mjs";
+import { stampGame, stampPage, stampCss, stampWorker, PAGES } from "./stamping.mjs";
 
 const sha = process.argv[2] || "";
 if (!/^[0-9a-f]{40}$/.test(sha)) {
@@ -24,7 +24,7 @@ const v = "?v=" + short;
 const root = fileURLToPath(new URL("..", import.meta.url));
 const out = join(root, "_site");
 // Every file the site serves. New top-level site files go here.
-const SITE = ["index.html", "LICENSE.md", "styles.css", "js", "review",
+const SITE = ["index.html", "LICENSE.md", "styles.css", "js", "review", "fonts", "sw.js",
   "manifest.webmanifest", "favicon.svg", "apple-touch-icon.png", "icon-192.png", "icon-512.png", "social.png"];
 // Written by scripts/audio/build.mjs in the deploy; without it the game uses the device voice.
 const OPTIONAL = ["audio.json"];
@@ -39,6 +39,10 @@ manifest.icons = manifest.icons.map((i) => ({ ...i, src: i.src + v }));
 writeFileSync(join(out, "manifest.webmanifest"), JSON.stringify(manifest, null, 2) + "\n");
 
 writeFileSync(join(out, "index.html"), stampGame(readFileSync(join(root, "index.html"), "utf8"), root, short, short));
+// The fonts styles.css loads, stamped too.
+writeFileSync(join(out, "styles.css"), stampCss(readFileSync(join(root, "styles.css"), "utf8"), short));
+// The service worker for offline play, with this version and the shell it precaches.
+writeFileSync(join(out, "sw.js"), stampWorker(readFileSync(join(root, "sw.js"), "utf8"), root, short));
 // What's deployed, for the game's update check (app.js checkUpdate).
 writeFileSync(join(out, "version.json"), JSON.stringify({ sha: short }));
 
