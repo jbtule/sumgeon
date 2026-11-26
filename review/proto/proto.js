@@ -13,6 +13,7 @@ import { CLOCK_LEVELS, clockProblem, clockLine, clockQuestion, spokenClock, spok
 import { PATTERN_LEVELS, patternProblem, spokenPattern, spokenPatternAnswer, patternSvg, patternHint, ODD_LEVELS, isOddEven, oddEvenProblem, oddEvenSvg, oddEvenHint, spokenOddEven } from "../../js/patterns.js";
 import { TF_LEVELS, tfProblem, tfSvg, tfHint, spokenTF, spokenTFAnswer, fixParts } from "../../js/truefalse.js";
 import { LINE_LEVELS, lineProblem, lineSvg, lineHint, spokenLine, spokenLineAnswer } from "../../js/numberline.js";
+import { PV_LEVELS, pvProblem, pvSvg, pvLine, pvHint, spokenPV, spokenPVAnswer } from "../../js/placevalue.js";
 import { DOLLAR_LEVELS, dollarProblem, dollarSvg, dollarHint, spokenDollars, sayMoney } from "../../js/dollars.js";
 import { SHAPE_LEVELS, shapeLevel, isDraw, countProblem, countSvg, countHint, spokenCount, spokenDraw, readShape, judgeShape, cleanShape, article, CORNERS, COUNT_LINE } from "../../js/shapes.js";
 
@@ -77,6 +78,14 @@ const TYPES = {
     words: (p) => p.kind === "parts",
     hint: lineHint, spoken: spokenLine, missed: spokenLineAnswer,
     answer: (p) => (p.kind === "parts" ? p.d : `${p.n}/${p.d}`)
+  },
+  placevalue: {
+    icon: "🧱", label: "Place value", mon: "Haberhasher", levels: PV_LEVELS,
+    problem: (lv, rnd) => pvProblem(lv.id, rnd),
+    picture: (p, st) => pvSvg(p, { hint: !!st.hint, worked: st.hint && st.worked }),
+    line: (p, slot) => pvLine(p).map((x) => (x === null ? slot(0) : esc(x))).join(""),
+    words: (p) => p.kind !== "expanded",
+    hint: pvHint, spoken: spokenPV, missed: spokenPVAnswer, answer: (p) => p.ans
   },
   dollars: {
     icon: "💵", label: "Dollars", mon: "Trollar", levels: DOLLAR_LEVELS,
@@ -174,6 +183,8 @@ function draw() {
   $("pic").innerHTML = t.picture(p, st);
   $("prob").className = "prob" + ((typeof t.words === "function" ? t.words(p) : t.words) ? " words" : "");
   $("prob").innerHTML = t.line(p, slot);
+  // A long line ("1 hundred + 17 tens + 6 ones = □") gets smaller and may wrap.
+  $("prob").classList.toggle("long", $("prob").textContent.length > 22);
   if (t.question) $("prob").setAttribute("aria-label", t.question(p)); else $("prob").removeAttribute("aria-label");
   // The line under the box: ✓ Right!, or Oops with the answer and the worked hint, or the hint.
   // An equation in the words doesn't break across lines ("50 + 2 = ?").
