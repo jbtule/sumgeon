@@ -2694,8 +2694,8 @@ function bookPage() {
     const s = seen[m.n], t = traitOf(m), share = mastery(m, w, recs), gold = s && share >= 1;
     // A boss whose Legend is beaten shows golden (DESIGN.md §14.2).
     const legendary = m.boss && legendBeaten(w, progress), art = legendary ? bossForm(m, "legend") : m;
-    // A met monster with looks opens them big (lookView) on a tap. Bosses have none.
-    const opens = s && LOOKS[m.n] ? ` tabindex="0" role="button" data-looks="${esc(m.n)}" aria-label="${esc(m.n)}: see its looks"` : "";
+    // A met monster opens its looks big (lookView) on a tap, and a boss its forms.
+    const opens = s && formsOf(m).length > 1 ? ` tabindex="0" role="button" data-looks="${esc(m.n)}" aria-label="${esc(m.n)}: see its ${m.boss ? "forms" : "looks"}"` : "";
     beasts += s
       ? `<section class="beast${gold ? " gold" : ""}${legendary ? " legendary" : ""}${opens ? " opens" : ""}"${opens}><div class="beast-art">${ring(share)}${svg(art)}</div>
           <b>${esc(m.n)}</b>${m.boss ? '<small class="boss-tag">Boss</small>' : ""}${legendary ? `<small class="legend-tag">🌟 ${esc(art.n)} beaten</small>` : ""}
@@ -2730,15 +2730,15 @@ function bookPage() {
 // met. The voice says a found look's name as it comes into view (its recorded name line). A tap on
 // the art, ✕ or Escape closes it. It sits over the book's card, so the book keeps its place.
 function lookView(m, from) {
-  const all = [0, 1, 2, 3, 4].map((i) => lookOf(m, i)), found = (l) => !!seen[l.n], n = all.length;
+  const all = formsOf(m), found = formFound, n = all.length, what = m.boss ? "forms" : "looks";
   const page = (l, i) => found(l)
     ? `<div class="lv-page" role="group" aria-roledescription="look" aria-label="${i + 1} of ${n}: ${esc(l.n)}"><button type="button" class="lv-art" aria-label="Close">${svg(l)}</button><b>${esc(l.n)}</b><small class="lv-found">Found</small></div>`
     : `<div class="lv-page" role="group" aria-roledescription="look" aria-label="${i + 1} of ${n}: not found yet"><button type="button" class="lv-art silhouette" aria-label="Close">${svg(l).replace(/aria-label="[^"]*"/, 'aria-label="A look not found yet"')}</button><b>???</b><small>Not found yet</small></div>`;
   const v = document.createElement("div");
-  v.className = "lookview"; v.setAttribute("role", "dialog"); v.setAttribute("aria-modal", "true"); v.setAttribute("aria-label", `${m.n}'s looks`);
+  v.className = "lookview"; v.setAttribute("role", "dialog"); v.setAttribute("aria-modal", "true"); v.setAttribute("aria-label", `${m.n}'s ${what}`);
   v.innerHTML = `<div class="lv-box">
-    <div class="lv-head"><h3>${esc(m.n)}</h3><small>${all.filter(found).length} of ${n} looks found</small><button type="button" class="icon-btn lv-close" aria-label="Close">✕</button></div>
-    <div class="lv-strip" role="region" aria-label="${esc(m.n)}'s looks" tabindex="0">${all.map(page).join("")}</div>
+    <div class="lv-head"><h3>${esc(m.n)}</h3><small>${all.filter(found).length} of ${n} ${what} found</small><button type="button" class="icon-btn lv-close" aria-label="Close">✕</button></div>
+    <div class="lv-strip" role="region" aria-label="${esc(m.n)}'s ${what}" tabindex="0">${all.map(page).join("")}</div>
     <div class="lv-nav"><button type="button" class="icon-btn lv-prev" aria-label="Previous look">←</button>
       <div class="lv-dots">${all.map((l, i) => `<button type="button" class="lv-dot${found(l) ? " on" : ""}" aria-label="Look ${i + 1}${found(l) ? ": " + esc(l.n) : ""}"></button>`).join("")}</div>
       <button type="button" class="icon-btn lv-next" aria-label="Next look">→</button></div></div>`;
@@ -2781,13 +2781,22 @@ function quipsHeard(d) {
   const q = heardOf(MS, d);
   return `<small class="quips${q.heard === q.of ? " all" : ""}">Quips: ${q.heard} of ${q.of}</small>`;
 }
-// A monster's looks (monsters.js LOOKS) on its card: the ones met, and silhouettes for the rest.
+// What a card in the book opens: a monster's looks (monsters.js LOOKS), or a boss's forms (the
+// boss, its mega form and its golden Legend form, bossForm). Each is found once it's been met
+// (saved under its own name). A Legend beaten counts as found even if it was never met by name.
+function formsOf(m) {
+  if (m.boss) return [m, bossForm(m, "mega"), bossForm(m, "legend")].filter(Boolean);
+  return LOOKS[m.n] ? [0, 1, 2, 3, 4].map((i) => lookOf(m, i)) : [];
+}
+const formFound = (l) => !!seen[l.n] || (l.form === "legend" && WINGS.some((w) => w.boss === l.base && legendBeaten(w, progress)));
+// A monster's looks, or a boss's forms, on its card: the ones met, and silhouettes for the rest.
 function looksRow(m) {
-  if (!LOOKS[m.n]) return "";
-  const all = [0, 1, 2, 3, 4].map((i) => lookOf(m, i)), found = all.filter((l) => seen[l.n]).length;
-  return `<div class="looks" aria-label="${found} of ${all.length} looks found">${all.map((l) => seen[l.n]
+  const all = formsOf(m);
+  if (all.length < 2) return "";
+  const found = all.filter(formFound).length, what = m.boss ? "Forms" : "Looks";
+  return `<div class="looks" aria-label="${found} of ${all.length} ${what.toLowerCase()} found">${all.map((l) => formFound(l)
     ? `<span title="${esc(l.n)}">${svg(l)}</span>` : `<span class="silhouette" title="Not met yet">${svg(l)}</span>`).join("")}</div>
-    <small>Looks found: ${found} of ${all.length}</small>`;
+    <small>${what} found: ${found} of ${all.length}</small>`;
 }
 // "How the hints work": how Sumgeon teaches, and each strategy with the game's own drawing and
 // a plain explanation, for grown-ups who learned math another way (DESIGN.md §5.3).
