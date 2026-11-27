@@ -190,7 +190,9 @@ for (const a of none.filter((x) => x.kind === "track" || x.kind === "surprise"))
 // The rewards are fixed forever (merge.js pays from them): a change here is a change to every
 // linked player's wallet.
 assert.deepEqual(rewardsOf(none.filter((x) => x.kind === "track").map((a) => a.id)).items, { pie: 8, shield: 9, totem: 9, magnet: 9 });
-assert.deepEqual(rewardsOf(none.filter((x) => x.kind === "surprise").map((a) => a.id)).items, { pie: 3, shield: 5, totem: 3, magnet: 3 });
+// Every Quip (surprise:allquips, 2026-11-27) added one of every item; the others are unchanged.
+assert.deepEqual(rewardsOf(none.filter((x) => x.kind === "surprise" && x.id !== "surprise:allquips").map((a) => a.id)).items, { pie: 3, shield: 5, totem: 3, magnet: 3 });
+assert.deepEqual(rewardsOf(["surprise:allquips"]).items, { pie: 1, shield: 1, totem: 1, magnet: 1 });
 
 // What the cards say: "New achievement!" (or "Secret achievement!"), the title, what it took and
 // the reward, each line short enough for a kindergartner, recorded, in the "achievements" sprite,
@@ -224,3 +226,15 @@ assert.deepEqual(cardLines(catalog({}).find((a) => a.id === "days:100")),
 assert.ok(spokenLines().every((t) => !/\d/.test(t)), "numbers in achievement lines are words");
 
 console.log(`✓ achievements (${ACHIEVEMENT_IDS.length})`);
+
+// Quip Fan (one hero's quips) and Every Quip (all ten heroes', counting up).
+{
+  const { QUIPS } = await import("../js/moments.js");
+  const heard = Object.fromEntries(Object.entries(QUIPS).map(([d, qs]) => [d, qs.slice()])); // heard keeps the quips themselves
+  const one = { moments: { heard: { 7: heard[7] } } }, all = { moments: { heard } };
+  const c1 = catalog(one), c10 = catalog(all);
+  assert.equal(c1.find((a) => a.id === "surprise:quips").title, "Quip Fan");
+  const e1 = c1.find((a) => a.id === "surprise:allquips");
+  assert.ok(!e1.met && e1.started && e1.have === 1 && /1 of 10/.test(e1.progress), JSON.stringify(e1));
+  assert.ok(c10.find((a) => a.id === "surprise:allquips").met);
+}
