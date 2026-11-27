@@ -251,3 +251,18 @@ import { patternFacts } from "../js/patterns.js";
   assert.equal(spellKey("second", recs, { recent: [one.key], op: "-" }), null, "a recent problem isn't cast");
   assert.equal(spellKey("second", recs, { recent: [], spells: [one.key], op: "-" }), null, "nor a recent spell");
 }
+
+// A review with fewer than REVIEW_MIN facts seen asks the rest of its level too, so it never
+// asks one fact over and over (a 3rd grader who'd seen one of the Tower's adding-within-1000 facts
+// got 266 + 302 every time from Margot-Rythm).
+{
+  const { REVIEW_MIN, choose: ch } = await import("../js/learn.js");
+  const one = pool("addT")[0];
+  const recs = { [one.key]: { b: 3, n: 1, c: 1, ms: 3000, t: 0 } };
+  let seed = 5; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+  const got = new Set();
+  let recent = [];
+  for (let i = 0; i < 12; i++) { const k = ch("addT", recs, { now: 1, rnd, recent, open: [0, 1], review: [0, 1] }); got.add(k); recent = [k].concat(recent).slice(0, 12); }
+  assert.ok(got.size >= 8, `a thin review varies (${got.size} different in 12)`);
+  assert.ok(REVIEW_MIN >= 4);
+}
