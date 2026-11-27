@@ -69,13 +69,16 @@
   textarea{width:100%;min-height:64px;border-radius:10px;border:2px solid var(--edge);background:var(--panel);color:var(--ink);font:inherit;padding:8px}
   .formbtns{display:flex;gap:8px;justify-content:flex-end;margin-top:8px}
   .g-forms{display:grid;gap:14px}
-  .g-formrow{display:grid;grid-template-columns:repeat(3,1fr);border-radius:18px;background:var(--panel);border:2px solid var(--line);overflow:hidden}
+  .g-formrow{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));border-radius:18px;background:var(--panel);border:2px solid var(--line);overflow:hidden}
   .g-form{display:grid;grid-template-rows:auto 1fr;min-width:0;border-left:2px solid var(--line)}
   .g-form:first-child{border-left:0}
   .g-form.g-bad{outline:2px solid var(--coral);outline-offset:-2px}
   .g-mega{font:400 11px Bungee,sans-serif;background:#45d6e6;color:#0c171c;border-radius:999px;padding:2px 8px}
   .g-legend{font:400 11px Bungee,sans-serif;background:linear-gradient(#fff2b0,#ffc93c 60%,#e0a222);color:#0c171c;border-radius:999px;padding:2px 8px;box-shadow:0 0 8px #ffc93c88}
+  .g-power{font:400 11px Bungee,sans-serif;background:#ff8a7f;color:#0c171c;border-radius:999px;padding:2px 8px;white-space:nowrap}
   .g-lines{display:grid;gap:2px}
+  /* Five forms don't fit across a phone or a narrow window: the row scrolls sideways inside its box. */
+  @media(max-width:1000px){.g-formrow{grid-template-columns:none;grid-auto-flow:column;grid-auto-columns:minmax(190px,1fr);overflow-x:auto}}
   @media(max-width:700px){.g-form .g-stage{padding:10px 3px 6px}.g-form .g-info{padding:8px 6px 10px;font-size:12px}.g-form .g-title b{font-size:13px}.g-form .g-trait,.g-form .g-quip{font-size:12px}.g-form .g-smalls{gap:5px}.g-form .flagbtn{padding:0 8px}}
   [hidden]{display:none !important}
   .c-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:10px}
@@ -134,7 +137,7 @@
   <h2>In the game</h2>
   <div class="g-grid" id="oldGrid"></div>
   <h2>Boss forms</h2>
-  <p class="g-meta">Each boss beside its mega form (every 10th depth: crowned, with a second trait) and its Legend form (in gold, once every fact in its stratum is mastered). Drawn and recorded, not in the game yet.</p>
+  <p class="g-meta">Each boss across a chapter's five depths: the boss (depths 1 and 2), powering up (depths 3 and 4), its mega form (every 5th depth: crowned, with a second trait), then its Legend form (in gold, with the mega trait too, once its stratum's priority facts are all mastered).</p>
   <div class="g-forms" id="formsGrid"></div>
   <h2>Heroes</h2>
   <div class="g-grid" id="heroGrid"></div>
