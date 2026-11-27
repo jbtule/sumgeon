@@ -2,3 +2,7 @@
 _site/
 _audio/
 audio.json
+
+# wrangler dev state (sync/)
+.wrangler/
+node_modules/
