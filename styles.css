@@ -189,6 +189,8 @@ h1 b{color:var(--coral);font-weight:400}
 .who-cap svg{width:100%;height:100%;overflow:visible}
 .shot.hero{width:62px;height:66px;text-shadow:none;-webkit-text-stroke:0}
 .shot.hero svg{width:100%;height:100%;overflow:visible}
+.shot.drawn{-webkit-text-stroke:0;text-shadow:none;line-height:0}
+.shot.drawn img{display:block;filter:drop-shadow(0 0 10px #ffc93ccc)}
 .heroes{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
 .hpick{display:grid;justify-items:center;gap:2px;padding:6px 2px;border-radius:14px;border:2px solid var(--edge);background:none;min-height:44px}
 .hpick svg{width:100%;max-width:64px;height:auto;overflow:visible}

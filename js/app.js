@@ -887,10 +887,15 @@ function fly(text, crit) {
   if (reduced()) return Promise.resolve();
   // From the answer box, or from the □ when the problem has one (the answer box hides then).
   const from = $("blank") && $("blank").offsetParent ? $("blank") : $("ans");
-  const layer = $("fly"), a = centerOf(from), b = centerOf($("mon")), n = text.length;
+  // A good spell's drawing (castSpell, drawingShot) flies itself, from where it was drawn.
+  const shot = G.spellShot && text.length === 1 ? G.spellShot : null;
+  G.spellShot = null;
+  if (shot && $("sigil")) sigilReset(); // it lifts off the pad: the drawing itself leaves
+  const layer = $("fly"), a = shot ? { x: shot.x, y: shot.y } : centerOf(from), b = centerOf($("mon")), n = text.length;
   return Promise.all([...text].map((ch, i) => new Promise((done) => {
     const d = Number(ch), s = document.createElement("span");
-    if (onTeam(d)) { s.className = "shot hero"; s.innerHTML = heroArt(d); }
+    if (shot) { const k = Math.min(1, 96 / Math.max(shot.w, shot.h)); s.className = "shot drawn"; s.innerHTML = `<img src="${shot.src}" alt="" width="${Math.round(shot.w * k)}" height="${Math.round(shot.h * k)}">`; }
+    else if (onTeam(d)) { s.className = "shot hero"; s.innerHTML = heroArt(d); }
     else { s.className = "shot" + (crit ? " crit" : ""); s.textContent = ch; }
     layer.appendChild(s);
     const w = s.offsetWidth, h = s.offsetHeight, spread = (i - (n - 1) / 2) * 44;
@@ -900,7 +905,7 @@ function fly(text, crit) {
     for (let k = 0; k <= 10; k++) {
       const t = k / 10, u = 1 - t;
       const x = u * u * p0.x + 2 * u * t * c.x + t * t * p1.x, y = u * u * p0.y + 2 * u * t * c.y + t * t * p1.y;
-      frames.push({ transform: `translate(${x}px,${y}px) scale(${1 + 0.35 * Math.sin(Math.PI * t) - 0.25 * t}) rotate(${t * (onTeam(d) ? 360 : 18)}deg)` });
+      frames.push({ transform: `translate(${x}px,${y}px) scale(${1 + 0.35 * Math.sin(Math.PI * t) - 0.25 * t}) rotate(${t * (shot ? 24 : onTeam(d) ? 360 : 18)}deg)` });
     }
     const anim = s.animate(frames, { duration: 360, delay: i * 110, easing: "ease-in", fill: "backwards" });
     let dust = null;
@@ -1103,6 +1108,7 @@ function submit() {
     chompAct(pose).then(() => {
       if (pose && G.cur.op === "more") { G.input = ""; ansUI(); }
       sfx.launch(G.streak);
+      if (mo) G.spellShot = null; // a Hero Moment plays instead of the throw
       return mo ? heroMoment(mo, typed, crit) : fly(typed, crit);
     }).then(() => {
       if (!mo) sfx.impact(crit); // a moment lands with its own, bigger impact and shake
@@ -3111,9 +3117,35 @@ function castSpell() {
     }
     store.player(PID).set("spells", sp);
   }
+  // A good spell throws the drawing itself at the monster (fly): the kid's own handwriting is the
+  // attack. A backwards or poorly matched one throws the plain digit, since its drawing is the
+  // one being corrected.
+  G.spellShot = j.outcome !== "wrong" && !G.cur.reversed && !G.cur.howTo ? drawingShot() : null;
   // A wrong answer goes in as the digit it was read as.
   G.input = String(j.outcome === "wrong" ? r.digit : ans); ansUI();
   submit();
+}
+// The strokes alone (no hint or correction drawn over them), cropped to what was drawn and
+// glowing as on the pad, as an image, with where its middle is on screen.
+function drawingShot() {
+  const c = $("sigil");
+  if (!c || !strokes.length) return null;
+  const pts = strokes.flat(), pad = 14;
+  const x0 = Math.min(...pts.map((p) => p[0])) - pad, y0 = Math.min(...pts.map((p) => p[1])) - pad;
+  const w = Math.max(...pts.map((p) => p[0])) - x0 + pad, h = Math.max(...pts.map((p) => p[1])) - y0 + pad;
+  const dpr = devicePixelRatio || 1, o = document.createElement("canvas");
+  o.width = Math.ceil(w * dpr); o.height = Math.ceil(h * dpr);
+  const g = o.getContext("2d");
+  g.setTransform(dpr, 0, 0, dpr, -x0 * dpr, -y0 * dpr);
+  g.lineCap = g.lineJoin = "round"; g.lineWidth = 8; g.strokeStyle = "#fff1b8"; g.shadowColor = "#ffc93c"; g.shadowBlur = 16;
+  for (const st of strokes) {
+    g.beginPath();
+    st.forEach(([x, y], i) => (i ? g.lineTo(x, y) : g.moveTo(x, y)));
+    if (st.length === 1) g.lineTo(st[0][0] + 0.5, st[0][1]);
+    g.stroke();
+  }
+  const r = c.getBoundingClientRect();
+  return { src: o.toDataURL(), w, h, x: r.left + x0 + w / 2, y: r.top + y0 + h / 2 };
 }
 
 /* ---------- drawing a shape (Polly-Gon, js/shapes.js) ----------
