@@ -24,7 +24,7 @@ import { stackOf } from "./twodigit.js";
 import { read as readSigil, judge as judgeSigil } from "./sigil.js";
 import { HANDWRITING } from "./handwriting.js";
 import { traitOf, charged, prefers, hitBy, atHalf, asks, flipOf, flashOf, dieSvg, mega } from "./traits.js";
-import { roster, mastery, meet, beat } from "./bestiary.js";
+import { roster, mastery, meet, beat, renamed, RENAMED } from "./bestiary.js";
 import { HEROES, CHALK, heroSvg, freePick, pickHero, curseCaptain, crackCurse, CURSE_HITS, resetTeam } from "./heroes.js";
 import * as sfx from "./sfx.js";
 import { say, stopSpeech, setVoice, speaking, cutOff, needSprites, spriteStatus, saveVoice, offlineStatus } from "./speech.js";
@@ -155,7 +155,7 @@ function loadPlayer() {
   recs = store.player(PID).get("facts", {}) || {};
   team = Object.assign({ captain: null, color: CHALK[0], rescued: [] }, store.player(PID).get("heroes", {}));
   progress = store.player(PID).get("wings", {}) || {};
-  seen = store.player(PID).get("bestiary", {}) || {};
+  seen = renamed(store.player(PID).get("bestiary", {}) || {});
   MS = freshMoments(store.player(PID).get("moments", null));
   wallet = Math.max(0, Math.floor(Number(store.player(PID).get("wallet", 0)) || 0));
   inv = freshItems(store.player(PID).get("items", null));
@@ -1884,7 +1884,8 @@ function floorFrom(ref, w, depth) {
   if (!ref || typeof ref !== "object") return null;
   if (ref.cursed != null) return HEROES[ref.cursed] ? cursedMonster(ref.cursed) : null;
   if (ref.boss) { const b = bossAt(w, depth, !!ref.legend); return b && b.n === ref.boss ? b : null; }
-  return MON.find((x) => x.n === ref.n && !x.boss) || allLooks().find((x) => x.n === ref.n) || null;
+  const n = RENAMED[ref.n] || ref.n; // a run saved before a look was renamed
+  return MON.find((x) => x.n === n && !x.boss) || allLooks().find((x) => x.n === n) || null;
 }
 // stage: "problem" (G.cur being worked on), "next" (answered: a new problem next), "beaten" (the
 // monster's HP is gone: its chest and card next), "chested" (its chest has come up: only the card

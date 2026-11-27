@@ -54,3 +54,15 @@ const saved = { "The Unknown": { met: 1, beaten: 2 } };
 beat(saved, r.find((x) => x.m.n === "Judo Judy").m, 3);
 assert.deepEqual(Object.keys(saved), ["The Unknown", "Judo Judy"]);
 console.log("✓ bestiary");
+
+// A renamed look's saved record moves to its new name: Margot in Shades -> Margot Plus.
+{
+  const { renamed } = await import("../js/bestiary.js");
+  const a = renamed({ "Margot in Shades": { met: 5, beaten: 2 }, "Margot-Rythm": { met: 1, beaten: 9 } });
+  assert.deepEqual(a["Margot Plus"], { met: 5, beaten: 2 });
+  assert.ok(!("Margot in Shades" in a) && a["Margot-Rythm"].beaten === 9);
+  const b = renamed({ "Margot in Shades": { met: 5, beaten: 2 }, "Margot Plus": { met: 3, beaten: 1 } });
+  assert.deepEqual(b["Margot Plus"], { met: 3, beaten: 3 });
+  const { allLooks } = await import("../js/monsters.js");
+  assert.ok(allLooks().some((l) => l.n === "Margot Plus") && !allLooks().some((l) => l.n === "Margot in Shades"));
+}
