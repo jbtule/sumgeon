@@ -6,6 +6,7 @@
 // Marks live in localStorage ("sumgeon:listen"), keyed by the clip's key: { s: "ok" | "bad",
 // tags, note, t }. A re-recorded line has a new key, so it shows up as unheard again.
 import { spokenLines, GROUPS } from "../../js/lines.js";
+import { linesOf, rangeHeader, rangeBytes } from "../../js/ranges.js";
 
 const $ = (id) => document.getElementById(id);
 const STORE = "sumgeon:listen";
@@ -16,16 +17,66 @@ let marks = {};
 try { marks = JSON.parse(localStorage.getItem(STORE)) || {}; } catch (e) { marks = {}; }
 function save() { try { localStorage.setItem(STORE, JSON.stringify(marks)); } catch (e) { /* this visit only */ } if (typeof reportUI === "function") reportUI(); }
 
-// The lines, each with its clip from audio.json: the site's own, or when run locally (where any
-// audio.json is a leftover from a local build) the live one.
+// The lines, each with its clip key and where it is in its sprite, from audio.json: the site's
+// own, or when run locally (where any audio.json is a leftover from a local build) the live one.
+// Only the sprites are deployed, so a line is fetched on its own with a Range request (ranges.js),
+// its bytes exactly its clip, and played in the <audio> element. The audio host lets only the
+// site read them (CORS), so run locally against the live host, nothing plays: use the site's
+// listen check, or a local recording (CLAUDE.md "To hear new clips locally").
 const LINES = spokenLines();
-let base = "", clips = {};
+let base = "", clips = {}, spots = {};
 async function loadAudio() {
   const live = "https://tools.tuley.name/sumgeon/audio.json", local = /^(localhost|127\.|\[::1\])/.test(location.hostname);
   for (const url of local ? [live, "../../audio.json"] : ["../audio.json", live]) {
-    try { const r = await fetch(url, { cache: "no-store" }); if (r.ok) { const m = await r.json(); base = m.base; clips = m.clips; return; } } catch (e) { /* try the next */ }
+    try { const r = await fetch(url, { cache: "no-store" }); if (r.ok) { const m = await r.json(); base = m.base || ""; clips = m.clips; spots = linesOf(m.sprites); return; } } catch (e) { /* try the next */ }
   }
 }
+// A line's audio as an object URL: its range of its sprite (or its single clip, when audio.json
+// still names them). The last few are kept, and the next line is fetched ahead.
+const urls = new Map();
+function srcOf(l) {
+  const id = l.kind + ":" + l.text;
+  if (urls.has(id)) return urls.get(id);
+  const where = spots[id];
+  const p = where
+    ? fetch(where.url, { headers: { Range: rangeHeader(where.off, where.len) } })
+      .then((r) => (r.ok ? r.arrayBuffer().then((b) => rangeBytes(r.status, b, where.off, where.len)) : null))
+      .catch(() => null)
+      .then((b) => (b ? URL.createObjectURL(new Blob([b], { type: "audio/mpeg" })) : base ? base + keyOf(l) + ".mp3" : Promise.reject(new Error("can't fetch " + id))))
+    : base ? Promise.resolve(base + keyOf(l) + ".mp3") : Promise.reject(new Error("not in a sprite: " + id));
+  p.catch(() => urls.delete(id));
+  urls.set(id, p);
+  if (urls.size > 12) {
+    const [old, op] = urls.entries().next().value;
+    urls.delete(old);
+    op.then((u) => { if (u.startsWith("blob:")) URL.revokeObjectURL(u); }, () => {});
+  }
+  return p;
+}
+// Plays a line in the shared element; then() runs once it has started (or failed to).
+let playToken = 0;
+function playLine(l, onended) {
+  const my = ++playToken;
+  audio.onended = null;
+  return srcOf(l).then((u) => {
+    if (my !== playToken) return false;
+    audio.onended = onended || null;
+    audio.src = u;
+    return audio.play().then(() => true);
+  }).catch(() => { if (my === playToken) $("status").textContent = "Couldn't play that line here (see the note at the top of listen.js)."; return false; });
+}
+// iOS lets an element play only from a tap; the line arrives after a fetch, so the element is
+// unlocked on the first tap with a moment of silence.
+const SILENCE = "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YQAAAAA=";
+function unlockAudio() {
+  document.removeEventListener("pointerdown", unlockAudio, true);
+  document.removeEventListener("keydown", unlockAudio, true);
+  if (audio.src) return;
+  audio.src = SILENCE;
+  audio.play().catch(() => {});
+}
+document.addEventListener("pointerdown", unlockAudio, true);
+document.addEventListener("keydown", unlockAudio, true);
 const keyOf = (l) => clips[l.kind + ":" + l.text];
 const markOf = (l) => marks[keyOf(l)];
 const KIND = { p: "Phrase", m: "Name", q: "Problem" };
@@ -82,22 +133,21 @@ function show() {
   ["prev", "again", "flag"].forEach((id) => ($(id).disabled = !l));
   $("play").disabled = !l;
 }
-function stop() { playing = false; inGap = false; clearTimeout(gapTimer); audio.pause(); audio.onended = null; }
+function stop() { playing = false; inGap = false; clearTimeout(gapTimer); playToken++; audio.pause(); audio.onended = null; }
 
 // Plays the current line; when it ends without a flag it's OK, and the next one follows.
 function playCurrent() {
   const l = list[at];
   if (!l) { playing = false; show(); return; }
   clearTimeout(gapTimer); inGap = false;
-  audio.onended = () => {
+  playLine(l, () => {
     if (!marks[keyOf(l)]) { marks[keyOf(l)] = { s: "ok", t: Date.now() }; save(); }
     remember(l);
     if (!playing) return;
     if (at < list.length - 1) { at++; show(); inGap = true; gapTimer = setTimeout(playCurrent, GAP_MS); }
     else { playing = false; show(); }
-  };
-  audio.src = base + keyOf(l) + ".mp3";
-  audio.play().catch(() => { playing = false; show(); });
+  }).then((ok) => { if (!ok && playing) { playing = false; show(); } });
+  if (list[at + 1]) srcOf(list[at + 1]).catch(() => {}); // ready for the gap
   show();
 }
 function remember(l) { recent = [l].concat(recent.filter((x) => x !== l)).slice(0, 8); recentUI(); }
@@ -146,7 +196,7 @@ function report() {
 $("backHome").onclick = home;
 document.querySelectorAll(".mode button").forEach((b) => (b.onclick = () => setMode(b.dataset.mode)));
 $("play").onclick = () => { if (playing) { stop(); show(); } else { playing = true; playCurrent(); } };
-$("again").onclick = () => { playing = false; clearTimeout(gapTimer); audio.onended = () => remember(list[at]); audio.src = base + keyOf(list[at]) + ".mp3"; audio.play(); show(); };
+$("again").onclick = () => { playing = false; clearTimeout(gapTimer); const l = list[at]; playLine(l, () => remember(l)); show(); };
 $("prev").onclick = () => { if (at > 0) at--; const was = playing; stop(); if (was) { playing = true; playCurrent(); } else show(); };
 // The line to flag: the one playing, or (in the gap after it) the one that just ended.
 // In the short gap after a line, that's the line you just heard.
@@ -156,7 +206,7 @@ $("cancelFlag").onclick = () => closeFlag(false);
 $("recent").onclick = (e) => {
   const b = e.target.closest("button"); if (!b) return;
   const l = recent[+b.dataset.i];
-  if (b.dataset.act === "play") { stop(); audio.onended = null; audio.src = base + keyOf(l) + ".mp3"; audio.play(); show(); }
+  if (b.dataset.act === "play") { stop(); playLine(l); show(); }
   else if (b.dataset.act === "flag") flag(l);
   else { marks[keyOf(l)] = { s: "ok", t: Date.now() }; save(); recentUI(); show(); }
 };

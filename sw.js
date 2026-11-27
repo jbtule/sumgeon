@@ -12,8 +12,11 @@
 //   so it never changes. speech.js saves them all in the background (saveVoice) and prunes the
 //   ones an update dropped; whatever the game fetches is kept too.
 // - audio.json is network-first, with the copy last fetched kept for offline.
-// - Single clips (_audio/a/, the audio host's /a/) are left to the browser: Safari's <audio> asks
-//   for byte ranges, which a cached whole file doesn't answer.
+// - A line asked for on its own (speech.js: a Range request for its bytes in a sprite not loaded)
+//   is answered from the saved sprite when there is one, cut to the range (206), so it plays
+//   offline; otherwise it goes to the network as it is. Other ranged requests, and any single
+//   clip (_audio/a/, the audio host's /a/: no longer deployed, but an older page may ask), are
+//   left to the browser.
 // - Dev mode (VERSION "dev": the dev server serves this file as it is): network-first for
 //   everything, the cache only a fallback when the network is gone, so an edit is never stale.
 var VERSION = "dev";
@@ -23,11 +26,13 @@ var DEV = VERSION === "dev";
 var SHELL_CACHE = "sumgeon-shell-" + VERSION, DATA_CACHE = "sumgeon-data", VOICE_CACHE = "sumgeon-voice", DEV_CACHE = "sumgeon-dev";
 
 // What to do with a request: "page" (the game's index.html), "shell" (a stamped file), "data"
-// (audio.json), "voice" (a sprite), "dev" (anything else of the site in dev mode), or null (left
-// to the browser). url: a URL; scope: the worker's scope URL; dev: dev mode.
+// (audio.json), "voice" (a sprite), "line" (a range of a sprite: one line), "dev" (anything else
+// of the site in dev mode), or null (left to the browser). url: a URL; scope: the worker's scope
+// URL; dev: dev mode; ranged: the request has a Range header.
 function route(url, mode, scope, dev, ranged) {
-  if (ranged) return null;
-  if (/\/s\/[0-9a-f]+\.mp3$/.test(url.pathname)) return "voice"; // the audio host's, or the dev server's _audio/s/
+  var sprite = /\/s\/[0-9a-f]+\.mp3$/.test(url.pathname); // the audio host's, or the dev server's _audio/s/
+  if (ranged) return sprite ? "line" : null;
+  if (sprite) return "voice";
   var base = new URL(scope);
   if (url.origin !== base.origin || url.pathname.indexOf(base.pathname) !== 0) return null;
   var rel = url.pathname.slice(base.pathname.length);
@@ -81,6 +86,35 @@ function cacheFirst(req, name) {
   });
 }
 
+// A Range header's single range in a file of size bytes: { start, end } (inclusive), or null.
+// The same rule as js/ranges.js parseRange (a classic script can't import it).
+function parseRange(header, size) {
+  var m = /^bytes=(\d*)-(\d*)$/.exec(String(header || "").trim());
+  if (!m || (m[1] === "" && m[2] === "")) return null;
+  var start, end;
+  if (m[1] === "") { start = Math.max(0, size - Number(m[2])); end = size - 1; }
+  else { start = Number(m[1]); end = m[2] === "" ? size - 1 : Math.min(Number(m[2]), size - 1); }
+  return start <= end && start < size ? { start: start, end: end } : null;
+}
+// A saved whole sprite cut to the range asked for: a 206 with that part, or a 416.
+function rangeOf(res, header) {
+  return res.blob().then(function (blob) {
+    var r = parseRange(header, blob.size);
+    if (!r) return new Response(null, { status: 416, headers: { "Content-Range": "bytes */" + blob.size } });
+    return new Response(blob.slice(r.start, r.end + 1), { status: 206, headers: {
+      "Content-Type": res.headers.get("Content-Type") || "audio/mpeg",
+      "Content-Range": "bytes " + r.start + "-" + r.end + "/" + blob.size,
+      "Content-Length": String(r.end - r.start + 1)
+    } });
+  });
+}
+// One line of a sprite: from the saved sprite when it's there (offline too), else the network.
+function line(req) {
+  return match(VOICE_CACHE, req.url).then(function (hit) {
+    return hit ? rangeOf(hit, req.headers.get("range")) : fetch(req);
+  }, function () { return fetch(req); });
+}
+
 function handle(req, kind, scope) {
   if (kind === "page") {
     // The page: the newest from the network; offline, this version's shell (or dev's last copy).
@@ -92,6 +126,7 @@ function handle(req, kind, scope) {
   if (kind === "data") return networkFirst(req, DATA_CACHE, plain(req.url));
   if (kind === "dev") return networkFirst(req, DEV_CACHE, plain(req.url));
   if (kind === "voice") return cacheFirst(req, VOICE_CACHE);
+  if (kind === "line") return line(req);
   return cacheFirst(req, SHELL_CACHE); // "shell"
 }
 

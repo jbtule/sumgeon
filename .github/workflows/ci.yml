@@ -11,8 +11,9 @@
 #                     sealed copies of a linked player's progress. It shares the Cloudflare
 #                     account (and its free-plan quotas) with Sound Box's sound-box-sync.
 #
-# audio.json (which line has which clip, and the audio sprites: every line is in one) only ever
-# lists clips and sprites that are live, so the game never asks for one that isn't there. Clips
+# audio.json (which line has which clip, and the audio sprites: every line is in one; only the
+# sprites are deployed) only ever lists sprites that are live, so the game never asks for one
+# that isn't there. Clips
 # already live are never recorded again (scripts/audio/build.mjs); without the Cloudflare token,
 # new lines aren't recorded and use the device voice until it's set.
 #
@@ -98,7 +99,8 @@ jobs:
         with:
           python-version: "3.12"
       # Records any missing clips, and builds every audio sprite (the clips' bytes joined; no
-      # ffmpeg needed). When anything is missing it first fetches every live clip into _audio/a,
+      # ffmpeg needed). When anything is missing it first cuts every live clip back out of the
+      # live sprites into _clips (not uploaded: only the sprites are deployed, DEPLOY_CLIPS),
       # since a Pages deploy replaces the whole site, so each sprite is joined from all its clips,
       # not only the ones recorded in this run.
       - id: build
@@ -117,7 +119,7 @@ jobs:
           path: audio.json
           retention-days: 1
 
-  # Uploads new clips. The only job with the Cloudflare token, and it runs nothing but wrangler.
+  # Uploads the sprites. The only job with the Cloudflare token, and it runs nothing but wrangler.
   audio-deploy:
     needs: audio
     if: needs.audio.outputs.deploy == 'true'

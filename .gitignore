@@ -6,3 +6,4 @@ audio.json
 # wrangler dev state (sync/)
 .wrangler/
 node_modules/
+_clips/

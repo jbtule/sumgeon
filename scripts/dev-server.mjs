@@ -5,7 +5,7 @@
 //   pages load changes. So a reload always gets new code, even in Safari, which otherwise keeps
 //   reusing cached modules. The badge reads "dev".
 // - Every response also says not to cache it.
-// - Byte ranges work, which Safari's <audio> needs for the voice clips (_audio/, audio.json).
+// - Byte ranges work, which the voice needs: a line fetched on its own out of its sprite (_audio/s/, audio.json).
 import { createServer } from "node:http";
 import { createReadStream, readFileSync, statSync, readdirSync, existsSync } from "node:fs";
 import { join, extname, normalize, sep } from "node:path";

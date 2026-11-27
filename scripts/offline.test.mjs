@@ -36,7 +36,7 @@ assert.ok(!/fonts\.googleapis/.test(readFileSync(join(root, "index.html"), "utf8
 
 // The worker: as the dev server serves it (dev mode) and stamped for a deploy.
 function worker(src) {
-  const ctx = { URL, Request: class {}, console };
+  const ctx = { URL, Request: class {}, Response, Blob, console };
   vm.createContext(ctx);
   vm.runInContext(src, ctx);
   return ctx;
@@ -62,7 +62,9 @@ assert.equal(r(live, "fonts/bungee-latin.woff2?v=" + v), "shell");
 assert.equal(r(live, "styles.css"), null, "an unstamped file is left to the browser");
 assert.equal(r(live, "review/listen/", "navigate"), null, "the grown-up pages are online only");
 assert.equal(r(live, "https://sumgeon.asset-data.stream/s/04adb5185118c8c3b755.mp3"), "voice");
-assert.equal(r(live, "https://sumgeon.asset-data.stream/a/04adb5185118c8c3b755.mp3"), null, "single clips are left to the browser");
+assert.equal(r(live, "https://sumgeon.asset-data.stream/a/04adb5185118c8c3b755.mp3"), null, "single clips (an older page's) are left to the browser");
+assert.equal(r(live, "https://sumgeon.asset-data.stream/s/04adb5185118c8c3b755.mp3", "cors", true), "line", "one line of a sprite: from the saved sprite when there is one");
+assert.equal(r(live, "https://sumgeon.asset-data.stream/a/04adb5185118c8c3b755.mp3", "cors", true), null);
 assert.equal(r(live, "https://sumgeon.asset-data.stream/index.json"), null);
 assert.equal(r(live, "https://tools.tuley.name/soundbox/app.js?v=1"), null, "other apps on the site are left alone");
 assert.equal(r(live, "https://fonts.gstatic.com/x.woff2"), null);
@@ -77,6 +79,16 @@ assert.equal(d("review/listen/", "navigate"), "dev");
 assert.equal(d("audio.json?v=devabc"), "data");
 assert.equal(d("_audio/s/04adb5185118c8c3b755.mp3"), "voice");
 assert.equal(d("_audio/a/04adb5185118c8c3b755.mp3"), null);
+assert.equal(dev.route(new URL("_audio/s/04adb5185118c8c3b755.mp3", local), "cors", local, true, true), "line");
+// A saved sprite answers a line's range: a 206 of just those bytes, or a 416 outside it.
+const saved = new Response(new Uint8Array(100).map((_, i) => i), { headers: { "Content-Type": "audio/mpeg" } });
+const cut = await live.rangeOf(saved.clone(), "bytes=20-24");
+assert.equal(cut.status, 206);
+assert.equal(cut.headers.get("Content-Range"), "bytes 20-24/100");
+assert.equal(cut.headers.get("Content-Length"), "5");
+assert.equal(cut.headers.get("Content-Type"), "audio/mpeg");
+assert.deepEqual([...new Uint8Array(await cut.arrayBuffer())], [20, 21, 22, 23, 24]);
+assert.equal((await live.rangeOf(saved.clone(), "bytes=200-210")).status, 416);
 assert.equal(d("version.json"), null);
 assert.equal(dev.plain(local + "js/app.js?v=devabc"), local + "js/app.js", "dev keeps one copy of a file, whatever its stamp");
 
