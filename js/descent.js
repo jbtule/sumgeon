@@ -15,6 +15,9 @@ import * as sfx from "./sfx.js";
 const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
 let active = null;
 export const descending = () => !!active;
+// The app left mid-descent (app.js autoPause): it ends at once, as a tap would, so the run starts
+// underneath and nothing is left frozen mid-fall.
+export function skipDescent() { if (active && active.skip) active.skip(); }
 
 // The surface: the night sky with its stars over a grassy hilltop, the Sumgeon's arched door on
 // top of the hill, and the team standing by it. The start screen (app.js drawScene) shows it
@@ -129,7 +132,7 @@ export function playDescent(opts, onReady) {
     if (e.cancelable && e.type !== "touchstart" && e.type !== "pointerdown") e.preventDefault();
   };
   ["pointerdown", "keydown", "click", "touchstart", "touchend", "pointerup", "contextmenu"].forEach((ev) => addEventListener(ev, guard, true));
-  active = { el };
+  active = { el, skip: () => { if (!readied) { sfx.stopFall(); if (anim) anim.pause(); leave(0); } } };
 
   if (mode === "reduced") {
     el.classList.add("titled", "landed");

@@ -80,6 +80,10 @@ h1 b{color:var(--coral);font-weight:400}
 .btns.deeper{flex-wrap:wrap}
 .btns.deeper #deeper,.btns.deeper #nextStratum{flex:1 0 100%;order:-1}
 .btns.deeper #nextStratum{order:-2}
+/* "Keep going?" (a run the app lost in the background) above Enter, full width, with where it was. */
+.btns.keep{flex-wrap:wrap}
+.btns.keep #keepGoing{flex:1 0 100%;order:-1;white-space:normal;line-height:1.1}
+.btns.keep #keepGoing small{display:block;margin-top:3px;font:800 .5em Nunito,sans-serif;letter-spacing:.02em;opacity:.85}
 /* A newly opened stratum, announced on the end card. */
 .unlocked{display:grid;gap:2px;text-align:center;padding:12px 14px;border-radius:16px;background:#ffc93c22;border:2px solid var(--gold);box-shadow:0 0 18px #ffc93c55;animation:unlockpop .6s ease-out}
 .unlocked b{font:400 20px Bungee,sans-serif;color:var(--gold)}
@@ -178,6 +182,11 @@ h1 b{color:var(--coral);font-weight:400}
 .hint .big{min-height:48px}
 .hint-btn{font-size:20px}
 .hint-btn[hidden]{display:none}
+/* A new fact's 💡 after a while with nothing typed (app.js hintNudge): a gentle pulse, or with
+   reduced motion a steady gold glow. */
+.hint-btn.nudge{animation:nudge 1.6s ease-in-out infinite;border-color:#ffc93c}
+@keyframes nudge{0%,100%{transform:none;box-shadow:0 0 0 0 rgba(255,201,60,0)}50%{transform:scale(1.12);box-shadow:0 0 14px 4px rgba(255,201,60,.55)}}
+@media(prefers-reduced-motion:reduce){.hint-btn.nudge{animation:none;box-shadow:0 0 12px 3px rgba(255,201,60,.6)}}
 .level{margin:2px 0 0;color:var(--muted);font-weight:800;font-size:14px}
 .chip span small{font-weight:700;opacity:.8;margin-left:6px}
 /* Digit heroes (DESIGN.md §6.6) */
@@ -358,9 +367,13 @@ h1 b{color:var(--coral);font-weight:400}
 .frac>span:last-child{padding-top:.06em}
 .frac .blank{font-size:1em;line-height:1}
 .game.find .prob svg.rectfig{max-width:min(60vw,260px);max-height:min(18vh,170px);width:auto;height:auto}
-/* Pipsqueak's Flash: the numbers as dice, which flip over into the numbers (diceFlash in app.js). */
-.prob .dn{display:inline-block;vertical-align:middle;min-width:1.1em;text-align:center;line-height:1}
+/* Pipsqueak's Flash: the numbers as dice, to count. They stay dice; the open hint (.told) puts
+   each die's number in a small gold badge at its corner, out of the layout so nothing moves. */
+.prob .dn{position:relative;display:inline-block;vertical-align:middle;min-width:1.1em;text-align:center;line-height:1}
 .prob .dn svg.die{display:block;width:1.15em;height:1.15em}
+.prob .dn .dnum{position:absolute;right:-.28em;bottom:-.22em;min-width:1.25em;padding:.12em .2em .08em;font:400 .42em/1 Bungee,sans-serif;color:#0c171c;background:#ffc93c;border:.1em solid #0c171c;border-radius:.7em;animation:dnum .3s ease-out both}
+@keyframes dnum{from{transform:scale(.3);opacity:0}to{transform:none;opacity:1}}
+@media(prefers-reduced-motion:reduce){.prob .dn .dnum{animation:none}}
 /* Triceraplus's three numbers, a little smaller so the row fits on an iPhone SE. */
 .prob .sum3{font-size:.8em;white-space:nowrap}
 /* Three and four two-digit numbers (Triceraplus in the Mines), smaller again. */

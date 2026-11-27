@@ -8,7 +8,7 @@ import { countSvg, readShape, judgeShape, cleanFor, isDrawKey, SHAPE_LINE, SHAPE
 import { hintFor, STRATEGIES } from "./hints.js";
 import { openStore, displayName, DUNGEON_VERSION, DUNGEON_KEYS, LEARNING_RESETS } from "./store.js";
 import { PHRASE, monsterName, monsterCleared, monsterWon, heroJoins, heroCursed, heroRescue, heroAlmost, heroHelps, traitLine, BARK, wingCleared, wingOpened, depthLine, DEPTH_MAX_SPOKEN, reversedLine, howToWriteLine, quipLine, squawk, trait2Line, newMonsterLine } from "./lines.js";
-import { WINGS, wingOf, runFloors, openWings, toOpen, floorStars, wingStars, depthScale, depthHP, deepest, MAP_DEPTHS, GRADES, gradeLabel, gradeName, withGrade, bandOf, gradeBand, OLD_BANDS, PATHS, chapterOf, stepsOpen, bossStage, isMega, BOSS_HP, MEGA_EVERY, megasOf, stepMonsters, legendDue, openLegend, beatLegend, legendBeaten, LEGEND_HP } from "./wings.js";
+import { WINGS, wingOf, runFloors, bossAt, cursedMonster, openWings, toOpen, floorStars, wingStars, depthScale, depthHP, deepest, MAP_DEPTHS, GRADES, gradeLabel, gradeName, withGrade, bandOf, gradeBand, OLD_BANDS, PATHS, chapterOf, stepsOpen, bossStage, isMega, BOSS_HP, MEGA_EVERY, megasOf, stepMonsters, legendDue, openLegend, beatLegend, legendBeaten, LEGEND_HP } from "./wings.js";
 import { missingOf, pickBlank, filled, spokenMissing, MISSING_SHARE, canHide } from "./missing.js";
 import { rectSvg } from "./third.js";
 import { arraySvg } from "./arrays.js";
@@ -23,7 +23,7 @@ import { coinsSvg, pileOf, coinOf } from "./coins.js";
 import { stackOf } from "./twodigit.js";
 import { read as readSigil, judge as judgeSigil } from "./sigil.js";
 import { HANDWRITING } from "./handwriting.js";
-import { traitOf, charged, prefers, hitBy, atHalf, asks, flipOf, flashOf, dieSvg, FLASH_MS, mega } from "./traits.js";
+import { traitOf, charged, prefers, hitBy, atHalf, asks, flipOf, flashOf, dieSvg, mega } from "./traits.js";
 import { roster, mastery, meet, beat } from "./bestiary.js";
 import { HEROES, CHALK, heroSvg, freePick, pickHero, curseCaptain, crackCurse, CURSE_HITS, resetTeam } from "./heroes.js";
 import * as sfx from "./sfx.js";
@@ -31,7 +31,7 @@ import { say, stopSpeech, setVoice, speaking, cutOff, needSprites, spriteStatus,
 import { byLevel, offlineLine } from "./offline.js";
 import { freshState as freshMoments, freshRun, decide as decideMoment, joined, heardOf, nameLine } from "./moments.js";
 import { playMoment } from "./slowmo.js";
-import { playDescent, descending, surfaceHTML } from "./descent.js";
+import { playDescent, descending, skipDescent, surfaceHTML } from "./descent.js";
 import { chestAfter, lockKey, lockOf, contents, moneyFor, fewest, setBills, ITEMS, itemOf, SLOTS, freshItems, countOf, gain, putInSlot, clearSlot, useSlot, eatPie, arm, blockMiss, totemMult, magnetSpent, freshWardrobe, addPiece, wearOf, putOn, ownedFor, unowned } from "./loot.js";
 import { kPrices, priceOf, freshShop, restock, forSale, TOKENS, valueOf, empty as emptyCounter, total as counterTotal, left as purseLeft, purseFor, putDown, takeBack, enough, pay, canAfford } from "./shop.js";
 import { CLOTHES, SPOTS, clothesById, pieceSvg } from "./clothes.js";
@@ -388,8 +388,9 @@ function probUI() {
   // Four two-digit numbers (Triceraplus in the Mines) smaller still, so the line fits an iPhone SE.
   // (Thin spaces round the + signs for four numbers.)
   else if (p.op === "Σ") { const four = p.nums && p.nums.length > 3; box.innerHTML = `<span class="sum3${four ? " sum4" : Math.max(...(p.nums || [0])) >= 10 ? " sum3w" : ""}">${four ? esc(p.q).replace(/ \+ /g, "\u2009+\u2009") : esc(p.q)} =</span>`; }
-  // Dice (Pipsqueak's Flash): each number as a die, until diceFlash turns them into numbers.
-  else if (p.dice) box.innerHTML = `<span class="dn" data-n="${p.x}">${dieSvg(p.x)}</span> + <span class="dn" data-n="${p.y}">${dieSvg(p.y)}</span> =`;
+  // Dice (Pipsqueak's Flash): each number as a die, to count by sight. They stay dice: once the
+  // hint is open (G.hinted), each die gets its number in a little gold badge beside it.
+  else if (p.dice) { const die = (n) => `<span class="dn${G.hinted ? " told" : ""}" data-n="${n}">${dieSvg(n)}${G.hinted ? `<b class="dnum" aria-hidden="true">${n}</b>` : ""}</span>`; box.innerHTML = `${die(p.x)} + ${die(p.y)} =`; }
   // "How many quarters?": the pile, then "quarters = ?" with a □ that fills as you type, as a
   // missing number does, under the pile (styles.css .game.find), so it fits a phone.
   else if (p.op === "¢" && p.find) box.innerHTML = coinsSvg(p.pile) + `<span class="find">${coinOf(p.find).names} = <span class="blank" id="blank">?</span></span>`;
@@ -622,7 +623,7 @@ function roarSoon() {
   if (!m || !m.boss) return;
   roarTimer = setTimeout(() => {
     if (!G.running) return; // the run is over: no more roars until the next boss
-    if (!G.busy && !G.next && !G.paused && $("ov").hidden && G.hp > 0 && G.floors[G.floor] === m) {
+    if (!G.busy && !G.next && !G.paused && !document.hidden && $("ov").hidden && G.hp > 0 && G.floors[G.floor] === m) {
       sfx.roar();
       if (!reduced()) { restartAnim($("mon"), "roar"); restartAnim($("arena"), "rumble"); setTimeout(() => { $("mon").classList.remove("roar"); $("arena").classList.remove("rumble"); }, 1300); }
     }
@@ -761,7 +762,7 @@ function newProblem() {
   // problem is the flipped one from the start, so the 🔊 button, a miss and the hint all read it.
   const flipped = flipOf(m, G.cur);
   if (flipped) G.cur = flipped;
-  // Flash (Pipsqueak): 3 + 5 comes as two dice, which turn into the numbers (traits.js flashOf).
+  // Flash (Pipsqueak): 3 + 5 comes as two dice, to count (traits.js flashOf).
   const dice = flashOf(m, G.cur);
   if (dice) G.cur = dice;
   // Stacked in columns (two- and three-digit + and −, and up to four numbers added): a quarter of
@@ -769,7 +770,13 @@ function newProblem() {
   // stackShare), always on Margot-Rythm's floor. The same fact and record, only laid out differently.
   G.cur = stackOf(G.cur, STACK_ALWAYS || (m.base || m.n) === "Margot-Rythm");
   G.recent = [key].concat(G.recent).slice(0, RECENT);
-  G.input = ""; G.busy = false; G.hinted = false; G.t0 = performance.now();
+  presentProblem(key, !!flipped);
+}
+// The problem in G.cur, on screen and asked: its picture, pad and voice, and its hint button.
+// restored: the same problem brought back after the app was reloaded (keepGoing), elapsed ms
+// into its answer time; Judo Judy's throw isn't played again (it's already thrown).
+function presentProblem(key, flipped, restored, elapsed) {
+  G.input = ""; G.busy = false; G.hinted = false; G.t0 = performance.now() - (elapsed || 0);
   G.slot = G.cur.slots ? { at: 0, vals: ["", ""] } : null;
   G.tfDone = false;
   // The dot flash: shown, then hidden after FLASH_DOTS_MS (flashHide).
@@ -781,8 +788,7 @@ function newProblem() {
   probUI();
   clockArt();
   if (onChompers() && G.chomp !== G.chompFace) chompTurn(G.chompFace);
-  if (flipped) judoThrow(G.cur);
-  if (dice) diceFlash(G.cur);
+  if (flipped && !restored) judoThrow(G.cur);
   if (G.flash) flashHide(G.cur);
   // Polly-Gon squawks the shape it wants before it's asked.
   pollySquawk(G.cur);
@@ -808,6 +814,10 @@ function newProblem() {
   ansUI();
   if ($("msg").classList.contains("bad")) setMsg("Your answer is your attack.");
   showHelp(helpFor(recs[key]));
+  saveRun("problem");
+  // Hidden while busy (an attack, a Hero Moment), the pause waited for the next problem.
+  // (Judo Judy's throw keeps it busy a moment: it pauses as the throw lands.)
+  if (G.pauseWanted && !G.busy) { G.pauseWanted = false; pause(true); }
 }
 // Judo Judy's throw (🥋 Flip): the problem comes in as 3 + 8 and the two numbers swap places, the
 // smaller one thrown up and over the + while the bigger slides under it, as Judy twists, in
@@ -833,22 +843,8 @@ function judoThrow(p) {
     $("mon").classList.remove("throw");
     if (G.cur !== p || G.paused) return;
     G.busy = false; G.t0 = performance.now();
+    if (G.pauseWanted) { G.pauseWanted = false; pause(true); } // the app was left mid-throw
   }, THROW_MS);
-}
-// Pipsqueak's Flash (🎲): the problem comes as two dice, to count by sight; after FLASH_MS each die
-// flips over and is its number, so nobody is left stuck. Answering works the whole time, and the
-// clock isn't touched: speed never changes damage. With reduced motion they just swap.
-function diceFlash(p) {
-  setTimeout(() => {
-    if (G.cur !== p) return;
-    $("prob").querySelectorAll(".dn").forEach((d, i) => {
-      const show = () => { d.textContent = d.dataset.n; d.classList.add("shown"); };
-      if (reduced() || !d.animate) return show();
-      setTimeout(() => d.animate([{ transform: "rotateY(0)" }, { transform: "rotateY(90deg)" }], { duration: 160, easing: "ease-in" }).finished.then(() => {
-        show(); d.animate([{ transform: "rotateY(-90deg)" }, { transform: "rotateY(0)" }], { duration: 180, easing: "ease-out" });
-      }), i * 120);
-    });
-  }, FLASH_MS);
 }
 // The dot flash (Pipsqueak): the dots show for FLASH_DOTS_MS, then turn face down. It's a look,
 // not a race: the clock isn't touched, "Show me again" peeks once more (a hint: G.hinted), and the
@@ -856,6 +852,8 @@ function diceFlash(p) {
 function flashHide(p) {
   setTimeout(() => {
     if (G.cur !== p || !G.flash || !G.flash.shown || G.flash.grouped) return;
+    // Paused (or the app left): the dots wait, and get their whole look again on Keep fighting.
+    if (G.paused || document.hidden) { G.flash.held = true; return; }
     G.flash.shown = false; probUI(); ansUI();
   }, FLASH_DOTS_MS);
 }
@@ -982,20 +980,32 @@ function burst(crit) {
 }
 
 /* ---------- hints (DESIGN.md §5.3) ----------
-   A new fact shows its model by itself; a fact being learned gets a 💡 button; a fact in review
+   A hint always takes a tap: a new fact and a fact being learned get a 💡 button; a fact in review
    gets nothing. After a miss, the worked example stays up until "Got it". A hinted answer still
    hits, but doesn't build the streak or count toward mastery. */
-// A new fact's hint waits a moment (NEW_HINT_MS), so a player who already knows it can answer
-// first and get the credit (placement, learn.js record); until then 💡 offers it.
-const NEW_HINT_MS = 3500;
+// A new fact's 💡 never opens by itself (it used to after 3.5 s, too soon): after NUDGE_MS on the
+// problem (answer time, so a pause doesn't count) with nothing typed or drawn, it pulses gently
+// (a steady glow with reduced motion), and the first few times the voice says "Stuck? Tap the
+// light bulb!". A player who knows it answers first and gets the credit.
+const NUDGE_MS = 8000;
 let hintTimer = null;
 function showHelp(mode) {
   clearTimeout(hintTimer);
   $("hintBtn").hidden = mode === "none";
+  $("hintBtn").classList.remove("nudge");
   $("hint").hidden = true;
-  // Not if they've started typing (or drawing a spell): they aren't stuck, and the hint opening
-  // would move things under their fingers.
-  if (mode === "show") { const cur = G.cur; hintTimer = setTimeout(() => { if (G.cur === cur && !G.busy && !G.hinted && G.input === "" && !(typeof strokes !== "undefined" && strokes.length)) openHint(); }, NEW_HINT_MS); }
+  if (mode === "show") hintNudge(G.cur);
+}
+function hintNudge(cur) {
+  const left = NUDGE_MS - (performance.now() - G.t0);
+  hintTimer = setTimeout(() => {
+    if (G.cur !== cur || G.hinted || $("hintBtn").hidden || !G.running) return;
+    // Waits out an attack, a card or the pause (G.t0 moves on by the pause), and doesn't nudge
+    // while they're typing or drawing: they aren't stuck.
+    if (G.busy || G.paused || document.hidden || !$("ov").hidden || G.input !== "" || strokes.length || performance.now() - G.t0 < NUDGE_MS) return hintNudge(cur);
+    $("hintBtn").classList.add("nudge");
+    if (once("hintNudge", 3)) say("p", PHRASE.hintNudge, false, () => G.cur === cur && !G.busy && !G.hinted);
+  }, Math.max(500, left));
 }
 function openHint() {
   const h = hintFor(hintFact(), false), box = $("hint");
@@ -1006,11 +1016,12 @@ function openHint() {
   const inline = "⌚…◐✓✎↔#$⁙".includes(G.cur.op) || (G.cur.op === "◇" && !G.cur.draw);
   if (G.flash) G.flash.grouped = true; // the dots come back, grouped
   if (inline) { probUI(); ansUI(); clockArt(h.layer); }
+  else if (G.cur.dice) probUI(); // Pipsqueak's dice get their numbers beside them
   // An equation in their words doesn't break across lines ("35 + 2 = ?").
   box.innerHTML = (inline ? "" : `<div class="model">${h.model}</div>`) + `<p class="hsay">${esc(inline ? h.say.replace(/ ([=+−→]) /g, "\u00a0$1\u00a0") : h.say.replace(/ \? (\S+)$/, "\u00a0?\u00a0$1"))}</p>`; // nor a comparison ("2/3 ? 2/6")
   box.classList.toggle("words", inline);
   box.hidden = false;
-  $("hintBtn").hidden = true;
+  $("hintBtn").hidden = true; $("hintBtn").classList.remove("nudge");
 }
 // After a miss: the worked example as a card over the game, "Oops!" and the right answer with
 // the drawing, until "Got it" (or Enter, on the focused button).
@@ -1104,6 +1115,9 @@ function submit() {
     const mo = momentFor(typed, critsNow, !!m.boss && G.hp - dmg <= 0), boost = momentBoost(mo);
     if (boost) dmg = Math.round(dmg * (1 + MOMENT_BOOST * boost));
     const momentName = mo ? HEROES[mo.hero].n + (mo.partner != null ? " & " + HEROES[mo.partner].n : "") : "";
+    // The run as it will be once this hit lands, in case the app is closed mid-attack: the next
+    // problem, or the monster beaten.
+    saveRun(G.hp - dmg <= 0 ? "beaten" : "next", { hp: G.hp - dmg });
     chompAct(pose).then(() => {
       if (pose && G.cur.op === "more") { G.input = ""; ansUI(); }
       sfx.launch(G.streak);
@@ -1174,6 +1188,7 @@ function miss(why) {
   say("q", spokenFact(said));
   if (cost > 1 && mega(G.floors[G.floor])) say("p", PHRASE.bigThrowMiss);
   else if (cost > 1) say("p", PHRASE.chargedMiss);
+  if (G.hearts > 0) saveRun("next"); else clearRun(); // a lost run can't be picked up again
   if (blocked) setTimeout(() => { G.next = true; openWorked(); }, 600);
   if (blocked) return;
   setTimeout(() => {
@@ -1269,10 +1284,12 @@ function cleared(chestDone) {
   if (nx.form === "legend") say("p", PHRASE.legendAwaits);
   else if (nx.form === "mega") say("p", PHRASE.megaAhead);
   else if (nx.boss) say("p", PHRASE.nextBoss);
+  saveRun("floor"); // stars, the heart and the curse's cracks are in: next time, the next floor
   $("next").onclick = () => { hide(); loadMonster(G.floor + 1); newProblem(); };
 }
 function end(win) {
   G.running = false;
+  clearRun();
   refundArmed();
   const w = wing(), before = openWings(progress, recs, st.start), chBefore = chapterNow(w), stepsBefore = stepsNow(w).open;
   if (win) { progress[w.id] = progress[w.id] || { boss: 0, best: 0 }; progress[w.id].boss++; }
@@ -1354,7 +1371,8 @@ function end(win) {
 // phone's screen with its buttons docked at the bottom; "float" (a floor cleared, a miss) floats
 // over the game.
 function show(h, kind = "page") {
-  G.busy = true; $("card").innerHTML = h; $("card").className = "card " + kind;
+  // (A card is a stopping place already: a pause waiting for the next problem isn't needed. autoPause)
+  G.busy = true; G.pauseWanted = false; $("card").innerHTML = h; $("card").className = "card " + kind;
   $("ov").className = "ov " + kind; $("ov").hidden = false; $("ov").scrollTop = 0;
   // The main button is the last one in the row (Menu, then Play again).
   const bs = $("card").querySelectorAll(".btns button.big"), b = bs[bs.length - 1] || $("card").querySelector("button.big");
@@ -1374,6 +1392,9 @@ function hide() { $("ov").hidden = true; }
 const CHEST_ALWAYS = new URLSearchParams(location.search).get("chest");
 function openChest(m, done) {
   G.busy = true;
+  // Saved before it opens: a run picked up again goes on to the floor's card, so closing the app
+  // mid-chest loses that chest rather than opening it twice.
+  saveRun("chested");
   // A mega boss's chest is a big one (DESIGN.md §4.3): more coins, or two items.
   const C = G.chest = { done, boss: !!m.boss, big: m.form === "mega" || m.form === "legend", tries: 0, key: null };
   if (C.big) say("p", LOOT.bigChest, true);
@@ -1733,15 +1754,17 @@ function itemsCard(fromPause, quiet) {
    ⏸ by the hearts (or Escape) pauses mid-problem: Keep fighting, Monsters & Heroes,
    Settings, or Exit to
    the start screen (a second tap confirms, since it ends the run). */
-function pause() {
+// auto: the app was left mid-fight (autoPause): the same pause, without its line said to nobody.
+function pause(auto) {
   setBills(billsOK());
   const justPaused = !G.paused; // not coming back from Settings or the book
   if (justPaused) {
     if (!G.running || G.busy || G.next) return;
     G.paused = { at: performance.now() };
+    saveRun("problem"); // with the answer time so far
   }
   stopSpeech();
-  if (justPaused && once("pause", 3)) say("p", PHRASE.paused);
+  if (justPaused && !(auto === true && document.hidden) && once("pause", 3)) say("p", PHRASE.paused);
   show(`<h2>Paused</h2>
   <p>Floor ${G.floor + 1} of ${G.floors.length}: <strong>${esc(G.floors[G.floor].n)}</strong></p>
   <div class="pause-btns"><button class="small" type="button" id="pBook">📖 Monsters &amp; Heroes</button><button class="small" type="button" id="pSettings">⚙ Settings</button><button class="small" type="button" id="pItems">🎒 Items</button><button class="small" type="button" id="pWardrobe">👕 Wardrobe</button>${moneyOK() ? `<button class="small purse-btn pwide" type="button" id="pPurse" aria-label="Your purse">${purseSvg()}<span class="wmini">${walletMini(wallet)}</span></button>` : ""}<button class="small danger" type="button" id="pExit">Exit the dungeon</button></div>
@@ -1755,7 +1778,7 @@ function pause() {
   $("pExit").onclick = () => {
     const b = $("pExit");
     if (b.dataset.sure !== "1") { b.dataset.sure = "1"; b.textContent = "Exit? This run ends"; say("p", PHRASE.exitSure, true); return; }
-    G.paused = null; G.running = false; record(); refundArmed();
+    G.paused = null; G.running = false; clearRun(); record(); refundArmed();
     newRun(); loadMonster(0, true);
     menu();
   };
@@ -1766,6 +1789,179 @@ function resume() {
   G.paused = null; hide(); G.busy = false;
   G.t0 += performance.now() - p.at;
   slotsUI(); // slots set from the pause screen's 🎒 Items
+  // The dot flash's dots waited through the pause: their whole look again.
+  if (G.flash && G.flash.held) { G.flash.held = false; flashHide(G.cur); }
+}
+/* ---------- leaving the app mid-run ----------
+   The page hidden (another app, the Home Screen, the phone locked) mid-fight pauses it as ⏸ does,
+   so coming back shows the pause card and Keep fighting picks up the same problem with its time.
+   Mid-attack or mid-Hero-Moment it can't pause yet: it pauses as the next problem comes up
+   (G.pauseWanted). A card (a floor cleared, the Oops card) is already a stopping place. Nothing
+   else runs meanwhile: the roar, the hint's nudge and the dot flash wait for the pause to end. */
+function autoPause() {
+  settle();
+  // Mid-descent: it ends now (the run starts under it) and pauses at its first problem.
+  if (descending()) { skipDescent(); G.pauseWanted = true; return; }
+  if (!G.running) return;
+  stopSpeech();
+  if (G.paused) { saveRun(G.stage || "problem"); return; }
+  if (!$("ov").hidden) return;
+  if (G.busy || G.next) { G.pauseWanted = true; return; }
+  pause(true);
+}
+document.addEventListener("visibilitychange", () => { if (document.hidden) autoPause(); else comeBack(); });
+addEventListener("pagehide", autoPause);
+addEventListener("pageshow", (e) => { if (e.persisted) comeBack(); });
+// Every animation that ends (an entrance, a card opening, a hit, the start card falling away) is
+// brought to its end, so nothing is caught half-drawn: iOS freezes them in the background, and an
+// iPad came back from the background to a dimmed screen with the monster, the pad and the hearts
+// missing. Looping ones (the bob, the stars' twinkle, the 💡 nudge) are left alone.
+function settle() {
+  try {
+    document.getAnimations().forEach((a) => {
+      const t = a.effect && a.effect.getComputedTiming ? a.effect.getComputedTiming() : null;
+      if (t && isFinite(t.endTime) && a.playState !== "finished") a.finish();
+    });
+  } catch (e) { /* no Web Animations: nothing to settle */ }
+}
+// Back in the app: everything settled and drawn again, and a run lands on a clean pause card.
+function comeBack() {
+  settle();
+  if (descending()) return;
+  if (G.running) {
+    redrawFight();
+    if (G.paused) { pause(); return; } // the pause card, drawn fresh
+    if ($("ov").hidden && !G.busy && !G.next) { G.pauseWanted = false; pause(true); }
+    return;
+  }
+  // The start screen, drawn fresh (not Settings or the book over it).
+  if (G.onMenu && !$("ov").hidden && $("go")) menu();
+}
+// The fight's parts as they should be now: the monster, its HP, the hearts, the streak, the
+// slots, and the problem and pad.
+function redrawFight() {
+  const m = G.floors && G.floors[G.floor], el = $("mon");
+  if (!m) return;
+  ["hit", "lunge", "roar", "throw", "squawk"].forEach((c) => el.classList.remove(c));
+  if (G.hp > 0 && !el.querySelector("svg")) el.innerHTML = monsterArt(m);
+  $("arena").classList.remove("hurt", "shake", "rumble");
+  hpUI(); heartsUI(); streakUI(); slotsUI();
+  if (G.cur && !G.busy) { probUI(); ansUI(); }
+}
+
+/* ---------- picking a run up again after a reload ----------
+   iOS can reload a Home Screen app that's been in the background a while, which used to lose the
+   run. So the run in progress is saved as it goes (saveRun): when each problem comes up, as an
+   answer lands (the next problem, or the monster beaten), when a floor is cleared (the next
+   floor), and on pausing or leaving the app (the answer time so far). Per player as "run", never
+   synced (merge.js LOCAL_KEYS): it's this device's game in progress. A finished, lost or exited
+   run clears it, and so does starting a new one. On the start screen, a run saved in the last
+   RUN_KEEP_MS is offered as "Keep going?" (keepGoing), at the problem it was on. Anything in it
+   that doesn't fit the game as it is now (an update, a dungeon version change) and it's dropped,
+   quietly, with its armed items back in the bag. */
+const RUN_V = 1, RUN_KEEP_MS = 4 * 3600e3, RUN_STAGES = ["problem", "next", "beaten", "chested", "floor"];
+let RUN_KEYS = null; // every fact key the game asks, made when first needed (checkRun)
+// A floor's monster by name (a look's own name, a boss's form by its depth), or a cursed digit.
+const floorRef = (m) => (m.cursed != null ? { cursed: m.cursed } : m.boss ? { boss: m.n, legend: m.form === "legend" } : { n: m.n });
+function floorFrom(ref, w, depth) {
+  if (!ref || typeof ref !== "object") return null;
+  if (ref.cursed != null) return HEROES[ref.cursed] ? cursedMonster(ref.cursed) : null;
+  if (ref.boss) { const b = bossAt(w, depth, !!ref.legend); return b && b.n === ref.boss ? b : null; }
+  return MON.find((x) => x.n === ref.n && !x.boss) || allLooks().find((x) => x.n === ref.n) || null;
+}
+// stage: "problem" (G.cur being worked on), "next" (answered: a new problem next), "beaten" (the
+// monster's HP is gone: its chest and card next), "chested" (its chest has come up: only the card
+// next, so a run picked up again never opens the same chest twice) or "floor" (cleared: the next floor). o.hp: the
+// HP once the hit that's playing lands.
+function saveRun(stage, o = {}) {
+  if (!G.running || !G.floors || !PID) return;
+  G.stage = stage;
+  const working = stage === "problem" && G.cur;
+  const s = { v: RUN_V, dungeon: DUNGEON_VERSION, at: Date.now(), stage, wing: wing().id, band: st.band, depth: G.depth,
+    floors: G.floors.map(floorRef), floor: G.floor, hp: o.hp != null ? o.hp : G.hp, max: G.max, hearts: G.hearts,
+    streak: G.streak, solved: G.solved, tries: G.tries, runStars: G.runStars || 0, retry: G.retry, recent: G.recent, recentAns: G.recentAns || [],
+    fx: G.fx || {}, exam: G.exam || null, examBand: G.examBand || null, onFloor: G.onFloor || 0, halved: !!G.halved, floorLost: G.floorLost || 0,
+    floorStreak: G.floorStreak || 0, floorSlow: !!G.floorSlow, barked: G.barked || {}, charged: !!G.charged, mr: MR,
+    cur: working ? G.cur : null, hinted: working ? !!G.hinted : false,
+    elapsed: working ? Math.max(0, Math.round((G.paused ? G.paused.at : performance.now()) - G.t0)) : 0 };
+  try { store.player(PID).set("run", JSON.parse(JSON.stringify(s))); } catch (e) { /* not saved: the run still plays */ }
+}
+function clearRun() { if (PID) store.player(PID).clear("run"); G.stage = null; }
+// Dropped: armed items (a Shield never used) go back in the bag, as at a run's end.
+function dropRun(s) {
+  const fx = s && typeof s === "object" && s.fx && typeof s.fx === "object" ? s.fx : {};
+  const back = ["shield", "totem", "magnet"].filter((id) => fx[id]);
+  back.forEach((id) => gain(inv, id));
+  if (back.length) saveItems();
+  clearRun();
+}
+// The saved run, checked against the game as it is now: { s, floors }, or null (and dropped).
+function savedRun() {
+  const s = store.player(PID).get("run", null);
+  if (!s) return null;
+  let ok = null;
+  try { ok = checkRun(s); } catch (e) { ok = null; }
+  if (!ok) dropRun(s);
+  return ok;
+}
+function checkRun(s) {
+  const int = (n, lo, hi) => Number.isInteger(n) && n >= lo && n <= hi, fin = (n) => typeof n === "number" && isFinite(n);
+  if (!s || s.v !== RUN_V || s.dungeon !== DUNGEON_VERSION || !RUN_STAGES.includes(s.stage)) return null;
+  if (!fin(s.at) || Date.now() - s.at > RUN_KEEP_MS || s.at > Date.now() + 60e3) return null;
+  const w = WINGS.find((x) => x.id === s.wing);
+  if (!w || w.band !== s.band || !BANDS[s.band] || !openWings(progress, recs, st.start).includes(w.id)) return null;
+  if (!int(s.depth, 1, 999) || !Array.isArray(s.floors) || s.floors.length !== w.floors.length + 1) return null;
+  const floors = s.floors.map((r) => floorFrom(r, w, s.depth));
+  if (floors.some((m) => !m)) return null;
+  const last = floors.length - 1;
+  if (!int(s.floor, 0, s.stage === "floor" ? last - 1 : last)) return null;
+  if (!int(s.hearts, 1, BANDS[s.band].hearts) || !fin(s.hp) || !fin(s.max) || s.max <= 0 || s.hp > s.max) return null;
+  if (s.stage === "beaten" || s.stage === "chested" ? s.hp > 0 : s.stage !== "floor" && s.hp <= 0) return null;
+  if (![s.streak, s.solved, s.tries, s.runStars, s.onFloor, s.floorLost, s.floorStreak].every((n) => int(n, 0, 1e6))) return null;
+  if (!Array.isArray(s.retry) || !Array.isArray(s.recent) || !s.retry.every((r) => r && typeof r.key === "string" && fin(r.after))) return null;
+  if (s.stage === "problem") {
+    const c = s.cur;
+    if (!c || typeof c !== "object" || typeof c.key !== "string" || typeof c.op !== "string" || (!fin(c.ans) && !c.sym && !c.draw)) return null;
+    // A fact this version asks (a key from before an update may be gone or mean something else).
+    if (!(RUN_KEYS || (RUN_KEYS = new Set(Object.keys(BANDS).flatMap((b) => pool(b).map((x) => x.key))))).has(c.key)) return null;
+    const f = factOf(c.key);
+    if (!f || f.key !== c.key) return null;
+    if ((c.spell || c.draw) && !canSpell()) return null;
+  }
+  return { s, floors };
+}
+// "Keep going?": the run as it was saved, without the descent. The problem it was on comes back
+// with its answer time so far; a hint that was open opens again.
+function keepGoing(R) {
+  const s = R.s;
+  G.onMenu = false;
+  if (st.band !== s.band) { st.band = s.band; saveSettings(); }
+  hide(); hideScene(); stopSpeech();
+  document.body.dataset.stratum = wing().id;
+  G.depth = s.depth; G.floors = R.floors;
+  diveUI();
+  spritesFor(wing(), legendNow());
+  document.querySelector(".game").style.setProperty("--murk", Math.min(0.48, 0.08 * (G.depth - 1)).toFixed(2));
+  G.shopping = null;
+  Object.assign(G, { hearts: s.hearts, streak: s.streak, solved: s.solved, tries: s.tries, running: true, retry: s.retry, recent: s.recent, recentAns: s.recentAns || [],
+    next: false, paused: null, runStars: s.runStars, fx: s.fx && typeof s.fx === "object" ? s.fx : {}, chest: null, news: [], pauseWanted: false });
+  MR = Object.assign(freshRun(), s.mr && typeof s.mr === "object" ? s.mr : {});
+  if (s.stage === "floor") { loadMonster(s.floor + 1); newProblem(); return; }
+  loadMonster(s.floor, true);
+  Object.assign(G, { max: s.max, hp: s.hp, onFloor: s.onFloor, halved: s.halved, floorLost: s.floorLost, floorStreak: s.floorStreak, floorSlow: s.floorSlow,
+    barked: s.barked && typeof s.barked === "object" ? s.barked : {}, exam: s.exam || null, examBand: s.examBand || null });
+  const m = G.floors[G.floor], half = G.halved && G.hp > 0 ? atHalf(m) : null;
+  if (half && half.split) $("mon").innerHTML = `<div class="split">${monsterArt(m)}${monsterArt(m)}</div>`;
+  if (half && half.curl) $("mon").classList.add("curled");
+  hpUI(); heartsUI(); streakUI(); slotsUI();
+  say("m", monsterName(m));
+  if (s.stage === "beaten" || s.stage === "chested") { const chested = s.stage === "chested"; G.busy = true; $("mon").className = "mon dead"; setTimeout(() => { if (G.running) cleared(chested); }, 600); return; }
+  setMsg("Welcome back! Keep fighting.", "good");
+  if (s.stage === "next") { newProblem(); return; }
+  G.cur = s.cur; G.charged = s.charged; $("charge").hidden = !G.charged;
+  G.spellFails = 0; G.drawFails = 0; G.drawn = null;
+  presentProblem(s.cur.key, false, true, s.elapsed);
+  if (s.hinted && !$("hintBtn").hidden) openHint(); else if (s.hinted) G.hinted = true;
 }
 $("pauseBtn").onclick = pause;
 // Where ⏸ sits: on phones at the right of the hero-and-hearts row (under the thumb); on iPad and
@@ -1910,11 +2106,16 @@ function menu() {
     if ($("switchPlayer")) $("switchPlayer").onclick = () => settings();
     return;
   }
+  // A run the app lost (iOS reloaded it in the background): "Keep going?" picks it up (keepGoing).
+  const kept = !G.running && hasCaptain() ? savedRun() : null;
+  G.askKeep = !!kept;
+  const keepNote = kept ? `${esc(WINGS.find((x) => x.id === kept.s.wing).name)} · ${kept.s.depth > 1 ? `Depth ${kept.s.depth} · ` : ""}${kept.floors[kept.s.floor + (kept.s.stage === "floor" ? 1 : 0)].boss ? "Boss floor" : `Floor ${kept.s.floor + (kept.s.stage === "floor" ? 2 : 1)} / ${kept.floors.length}`}` : "";
   show(`${head.replace('<div class="scene-gap" aria-hidden="true"></div>', '<div class="scene-gap"><button type="button" class="stall-tap" id="stallTap" tabindex="-1" aria-label="Trollar\'s shop" hidden></button></div>')}
   ${captainHTML()}
   ${lootRowHTML()}
   <div class="grp"><span>Pick a stratum</span><div class="wings strata"><div class="surface" aria-hidden="true"></div>${wingsHTML()}</div></div>
-  <div class="btns"><p class="warn" id="warn" role="status"></p><button class="big" id="go">Enter the dungeon</button></div>`, "page scene");
+  <div class="btns${kept ? " keep" : ""}"><p class="warn" id="warn" role="status"></p><button class="big${kept ? " alt" : ""}" id="go">Enter the dungeon</button>${kept ? `<button class="big" id="keepGoing">Keep going?<small>${keepNote}</small></button>` : ""}</div>`, "page scene");
+  if (kept) $("keepGoing").onclick = () => keepGoing(kept);
   drawScene();
   const card = $("card");
   // A different Wing is a fresh dungeon: its own facts and hearts.
@@ -2005,6 +2206,14 @@ document.addEventListener("pointerdown", (e) => {
   if (!G.onMenu || $("ov").hidden || e.target.closest(".hpick, .gpick")) return;
   if (st.grade == null) say("p", PHRASE.pickGrade);
   else if (!hasCaptain()) say("p", PHRASE.pickHero);
+}, true);
+// "Keep going? Tap the big button!" on the first tap on a start screen offering a saved run (not a
+// tap on Keep going itself, nor Enter).
+document.addEventListener("pointerdown", (e) => {
+  if (!G.askKeep) return;
+  G.askKeep = false;
+  if (!G.onMenu || $("ov").hidden || !$("keepGoing") || e.target.closest("#keepGoing, #go")) return;
+  say("p", PHRASE.keepGoing);
 }, true);
 
 // Settings, in tabs: Players (names optional), Game (chalk color, sounds as on/off switches) and
@@ -2772,6 +2981,8 @@ function openingLines(enter, d) {
 // arrives (AFTER_DESCENT_MS), so the landing and the monster don't run together.
 function start(depth, enter, voiced, pause) {
   G.onMenu = false;
+  const old = store.player(PID).get("run", null);
+  if (old) dropRun(old); // a run left behind isn't picked up: its armed items go back in the bag
   hide(); hideScene();
   newRun(depth);
   shopRestock(); // Trollar's clothing changes after each run

@@ -75,7 +75,7 @@ Each monster gets one simple trait that changes *how* you do math, never anythin
 - **Trollar**: 🪙 *Toll*. Asks only coin problems: count the coins, type the cents.
 - **Quizard**: ❓ *Mystery*. Every problem hides a number (3 + □ = 7); the hidden number is the damage. Its body is a big question mark in a wizard hat.
 - **Sigma Rex**: 👑 *Second wind*. At half HP it armors up like Timesaur.
-- **Pipsqueak** (the Cellar): 🎲 *Flash*. Dots flash for a moment (a die, a five-frame, a domino, small groups): how many? Then a sum of two small numbers comes as two dice to count by sight, and after a moment each die flips over into its number.
+- **Pipsqueak** (the Cellar): 🎲 *Flash*. Dots flash for a moment (a die, a five-frame, a domino, small groups): how many? Then a sum of two small numbers comes as two dice to count by sight. They stay dice (counting the dots is the point): only the 💡 hint puts each die's number beside it, and a miss's Oops card shows the fact in numbers.
 - **Doublet** (the Hall): 👯 *Doubles*. Asks only doubles and taking half away (8 + 8, 16 − 8).
 - **Triceraplus** (the Hall): 🦕 *Three horns*. Adds three numbers, two of which make 10 (4 + 3 + 6: find the ten first).
 - **Margot-Rythm** (the Mines): 🔁 *Carry the One*. Problems that need regrouping hit double.
@@ -95,7 +95,7 @@ The monsters are all **operators and symbols**. Digits are on the player's side 
 The dungeon is a map of **Wings**, shown in the game as **strata**. Each Wing has its own floor palette, monsters and boss. **Mastery unlocks Wings, not grade.** The Wings form a chain going down. A Wing unlocks the next one when its boss is beaten **and** over 60% of its facts are mastered, the same bar as the *Legend Loading…* achievement (§14.2). A kindergartner who masters her facts climbs into multiplication. A 3rd grader can't skip ahead without mastering the facts below.
 - **The grade is a starting point, not a ceiling.** When a player is created, their grade opens every Wing up to and including theirs, so a 3rd grader doesn't have to grind through kindergarten. It also sets their help defaults (read-aloud and hints).
 - **Lower Wings are always open,** so an older player can drop back for fast, easy practice (§6.7).
-- **New content gets taught as it arrives.** The first time a kind of problem appears, the captain demonstrates it, and a new fact starts with its model shown (§5.3). That's what makes working ahead possible for a young player.
+- **New content gets taught as it arrives.** The first time a kind of problem appears, the captain demonstrates it, and a new fact offers its model a tap away (§5.3). That's what makes working ahead possible for a young player.
 - **There is no manual unlock.** See §9 for why nothing needs a grown-up lock.
 
 ### 4.1 The grade strata (plan, 2026-11-25)
@@ -123,7 +123,7 @@ One stratum per grade, in a **straight chain**: each opens only the next. The le
   - **2nd (Mines):** two-digit ± mixed without regrouping → with regrouping → 10 and 100 more or less within 1000; counting coins with ¢. Haberhasher and Trollar, with Plusquito and Minustaur standing in, and The Centipede as its boss. Not yet: four addends, three-digit place value (34 tens), odd and even, $, arrays.
   - **3rd (Tower):** × and ÷ only, in the school's order (× 0, 1, 2, 5, 10 and ÷ → × 3, 4, 6 and ÷ → × 7, 8, 9 and ÷), then × tens, fractions as a hidden whole number (1/2 = □/4, 2/4 = □/2, 1 = □/4), rounding to the nearest 10 and 100, area and perimeter of a drawn rectangle, and × ÷ 11 and 12 last. Not yet: fractions on a number line and comparing them (Halfling), time.
 - **Built in step 3 (2026-11-25): six new monsters**, with facts the game already has where it could:
-  - **Pipsqueak** (Cellar, 🎲 Flash): dice sums (both numbers 1 to 6), shown as dice that flip into numbers after 2.5 s. Floor 2 at depth 1; Minustaur stays in the pool.
+  - **Pipsqueak** (Cellar, 🎲 Flash): dice sums (both numbers 1 to 6), shown as dice, which stay dice: the 💡 hint puts the numbers beside them. Floor 2 at depth 1; Minustaur stays in the pool.
   - **Doublet** (Hall, 👯 Doubles): only doubles and taking half away, from every kind the Hall has (8 + 8, 16 − 8, 40 + 40, 7 + □ = 14).
   - **Triceraplus** (Hall, 🦕 Three horns): one small new set, 20 sums of three one-digit numbers with a make-ten pair (1.OA.A.2, 1.OA.B.3), as its own strand, so the Hall's 60% doesn't wait on it. Hint: find the ten, then add the rest.
   - **Margot-Rythm** (Mines, 🔁 Carry the One): the Mines' + and −, and a problem that needs regrouping (in any place) hits double.
@@ -346,7 +346,7 @@ The game should **teach first, then fade the help out** as a fact gets learned, 
 **Help follows the fact's Leitner box (§5.1):**
 | Fact state | What the player sees |
 |---|---|
-| **New** (never seen) | A **"show me" model appears automatically** beside the problem, such as 3 + 4 as dots on a ten-frame. She counts, then types. |
+| **New** (never seen) | A **💡 hint button**, as for learning. It never opens by itself (settled 2026-11-27: opening after 3.5 s came too soon); after about 8 s with nothing typed it pulses, and the first few times the voice says "Stuck? Tap the light bulb!". The model (3 + 4 as dots on a ten-frame) appears when tapped. |
 | **Learning** (box 1–2) | A **💡 hint button**. The model appears only when tapped. |
 | **Review** (box 3–4) | No button. A hint comes back only after a miss. |
 | **After any miss** | A **worked example** instead of just the answer, animated and read aloud. 8 + 5 → 8 + 2 = 10, then 10 + 3 = 13. The fact then goes into the **retry queue** and returns 2–4 problems later. |

@@ -114,6 +114,12 @@ import { lookOf, LOOKS } from "../js/monsters.js";
   assert.equal(p35.dice, undefined, "the original problem isn't changed");
   for (let n = 1; n <= 6; n++) assert.equal((dieSvg(n).match(/<circle/g) || []).length, n, `a die showing ${n} has ${n} pips`);
   assert.equal(hitBy(pq, 8, "8", false, shown).mult, 1, "Flash doesn't change damage");
+  // The dice stay dice (counting the dots is the point): no timer turns them into numbers; only the
+  // open hint puts the numbers beside them (app.js probUI, .dn.told).
+  assert.equal((await import("../js/traits.js")).FLASH_MS, undefined, "no flip-to-numbers delay");
+  const appSrc = (await import("node:fs")).readFileSync(new URL("../js/app.js", import.meta.url), "utf8");
+  assert.ok(!/diceFlash/.test(appSrc), "nothing flips the dice into numbers by itself");
+  assert.ok(/G\.hinted \? `<b class="dnum"/.test(appSrc), "the open hint shows each die's number");
 
   // Doublet (Hall): doubles and taking half away, from every kind the Hall has them in.
   const dbl = asked("Doublet", "first").map((f) => f.key);

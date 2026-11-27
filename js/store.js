@@ -42,7 +42,9 @@ export var STORAGE_VERSION = 2;
 // "link" and "syncBase": linking this player with other devices (sync.js), this device's own and
 // never synced: link = { key (the 43-character link key), at (last synced) }, syncBase = { version,
 // rec } (the last record merged here, and the server's version of it).
-export var OWN_KEYS = ["settings", "best", "facts", "heroes", "wings", "bestiary", "dungeon", "spells", "told", "moments", "wallet", "items", "wardrobe", "shop", "link", "syncBase"];
+// "run": the run in progress (app.js saveRun), so a run the app lost in the background can be
+// picked up again ("Keep going?"). This device's own, never synced; cleared when the run ends.
+export var OWN_KEYS = ["settings", "best", "facts", "heroes", "wings", "bestiary", "dungeon", "spells", "told", "moments", "wallet", "items", "wardrobe", "shop", "link", "syncBase", "run"];
 // band: a grade band, "kinder" to "third" (learn.js BANDS); start: the band opened from the start; grade:
 // 0 = K … 5, picked by the player (wings.js withGrade), missing until they pick. ops and diff are the prototype's, kept only to
 // pick a band for a player who had them.

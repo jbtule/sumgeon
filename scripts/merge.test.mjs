@@ -292,3 +292,15 @@ test("a busy player's data comes back from its record as it was (to the minute)"
   // And again: stable.
   assert.equal(canon(fromRecord(toRecord(back, null, "a"), back)), canon(back));
 });
+
+test("the run in progress (\"run\") never syncs: a record ignores it, and nothing brings it back", () => {
+  assert.ok(LOCAL_KEYS.includes("run") && !SYNCED_KEYS.includes("run"));
+  const data = busyPlayer(3), run = { v: 1, stage: "problem", wing: "cellar", floor: 2, hp: 9, hearts: 4, cur: { key: "+3,5", op: "+", ans: 8 } };
+  const rec = toRecord({ ...data, run }, null, "a");
+  assert.equal(canon(rec), canon(toRecord(data, null, "a")), "the run changes nothing in the record");
+  assert.ok(!JSON.stringify(rec).includes('"stage"'));
+  assert.equal(fromRecord(rec, { ...data, run }).run, undefined, "a synced record doesn't carry a run");
+  // Another device's merge leaves this device's run alone: only SYNCED_KEYS come back.
+  const back = fromRecord(merge(rec, toRecord(busyPlayer(4), null, "b")), data);
+  assert.ok(Object.keys(back).every((k) => SYNCED_KEYS.includes(k)));
+});

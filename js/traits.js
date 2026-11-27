@@ -105,9 +105,9 @@ export function flipOf(m, p) {
   return Object.assign({}, p, { x: p.y, y: p.x, q: p.y + " " + op + " " + p.x, flipped: true });
 }
 
-// Flash (Pipsqueak): a sum of two dice-sized numbers (3 + 5) comes as two dice, which turn into
-// the numbers after FLASH_MS (app.js). Returns the problem marked dice, or null.
-export const FLASH_MS = 2500;
+// Flash (Pipsqueak): a sum of two dice-sized numbers (3 + 5) comes as two dice, to count by sight.
+// They stay dice: only the 💡 hint puts each die's number beside it, and the Oops card after a
+// miss shows the fact in numbers (app.js). Returns the problem marked dice, or null.
 export function flashOf(m, p) {
   if (kind(m) !== "Pipsqueak" || !p || p.op !== "+" || p.blank || p.sym || p.fact) return null;
   if (!(p.x >= 1 && p.x <= 6 && p.y >= 1 && p.y <= 6)) return null;
