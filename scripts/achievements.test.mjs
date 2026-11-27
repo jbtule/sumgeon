@@ -190,7 +190,9 @@ for (const a of none.filter((x) => x.kind === "track" || x.kind === "surprise"))
 // The rewards are fixed forever (merge.js pays from them): a change here is a change to every
 // linked player's wallet.
 assert.deepEqual(rewardsOf(none.filter((x) => x.kind === "track").map((a) => a.id)).items, { pie: 8, shield: 9, totem: 9, magnet: 9 });
-assert.deepEqual(rewardsOf(none.filter((x) => x.kind === "surprise").map((a) => a.id)).items, { pie: 3, shield: 5, totem: 3, magnet: 3 });
+// Every Quip (surprise:allquips, 2026-11-27) added one of every item; the others are unchanged.
+assert.deepEqual(rewardsOf(none.filter((x) => x.kind === "surprise" && x.id !== "surprise:allquips").map((a) => a.id)).items, { pie: 3, shield: 5, totem: 3, magnet: 3 });
+assert.deepEqual(rewardsOf(["surprise:allquips"]).items, { pie: 1, shield: 1, totem: 1, magnet: 1 });
 
 // What the cards say: "New achievement!" (or "Secret achievement!"), the title, what it took and
 // the reward, each line short enough for a kindergartner, recorded, in the "achievements" sprite,
