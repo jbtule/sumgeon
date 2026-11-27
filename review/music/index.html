@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!-- A grown-up tool for auditioning the strata's background music (js/music.js) before it goes
+     in the game. Nothing in the game links here, and search engines are asked to skip it. -->
+<meta name="robots" content="noindex, nofollow">
+<title>Background Music · Sumgeon</title>
+<meta name="color-scheme" content="dark">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bungee&family=Nunito:wght@600;800;900&display=swap">
+<!-- The game's stylesheet, for the strata's colors and walls; this page's own layout overrides it. -->
+<link rel="stylesheet" href="../../styles.css">
+<style>
+  html body.review{display:block;height:auto;min-height:100vh;overflow:visible;--ok:#7fdc8a}
+  .wrap{max-width:760px;margin:0 auto;padding:max(16px,env(safe-area-inset-top)) 16px 40px}
+  .head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap}
+  h1{font:400 28px Bungee,sans-serif;color:var(--gold);margin:0}
+  .sub{color:var(--muted);margin:4px 0 14px}
+  .note{background:var(--panel);border:2px solid var(--line);border-radius:16px;padding:12px 14px;margin:12px 0}
+  .note p{margin:0 0 6px}.note p:last-child{margin:0}
+  .note b{color:var(--ink)}
+  .badge{display:inline-flex;align-items:center;gap:6px;min-height:28px;padding:3px 10px;border:1.5px solid var(--line);border-radius:999px;background:var(--panel);color:var(--muted);font-size:.75rem;font-weight:800;text-decoration:none;margin-top:6px}
+  .badge svg{width:14px;height:14px}
+  #buildSha{font-family:ui-monospace,"SF Mono",Menlo,monospace}
+  .bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:10px 0}
+  .small{min-height:40px;padding:0 14px;border-radius:12px;border:2px solid var(--edge);background:var(--btn);font-weight:900}
+  .small:disabled{opacity:.5;cursor:default}
+  .small.go{background:var(--coral);border-color:var(--coral);color:#fff}
+  .small.on{background:var(--gold);border-color:var(--gold);color:#12242b}
+  input[type=number]{min-height:40px;width:5em;border-radius:12px;border:2px solid var(--edge);background:var(--panel);color:var(--ink);font:inherit;padding:0 10px}
+  label.inline{display:inline-flex;align-items:center;gap:8px;font-weight:800;color:var(--muted)}
+  .cards{display:grid;gap:14px;margin-top:14px}
+  .mcard.d-layer{background:var(--panel);border:2px solid var(--line);border-radius:20px;box-shadow:none;padding:14px;display:grid;gap:10px}
+  .mcard.playing{border-color:var(--gold)}
+  .mtop{display:grid;grid-template-columns:104px 1fr;gap:12px;align-items:start}
+  .wallchip{height:104px;border-radius:14px;border:2px solid var(--line);background:var(--wall)}
+  .mcard.playing .wallchip{animation:breathe 4s ease-in-out infinite}
+  @keyframes breathe{50%{filter:brightness(1.25)}}
+  @media (prefers-reduced-motion:reduce){.mcard.playing .wallchip{animation:none}}
+  .mcard h2{font:400 18px Bungee,sans-serif;color:var(--gold);margin:0 0 4px}
+  .mcard .about{color:var(--muted);font-size:14px;font-weight:600;margin:0}
+  .now:empty{display:none}
+  .ctl{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .vol{display:flex;align-items:center;gap:8px;flex:1 1 200px;font-weight:800;color:var(--muted);font-size:14px}
+  .vol input{flex:1;accent-color:var(--gold);min-width:0}
+  .vol output{min-width:3.2em;text-align:right;font-variant-numeric:tabular-nums;color:var(--ink)}
+  .now{color:var(--muted);font-size:13px;min-height:1.3em;font-variant-numeric:tabular-nums}
+  .now b{color:var(--gold);font-weight:800}
+  .mark{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .mark .flag{color:var(--coral)}
+  .mark .state{font-size:13px;font-weight:800}
+  .mark .state.ok{color:var(--ok)}.mark .state.bad{color:var(--coral)}
+  .flagform{padding:12px;border-radius:14px;background:var(--dark);border:2px solid var(--coral)}
+  .flagform p{margin:0 0 8px;font-weight:900}
+  .tags{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
+  .tags button{padding:6px 12px;border-radius:999px;border:2px solid var(--edge);background:none;font-weight:800;font-size:14px}
+  .tags button[aria-pressed="true"]{background:var(--coral);border-color:var(--coral);color:#fff}
+  textarea{width:100%;min-height:64px;border-radius:10px;border:2px solid var(--edge);background:var(--panel);color:var(--ink);font:inherit;padding:8px;box-sizing:border-box}
+  .formbtns{display:flex;gap:8px;justify-content:flex-end;margin-top:8px}
+  #status{color:var(--muted);font-size:14px}
+  #reportText{flex-basis:100%;min-height:120px;font-size:13px}
+  #sound{color:var(--muted);font-size:13px;margin:12px 0 0}
+  [hidden]{display:none !important}
+</style>
+</head>
+<body class="review">
+<main class="wrap">
+  <div class="head"><h1>Sum<b>geon</b> Music</h1>
+  <!-- scripts/stamp.mjs fills in the commit at deploy time; locally it reads "dev". -->
+  <a class="badge" id="buildLink" href="https://github.com/jbtule/sumgeon" target="_blank" rel="noopener" title="Deployed version">
+    <svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+    <span id="buildSha">dev</span>
+  </a>
+  </div>
+  <section class="note">
+    <p><b>What you're approving:</b> a quiet background ambience for each stratum, made live in the browser (no recordings), so it never loops: its drips, chords, chimes and bells come on a slow random schedule. Nothing is in the game yet. Listen to each one for a few minutes, ideally on the iPhone and iPad, then mark it <b>✓ Sounds good</b> or <b>⚑ Something's wrong</b>.</p>
+    <p>Once it's wired in, music will be <b>off by default</b> with its own switch in Settings → Game (apart from sound effects and voice), at the level you leave the slider on here, and it will duck under the voice. <b>Voice over it</b> plays a recorded game line and ducks the music, so you can hear that.</p>
+  </section>
+  <div class="bar">
+    <label class="inline">Variation <input type="number" id="seed" value="1" min="1" max="9999" step="1"></label>
+    <button class="small" type="button" id="reseed">Another variation</button>
+    <button class="small" type="button" id="stopAll">■ Stop all</button>
+  </div>
+  <div class="bar">
+    <button class="small" id="copyBtn" type="button">Copy the marks</button>
+    <button class="small" id="issueBtn" type="button">Open a GitHub issue</button>
+    <span id="status" role="status"></span>
+    <textarea id="reportText" readonly hidden aria-label="The marks, to copy"></textarea>
+  </div>
+  <div class="cards" id="cards"></div>
+  <p id="sound" aria-live="off"></p>
+</main>
+<!-- The game's modules, stamped with the deployed commit by scripts/stamp.mjs (as the listen
+     check's are). Locally it's empty and the plain files load. -->
+<script type="importmap">
+{ "imports": {} }
+</script>
+<script type="module" src="music.js"></script>
+</body>
+</html>

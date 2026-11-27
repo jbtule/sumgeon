@@ -11,7 +11,7 @@ let failed = false;
 function fail(msg) { console.error("✗ " + msg); failed = true; }
 
 // Syntax of every module and script.
-for (const dir of ["js", "scripts", "sync/src", "review/listen", "review/spell", "review/moments", "review/gallery", "review/proto"]) {
+for (const dir of ["js", "scripts", "sync/src", "review/listen", "review/spell", "review/moments", "review/gallery", "review/proto", "review/music"]) {
   for (const f of readdirSync(join(root, dir)).filter((f) => /\.m?js$/.test(f))) {
     try { execFileSync(process.execPath, ["--check", join(root, dir, f)], { stdio: "pipe" }); }
     catch (e) { fail(`${dir}/${f}: ${e.stderr}`); }
