@@ -1,9 +1,11 @@
 import { audioContext } from "./sfx.js";
 import { saveOrder, VOICE_CACHE } from "./offline.js";
+import { rangeHeader, rangeBytes } from "./ranges.js";
 
-// Speech, patterned on sound-box-crosswords' speech.js. say(kind, text) plays a recorded clip
-// when audio.json has one (Kokoro, recorded by scripts/audio/build.mjs), or falls back to the
-// device voice: lines without a clip, local dev, or a clip that fails to load. On iOS speech
+// Speech, patterned on sound-box-crosswords' speech.js. say(kind, text) plays a recorded line
+// when audio.json has one (Kokoro, recorded by scripts/audio/build.mjs), out of its audio sprite
+// (loaded, saved for offline, or just its bytes fetched with a Range request), or falls back to
+// the device voice: lines not recorded, local dev, or a line that fails to load. On iOS speech
 // only works after a tap; everything fails quietly.
 //
 // Kinds: "p" phrase (UI and instructions), "m" monster or hero line, "n" number, "q" problem,
@@ -59,8 +61,11 @@ function speak(text, rate, pitch) {
 }
 
 /* ---------- recorded clips ----------
-   audio.json maps "kind:text" to a clip on the audio host (sumgeon.asset-data.stream). The
-   deploy ships it; locally it's missing and the device voice speaks. */
+   audio.json maps "kind:text" to a clip key, and lists the audio sprites on the audio host
+   (sumgeon.asset-data.stream) with where each line is in them. Only the sprites are deployed;
+   `base` (the single clips' folder) is there only if build.mjs deploys the clips again
+   (DEPLOY_CLIPS, the way back if ranged fetches fail on a device). The deploy ships audio.json;
+   locally it's missing and the device voice speaks. */
 var clips = {}, clipBase = "", player = null, finishClip = null;
 // Audio sprites (audio.json "sprites", built by scripts/audio/build.mjs; lines.js spriteFor): every
 // line is in one, a small file of related lines (a stratum's sums, a monster's lines), their clips'
@@ -85,7 +90,7 @@ var RATE = { p: 0.95, m: 0.95, n: 0.95, q: 0.85, h: 1 }, PITCH = { h: 1.3 };
     fetch(url).then(function (r) { return r.ok ? r.json() : null; })
       .then(function (m) {
         if (!m || !m.clips) return;
-        clips = m.clips; clipBase = m.base;
+        clips = m.clips; clipBase = m.base || "";
         sprites = (m.sprites || []).map(function (s) { return { name: s.name || "", fam: (s.name || "").replace(/\.\d+$/, ""), url: s.url, lines: s.lines, bytes: null, loading: false, size: 0 }; });
         sprites.forEach(function (s) { Object.keys(s.lines).forEach(function (id) { s.size += s.lines[id][1]; spriteOf[id] = { s: s, id: id, off: s.lines[id][0], len: s.lines[id][1] }; }); });
         loadSprites();
@@ -116,7 +121,7 @@ document.addEventListener("keydown", unlock, true);
 
 // The sprite families the game needs now (lines.js ALWAYS, and runSprites for the stratum of the
 // run), from app.js. Sprites not in them are let go, so only what this stratum can say is held;
-// the others' lines play as single clips if they come up.
+// the others' lines are fetched on their own if they come up (lineBytes).
 export function needSprites(families) {
   need = {};
   (families || []).forEach(function (f) { need[f] = true; });
@@ -124,7 +129,7 @@ export function needSprites(families) {
 }
 // Downloads the sprites needed, a few at a time, once there's an audio context (after the first
 // tap) and audio.json has arrived, and drops the ones not needed. Until a sprite is in, its lines
-// play as single clips.
+// are fetched on their own (lineBytes).
 var fetching = 0, FETCH_AT_ONCE = 3;
 function loadSprites() {
   var c = ac();
@@ -140,7 +145,7 @@ function loadSprites() {
     s.loading = true; fetching++;
     fetch(s.url).then(function (r) { return r.ok ? r.arrayBuffer() : Promise.reject(); })
       .then(function (data) { if (need[s.fam]) s.bytes = new Uint8Array(data); })
-      .catch(function () { /* its lines stay single clips */ })
+      .catch(function () { /* its lines are fetched one at a time */ })
       .then(function () { s.loading = false; fetching--; loadSprites(); saveSome(); });
   });
 }
@@ -213,19 +218,46 @@ export function offlineStatus() {
     online: navigator.onLine
   };
 }
-// A line out of a loaded sprite, decoded: its bytes are its whole clip. A promise of an AudioBuffer.
+// A line's bytes (its whole clip), as an ArrayBuffer: out of its sprite when that's loaded; else
+// out of the saved sprite (the Cache API, so offline too); else just that line from the audio
+// host, with a Range request (ranges.js), which the custom domain answers with a 206. If the
+// ranged fetch fails (a browser that sends a CORS preflight for Range: the host answers OPTIONS
+// with a 405), the whole sprite is fetched without one and cut, and ranges aren't tried again.
+var noRange = false;
+function lineBytes(hit) {
+  var s = hit.s, off = hit.off, len = hit.len;
+  if (s.bytes) return Promise.resolve(s.bytes.slice(off, off + len).buffer); // a copy: decoding takes it
+  var whole = function () {
+    return fetch(s.url).then(function (r) { return r.ok ? r.arrayBuffer().then(function (b) { return rangeBytes(200, b, off, len); }) : null; });
+  };
+  var net = function () {
+    if (noRange) return whole();
+    return fetch(s.url, { headers: { Range: rangeHeader(off, len) } })
+      .then(function (r) { return r.ok ? r.arrayBuffer().then(function (b) { return rangeBytes(r.status, b, off, len); }) : null; })
+      .then(function (b) { return b || Promise.reject(new Error("range")); })
+      // Only when the whole sprite then comes is it the range that failed (not the network).
+      .catch(function () { return whole().then(function (b) { if (b) noRange = true; return b; }); });
+  };
+  var cached = !canCache ? Promise.resolve(null) : caches.open(VOICE_CACHE)
+    .then(function (c) { return c.match(new URL(s.url, location.href).href); })
+    .then(function (r) { return r ? r.blob().then(function (b) { return b.size >= off + len ? b.slice(off, off + len).arrayBuffer() : null; }) : null; })
+    .catch(function () { return null; });
+  return cached.then(function (b) { return b || net(); })
+    .then(function (b) { return b || Promise.reject(new Error("no bytes")); });
+}
+// A line, decoded: from its sprite, or fetched on its own (lineBytes). A promise of an AudioBuffer.
 function lineBuffer(hit) {
   for (var i = 0; i < decoded.length; i++) if (decoded[i].id === hit.id) { var d = decoded.splice(i, 1)[0]; decoded.push(d); return d.buf; }
-  var c = ac(), bytes = hit.s.bytes.slice(hit.off, hit.off + hit.len).buffer; // a copy: decoding takes it
-  var buf = new Promise(function (ok, no) { c.decodeAudioData(bytes, ok, no); });
+  var c = ac();
+  var buf = lineBytes(hit).then(function (bytes) { return new Promise(function (ok, no) { c.decodeAudioData(bytes, ok, no); }); });
   var entry = { id: hit.id, s: hit.s, buf: buf, b: null };
   buf.then(function (b) { entry.b = b; }, function () { decoded = decoded.filter(function (d) { return d !== entry; }); });
   decoded.push(entry);
   if (decoded.length > DECODED_MAX) decoded.shift();
   return buf;
 }
-// Plays one line out of a sprite. Resolves true when it ends, false if it can't be decoded (the
-// caller then plays its clip).
+// Plays one line, from its sprite (loaded, saved or a range of it). Resolves true when it ends,
+// false if it can't be fetched or decoded (the caller then uses the device voice).
 function playSprite(hit) {
   var my = epoch;
   return lineBuffer(hit).then(function (buf) {
@@ -262,24 +294,21 @@ export function spriteStatus() {
 // A Hero Moment's quip (kind "h"), played through Web Audio with a hero's treatment: louder
 // (HERO_GAIN, then a limiter, past what an <audio> element can do: iOS caps it at full volume),
 // and a short arena echo, so it rings out over the moment's sounds. Resolves true when it
-// ends, false if it can't (the caller then uses the plain clip). ?herogain=<n> tries another
+// ends, false if it can't (the caller then uses the device voice). ?herogain=<n> tries another
 // gain, ?heroecho=<0..1> another echo level.
 var heroQ = (typeof location !== "undefined") ? new URLSearchParams(location.search) : null;
 var HERO_GAIN = heroQ && heroQ.get("herogain") ? +heroQ.get("herogain") : 1.5;
 var HERO_ECHO = heroQ && heroQ.get("heroecho") ? +heroQ.get("heroecho") : 0.1;
-var heroBufs = {};
 // fx (optional): { gain, echo, delay } instead of the quip's defaults: say()'s fifth argument.
-// hit (optional): the line in a loaded sprite (spriteOf), decoded from there instead of
-// fetching the clip ("Depth two!" with the entrance's echo, a quip, a cursed hero's arrival).
-function playHero(url, fx, hit) {
+// hit: the line in its sprite (spriteOf), decoded from there, loaded or not (lineBuffer): "Depth
+// two!" with the entrance's echo, a quip, a cursed hero's arrival.
+function playHero(fx, hit) {
   fx = fx || {};
   var G = fx.gain != null ? fx.gain : HERO_GAIN, E = fx.echo != null ? fx.echo : HERO_ECHO, D = fx.delay || 0.13;
   var c = ac();
   if (!c) return Promise.resolve(false);
   var my = epoch;
-  var load = hit ? lineBuffer(hit) : heroBufs[url] || (heroBufs[url] = fetch(url).then(function (r) { if (!r.ok) throw new Error(r.status); return r.arrayBuffer(); })
-    .then(function (b) { return new Promise(function (ok, no) { c.decodeAudioData(b, ok, no); }); }));
-  return load.then(function (buf) {
+  return lineBuffer(hit).then(function (buf) {
     if (my !== epoch) return true;
     return new Promise(function (resolve) {
       if (c.state !== "running") c.resume();
@@ -299,11 +328,13 @@ function playHero(url, fx, hit) {
       source = src; finishClip = function () { try { src.stop(); } catch (e) {} end(); };
       src.start();
     });
-  }).catch(function () { if (!hit) delete heroBufs[url]; return false; });
+  }).catch(function () { return false; });
 }
 
-// Resolves true when the clip ends, false if it fails (the caller then uses the device voice).
-// Safari's <audio> asks for byte ranges, which the audio host's custom domain answers.
+// A single clip in the shared <audio> element: only when build.mjs deploys them again
+// (DEPLOY_CLIPS; audio.json then has `base`), as the step before the device voice. Resolves true
+// when the clip ends, false if it fails (the caller then uses the device voice). Safari's <audio>
+// asks for byte ranges, which the audio host's custom domain answers.
 function playClip(url) {
   return new Promise(function (resolve) {
     var a = getPlayer(), done = false;
@@ -337,18 +368,22 @@ export function say(kind, text, cancel, live, fx) {
   var done = function () { if (my === epoch) pending = Math.max(0, pending - 1); };
   queue = queue.then(function () {
     if (my !== epoch || (live && !live())) return;
-    var key = clips[kind + ":" + text], hit = spriteOf[kind + ":" + text];
+    var key = clips[kind + ":" + text], hit = spriteOf[kind + ":" + text], c = ac();
+    // Not recorded (or no audio.json, so no sprite map either): the device voice.
     if (!key) return speak(text, RATE[kind], PITCH[kind]);
-    var url = clipBase + key + ".mp3", c = ac(), ready = hit && hit.s.bytes && c ? hit : null;
-    // The line's single clip, then the device voice: while its sprite loads, or if it fails.
+    // If the line can't be played from its sprite: its single clip when those are deployed
+    // (audio.json `base`), then the device voice.
     var fallback = function (ok) {
       if (ok || my !== epoch) return;
-      return playClip(url).then(function (ok2) { if (!ok2 && my === epoch) return speak(text, RATE[kind], PITCH[kind]); });
+      var voice = function () { if (my === epoch) return speak(text, RATE[kind], PITCH[kind]); };
+      if (!clipBase) return voice();
+      return playClip(clipBase + key + ".mp3").then(function (ok2) { if (!ok2) return voice(); });
     };
-    // A quip, or a line with a treatment (fx), through Web Audio: from its sprite when it's in.
-    if (c && (fx || kind === "h")) return playHero(url, fx, ready).then(fallback);
-    if (ready) return playSprite(ready).then(fallback);
-    return fallback(false);
+    // No context yet (before the first tap) or the line in no sprite: nothing to decode with.
+    if (!c || !hit) return fallback(false);
+    // A quip, or a line with a treatment (fx), through Web Audio with it.
+    if (fx || kind === "h") return playHero(fx, hit).then(fallback);
+    return playSprite(hit).then(fallback);
   });
   queue = queue.then(done, done);
   return queue;

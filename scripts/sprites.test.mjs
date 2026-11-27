@@ -29,13 +29,13 @@ assert.ok(lines.filter((l) => l.sprite === "names").every((l) => /^(m-|heroes)/.
 // No sprite over the limits: about 3.5 minutes of speech (estimated from the text, about 14
 // characters a second; a fact's lines are kept together, so a part can run a little over), and
 // well under Cloudflare's 25 MiB as an mp3 (64 kbps: 8 KB a second). With the clips recorded
-// locally (_audio/a), their real sizes too.
+// locally (_clips), their real sizes too.
 const len = {};
 for (const l of lines) len[l.file] = (len[l.file] || 0) + estSeconds(l.text);
 const [bigName, bigS] = Object.entries(len).sort((a, b) => b[1] - a[1])[0];
 assert.ok(bigS <= SPRITE_MAX_S * 1.1, `${bigName} is about ${Math.round(bigS)} s`);
 assert.ok(bigS * 8000 < MAX_FILE / 10);
-const clipDir = new URL("../_audio/a/", import.meta.url);
+const clipDir = new URL("../_clips/", import.meta.url);
 let real = null;
 if (existsSync(clipDir)) {
   const bytes = {};
@@ -48,7 +48,7 @@ if (existsSync(clipDir)) {
 const ids = new Set(Object.keys(fileOf));
 const always = new Set(ALWAYS);
 // Every line that isn't a problem or a monster's is always loaded, but the purse's dollar amounts
-// (said when the purse is opened: their clips play).
+// (said when the purse is opened: each fetched from its sprite on its own, a Range request).
 for (const l of lines) {
   if (l.kind === "q" || /^m-/.test(l.file)) continue;
   assert.ok(always.has(familyOf(l.file)) || familyOf(l.file) === "purse", `${l.text} (${l.file}) isn't loaded`);
