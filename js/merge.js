@@ -60,8 +60,9 @@ export const RECORD_VERSION = 1;
 // The keys a record carries (store.js OWN_KEYS minus the device's own). The test checks every
 // saved key is here or in LOCAL_KEYS.
 export const SYNCED_KEYS = ["settings", "best", "facts", "heroes", "wings", "bestiary", "dungeon", "spells", "told", "moments", "wallet", "items", "wardrobe", "shop"];
-// Saved per player but never synced: the link itself, which is this device's own.
-export const LOCAL_KEYS = ["link", "syncBase"];
+// Saved per player but never synced: the link itself, which is this device's own, and the run in
+// progress (app.js saveRun), this device's game.
+export const LOCAL_KEYS = ["link", "syncBase", "run"];
 // The learned handwriting (spells.templates) stays on each device: three drawings of each digit
 // are about 30 KB, more than all the rest together, and handwriting on one screen isn't the
 // same as on another.

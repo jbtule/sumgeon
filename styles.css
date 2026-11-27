@@ -80,6 +80,10 @@ h1 b{color:var(--coral);font-weight:400}
 .btns.deeper{flex-wrap:wrap}
 .btns.deeper #deeper,.btns.deeper #nextStratum{flex:1 0 100%;order:-1}
 .btns.deeper #nextStratum{order:-2}
+/* "Keep going?" (a run the app lost in the background) above Enter, full width, with where it was. */
+.btns.keep{flex-wrap:wrap}
+.btns.keep #keepGoing{flex:1 0 100%;order:-1;white-space:normal;line-height:1.1}
+.btns.keep #keepGoing small{display:block;margin-top:3px;font:800 .5em Nunito,sans-serif;letter-spacing:.02em;opacity:.85}
 /* A newly opened stratum, announced on the end card. */
 .unlocked{display:grid;gap:2px;text-align:center;padding:12px 14px;border-radius:16px;background:#ffc93c22;border:2px solid var(--gold);box-shadow:0 0 18px #ffc93c55;animation:unlockpop .6s ease-out}
 .unlocked b{font:400 20px Bungee,sans-serif;color:var(--gold)}
