@@ -100,13 +100,23 @@ export const MUSIC = {
 };
 
 // The streams of a stratum, ready to step: each { def, r, s, next }.
-function streamsOf(id, seed) {
-  var m = MUSIC[id];
+// Accents only (the user's pick, 2026-11-27): the little sounds, drips, music-box notes, crystal
+// chimes, bells, with no drone, pad, wind, pulse or chords under them. Each stratum's accent kinds,
+// with a closer gap where they'd otherwise be too sparse alone.
+export var ACCENTS = {
+  cellar: { drip: null, box: [9, 18] },
+  hall: { echo: [5, 11] },
+  mines: { chime: null },
+  tower: { bell: [9, 17] }
+};
+function streamsOf(id, seed, accents) {
+  var m = MUSIC[id], acc = accents ? ACCENTS[id] : null;
   if (!m) throw new Error("music: no stratum " + id);
   return m.streams.map(function (def, i) {
     var r = rng(((seed >>> 0) * 7919 + (i + 1) * 104729 + IDS.indexOf(id) * 15485863) >>> 0);
+    if (acc && acc[def.kind]) def = Object.assign({}, def, { gap: acc[def.kind] });
     return { def: def, r: r, s: def.state ? def.state() : null, next: between(r, def.first[0], def.first[1]) };
-  });
+  }).filter(function (st) { return !acc || st.def.kind in acc; });
 }
 // The next event of a stream, and moves it on.
 function step(st) {
@@ -118,9 +128,9 @@ function step(st) {
 }
 
 // Every event in the first `seconds`, in time order (no audio).
-export function plan(id, seed, seconds) {
+export function plan(id, seed, seconds, accents) {
   var out = [];
-  streamsOf(id, seed == null ? 1 : seed).forEach(function (st) { while (st.next < seconds) out.push(step(st)); });
+  streamsOf(id, seed == null ? 1 : seed, accents).forEach(function (st) { while (st.next < seconds) out.push(step(st)); });
   return out.sort(function (a, b) { return a.t - b.t; });
 }
 
@@ -319,7 +329,9 @@ export function start(ctx, id, dest, opts) {
   var bus = { dry: ctx.createGain(), send: ctx.createGain() };
   bus.dry.connect(levelG); bus.send.connect(verb); verb.connect(vg); vg.connect(levelG);
   var bed = [], sound = SOUND[id](ctx, bus, r, bed);
-  var streams = streamsOf(id, seed), t0 = now + 0.05, timer = null, stopped = false;
+  // Accents only: the always-on bed (drones, pad, wind, hum) is silenced at once.
+  if (opts.accents) bed.forEach(function (n) { try { n.stop(); } catch (e) { /* already */ } });
+  var streams = streamsOf(id, seed, !!opts.accents), t0 = now + 0.05, timer = null, stopped = false;
   function pump(until) {
     var late = ctx.currentTime - t0;
     streams.forEach(function (st) {
