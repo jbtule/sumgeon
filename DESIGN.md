@@ -165,7 +165,7 @@ One stratum per grade, in a **straight chain**: each opens only the next. The le
 ### 4.2 Retired: strata past 6th grade
 The first design went on to 8th grade (the Negative Zone, the Root Cellar, and Pirate Cove for percent and π). The game now ends at Pirate Cavern, and their monsters fill gaps above: Negasicle, Absolutely, Rootling, Slashbuckler, Colon-el Ratio, % Gremlin and π Pirate in Pirate Cavern, Squaresquatch in the Crystal Mines, Exponent-tron in the Pyramid. Their bosses Lord Undefined (÷0), the Hydra of Powers and Dread Pirate Radius are retired.
 
-**Endless Descent** (§6.4) has its own boss, the **Endless Specter** (∞).
+Endless (§6.4) has no boss of its own: the Endless Specter was dropped on 2026-11-27, since Endless is a mastered stratum that keeps going with its own bosses.
 
 A Wing's monster list is a **pool**, which can be bigger than one run's floors. Each run draws its floors from the pool, so replays meet different monsters. **Creature types can repeat across Wings** (there are two robots, two ghosts and a few pirates), but within a Wing no two regular monsters share a creature type, and repeats need clearly different silhouettes. Pirate Cavern's pirates are the exception, because pirates are its theme.
 
@@ -194,7 +194,7 @@ Every Wing also has one **rescue floor** holding a cursed digit (§6.6). The pro
 - **Exponent-tron (^)**: a robot whose antenna is the caret and whose body is a stack of cubes, in the Parenthesis Pyramid. *Cubed*: volume of boxes (l × w × h).
 - **Squaresquatch (²)**: a bigfoot made of grid squares, in the Crystal Mines. *Arrays*: rows and columns up to 5 × 5, as repeated addition (5 + 5 + 5), which leads into area.
 - **Colon-el Ratio (:)**: an officer whose medals are the colon. Ratios (2:3).
-- **Endless Specter (∞)**: a looping ghost that only appears in Endless Descent. Its body traces ∞, so it looks nothing like Boomainder.
+- ~~**Endless Specter (∞)**~~ (dropped 2026-11-27): a looping ghost meant for Endless Descent. Its body traces ∞, so it looks nothing like Boomainder.
 
 ---
 
@@ -456,12 +456,12 @@ Replaces the between-floor choice. Clearing a floor still heals 1 heart.
 
 **Saved per player:** `wallet` (cents), `items` (the inventory's counts and the 3 quick-use slots), `wardrobe` (what's found and what each hero wears). Each goes in `OWN_KEYS`.
 
-### 6.4 Endless Descent (planned: after a stratum's Legend, for that stratum)
-_Revised with the user on 2026-11-27: back on the main list. It opens for a stratum once its **Legend boss is beaten** (§14.2), and it's that stratum's own: its monsters, its facts and its wall, not a mix of every stratum. A reward for mastering a stratum, and somewhere to keep playing it._
-- Unlocked per stratum by beating its Legend; reached from that stratum's layer on the depth map.
-- That stratum's monsters, with HP scaling about +8% per floor. A boss appears every 7th floor.
-- The score is **total damage dealt**, so harder problems are worth more. It's shown alongside the deepest floor.
-- Keep a local high score per stratum (per player), with no names.
+### 6.4 Endless (planned: a stratum after its Legend)
+_Settled with the user on 2026-11-27: not a separate high-score mode. Once a stratum's Legend boss is beaten (§14.2), that stratum just keeps going: normal runs, floor by floor, with its bosses, mega bosses every 5 depths, chests and depths, asking the facts the player has already mastered there, so they stay sharp. No Endless Specter, no separate score._
+- **When:** a stratum whose Legend is beaten. Nothing new to unlock or enter: the same layer on the depth map, Go deeper as now.
+- **What it asks:** the stratum's path facts the player has mastered, mixed across every kind (as the Legend's exam mixes them), weighted to the ones that came due, were slowest or missed most; no new facts, no probing ahead. A miss still sends a fact back to learning, which brings it back as learning until it's mastered again.
+- **Why it's needed:** with every fact mastered, the learning engine has little to ask (reviews only come due after a day), so a mastered stratum otherwise runs thin.
+- Everything else is as any run: hearts, stars, depth scores, Hero Moments, achievements.
 
 ### 6.5 Daily Dungeon (maybe, §12: kept as a maybe, 2026-11-27)
 - A seeded run that is the same for everyone on the same date: 5 floors, fixed monsters, fixed modifiers such as "Crits from streak 2".
@@ -745,7 +745,7 @@ Each milestone should be playable and shippable on its own. Revised 2026-11-25 f
    - *Offline play, done (2026-11-26):* a service worker (`sw.js`) precaches each version's shell, the fonts are self-hosted, and every voice sprite is saved in the background, the ones needed first; Settings → Game says how far it's got (CLAUDE.md "Offline"). *Still to do:* confirm it on the iPhone's Home Screen app (airplane mode after "Offline: ready").
 
 
-**Planned:** **Endless Descent** (§6.4), revised with the user on 2026-11-27: after a stratum's Legend is beaten, an endless run of that stratum only, for a high score.
+**Planned:** **Endless** (§6.4), settled with the user on 2026-11-27: after a stratum's Legend is beaten, that stratum keeps going as normal runs, asking the facts already mastered there.
 
 **Maybe later (enhancements, not planned):** decided with the user on 2026-11-26, and kept a maybe on 2026-11-27:
 - **Daily Dungeon** (§6.5): the same seeded run for everyone on a date.
