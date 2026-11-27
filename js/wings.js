@@ -58,10 +58,14 @@ export const PATHS = {
     step("Add and take away within 5", [["kinder", "Within 5, with zero"]], ["Plusquito", "Minustaur"], 1, P),
     step("Count on, count back", [["patK", "Count on by 1s"], ["patK", "Count back by 1s"]], ["Slimelipsis"], 1, { ongoing: true }),
     step("Within 10", [["kinder", "Within 10"], ["flashK", "Dice sums"], ["more", "Which is more, to 10"]], ["Plusquito", "Minustaur", "Pipsqueak", "Chompers"], 1, P),
-    step("Coins", [["coinsK", "Find the coin"], ["coinsK", "Each coin"]], ["Trollar"], 1, P),
-    step("Make 10", [["kinder", "Make 10 and number bonds"]], ["Plusquito"], 2, P),
+    // Make 10 moved up to chapter 1 when Coins went last (each chapter keeps 3 to 4 new steps).
+    step("Make 10", [["kinder", "Make 10 and number bonds"]], ["Plusquito"], 1, P),
     step("10 and some more", [["kinder", "10 and some more"], ["patK", "Count by 10s"]], ["Minustaur", "Slimelipsis"], 2, P),
-    step("Shapes", [["shapesK", "Circles, squares, triangles, rectangles"], ["shapesK", "Hexagons, sides and corners"]], ["Polly-Gon"], 2, P)
+    step("Shapes", [["shapesK", "Circles, squares, triangles, rectangles"], ["shapesK", "Hexagons, sides and corners"]], ["Polly-Gon"], 2, P),
+    // Coins last (moved from chapter 1, 2026-11-27): kindergarten learns the coins near the end of
+    // the year, and they came in right after Within 10. Trollar (and money in chests and the shop,
+    // which wait for a coin answered right in K) comes with them.
+    step("Coins", [["coinsK", "Find the coin"], ["coinsK", "Each coin"]], ["Trollar"], 2, P)
   ],
   hall: [
     // The Cellar's facts within 10, kept up as reviews (1st grade builds on them).

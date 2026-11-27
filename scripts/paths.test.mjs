@@ -41,8 +41,8 @@ for (const [id, path] of Object.entries(PATHS)) {
 const cellar = PATHS.cellar;
 {
   const o = openSteps(cellar, {}, 1);
-  assert.deepEqual(o.window.map((i) => cellar[i].name), ["Add and take away within 5", "Within 10", "Coins"]);
-  assert.deepEqual(o.open.map((i) => cellar[i].name), ["How many, and which is more, to 5", "Add and take away within 5", "Count on, count back", "Within 10", "Coins"], "the ongoing steps open from the start");
+  assert.deepEqual(o.window.map((i) => cellar[i].name), ["Add and take away within 5", "Within 10", "Make 10"]); // Coins come last in K (chapter 2)
+  assert.deepEqual(o.open.map((i) => cellar[i].name), ["How many, and which is more, to 5", "Add and take away within 5", "Count on, count back", "Within 10", "Make 10"], "the ongoing steps open from the start");
   // The next step joins once the oldest new one is JOIN_AT learned, and not before.
   const r = {}, s1 = stepFacts(cellar[1]);
   s1.slice(0, Math.ceil(s1.length * JOIN_AT) - 1).forEach((f) => (r[f.key] = learnedRec));
@@ -133,13 +133,14 @@ const cellar = PATHS.cellar;
       }
     }
   }
-  // A new K player meets them in the path's order on a first run (Plusquito first), newest first
-  // after that (Trollar's coins, the window's newest step); Polly-Gon (chapter 2) not at all yet.
+  // A new K player meets them in the path's order on a first run, newest first after that (Make 10's
+  // Plusquito, the window's newest step); Polly-Gon and Trollar (chapter 2: shapes, and coins, which
+  // K learns near the end of the year) not at all yet.
   const open = openSteps(cellar, {}, 1).open, avail = stepMonsters(cellar, open);
-  assert.deepEqual(stepMonsters(cellar, open, true), ["Pipsqueak", "Chompers", "Plusquito", "Minustaur", "Slimelipsis", "Trollar"]);
-  assert.deepEqual(avail, ["Trollar", "Plusquito", "Minustaur", "Pipsqueak", "Chompers", "Slimelipsis"]);
-  assert.deepEqual(runFloors(WINGS[0], { captain: 5, rescued: [] }, () => 0, 1, avail).map((m) => m.n), ["Trollar", "Plusquito", "Cursed Zeroic", "Minustaur", "Pipsqueak", "Make-Ten Golem"]);
-  assert.ok(!avail.includes("Polly-Gon"));
+  assert.deepEqual(stepMonsters(cellar, open, true), ["Pipsqueak", "Chompers", "Plusquito", "Minustaur", "Slimelipsis"]);
+  assert.deepEqual(avail, ["Plusquito", "Minustaur", "Pipsqueak", "Chompers", "Slimelipsis"]);
+  assert.deepEqual(runFloors(WINGS[0], { captain: 5, rescued: [] }, () => 0, 1, avail).map((m) => m.n), ["Plusquito", "Minustaur", "Cursed Zeroic", "Pipsqueak", "Chompers", "Make-Ten Golem"]);
+  assert.ok(!avail.includes("Polly-Gon") && !avail.includes("Trollar"));
 }
 // The kids' saves after the reset (dungeon version 6): runs start over at chapter 1, but what's
 // been learned is kept, so the open steps follow from it, and the steps they already know join and
@@ -148,10 +149,10 @@ const cellar = PATHS.cellar;
   const [c] = WINGS;
   const recs = {};
   for (const f of pool("kinder").filter((f) => f.level <= 2)) recs[f.key] = learnedRec; // within 5, within 10, make 10
-  // Chapter 1: within 5 and within 10 learned, so coins is the one new step; make 10 waits for the
-  // first mega boss, and then joins already learned.
-  assert.deepEqual(stepsOpen(c, {}, recs).window.map((i) => PATHS.cellar[i].name), ["Coins"]);
-  assert.deepEqual(stepsOpen(c, { cellar: { megas: 1 } }, recs).window.map((i) => PATHS.cellar[i].name), ["Coins", "10 and some more", "Shapes"]);
+  // Chapter 1: within 5, within 10 and make 10 learned, so nothing is new (coins wait for chapter 2,
+  // as K learns them near the end of the year); after the first mega boss, chapter 2's three.
+  assert.deepEqual(stepsOpen(c, {}, recs).window.map((i) => PATHS.cellar[i].name), []);
+  assert.deepEqual(stepsOpen(c, { cellar: { megas: 1 } }, recs).window.map((i) => PATHS.cellar[i].name), ["10 and some more", "Shapes", "Coins"]);
   // A stratum opened stays open once saved as unlocked, even after a miss.
   assert.ok(openWings({ cellar: { boss: 1 }, hall: { unlocked: true } }, {}, "kinder").includes("hall"));
 }
