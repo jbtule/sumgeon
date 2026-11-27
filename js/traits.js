@@ -1,6 +1,6 @@
 // Monster traits (DESIGN.md §3): one simple rule each that changes how you do the math, never
 // anything unfair, shown as a badge on the nameplate and explained in five words or so. No DOM:
-// runs in Node for the tests. Plusquito, the tutorial monster, has none.
+// runs in Node for the tests. Plusquito, the tutorial monster, has none, and nor does Polly-Gon.
 
 // A monster's kind: its own name, or for a look (monsters.js LOOKS) the monster it's a look of.
 const kind = (m) => m.base || m.n;
@@ -30,9 +30,8 @@ export const TRAITS = {
   "Halfling": { icon: "½", name: "Halves", text: "Fractions on a line, equal, compared" },
   // Batch 1 of the strands (time and patterns): each asks only its own strand.
   "Tick-Tockus": { icon: "🕒", name: "Tick Tock", text: "Asks the time" },
-  "Slimelipsis": { icon: "🫧", name: "What's Next", text: "Counts in patterns" },
-  // Shapes: its body flashes the shape it asks for as it squawks (app.js squawk).
-  "Polly-Gon": { icon: "🦜", name: "Squawk Back", text: "Squawks the shape it wants" }
+  "Slimelipsis": { icon: "🫧", name: "What's Next", text: "Counts in patterns" }
+  // Polly-Gon (shapes) has none: it only squawks the shape it wants (app.js pollySquawk).
 };
 
 // A fact key's two numbers: "+3,8" and "□+7,7" (7 + □ = 14) give [3, 8] and [7, 7].

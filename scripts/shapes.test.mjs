@@ -128,7 +128,7 @@ console.log("✓ shapes: templates, drawings, judging and counting");
 // In the game (Polly-Gon): fixed samples with keys, in strands per grade (K, 1st, 2nd, 3rd), each
 // level in the school's order; every key its own fact and back; drawing under half of each level
 // (so a mouse or keyboard, which asks only counting, can still open the next level).
-import { shapeFacts, shapeFactOf, SHAPE_STRANDS, isDrawKey, spokenShape, spokenShapeAnswer, squawkLine, squawkBody, drawHintSvg, drawHint, cleanFor, accepts } from "../js/shapes.js";
+import { shapeFacts, shapeFactOf, SHAPE_STRANDS, isDrawKey, spokenShape, spokenShapeAnswer, squawkLine, drawHintSvg, drawHint, cleanFor, accepts } from "../js/shapes.js";
 import { BANDS, pool, factOf, choose, monsterHP, drawHit, JOIN_AT } from "../js/learn.js";
 import { asks } from "../js/traits.js";
 import { MON } from "../js/monsters.js";
@@ -163,8 +163,6 @@ import { spokenProblem, spokenFact } from "../js/problems.js";
       // Asked and answered in words, recorded (lines.test checks the plan has them).
       assert.ok(spokenProblem(g) === spokenShape(g) && spokenFact(g) === spokenShapeAnswer(g) && !/\d|undefined/.test(spokenProblem(g) + spokenFact(g)), `${f.key}: ${spokenProblem(g)} / ${spokenFact(g)}`);
       assert.ok(/^Squawk! /.test(squawkLine(g)) && squawkLine(g).split(" ").length <= 6, squawkLine(g));
-      const body = squawkBody(g);
-      assert.ok(body.body && !/NaN|undefined/.test(body.body + body.lines), `${f.key}: Polly-Gon's body`);
       // A hint never gives the count away before answering, and says it worked.
       if (!g.draw) {
         const before = hintFor(g, false), after = hintFor(g, true);

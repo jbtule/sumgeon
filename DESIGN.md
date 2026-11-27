@@ -81,7 +81,7 @@ Each monster gets one simple trait that changes *how* you do math, never anythin
 - **Margot-Rythm** (the Mines): 🔁 *Carry the One*. Problems that need regrouping hit double.
 - **Squaresquatch** (the Mines): 🟩 *Arrays*. Rows of dots, added as equal rows (5 + 5 + 5).
 - **Halfling** (the Tower): ½ *Halves*. Asks only fractions: on a number line (where's the dot? □/4; how many equal parts?), then equal fractions (1/2 = □/4), with the line from 0 to 2.
-- **Polly-Gon** (every stratum): 🦜 *Squawk Back*. Asks only shapes; before each problem it squawks and its body flashes the shape it wants, then turns back.
+- **Polly-Gon** (every stratum): no trait. Asks only shapes; before each problem it squawks the shape it wants. (Its body flashing the shape, 🦜 *Squawk Back*, was taken out on 2026-11-27 as unnecessary.)
 - **Cursed digits** (Sevenstein, Octoloop and the other eight; §6.6): 🍀 *Lucky Number*. Answers containing its digit deal double damage.
 
 Explain each trait with a single icon and five words or fewer.

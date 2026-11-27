@@ -622,7 +622,7 @@ export function spokenShapeAnswer(p) {
   if (p.kind === "squares") return `${cap(spoken(p.rows))} rows of ${spoken(p.cols)} make ${spoken(p.ans)} squares.`;
   return `Each part is ${fractionWords(1, p.n, spoken)}.`;
 }
-// Polly-Gon's squawk as its body flashes the shape (🦜 Squawk Back): "Squawk! Polly want a
+// Polly-Gon's squawk before each problem: "Squawk! Polly want a
 // triangle!" for a drawing, the shape's name for a named one, else what's counted.
 export function squawkLine(p) {
   if (p.kind === "draw") return `Squawk! Polly want ${article(p.shape)}${p.shape}!`;
@@ -634,47 +634,6 @@ export function squawkLine(p) {
 }
 // The screen's words for a count (app.js): "Sides = □".
 export const SHAPE_LINE = { sides: "Sides", corners: "Corners", faces: "Faces", parts: "Equal parts", squares: "Squares" };
-
-/* ---------- Polly-Gon's body (🦜 Squawk Back) ----------
-   While it squawks, Polly-Gon's hexagon body becomes the problem's shape (monsters.js draws
-   m.squawk in its place): the shape to draw, or the one to count with its cuts or grid on it, in
-   its body's frame (about 104 across, round (100, 120)). Returns { body, lines }: the shape, filled
-   in Polly-Gon's color, and dark lines over it. */
-const BODY_K = 0.52;
-const toBody = (pts) => pts.map(([x, y]) => [f1(100 + (x - 100) * BODY_K), f1(120 + (y - 100) * BODY_K)]);
-const pathOf = (pts) => `<path d="M${pts.map(([x, y]) => `${x} ${y}`).join(" L")} Z"/>`;
-const ink = (d) => `<path d="${d}" fill="none" stroke="${DK}" stroke-width="4" stroke-linecap="round"/>`;
-export function squawkBody(p) {
-  if (p.shape === "circle") return { body: `<circle cx="100" cy="120" r="48"/>`, lines: "" };
-  if (p.shape) return { body: pathOf(toBody(p.pts || namedPts(p.shape, () => 0))), lines: "" };
-  if (p.kind === "sides" || p.kind === "corners") return { body: pathOf(toBody(p.pts)), lines: "" };
-  if (p.kind === "faces") {
-    if (p.solid === "cube") {
-      // The faces' shared edges drawn over them (the outline goes round the whole).
-      const F = [[52, 98], [126, 98], [126, 172], [52, 172]], up = (q) => [q[0] + 26, q[1] - 24];
-      return { body: pathOf([F[0], F[1], up(F[1]), up(F[0])]) + pathOf([F[1], up(F[1]), up(F[2]), F[2]]) + pathOf(F), lines: ink(`M${F[0].join(" ")} L${F[1].join(" ")} L${F[2].join(" ")} M${F[1].join(" ")} L${up(F[1]).join(" ")}`) };
-    }
-    return { body: pathOf([[46, 164], [118, 164], [100, 70]]) + pathOf([[118, 164], [154, 140], [100, 70]]), lines: ink("M118 164 L100 70") };
-  }
-  if (p.kind === "squares") {
-    const x0 = 48, y0 = 88, w = 104, h = 64;
-    let d = "";
-    for (let c = 1; c < p.cols; c++) d += `M${f1(x0 + c * w / p.cols)} ${y0} V${y0 + h} `;
-    for (let r = 1; r < p.rows; r++) d += `M${x0} ${f1(y0 + r * h / p.rows)} H${x0 + w} `;
-    return { body: `<rect x="${x0}" y="${y0}" width="${w}" height="${h}" rx="3"/>`, lines: ink(d.trim()) };
-  }
-  // Equal parts (and a unit fraction's): the whole with its cuts.
-  if (p.whole === "circle") {
-    const d = Array.from({ length: p.n }, (_, i) => { const a = rad(-90 + i * 360 / p.n); return `M100 120 L${f1(100 + 48 * Math.cos(a))} ${f1(120 + 48 * Math.sin(a))}`; }).join(" ");
-    return { body: `<circle cx="100" cy="120" r="48"/>`, lines: ink(d) };
-  }
-  const x0 = 46, y0 = 88, w = 108, h = 66;
-  let d = "";
-  if (p.cut === "diagonal") d = `M${x0 + w} ${y0} L${x0} ${y0 + h}`;
-  else if (p.cut === "grid") { const cols = p.n / 2; for (let c = 1; c < cols; c++) d += `M${f1(x0 + c * w / cols)} ${y0} V${y0 + h} `; d += `M${x0} ${y0 + h / 2} H${x0 + w}`; }
-  else for (let i = 1; i < p.n; i++) d += p.cut === "down" ? `M${f1(x0 + i * w / p.n)} ${y0} V${y0 + h} ` : `M${x0} ${f1(y0 + i * h / p.n)} H${x0 + w} `;
-  return { body: `<rect x="${x0}" y="${y0}" width="${w}" height="${h}" rx="3"/>`, lines: ink(d.trim()) };
-}
 
 /* ---------- drawing it: the hint and the clean shape ---------- */
 // The hint for a drawing: the shape's corners as dots to join, numbered going round, the first

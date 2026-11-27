@@ -44,16 +44,6 @@ assert.ok(!/\b(she|her|hers|he|him|his)\b/i.test(judy.quip), "Judo Judy's lines 
 // is empty until the next ones are drawn.
 const SIX = ["Pipsqueak", "Doublet", "Triceraplus", "Margot-Rythm", "Squaresquatch", "Halfling", "Tick-Tockus", "Slimelipsis", "Polly-Gon"];
 assert.deepEqual(NEW_MON.map((m) => m.n), []);
-// Polly-Gon's body is the problem's shape while it squawks (m.squawk), and its hexagon otherwise.
-{
-  const { shapeFactOf, squawkBody } = await import("../js/shapes.js");
-  const polly = MON.find((m) => m.n === "Polly-Gon"), plain = svg(polly);
-  for (const k of ["◇draw:circle", "◇draw:tri", "◇sides:5", "◇faces:cube", "◇faces:pyramid", "◇parts:rect2x", "◇parts:circle3", "◇squares:3,4", "◇unit:rect6g", "◇draw:quad"]) {
-    const s = svg({ ...polly, squawk: squawkBody(shapeFactOf(k)) });
-    assert.ok(s !== plain && !/NaN|undefined/.test(s), `Polly-Gon's body as ${k}`);
-    for (const [name, kit] of LOOKS["Polly-Gon"]) assert.ok(!/NaN|undefined/.test(svg({ ...polly, n: name, base: "Polly-Gon", look: kit, squawk: squawkBody(shapeFactOf(k)) })), `${name} as ${k}`);
-  }
-}
 for (const n of SIX) {
   const m = MON.find((x) => x.n === n);
   assert.ok(m && m.sym && m.stratum && !m.trait && !m.boss, `${n} is in the game, its trait in traits.js`);
