@@ -3631,17 +3631,44 @@ function showRightWay(d) {
     g.font = `400 ${Math.round(r.height * 0.3)}px Bungee, sans-serif`; g.fillText("→", r.width * 0.9, r.height * 0.55);
   });
 }
-// After a poor match: the school-style digit (handwriting.js) drawn glowing over theirs.
-function showHowToWrite(d) {
-  paintSigil((g, r) => {
-    const k = Math.min(r.width, r.height) * 0.8 / 100, x0 = (r.width - 100 * k) / 2, y0 = (r.height - 100 * k) / 2;
+// After a poor match: the school-style digit (handwriting.js) written glowing over theirs, stroke
+// by stroke, as a teacher shows it: each stroke drawn in order at an even speed, a gold pen dot at
+// its tip and a breath between strokes, then held a moment. done() runs when it's finished (the
+// attack waits for it). With reduced motion it's drawn whole at once.
+const WRITE_SPEED = 0.16, WRITE_GAP_MS = 220, WRITE_HOLD_MS = 500; // speed: of the digit's box (100) per ms
+function showHowToWrite(d, done) {
+  const strokesOf = HANDWRITING[d], len = (s) => s.reduce((t, p, i) => (i ? t + Math.hypot(p[0] - s[i - 1][0], p[1] - s[i - 1][1]) : 0), 0);
+  const lens = strokesOf.map(len), durs = lens.map((l) => Math.max(180, l / WRITE_SPEED));
+  const total = durs.reduce((t, x) => t + x, 0) + WRITE_GAP_MS * (strokesOf.length - 1);
+  // Draws the digit as written up to time t (ms), with the pen at its tip.
+  const frame = (t) => paintSigil((g, r) => {
+    const k = Math.min(r.width, r.height) * 0.8 / 100, x0 = (r.width - 100 * k) / 2, y0 = (r.height - 100 * k) / 2, X = (x) => x0 + x * k, Y = (y) => y0 + y * k;
     g.shadowColor = "#7fdc8a"; g.shadowBlur = 20; g.strokeStyle = "#e8ffe9"; g.lineWidth = 10;
-    for (const s of HANDWRITING[d]) {
-      g.beginPath();
-      s.forEach(([x, y], i) => (i ? g.lineTo(x0 + x * k, y0 + y * k) : g.moveTo(x0 + x * k, y0 + y * k)));
+    let at = t, pen = null;
+    strokesOf.forEach((s, n) => {
+      if (at <= 0) return;
+      const want = Math.min(1, at / durs[n]) * lens[n];
+      at -= durs[n] + WRITE_GAP_MS;
+      g.beginPath(); g.moveTo(X(s[0][0]), Y(s[0][1]));
+      let got = 0, tip = s[0];
+      for (let i = 1; i < s.length && got < want; i++) {
+        const a = s[i - 1], b = s[i], seg = Math.hypot(b[0] - a[0], b[1] - a[1]), f = Math.min(1, (want - got) / (seg || 1));
+        tip = [a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f]; g.lineTo(X(tip[0]), Y(tip[1])); got += seg;
+      }
       g.stroke();
-    }
+      if (want < lens[n]) pen = tip;
+    });
+    if (pen) { g.shadowColor = "#ffc93c"; g.shadowBlur = 14; g.fillStyle = "#ffc93c"; g.beginPath(); g.arc(X(pen[0]), Y(pen[1]), 7, 0, Math.PI * 2); g.fill(); }
   }, 0.35);
+  if (reduced()) { frame(Infinity); if (done) setTimeout(done, 600); return; }
+  const t0 = performance.now();
+  const step = (now) => {
+    const t = now - t0;
+    frame(t);
+    if (t < total) requestAnimationFrame(step);
+    else if (done) setTimeout(done, WRITE_HOLD_MS);
+  };
+  requestAnimationFrame(step);
 }
 function castSpell() {
   if (G.busy || !strokes.length) return;
@@ -3669,7 +3696,6 @@ function castSpell() {
       say("p", reversedLine(ans));
     } else if (j.outcome === "show") {
       G.cur.howTo = true;
-      showHowToWrite(ans);
       setMsg("Here's how to write it.", "good");
       say("p", howToWriteLine(ans));
     } else if (j.learn) {
@@ -3684,6 +3710,8 @@ function castSpell() {
   G.spellShot = j.outcome !== "wrong" && !G.cur.reversed && !G.cur.howTo ? drawingShot() : null;
   // A wrong answer goes in as the digit it was read as.
   G.input = String(j.outcome === "wrong" ? r.digit : ans); ansUI();
+  // A poor match is written out stroke by stroke first, and the hit waits for it.
+  if (j.outcome === "show") { G.busy = true; showHowToWrite(ans, () => { G.busy = false; submit(); }); return; }
   submit();
 }
 // The strokes alone (no hint or correction drawn over them), cropped to what was drawn and
