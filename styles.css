@@ -575,6 +575,7 @@ body{transition:background-color .4s;--hint-empty:var(--edge);--hint-line:var(--
 .cap-text small{color:var(--muted);font-weight:800;font-size:13px}
 .logo-head .logo{flex:1}
 .logo-head{gap:8px}
+.icon-btn.book-btn{font-size:22px;line-height:1}
 /* ⏸ by the hearts, and the pause card */
 .pause{flex:none;width:40px;height:40px;margin-left:10px}
 .flame[hidden]+.pause{margin-left:auto}

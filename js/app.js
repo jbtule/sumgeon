@@ -2114,7 +2114,7 @@ function menu() {
   const list = store.profiles();
   // The scene-gap is the window onto the start scene (drawScene): the door and your team show
   // there, between the title and the rest of the card.
-  const head = `<div class="cardhead logo-head"><h2 class="logo">Sum<b>geon</b></h2><button class="icon-btn" id="openSettings" type="button" aria-label="Settings">${GEAR}</button></div>
+  const head = `<div class="cardhead logo-head"><h2 class="logo">Sum<b>geon</b></h2><button class="icon-btn book-btn" id="openBook" type="button" aria-label="Monsters and Heroes">📖</button><button class="icon-btn" id="openSettings" type="button" aria-label="Settings">${GEAR}</button></div>
   <div class="scene-gap" aria-hidden="true"></div>
   ${st.grade == null ? "" : `<p class="tag"><strong>Your answer is your attack.</strong> Get it right and your digits fly at the monster.</p>`}
   ${list.length > 1 ? `<p class="playing">Playing as <b>${esc(displayName(list, PID))}</b> <button class="link" type="button" id="switchPlayer">Switch</button></p>` : ""}`;
@@ -2124,6 +2124,7 @@ function menu() {
     drawScene();
     wireGrades(() => { if (!hasCaptain()) { G.askHero = false; G.askedFor = PID; say("p", PHRASE.pickHero, true); } menu(); });
     $("openSettings").onclick = () => settings();
+    $("openBook").onclick = bookPage; // 📖 Monsters & Heroes, also on the pause screen
     if ($("switchPlayer")) $("switchPlayer").onclick = () => settings();
     return;
   }
@@ -2150,6 +2151,7 @@ function menu() {
   });
   wireCaptain();
   $("openSettings").onclick = () => settings();
+  $("openBook").onclick = bookPage; // 📖 Monsters & Heroes, also on the pause screen
   if ($("switchPlayer")) $("switchPlayer").onclick = () => settings();
   if ($("openPurse")) $("openPurse").onclick = () => purseCard(false);
   $("openItems").onclick = () => itemsCard(false);
