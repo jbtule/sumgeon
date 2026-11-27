@@ -25,7 +25,44 @@
      markup below is a fight that isn't set up yet, and a slow load or a reload in the background
      showed it half-drawn. app.js removes "boot" (booted); the animation shows the page anyway if
      it never does. -->
-<style>html.boot{background:#1c1411}html.boot body{visibility:hidden;transition:none;animation:boot 0s 10s forwards}@keyframes boot{to{visibility:visible}}</style>
+<style>html.boot{background:#1c1411}html.boot body{visibility:hidden;transition:none;animation:boot 0s 20s forwards}@keyframes boot{to{visibility:visible}}</style>
+<!-- If the game hasn't started 8 s after opening (a script failed to load or threw: seen on an
+     iPhone after an update), it clears the app's cached code (never the saved voice, and never saved
+     progress) and loads fresh, once a session by itself. If that fails too, a card says so, with
+     what went wrong, and Try again does the same. -->
+<script>
+(function () {
+  var errs = [];
+  function add(m) { if (errs.length < 6) errs.push(String(m).slice(0, 240)); }
+  addEventListener("error", function (e) {
+    var t = e.target;
+    if (t && t !== window && (t.src || t.href)) add("couldn't load " + String(t.src || t.href).split("/").pop());
+    else add((e.message || "error") + (e.filename ? " (" + e.filename.split("/").pop().split("?")[0] + ":" + e.lineno + ")" : ""));
+  }, true);
+  addEventListener("unhandledrejection", function (e) { var r = e.reason; add("promise: " + (r && (r.message || r) || "rejected")); });
+  function fresh() {
+    var done = function () { location.replace(location.pathname + "?fresh=" + Date.now()); };
+    var jobs = [];
+    if (window.caches) jobs.push(caches.keys().then(function (ks) { return Promise.all(ks.filter(function (k) { return k.indexOf("sumgeon-shell-") === 0 || k === "sumgeon-dev"; }).map(function (k) { return caches.delete(k); })); }));
+    if (navigator.serviceWorker) jobs.push(navigator.serviceWorker.getRegistrations().then(function (rs) { return Promise.all(rs.map(function (r) { return r.unregister(); })); }));
+    Promise.all(jobs).then(done, done);
+    setTimeout(done, 3000);
+  }
+  setTimeout(function () {
+    var h = document.documentElement;
+    if (!h.classList.contains("boot") || !document.body) return;
+    var tried = false;
+    try { tried = sessionStorage.getItem("sumgeon:fresh") === "1"; sessionStorage.setItem("sumgeon:fresh", "1"); } catch (e) {}
+    if (!tried) return fresh(); // the first time, quietly: clear the cached code and load fresh
+    var d = document.createElement("div");
+    d.style.cssText = "position:fixed;inset:0;z-index:99;visibility:visible;background:#1c1411;color:#f3efe4;display:grid;place-content:center;gap:14px;padding:24px;text-align:center;font:600 17px system-ui,sans-serif";
+    d.innerHTML = '<b style="font-size:22px">Sumgeon didn\u2019t finish loading.</b><button type="button" style="font:800 18px system-ui,sans-serif;padding:14px 28px;border:0;border-radius:16px;background:#ff5a4e;color:#fff">Try again</button><small style="opacity:.6;font-size:12px;white-space:pre-wrap;max-width:32em"></small>';
+    d.querySelector("small").textContent = (errs.join("\n") || "No error was reported.") + "\n" + location.search;
+    d.querySelector("button").onclick = fresh;
+    document.body.appendChild(d);
+  }, 8000);
+})();
+</script>
 <link rel="preload" href="fonts/bungee-latin.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="fonts/nunito-latin.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="styles.css">
