@@ -2529,13 +2529,15 @@ function lookView(m, from) {
   const current = () => Math.max(0, Math.min(n - 1, Math.round(strip.scrollLeft / (strip.clientWidth || 1))));
   // The look in view: its dot, the arrows, and its name said (only a found one).
   let at = -1, t = 0;
+  const sayName = (m) => say("m", monsterName(m), true);
   const showing = () => {
     const i = current();
     if (i === at) return;
     at = i;
     dots.forEach((d, j) => d.setAttribute("aria-current", j === i ? "true" : "false"));
     prev.disabled = i === 0; next.disabled = i === n - 1;
-    if (found(all[i])) say("m", monsterName(all[i]), true);
+    // Every look's name line is recorded (lines.js names its looks too).
+    if (found(all[i])) sayName(all[i]);
   };
   const go = (i) => strip.scrollTo({ left: Math.max(0, Math.min(n - 1, i)) * strip.clientWidth, behavior: reduced() ? "auto" : "smooth" });
   // On scrollend where there is one (the swipe settled), else a moment after scrolling stops.
