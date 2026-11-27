@@ -2642,15 +2642,17 @@ function achievementCards(ids, i, from) {
   // reward. The small card: who's involved (Sevenstein, Trollar, the hero of Every Quip), if
   // anyone besides the captain, and the reward.
   const figs = figuresOf(a);
-  const stage = big ? `<div class="ach-stage${figs.length > 1 ? " four" : ""}">${figs.map((f) => `<div class="ach-boss">${f}</div>`).join("")}${rewardArt(r)}</div>`
-    : `<div class="ach-stage small">${a.figure ? figs.map((f) => `<div class="ach-cap ach-fig">${f}</div>`).join("") : ""}${rewardArt(r)}</div>`;
+  // The reward shows when it's earned; looked at again from the 🏆 sheet, it's just the achievement.
+  const prize = from.sheet ? "" : rewardArt(r);
+  const stage = big ? `<div class="ach-stage${figs.length > 1 ? " four" : ""}">${figs.map((f) => `<div class="ach-boss">${f}</div>`).join("")}${prize}</div>`
+    : (a.figure || prize ? `<div class="ach-stage small">${a.figure ? figs.map((f) => `<div class="ach-cap ach-fig">${f}</div>`).join("") : ""}${prize}</div>` : "");
   show(`<div class="ach-card${big ? " huge" : ""}${a.wing ? "" : big ? " grand" : ""}"${a.wing ? ` data-stratum="${a.wing}"` : ""}>
     <p class="ach-kicker">${a.secret ? "Secret achievement!" : "New achievement!"}</p>
     <div class="ach-icon" aria-hidden="true">${a.icon}</div>
     <h2 class="ach-title">${esc(a.title)}</h2>
     <p class="ach-detail">${esc(a.detail)}</p>
     ${stage}
-    <p class="ach-got"><span>You got</span> ${esc(rewardWords(r))}</p>${!from.sheet && ids.length > 1 ? `<p class="ach-count">${i + 1} of ${ids.length}</p>` : ""}</div>
+    ${from.sheet ? "" : `<p class="ach-got"><span>You got</span> ${esc(rewardWords(r))}</p>`}${!from.sheet && ids.length > 1 ? `<p class="ach-count">${i + 1} of ${ids.length}</p>` : ""}</div>
     <div class="btns"><button class="big alt ach-share" id="achShare" type="button" aria-label="Share" title="Share" hidden>📤</button><button class="big" id="achNext">${next}</button></div>`, "page ach");
   if (big) sfx.legend(); else sfx.chestOpen();
   cardLines(a).forEach((_, k) => say("p", achievementLine(a, k), k === 0));
@@ -2678,7 +2680,7 @@ function trophyPage() {
   const row = (a) => {
     const t = earnedAt(a.id);
     if (t) return `<button type="button" class="ach-row earned${isNewAch(a.id) ? " new" : ""}${isBig(a) ? " top" : ""}" data-ach="${a.id}">
-      <span class="ach-ico" aria-hidden="true">${a.icon}</span><span class="ach-txt"><b>${esc(a.title)}${isNewAch(a.id) ? ' <i class="new-pill">New!</i>' : ""}</b><small>${esc(a.detail)}</small><small class="ach-when">Earned ${date(t)} · ${esc(rewardWords(a.reward))}</small><small class="ach-share-hint">📤 Tap to see it and share</small></span></button>`;
+      <span class="ach-ico" aria-hidden="true">${a.icon}</span><span class="ach-txt"><b>${esc(a.title)}${isNewAch(a.id) ? ' <i class="new-pill">New!</i>' : ""}</b><small>${esc(a.detail)}</small><small class="ach-when">Earned ${date(t)}</small><small class="ach-share-hint">📤 Tap to see it and share</small></span></button>`;
     // A track lists its earned tiers and its next one; the tiers past that aren't listed yet.
     if (a.kind === "track" && nextTier[a.track] !== a) return "";
     if (a.kind === "track" && a.started) {
@@ -2690,7 +2692,7 @@ function trophyPage() {
     }
     if (a.secret) return `<div class="ach-row secret"><span class="ach-ico" aria-hidden="true">❓</span><span class="ach-txt"><b>???</b><small>A secret achievement</small></span></div>`;
     return `<div class="ach-row ahead"><span class="ach-ico" aria-hidden="true">${a.icon}</span><span class="ach-txt"><b>${esc(a.title)}</b><small>${esc(a.detail)}</small>
-      ${bar(a)}<small class="ach-prog">${esc(a.progress)}</small><small class="ach-when">Reward: ${esc(rewardWords(a.reward))}</small></span></div>`;
+      ${bar(a)}<small class="ach-prog">${esc(a.progress)}</small></span></div>`;
   };
   // The secrets: the tracks first (they count up), then mastery, then the surprises.
   const strata = list.filter(isBig), secret = ["track", "mastery", "surprise"].flatMap((k) => list.filter((a) => a.kind === k));
