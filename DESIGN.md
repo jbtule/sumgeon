@@ -165,7 +165,7 @@ One stratum per grade, in a **straight chain**: each opens only the next. The le
 ### 4.2 Retired: strata past 6th grade
 The first design went on to 8th grade (the Negative Zone, the Root Cellar, and Pirate Cove for percent and π). The game now ends at Pirate Cavern, and their monsters fill gaps above: Negasicle, Absolutely, Rootling, Slashbuckler, Colon-el Ratio, % Gremlin and π Pirate in Pirate Cavern, Squaresquatch in the Crystal Mines, Exponent-tron in the Pyramid. Their bosses Lord Undefined (÷0), the Hydra of Powers and Dread Pirate Radius are retired.
 
-**Endless Descent** (§6.4) has its own boss, the **Endless Specter** (∞).
+Endless (§6.4) has no boss of its own: the Endless Specter was dropped on 2026-11-27, since Endless is a mastered stratum that keeps going with its own bosses.
 
 A Wing's monster list is a **pool**, which can be bigger than one run's floors. Each run draws its floors from the pool, so replays meet different monsters. **Creature types can repeat across Wings** (there are two robots, two ghosts and a few pirates), but within a Wing no two regular monsters share a creature type, and repeats need clearly different silhouettes. Pirate Cavern's pirates are the exception, because pirates are its theme.
 
@@ -194,7 +194,7 @@ Every Wing also has one **rescue floor** holding a cursed digit (§6.6). The pro
 - **Exponent-tron (^)**: a robot whose antenna is the caret and whose body is a stack of cubes, in the Parenthesis Pyramid. *Cubed*: volume of boxes (l × w × h).
 - **Squaresquatch (²)**: a bigfoot made of grid squares, in the Crystal Mines. *Arrays*: rows and columns up to 5 × 5, as repeated addition (5 + 5 + 5), which leads into area.
 - **Colon-el Ratio (:)**: an officer whose medals are the colon. Ratios (2:3).
-- **Endless Specter (∞)**: a looping ghost that only appears in Endless Descent. Its body traces ∞, so it looks nothing like Boomainder.
+- ~~**Endless Specter (∞)**~~ (dropped 2026-11-27): a looping ghost meant for Endless Descent. Its body traces ∞, so it looks nothing like Boomainder.
 
 ---
 
