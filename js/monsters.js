@@ -174,8 +174,9 @@ MON.push(
    const tie=(x)=>`<path d="M${x} 116 l-12 -7 v14 z M${x} 116 l12 -7 v14 z" fill="${CORAL}" stroke="${DK}" stroke-width="3" stroke-linejoin="round"/><circle cx="${x}" cy="116" r="4" fill="${CORAL}" stroke="${DK}" stroke-width="3"/>`;
    const face=(x)=>`${eye(x-9,82,8)}${eye(x+9,82,8)}<path d="M${x-7} 96 Q${x} 102 ${x+7} 96" ${ds} stroke-width="3"/>`;
    return `${foot(48,160,13)}${foot(70,160,13)}${foot(130,160,13)}${foot(152,160,13)}`
-   +solid(`<rect x="8" y="72" width="94" height="34" rx="15"/><rect x="98" y="72" width="94" height="34" rx="15"/>`,c)+one(59)+one(141)
-   +solid(`<circle cx="94" cy="89" r="12"/><circle cx="106" cy="89" r="12"/>`,c)+`<path d="M100 79 v20" ${ds} stroke-width="3"/>`
+   // Two whole pluses side by side, a small gap between their arms (2026-11-27: their arms used to
+   // meet in clasped hands, which read as a drawing error at game size).
+   +solid(`<rect x="21" y="74" width="76" height="30" rx="13"/><rect x="103" y="74" width="76" height="30" rx="13"/>`,c)+one(59)+one(141)
    +face(59)+face(141)+tie(59)+tie(141)}},
  {n:'Triceraplus',op:'Σ',sym:'+ + +',stratum:'hall',c:'#ff9a4a',hits:3,
   quip:'stomps off to find a bigger sum.',
