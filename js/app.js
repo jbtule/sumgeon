@@ -324,8 +324,8 @@ function slotsUI() {
 function useItem(k) {
   if (!G.running || G.busy || G.paused || G.next || !$("ov").hidden) return;
   const id = inv.slots[k];
-  // An empty slot opens 🎒 Items, as pausing to it does: Done goes back to the pause screen.
-  if (!id) { pause(); if (G.paused) itemsCard(true); return; }
+  // An empty slot opens 🎒 Items, paused: Done goes straight back to the fight, where it was.
+  if (!id) { pause(); if (G.paused) itemsCard(true, false, true); return; }
   if (id === "pie") {
     const r = eatPie(G.hearts, band().hearts);
     if (!r.used) { say("p", LOOT.heartsFull, true); return; }
@@ -1799,7 +1799,8 @@ function purseCard(fromPause) {
   if (wallet) say("p", purseLine(wallet), true); else say("p", LOOT.purseEmpty, true);
   $("purseBack").onclick = () => (fromPause ? pause() : menu());
 }
-function itemsCard(fromPause, quiet) {
+// fromSlot: opened by tapping an empty slot mid-fight, so Done goes back to the fight, not the pause screen.
+function itemsCard(fromPause, quiet, fromSlot) {
   if (!fromPause) G.onMenu = false;
   const slots = inv.slots.map((id, k) => id
     ? `<button type="button" class="islot" data-k="${k}" aria-label="Slot ${k + 1}: ${esc(itemOf(id).name)}. Tap to take it out."><span class="ico" aria-hidden="true">${itemIcon(id)}</span></button>`
@@ -1811,8 +1812,8 @@ function itemsCard(fromPause, quiet) {
   show(`<div class="cardhead"><h2>🎒 Items</h2></div>
   <div class="grp"><span>Quick-use slots</span><div class="islots">${slots}</div></div>
   <div class="grp"><span>Your items</span><div class="igrid">${grid}</div></div>
-  <div class="btns"><button class="big" id="itemsDone">Done</button></div>`, fromPause ? "float" : "page");
-  const redraw = () => { const top = $("ov").scrollTop; itemsCard(fromPause, true); $("ov").scrollTop = top; };
+  <div class="btns"><button class="big" id="itemsDone">${fromSlot ? "Keep fighting" : "Done"}</button></div>`, fromPause ? "float" : "page");
+  const redraw = () => { const top = $("ov").scrollTop; itemsCard(fromPause, true, fromSlot); $("ov").scrollTop = top; };
   // Mid-run (from the pause screen) a slot set fills right away from the inventory.
   const changed = () => saveItems(); // a slot set from the pause screen is there to tap when the fight resumes
   $("card").querySelectorAll(".iitem").forEach((b) => b.onclick = () => {
@@ -1825,7 +1826,7 @@ function itemsCard(fromPause, quiet) {
     redraw();
   });
   $("card").querySelectorAll(".islot:not(.empty)").forEach((b) => b.onclick = () => { const k = Number(b.dataset.k); clearSlot(inv, k); sfx.tick(); changed(k); redraw(); });
-  $("itemsDone").onclick = () => (fromPause ? pause() : menu());
+  $("itemsDone").onclick = () => (fromSlot ? resume() : fromPause ? pause() : menu());
   if (!quiet) {
     if (!ITEMS.some((i) => countOf(inv, i.id))) say("p", LOOT.itemsEmpty, true);
     else if (once("itemsHow", 3)) say("p", LOOT.itemsHow, true);
