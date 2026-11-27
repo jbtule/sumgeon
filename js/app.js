@@ -45,6 +45,7 @@ import { linkQR } from "./linkqr.js";
 import { award as awardAchievements, catalog as achCatalog, freshAchievements, unseen as unseenAchievements, rewardOf, achievementOf, cardLines, ACHIEVEMENT_IDS,
   isComeback, notePracticeDay, holidaysOn, hitSurprises, noteEvent, keepDays, dayNumber } from "./achievements.js";
 import { renderCard, shareCard } from "./sharecard.js";
+import { installWay, isIPad, safariVersion, iosSteps, ICONS as INSTALL_ICONS } from "./install.js";
 import { achievementLine } from "./lines.js";
 
 const $ = (id) => document.getElementById(id);
@@ -2210,8 +2211,10 @@ function menu() {
   ${list.length > 1 ? `<p class="playing">Playing as <b>${esc(displayName(list, PID))}</b> <button class="link" type="button" id="switchPlayer">Switch</button></p>` : ""}`;
   // A player with no grade yet is asked once, first (the kid picks: an older grade opens more strata).
   if (st.grade == null) {
-    show(`${head}<div class="grp" id="gradeAsk"><span>What grade are you in?</span>${gradesHTML()}</div>`, "page scene");
+    show(`${head}<div class="grp" id="gradeAsk"><span>What grade are you in?</span>${gradesHTML()}</div>
+    <div class="a2hs note" id="a2hs" data-kind="note">${installHTML("note")}</div>`, "page scene");
     drawScene();
+    wireInstall();
     wireGrades(() => { if (!hasCaptain()) { G.askHero = false; G.askedFor = PID; say("p", PHRASE.pickHero, true); } menu(); });
     $("openSettings").onclick = () => settings();
     $("openBook").onclick = bookPage; // 📖 Monsters & Heroes, also on the pause screen
@@ -2227,6 +2230,7 @@ function menu() {
   ${captainHTML()}
   ${lootRowHTML()}
   <div class="grp"><span>Pick a stratum</span><div class="wings strata"><div class="surface" aria-hidden="true"></div>${wingsHTML()}</div></div>
+  <div class="menu-foot"><div class="a2hs" id="a2hs" data-kind="link">${installHTML("link")}</div><p class="pause-ver menu-ver" aria-label="Version ${esc(BUILD)}">v ${esc(BUILD)}</p></div>
   <div class="btns${kept ? " keep" : ""}"><p class="warn" id="warn" role="status"></p><button class="big${kept ? " alt" : ""}" id="go">Enter the dungeon</button>${kept ? `<button class="big" id="keepGoing">Keep going?<small>${keepNote}</small></button>` : ""}</div>`, "page scene");
   if (kept) $("keepGoing").onclick = () => keepGoing(kept);
   drawScene();
@@ -2241,6 +2245,7 @@ function menu() {
     ov.scrollTop = top; card.scrollTop = inner;
   });
   wireCaptain();
+  wireInstall();
   $("openSettings").onclick = () => settings();
   $("openBook").onclick = bookPage; // 📖 Monsters & Heroes, also on the pause screen
   $("openTrophies").onclick = () => trophyPage(); // 🏆 achievements
@@ -2254,6 +2259,68 @@ function menu() {
     descend(null, "enter");
   };
 }
+/* ---------- Add to Home Screen (install.js) ----------
+   A quiet suggestion on the start screen, for a grown-up, only where it can be done and isn't yet:
+   Chrome and the like fire beforeinstallprompt (kept, and prompt() on the tap); Safari on an
+   iPhone or iPad has no install API, so the tap opens the steps. On iPhone and iPad the Home
+   Screen app keeps its own progress, apart from Safari's, so the grade question (a new player's
+   first screen) says to add it first. Never spoken, never in a fight. "Not now" is the device's
+   (store.device "homeHint"), not a player's. */
+let installEvt = null;
+addEventListener("beforeinstallprompt", (e) => { e.preventDefault(); installEvt = e; installRefresh(); });
+addEventListener("appinstalled", () => { installEvt = null; installRefresh(); });
+function installEnv() {
+  const mode = (q) => !!(window.matchMedia && matchMedia(q).matches);
+  return { ua: navigator.userAgent, platform: navigator.platform, touch: navigator.maxTouchPoints || 0,
+    standalone: mode("(display-mode: standalone)") || mode("(display-mode: fullscreen)") || navigator.standalone === true, prompt: installEvt };
+}
+const installNow = () => { const w = installWay(installEnv()); return w === "ios" || w === "prompt" ? w : null; };
+// kind "link": the start screen's line (with Not now); "note": the grade question's note.
+function installHTML(kind) {
+  const way = installNow();
+  if (!way || store.device.get("homeHint", null) === "later") return "";
+  const go = `<button class="link a2hs-go" type="button" data-a2hs><span aria-hidden="true">📲 </span>Add Sumgeon to your Home Screen</button>`;
+  if (kind === "link") return `${go}<button class="link a2hs-later" type="button" id="a2hsLater">Not now</button>`;
+  const why = way === "ios" ? "On iPhone and iPad, the Home Screen app keeps its own progress, apart from Safari's." : "It opens like an app, and plays offline.";
+  return `<p><b>Grown-ups:</b> add Sumgeon to your Home Screen first, and play it from there. ${why}</p>${go}`;
+}
+function wireInstall() {
+  const box = $("a2hs");
+  if (!box) return;
+  box.querySelectorAll("[data-a2hs]").forEach((b) => b.onclick = installTap);
+  if ($("a2hsLater")) $("a2hsLater").onclick = () => { store.device.set("homeHint", "later"); installRefresh(); };
+}
+// The event can come (or the app be installed) while the start screen is up: redraw just the box.
+function installRefresh() {
+  const box = $("a2hs");
+  if (!box || !G.onMenu) return;
+  box.innerHTML = installHTML(box.dataset.kind);
+  wireInstall();
+}
+function installTap() {
+  const way = installNow();
+  if (way === "prompt") {
+    const e = installEvt;
+    installEvt = null; // a kept event prompts once
+    e.prompt();
+    Promise.resolve(e.userChoice).catch(() => {}).then(installRefresh);
+    installRefresh();
+  } else if (way === "ios") installCard();
+}
+// The iPhone and iPad steps, with Safari's icons drawn: a float card over the start scene.
+function installCard() {
+  G.onMenu = false;
+  const env = installEnv(), ipad = isIPad(env);
+  const steps = iosSteps({ ipad, version: safariVersion(env.ua) }).map((s) =>
+    `<li><span class="a2hs-ico">${s.icon ? INSTALL_ICONS[s.icon] : ""}</span><span>${s.html}</span></li>`).join("");
+  show(`<div class="cardhead"><h2>Add to Home Screen</h2></div>
+  <p class="a2hs-why">Sumgeon then opens like an app, and plays offline. On ${ipad ? "iPad" : "iPhone"}, the Home Screen app keeps its own progress, apart from Safari's.</p>
+  <ol class="a2hs-steps">${steps}</ol>
+  ${fresh() ? "" : `<p class="a2hs-fine">Played here already? To bring this player along, open ⚙ Settings → Players → <b>Play on another device too</b>.</p>`}
+  <div class="btns"><button class="big" id="a2hsBack">Back</button></div>`, "float a2hs-card");
+  $("a2hsBack").onclick = menu;
+}
+
 // The start scene (DESIGN.md §8.3): while the start screen is up, the fight is hidden and the
 // surface (descent.js surfaceHTML) shows behind the card: the night sky, the hill with the
 // Sumgeon's door, your captain by it in your chalk color and the rest of your team around them
@@ -2316,7 +2383,7 @@ document.addEventListener("click", (e) => {
 // tap, so it waits for the first tap on the start screen (not one on a grade or a hero, which say
 // their own thing).
 document.addEventListener("pointerdown", (e) => {
-  if (!G.askHero) return;
+  if (!G.askHero || e.target.closest(".a2hs")) return; // the grown-up's Add to Home Screen says nothing
   G.askHero = false; G.askedFor = PID;
   if (!G.onMenu || $("ov").hidden || e.target.closest(".hpick, .gpick")) return;
   if (st.grade == null) say("p", PHRASE.pickGrade);
@@ -2325,7 +2392,7 @@ document.addEventListener("pointerdown", (e) => {
 // "Keep going? Tap the big button!" on the first tap on a start screen offering a saved run (not a
 // tap on Keep going itself, nor Enter).
 document.addEventListener("pointerdown", (e) => {
-  if (!G.askKeep) return;
+  if (!G.askKeep || e.target.closest(".a2hs")) return;
   G.askKeep = false;
   if (!G.onMenu || $("ov").hidden || !$("keepGoing") || e.target.closest("#keepGoing, #go")) return;
   say("p", PHRASE.keepGoing);
