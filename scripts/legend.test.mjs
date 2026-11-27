@@ -182,3 +182,16 @@ for (const w of WINGS) {
   assert.ok(/@media \(max-width: 759px\)\{\.trait\.two \.tn\{display:none\}\}/.test(css), "on phones, just the icons");
 }
 console.log("✓ legend: when it's due, the exam, saving");
+
+// The depth map's way to the Legend: 0 with nothing learned, half with every fact learned (box 3),
+// and 100% only when every fact is mastered, exactly when it's ready.
+{
+  const { legendProgress, legendFacts, legendReady, WINGS: W } = await import("../js/wings.js");
+  const w = W[0], fs = legendFacts(w), at = (b) => Object.fromEntries(fs.map((f) => [f.key, { b }]));
+  assert.equal(legendProgress(w, {}), 0);
+  assert.equal(legendProgress(w, at(3)), 0.5);
+  assert.equal(legendProgress(w, at(4)), 1);
+  assert.ok(legendReady(w, at(4)));
+  const one = at(4); one[fs[0].key] = { b: 3 };
+  assert.ok(legendProgress(w, one) < 1 && !legendReady(w, one));
+}

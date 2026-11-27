@@ -238,6 +238,16 @@ export function legendFacts(wing) { return priorityFacts(wing).filter((f) => !is
 // The share of them mastered (0–1).
 export function legendShare(wing, recs) { const fs = legendFacts(wing); return fs.filter((f) => topBox(recs[f.key])).length / fs.length; }
 export const legendReady = (wing, recs) => legendShare(wing, recs) >= 1;
+// How far along the way to the Legend (0–1), for the depth map: each of its facts counts by its
+// box (a learned one, box 3, half; a mastered one, box 4, whole), so it moves as facts are learned
+// and reaches 1 exactly when the Legend is ready.
+const LEGEND_WEIGHT = [0, 0.1, 0.25, 0.5, 1];
+export function legendProgress(wing, recs) {
+  const fs = legendFacts(wing);
+  if (!fs.length) return 0;
+  const sum = fs.reduce((t, f) => { const r = recs[f.key]; return t + (r ? LEGEND_WEIGHT[Math.min(4, Math.max(0, r.b | 0))] : 0); }, 0);
+  return Math.min(1, sum / fs.length);
+}
 export const legendBeaten = (wing, progress) => !!((progress || {})[wing.id] || {}).legend;
 // Whether the next run here ends with the Legend: ready (or opened before and not beaten yet).
 // test: ?legend, treating the stratum as mastered.
