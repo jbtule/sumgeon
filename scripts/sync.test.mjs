@@ -232,7 +232,8 @@ test("wrangler.jsonc matches: its own name and domain, not on workers.dev, NET_L
   const w = JSON.parse(text);
   assert.equal(w.name, "sumgeon-sync");
   assert.equal(w.workers_dev, false);
-  assert.deepEqual(w.routes, [{ pattern: "sumgeon-sync.asset-data.stream", custom_domain: true }]);
+  // No routes: the custom domain is attached once in the dashboard (the CI token has no zone role).
+  assert.equal(w.routes, undefined, "deploys never touch routes");
   assert.equal(w.ratelimits[0].simple.limit, NET_PER_MINUTE);
   assert.notEqual(w.ratelimits[0].namespace_id, "1001", "Sound Box's namespace");
   assert.equal(SYNC_URL, HOST);
