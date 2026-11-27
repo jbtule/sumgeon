@@ -1867,6 +1867,7 @@ function pause(auto) {
   show(`<h2>Paused</h2>
   <p>Floor ${G.floor + 1} of ${G.floors.length}: <strong>${esc(G.floors[G.floor].n)}</strong></p>
   <div class="pause-btns"><button class="small" type="button" id="pBook">📖 Monsters &amp; Heroes</button><button class="small" type="button" id="pSettings">⚙ Settings</button><button class="small" type="button" id="pItems">🎒 Items</button><button class="small" type="button" id="pWardrobe">👕 Wardrobe</button>${moneyOK() ? `<button class="small purse-btn pwide" type="button" id="pPurse" aria-label="Your purse">${purseSvg()}<span class="wmini">${walletMini(wallet)}</span></button>` : ""}<button class="small danger" type="button" id="pExit">Exit the dungeon</button></div>
+  <p class="pause-ver" aria-label="Version ${esc(BUILD)}">v ${esc(BUILD)}</p>
   <div class="btns"><button class="big" id="resume">Keep fighting</button></div>`, "float");
   $("resume").onclick = resume;
   $("pBook").onclick = bookPage;
