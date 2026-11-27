@@ -221,4 +221,10 @@ assert.equal(purseLine(205), "Two dollars and five cents!");
 // Every PHRASE is said somewhere (PHRASE.win is older: a win says wingCleared instead).
 for (const k of Object.keys(PHRASE).filter((k) => k !== "win")) assert.ok(app.includes("PHRASE." + k), `PHRASE.${k} is recorded but never said`);
 for (const k of Object.keys(BARK)) assert.ok(app.includes(`"${k}"`) || app.includes("BARK." + k), `BARK.${k} is recorded but never said`);
+// Hints always take a tap: nothing opens one on a timer; a new fact's 💡 only pulses, and the voice
+// says so the first 3 times, from the always-loaded explanations sprite.
+assert.ok(!/NEW_HINT_MS/.test(app) && !/setTimeout\([^;]*openHint\(\)/.test(app), "no hint opens by itself");
+assert.ok(/once\("hintNudge", 3\)/.test(app), "the nudge's line is said the first 3 times");
+assert.ok(PHRASE.hintNudge.split(/\s+/).length <= 12);
+{ const l = spokenLines().find((x) => x.kind === "p" && x.text === PHRASE.hintNudge); assert.ok(l && /^phrases-explain/.test(l.file), "the nudge is in the explanations sprite"); }
 console.log(`✓ lines (${plan.length} lines)`);

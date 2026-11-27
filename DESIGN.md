@@ -95,7 +95,7 @@ The monsters are all **operators and symbols**. Digits are on the player's side 
 The dungeon is a map of **Wings**, shown in the game as **strata**. Each Wing has its own floor palette, monsters and boss. **Mastery unlocks Wings, not grade.** The Wings form a chain going down. A Wing unlocks the next one when its boss is beaten **and** over 60% of its facts are mastered, the same bar as the *Legend Loading…* achievement (§14.2). A kindergartner who masters her facts climbs into multiplication. A 3rd grader can't skip ahead without mastering the facts below.
 - **The grade is a starting point, not a ceiling.** When a player is created, their grade opens every Wing up to and including theirs, so a 3rd grader doesn't have to grind through kindergarten. It also sets their help defaults (read-aloud and hints).
 - **Lower Wings are always open,** so an older player can drop back for fast, easy practice (§6.7).
-- **New content gets taught as it arrives.** The first time a kind of problem appears, the captain demonstrates it, and a new fact starts with its model shown (§5.3). That's what makes working ahead possible for a young player.
+- **New content gets taught as it arrives.** The first time a kind of problem appears, the captain demonstrates it, and a new fact offers its model a tap away (§5.3). That's what makes working ahead possible for a young player.
 - **There is no manual unlock.** See §9 for why nothing needs a grown-up lock.
 
 ### 4.1 The grade strata (plan, 2026-11-25)
@@ -346,7 +346,7 @@ The game should **teach first, then fade the help out** as a fact gets learned, 
 **Help follows the fact's Leitner box (§5.1):**
 | Fact state | What the player sees |
 |---|---|
-| **New** (never seen) | A **"show me" model appears automatically** beside the problem, such as 3 + 4 as dots on a ten-frame. She counts, then types. |
+| **New** (never seen) | A **💡 hint button**, as for learning. It never opens by itself (settled 2026-11-27: opening after 3.5 s came too soon); after about 8 s with nothing typed it pulses, and the first few times the voice says "Stuck? Tap the light bulb!". The model (3 + 4 as dots on a ten-frame) appears when tapped. |
 | **Learning** (box 1–2) | A **💡 hint button**. The model appears only when tapped. |
 | **Review** (box 3–4) | No button. A hint comes back only after a miss. |
 | **After any miss** | A **worked example** instead of just the answer, animated and read aloud. 8 + 5 → 8 + 2 = 10, then 10 + 3 = 13. The fact then goes into the **retry queue** and returns 2–4 problems later. |

@@ -967,20 +967,32 @@ function burst(crit) {
 }
 
 /* ---------- hints (DESIGN.md §5.3) ----------
-   A new fact shows its model by itself; a fact being learned gets a 💡 button; a fact in review
+   A hint always takes a tap: a new fact and a fact being learned get a 💡 button; a fact in review
    gets nothing. After a miss, the worked example stays up until "Got it". A hinted answer still
    hits, but doesn't build the streak or count toward mastery. */
-// A new fact's hint waits a moment (NEW_HINT_MS), so a player who already knows it can answer
-// first and get the credit (placement, learn.js record); until then 💡 offers it.
-const NEW_HINT_MS = 3500;
+// A new fact's 💡 never opens by itself (it used to after 3.5 s, too soon): after NUDGE_MS on the
+// problem (answer time, so a pause doesn't count) with nothing typed or drawn, it pulses gently
+// (a steady glow with reduced motion), and the first few times the voice says "Stuck? Tap the
+// light bulb!". A player who knows it answers first and gets the credit.
+const NUDGE_MS = 8000;
 let hintTimer = null;
 function showHelp(mode) {
   clearTimeout(hintTimer);
   $("hintBtn").hidden = mode === "none";
+  $("hintBtn").classList.remove("nudge");
   $("hint").hidden = true;
-  // Not if they've started typing (or drawing a spell): they aren't stuck, and the hint opening
-  // would move things under their fingers.
-  if (mode === "show") { const cur = G.cur; hintTimer = setTimeout(() => { if (G.cur === cur && !G.busy && !G.hinted && G.input === "" && !(typeof strokes !== "undefined" && strokes.length)) openHint(); }, NEW_HINT_MS); }
+  if (mode === "show") hintNudge(G.cur);
+}
+function hintNudge(cur) {
+  const left = NUDGE_MS - (performance.now() - G.t0);
+  hintTimer = setTimeout(() => {
+    if (G.cur !== cur || G.hinted || $("hintBtn").hidden || !G.running) return;
+    // Waits out an attack, a card or the pause (G.t0 moves on by the pause), and doesn't nudge
+    // while they're typing or drawing: they aren't stuck.
+    if (G.busy || G.paused || document.hidden || !$("ov").hidden || G.input !== "" || strokes.length || performance.now() - G.t0 < NUDGE_MS) return hintNudge(cur);
+    $("hintBtn").classList.add("nudge");
+    if (once("hintNudge", 3)) say("p", PHRASE.hintNudge, false, () => G.cur === cur && !G.busy && !G.hinted);
+  }, Math.max(500, left));
 }
 function openHint() {
   const h = hintFor(hintFact(), false), box = $("hint");
@@ -996,7 +1008,7 @@ function openHint() {
   box.innerHTML = (inline ? "" : `<div class="model">${h.model}</div>`) + `<p class="hsay">${esc(inline ? h.say.replace(/ ([=+−→]) /g, "\u00a0$1\u00a0") : h.say.replace(/ \? (\S+)$/, "\u00a0?\u00a0$1"))}</p>`; // nor a comparison ("2/3 ? 2/6")
   box.classList.toggle("words", inline);
   box.hidden = false;
-  $("hintBtn").hidden = true;
+  $("hintBtn").hidden = true; $("hintBtn").classList.remove("nudge");
 }
 // After a miss: the worked example as a card over the game, "Oops!" and the right answer with
 // the drawing, until "Got it" (or Enter, on the focused button).
