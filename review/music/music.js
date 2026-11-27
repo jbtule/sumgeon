@@ -89,14 +89,8 @@ document.querySelectorAll("[data-vol]").forEach((r) => (r.oninput = () => {
 }));
 // A recorded line over the music, ducked under it. Starts the music first if it isn't playing,
 // and lets it fade in, so you hear it before and after.
-// iOS only lets the device voice start from a tap, and the line here waits for the duck (and the
-// music's fade in), so the tap itself speaks an empty line first: that unlocks speech for the page.
-function unlockSpeech() {
-  try { if (window.speechSynthesis) { const u = new SpeechSynthesisUtterance(" "); u.volume = 0; speechSynthesis.speak(u); } } catch (e) {}
-}
 document.querySelectorAll("[data-voice]").forEach((b) => (b.onclick = async () => {
   const id = b.dataset.voice;
-  unlockSpeech();
   if (talking) return;
   talking = true; b.disabled = true;
   try {
