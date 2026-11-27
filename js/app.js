@@ -21,7 +21,7 @@ import { pvSvg, pvLine } from "./placevalue.js";
 import { dollarSvg, dollarLine, moneyText } from "./dollars.js";
 import { coinsSvg, pileOf, coinOf } from "./coins.js";
 import { stackOf } from "./twodigit.js";
-import { read as readSigil, judge as judgeSigil } from "./sigil.js";
+import { read as readSigil, judge as judgeSigil, offEdge } from "./sigil.js";
 import { HANDWRITING } from "./handwriting.js";
 import { traitOf, charged, prefers, hitBy, atHalf, asks, flipOf, flashOf, dieSvg, mega } from "./traits.js";
 import { roster, mastery, meet, beat, renamed, RENAMED } from "./bestiary.js";
@@ -3581,6 +3581,9 @@ function sigilSetup() {
 }
 function sigilPoint(e) { const r = $("sigil").getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; }
 function sigilReset() { strokes = []; drawing = null; paintSigil(); }
+// Did the drawing run off the pad (sigil.js offEdge)? sigilPoint doesn't clamp, so with pointer
+// capture a stroke that slides off keeps its points outside the box.
+function sigilOffEdge() { const c = $("sigil"); if (!c) return false; const r = c.getBoundingClientRect(); return offEdge(strokes, r.width, r.height); }
 // The strokes, glowing gold; extra draws more on top (the right way round, after a reversal),
 // with the strokes dimmed to dim (0–1) when given.
 function paintSigil(extra, dim = 1) {
@@ -3626,16 +3629,17 @@ function showHowToWrite(d) {
 function castSpell() {
   if (G.busy || !strokes.length) return;
   const sp = spellsOf(), mine = Object.entries(sp.templates).flatMap(([d, list]) => list.map((points) => ({ digit: Number(d), points })));
-  const ans = G.cur.ans, r = readSigil(strokes, mine);
-  let j = judgeSigil(r, ans);
+  const ans = G.cur.ans, r = readSigil(strokes, mine), edge = sigilOffEdge();
+  let j = judgeSigil(r, ans, undefined, edge);
   // Before learning it, the built-in templates alone: a drawing they read clearly as another
   // digit is never learned (a read takes a few ms, so only then).
-  if (j.learn && mine.length) j = judgeSigil(r, ans, readSigil(strokes));
+  if (j.learn && mine.length) j = judgeSigil(r, ans, readSigil(strokes), edge);
   if (j.outcome === "retry") {
     G.spellFails++;
     sfx.crack();
     say("p", PHRASE.spellFail, true);
     if (G.spellFails >= 2) { G.cur.spell = false; padUI("num"); setMsg("Incantation failed! Use the number pad.", "bad"); say("p", PHRASE.spellPad); }
+    else if (j.edge) { setMsg("Stay inside the box! Try again.", "bad"); sigilReset(); say("p", PHRASE.drawEdge); }
     else { setMsg("Incantation failed! Try again.", "bad"); sigilReset(); say("p", PHRASE.spellAgain); }
     return;
   }
@@ -3711,13 +3715,14 @@ function countFor(p, bk) {
 function castShape() {
   if (G.busy || !strokes.length) return;
   const p = G.cur, strict = !!(BANDS[curBand()] || {}).strict;
-  const r = readShape(strokes, { strict }), j = judgeShape(r, p.shape, strict);
+  const r = readShape(strokes, { strict }), j = judgeShape(r, p.shape, strict, sigilOffEdge());
   if (j.outcome === "retry") {
     G.drawFails++;
     sfx.crack();
     if (G.drawFails >= 2) return drawToCount();
-    setMsg("Hmm, I can't tell what that is. Try again!", "bad"); sigilReset();
-    say("p", PHRASE.spellAgain, true);
+    setMsg(j.edge ? "Stay inside the box! Try again." : "Hmm, I can't tell what that is. Try again!", "bad"); sigilReset();
+    if (j.edge) say("p", PHRASE.drawEdge, true);
+    else say("p", PHRASE.spellAgain, true);
     return;
   }
   // The clean shape glows over the drawing, theirs dimmed: what they drew when it counts, or the

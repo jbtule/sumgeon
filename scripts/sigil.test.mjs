@@ -2,7 +2,7 @@
 // digit reversed, messy copies still read right, and a scribble isn't clear.
 import assert from "node:assert/strict";
 import { readFileSync, existsSync } from "node:fs";
-import { read, judge, ACCEPT, cloud, TEMPLATES, SHAPES_FOR_TESTS, mirror } from "../js/sigil.js";
+import { read, judge, ACCEPT, cloud, TEMPLATES, SHAPES_FOR_TESTS, mirror, offEdge, EDGE_PX } from "../js/sigil.js";
 import { HANDWRITING } from "../js/handwriting.js";
 
 const CAN_REVERSE = new Set([1, 2, 3, 4, 5, 6, 7, 9]);
@@ -155,6 +155,34 @@ const clear7 = read([[[20, 8], [80, 8], [40, 95]]]);
 assert.equal(judge({ ...clear7, clear: false, digit: 1, reversed: false, fit: 0.9, margin: 0.5, forward: { 1: 0.9, 7: 0.9 } }, 1, clear7).learn, false, "never learn what the built-ins read clearly as another digit");
 assert.equal(judge(null, 3).outcome, "retry");
 assert.ok(ACCEPT.floor < ACCEPT.good);
+
+// Off the edge (offEdge): a stroke within EDGE_PX of a side, or past it (pointer capture keeps
+// sending points outside the pad), ran off the pad. Then a read that would be wrong or backwards
+// is unclear ("retry", edge), and a hit or a poor match stays as it is.
+assert.equal(offEdge([[[50, 50], [150, 120]]], 200, 160), false, "inside the pad");
+assert.equal(offEdge([[[50, 50], [150, 120], [150, 159]]], 200, 160), true, "touches the bottom");
+assert.equal(offEdge([[[50, 50], [210, 80]]], 200, 160), true, "a point past the right side");
+assert.equal(offEdge([[[50, 50]], [[60, -12], [60, 40]]], 200, 160), true, "a second stroke from above the pad");
+assert.equal(offEdge([[[2 + EDGE_PX, 80], [100, 80]]], 200, 160), false, "just inside the edge margin");
+assert.equal(offEdge([[[0, 0]]], 0, 0), false, "no pad, no edge");
+for (const f of FIXTURES) {
+  const r = read(f.strokes), right = judge(r, f.digit), cut = judge(r, f.digit, undefined, true);
+  // What counts stays: a hit or a poor match is the same off the edge.
+  if (right.outcome === "hit" || right.outcome === "show") assert.deepEqual(cut, right, `${f.id} still counts off the edge`);
+  for (let d = 0; d <= 9; d++) {
+    if (d === f.digit) continue;
+    const j = judge(r, d), je = judge(r, d, undefined, true);
+    if (j.outcome === "wrong" || j.outcome === "backwards") assert.ok(je.outcome === "retry" && je.edge && !je.learn, `${f.id} asked as ${d}: off the edge, ${j.outcome} is unclear`);
+    else assert.deepEqual(je, j, `${f.id} asked as ${d}: off the edge, ${j.outcome} stays`);
+  }
+}
+// A clear 7 asked as a 1, and a backwards 3: off the edge, both are "try again", no heart lost.
+assert.equal(judge(clear7, 1).outcome, "wrong");
+assert.deepEqual(judge(clear7, 1, undefined, true), { outcome: "retry", learn: false, fit: clear7.fit, edge: true });
+const back3 = read(mirror(SHAPES_FOR_TESTS.find((s) => s.digit === 3).strokes));
+assert.equal(judge(back3, 3).outcome, "backwards");
+assert.equal(judge(back3, 3, undefined, true).outcome, "retry", "a backwards 3 off the edge is unclear");
+assert.equal(judge(clear7, 7, undefined, true).outcome, "hit", "a clear 7 off the edge is still a hit");
 // The school-style digits (handwriting.js, shown to copy) read clearly as themselves.
 HANDWRITING.forEach((st, d) => { const r = read(st); assert.ok(r.digit === d && r.clear && !r.reversed && judge(r, d).outcome === "hit", `handwriting ${d} (got ${how(r)})`); });
 

@@ -43,6 +43,8 @@ export var PHRASE = {
   spellHow: "Draw your answer with your finger, then tap Cast!",
   spellAgain: "Try again!",
   spellPad: "Use the numbers this time.",
+  // A spell or a shape that ran off the pad and couldn't count: no heart lost, draw it again.
+  drawEdge: "Try again! Stay inside the box.",
   // A whole time is typed in two slots (Tick-Tockus): the hour, then the minutes.
   nowMinutes: "Now the minutes!",
   // Bills and coins (Trollar) are typed the same way: the dollars, then the cents.

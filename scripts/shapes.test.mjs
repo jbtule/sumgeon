@@ -1,5 +1,6 @@
 // Shapes (js/shapes.js, the prototype page): reading drawn shapes, and the counting problems.
 import assert from "node:assert/strict";
+import { offEdge } from "../js/sigil.js";
 import { SHAPE_TEMPLATES, readShape, judgeShape, countCorners, polygon, closed, sides, countProblem, countSvg, countHint, spokenCount, spokenDraw, irregular, convexTurns, aspectOf, DRAW_LEVELS, cleanShape } from "../js/shapes.js";
 
 const fam = (s) => (s === "square" || s === "rectangle" ? "quad" : s);
@@ -72,6 +73,20 @@ const nearly = readShape(closed([[0, 0], [130, 0], [130, 100], [0, 100]]));
 assert.ok(!nearly.clear);
 assert.equal(judgeShape(nearly, "square", false).outcome, "show");
 assert.equal(judgeShape(nearly, "rectangle", false).outcome, "hit");
+// Off the edge (offEdge in sigil.js): a drawing that ran off the pad and would be wrong is unclear
+// ("retry", edge: no "That looks like a square!"); one that's right still counts.
+for (const strict of [false, true]) {
+  assert.deepEqual(judgeShape(rect, "triangle", strict, true), { outcome: "retry", fit: judgeShape(rect, "triangle", strict).fit, edge: true });
+  assert.equal(judgeShape(rect, "square", strict, true).outcome, "retry");
+  assert.deepEqual(judgeShape(rect, "rectangle", strict, true), judgeShape(rect, "rectangle", strict));
+  assert.deepEqual(judgeShape(square, "rectangle", strict, true), judgeShape(square, "rectangle", strict));
+}
+assert.equal(judgeShape(nearly, "square", false, true).outcome, "show", "a poor match off the edge still counts");
+assert.equal(judgeShape(null, "circle", false, true).outcome, "retry");
+// A triangle drawn past the pad's bottom (pointer capture keeps the points outside): off the edge.
+const pastBottom = closed([[100, 20], [180, 175], [20, 175]]);
+assert.ok(offEdge(pastBottom, 200, 160) && !offEdge(closed([[100, 20], [180, 140], [20, 140]]), 200, 160));
+assert.equal(judgeShape(readShape(pastBottom), "triangle", false, offEdge(pastBottom, 200, 160)).outcome, "hit", "a clear triangle off the edge is still a hit");
 // A tilted rectangle is still long: the aspect is measured at the best turn.
 assert.ok(Math.abs(aspectOf(turn([[[0, 30], [100, 30], [100, 70], [0, 70]]], 30)[0]) - 2.5) < 0.1);
 // A scribble reads as nothing clear, and is "try again".

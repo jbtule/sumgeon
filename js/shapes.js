@@ -252,7 +252,13 @@ export function accepts(asked) {
 //   fit, or the asked shape's own fit is close to the best (a square that's nearly a rectangle).
 // - "retry": anything else (try again, no cost).
 export const SHAPE_ACCEPT = { good: 0.5, near: 0.05, floor: 0.25, gap: 0.05 };
-export function judgeShape(r, asked, strict) {
+// edge: the drawing ran off the pad (offEdge in sigil.js): a read that would be wrong is unclear
+// instead ("retry", edge: true), so a shape cut off by the edge isn't "That looks like a square!".
+export function judgeShape(r, asked, strict, edge) {
+  const j = judgeShapeRead(r, asked, strict);
+  return edge && j.outcome === "wrong" ? { outcome: "retry", fit: j.fit, edge: true } : j;
+}
+function judgeShapeRead(r, asked, strict) {
   if (!r) return { outcome: "retry", fit: 0 };
   const ok = accepts(asked, strict);
   if (r.clear && !ok.has(r.shape)) return { outcome: "wrong", fit: r.fit };
