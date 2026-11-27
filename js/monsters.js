@@ -397,12 +397,12 @@ function dress(m) {
 export const svg=(m,cls='')=>`<svg viewBox="-10 -10 220 220" class="${cls}" role="img" aria-label="${m.n}">${defs}${m.look ? dress(m) : m.d(m.c, m)}</svg>`;
 
 /* ---------- boss forms: mega and Legend (DESIGN.md §14.2) ----------
-   Each boss has two more forms, drawn here as data. The mega form is in the game (wings.js
-   bossAt); the Legend form isn't yet.
+   Each boss has two more forms, drawn here as data, both in the game (wings.js bossAt).
    - mega, on every 5th depth (wings.js bossAt): the same boss powered up, crowned, with its own
      name and a second trait (trait2, traits.js), after two depths of powering up (form "power").
-   - legend, once every fact in its stratum is mastered: the boss in gold, with a warm glow and
-     sparkles, the golden language of the gold-outlined mastery rings. Celebratory, not scary.
+   - legend, once every fact in its stratum is mastered (wings.js legendDue): the boss in gold,
+     with a warm glow and sparkles, the golden language of the gold-outlined mastery rings.
+     Celebratory, not scary. It keeps the mega form's second trait (a final exam).
    A form is the boss's own drawing with parts added (mega) or its colors turned to gold
    (legend), so it's clearly the same character. bossForm(m, "mega") gives a monster to draw
    with svg(), its base the boss (so traits.js still finds the boss's trait). */
@@ -578,5 +578,7 @@ export function bossForm(m, form, stage) {
   }
   const f = forms[form];
   if (!f) return null;
-  return Object.assign({}, m, { n: f.n, base: m.base || m.n, form, c: f.c || m.c, d: f.d, quip: f.quip, trait2: f.trait2 || null });
+  // The Legend fights with its mega form's second trait too (DESIGN.md §14.2).
+  const trait2 = f.trait2 || (form === "legend" && forms.mega && forms.mega.trait2) || null;
+  return Object.assign({}, m, { n: f.n, base: m.base || m.n, form, c: f.c || m.c, d: f.d, quip: f.quip, trait2 });
 }

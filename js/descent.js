@@ -65,6 +65,8 @@ export function surfaceHTML({ W, H, hz, heroes = [], stall = "" }) {
 // opts: { wing, depth, mode: "enter" | "deeper", reduced, title, sub, mega, scene: { hz, heroes } }. title is the big line
 // ("Now entering the Sumgeon!" is split so "Sumgeon" gets the logo's colors), sub the line under it,
 // mega a line under that on a mega boss's depth ("👑 Mega boss ahead!"). Mega depths wear a crown.
+// legend: the Legend boss ends this run (DESIGN.md §14.2): the mega line is "🌟 A legend awaits!",
+// in gold. golden: the ids of the strata whose Legend is beaten, whose layers get a gold edge.
 // onReady() is called once, when it's time to start the run: at the end, or on a skip.
 export function playDescent(opts, onReady) {
   if (active) return;
@@ -85,11 +87,11 @@ export function playDescent(opts, onReady) {
   if (plan.surface) { const sc = opts.scene || {}; html += surfaceHTML({ W: el.clientWidth || innerWidth, H, hz: sc.hz || skyH, heroes: sc.heroes, stall: sc.stall }); y += H; }
   let markY = 0;
   plan.layers.forEach((n) => {
-    const w = WINGS[n], last = n === plan.layers[plan.layers.length - 1];
-    if (!last) { html += `<div class="d-layer ${w.id}" style="height:${passH}px"><b class="d-name">${esc(w.name)}</b></div>`; y += passH; return; }
+    const w = WINGS[n], last = n === plan.layers[plan.layers.length - 1], gold = (opts.golden || []).includes(w.id) ? " golden" : "";
+    if (!last) { html += `<div class="d-layer ${w.id}${gold}" style="height:${passH}px"><b class="d-name">${esc(w.name)}</b></div>`; y += passH; return; }
     const marks = [];
     for (let k = 1; k <= rows; k++) marks.push(`<li class="${k < plan.to ? "done" : k === plan.to ? "here" : ""}${isMega(k) ? " mega" : ""}" style="top:${topPad + (k - 1) * row}px"><i></i><span>Depth ${k}${isMega(k) ? " 👑" : ""}</span></li>`);
-    html += `<div class="d-layer ${w.id} chosen" style="height:${topPad + rows * row + H}px"><b class="d-name" style="top:${Math.round(topPad * 0.35)}px">${esc(w.name)}</b><i class="d-shaft" style="top:${topPad}px;height:${Math.round((rows - 0.4) * row)}px"></i><ol class="d-marks">${marks.join("")}</ol></div>`;
+    html += `<div class="d-layer ${w.id} chosen${gold}" style="height:${topPad + rows * row + H}px"><b class="d-name" style="top:${Math.round(topPad * 0.35)}px">${esc(w.name)}</b><i class="d-shaft" style="top:${topPad}px;height:${Math.round((rows - 0.4) * row)}px"></i><ol class="d-marks">${marks.join("")}</ol></div>`;
     markY = y + topPad; // depth 1's marker
   });
   const camAt = (depth) => (depth <= 0 ? 0 : Math.round(markY + (depth - 1) * row - H * stopAt));
@@ -97,7 +99,7 @@ export function playDescent(opts, onReady) {
   const m = /^(.*?)(Sum)(geon)(.*)$/.exec(opts.title);
   const title = m ? `<span class="d-now">${esc(m[1].trim())}</span><span class="d-logo">${m[2]}<b>${m[3]}</b>${esc(m[4])}</span>` : `<span class="d-logo">${esc(opts.title)}</span>`;
   el.innerHTML = `<div class="d-stack" style="transform:translateY(${-from}px)">${html}</div><div class="d-streaks"></div>
-    <div class="d-title" aria-live="polite"><h2>${title}</h2><p>${esc(opts.sub)}</p>${opts.mega ? `<p class="d-mega">${esc(opts.mega)}</p>` : ""}</div>`;
+    <div class="d-title" aria-live="polite"><h2>${title}</h2><p>${esc(opts.sub)}</p>${opts.mega ? `<p class="d-mega${opts.legend ? " legend" : ""}">${esc(opts.mega)}</p>` : ""}</div>`;
   const stack = el.querySelector(".d-stack");
   (document.activeElement && document.activeElement.blur && document.activeElement.blur()); // Enter on a focused button mustn't click it
   const timers = [], at = (ms, fn) => timers.push(setTimeout(fn, ms));

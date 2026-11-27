@@ -393,6 +393,23 @@ export function victory() {
   });
 }
 
+// A Legend beaten (DESIGN.md §14.2): a bigger fanfare. A brassy call rising to a held chord,
+// a drum roll under it, and a shimmer of sparkles on top, about 3 seconds.
+export function legend() {
+  play(function (t) {
+    for (var i = 0; i < 10; i++) noise(t + i * 0.05, 0.08, 0.12 + i * 0.02, "lowpass", 500); // the drum roll
+    noise(t + 0.5, 0.5, 0.5, "lowpass", 220); // the big drum
+    [[67, 0.5], [72, 0.62], [76, 0.74], [79, 0.86], [76, 1.04], [79, 1.16], [84, 1.3]].forEach(function (n) {
+      tone("sawtooth", hz(n[0]), hz(n[0]), t + n[1], 0.32, 0.05); // brass
+      mallet(n[0] + 12, t + n[1], 0.18, 0.4);
+    });
+    [72, 76, 79, 84, 88].forEach(function (m) { tone("sawtooth", hz(m), hz(m), t + 1.5, 1.6, 0.035); mallet(m, t + 1.5, 0.14, 1.8); });
+    noise(t + 1.5, 0.6, 0.45, "lowpass", 200);
+    [96, 100, 103, 108, 103, 108].forEach(function (m, i) { mallet(m, t + 1.6 + i * 0.11, 0.08, 0.5); }); // sparkles
+    noise(t + 1.6, 1.4, 0.07, "highpass", 7000);
+  });
+}
+
 /* ---------- chests and items (DESIGN.md §6.3) ---------- */
 // A chest's lock pops and the lid creaks open, into a bright treasure fanfare.
 export function chestOpen() {

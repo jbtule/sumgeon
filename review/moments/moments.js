@@ -179,6 +179,7 @@ const SOUNDS = [
     ["Miss", "A wrong answer", () => sfx.miss()],
     ["Crack", "A failed spell, a heart lost", () => sfx.crack()],
     ["Floor cleared", "A monster beaten (and, for now, the stratum cleared)", () => sfx.victory()],
+    ["Legend!", "A stratum's golden Legend boss beaten: the big fanfare", () => sfx.legend()],
     ["Old floor jingle", "No longer used", () => sfx.cleared()]]],
   ["Chests and items", [
     ["Chest opens", "A chest's lock answered right: the lock pops, the lid opens", () => sfx.chestOpen()],

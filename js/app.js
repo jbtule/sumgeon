@@ -1,14 +1,14 @@
 // Everything on screen: the game loop, the menu and players, and the attack animations.
 // Problems, monsters, saving, sound and speech live in their own modules.
-import { MON, svg, LOOKS, lookOf, allLooks, CHOMP_SHUT } from "./monsters.js";
+import { MON, svg, LOOKS, lookOf, allLooks, CHOMP_SHUT, bossForm } from "./monsters.js";
 import { chompPose, morePose, mouthOf, SNAP, FLIP_MS, SNAP_MS, EAT_MS } from "./chomp.js";
 import { spokenProblem, spokenFact } from "./problems.js";
-import { BANDS, choose, factOf, record as recordAnswer, helpFor, monsterHP, probeKey, tierOf, skipTo, SKIP_PROBES, SKIP_WINDOW, MAX_LEAP, fluentTime, spellKey, RECENT, pool, drawHit, openLevels, reachOf, chaptersOf, pathBands, reviewFacts, placeReviews } from "./learn.js";
+import { BANDS, choose, factOf, record as recordAnswer, helpFor, monsterHP, probeKey, tierOf, skipTo, SKIP_PROBES, SKIP_WINDOW, MAX_LEAP, fluentTime, spellKey, RECENT, pool, drawHit, openLevels, reachOf, chaptersOf, pathBands, reviewFacts, placeReviews, examKey, examFacts, examRound, hpOf } from "./learn.js";
 import { countSvg, readShape, judgeShape, cleanFor, squawkBody, isDrawKey, SHAPE_LINE, SHAPE_CODE, article } from "./shapes.js";
 import { hintFor, STRATEGIES } from "./hints.js";
 import { openStore, displayName } from "./store.js";
 import { PHRASE, monsterName, monsterCleared, monsterWon, heroJoins, heroCursed, heroRescue, heroAlmost, heroHelps, traitLine, BARK, wingCleared, wingOpened, depthLine, DEPTH_MAX_SPOKEN, reversedLine, howToWriteLine, quipLine, squawk, trait2Line, newMonsterLine } from "./lines.js";
-import { WINGS, wingOf, runFloors, openWings, toOpen, floorStars, wingStars, depthScale, depthHP, deepest, MAP_DEPTHS, GRADES, gradeLabel, gradeName, withGrade, bandOf, gradeBand, OLD_BANDS, PATHS, chapterOf, stepsOpen, bossStage, isMega, BOSS_HP, MEGA_EVERY, megasOf, stepMonsters } from "./wings.js";
+import { WINGS, wingOf, runFloors, openWings, toOpen, floorStars, wingStars, depthScale, depthHP, deepest, MAP_DEPTHS, GRADES, gradeLabel, gradeName, withGrade, bandOf, gradeBand, OLD_BANDS, PATHS, chapterOf, stepsOpen, bossStage, isMega, BOSS_HP, MEGA_EVERY, megasOf, stepMonsters, legendDue, openLegend, beatLegend, legendBeaten, LEGEND_HP } from "./wings.js";
 import { missingOf, pickBlank, filled, spokenMissing, MISSING_SHARE, canHide } from "./missing.js";
 import { rectSvg } from "./third.js";
 import { arraySvg } from "./arrays.js";
@@ -478,6 +478,15 @@ const CHAPTER_AT = Number(new URLSearchParams(location.search).get("chapter")) |
 const chapterNow = (w = wing()) => (CHAPTER_AT ? Math.min(CHAPTER_AT, chaptersOf(PATHS[w.id])) : chapterOf(w, progress));
 const stepsNow = (w = wing()) => stepsOpen(w, progress, recs, chapterNow(w));
 const levelsFor = (bk, w = wing()) => openLevels(PATHS[w.id], stepsNow(w).open, bk);
+// The Legend boss (DESIGN.md §14.2, wings.js legendDue): once a stratum's priority steps are
+// mastered, the next run there ends with its boss's golden form, at any depth, until it's beaten.
+// ?legend treats the stratum as mastered, for testing (with ?floor=6 to start at the boss).
+const LEGEND_TEST = new URLSearchParams(location.search).has("legend");
+const legendNow = (w = wing()) => legendDue(w, progress, recs, LEGEND_TEST);
+const onLegend = () => { const m = G.floors && G.floors[G.floor]; return !!m && m.form === "legend"; };
+// The band the problem on screen is from: the Legend's exam mixes every band and strand of the
+// path (G.examBand), every other fight asks the monster's own (strandOf).
+const curBand = () => G.examBand || strandOf(G.floors[G.floor]);
 // Monsters arriving as their step opens (DESIGN.md §4.3): kept for the next floor-cleared or end
 // card ("A new monster appears in the Mines: Squaresquatch!"), and they take a depth-1 floor from
 // the next run.
@@ -572,19 +581,24 @@ function newRun(depth) {
   // The floors' monsters are the ones whose step is open (DESIGN.md §4.3): the newest steps' at
   // depth 1, any of them deeper.
   // (A first run in the stratum meets them in the path's order.)
-  G.depth = depth || deepest(wing(), progress); G.floors = runFloors(wing(), team, null, G.depth, stepMonsters(PATHS[wing().id], stepsNow().open, !(progress[wing().id] || {}).best));
+  G.depth = depth || deepest(wing(), progress);
+  // The Legend, once it's due, ends this run (and every run here until it's beaten: saved).
+  const legend = legendNow();
+  if (legend && !LEGEND_TEST && !(progress[wing().id] || {}).legendOpen) { openLegend(progress, wing().id); store.player(PID).set("wings", progress); }
+  G.floors = runFloors(wing(), team, null, G.depth, stepMonsters(PATHS[wing().id], stepsNow().open, !(progress[wing().id] || {}).best), legend);
   diveUI();
-  spritesFor(wing());
+  spritesFor(wing(), legend);
   // The room darkens as you go deeper: 8% per depth, up to 48% at depth 7.
   document.querySelector(".game").style.setProperty("--murk", Math.min(0.48, 0.08 * (G.depth - 1)).toFixed(2));
 }
 // The voice's audio sprites this stratum can need (lines.js runSprites, speech.js needSprites): the
 // ones every stratum needs, its monsters' lines, and its band's and strands' problems up to the
 // level after the newest open one (a probe or a skip can reach it). Other strata's are let go.
-function spritesFor(w) {
+function spritesFor(w, legend) {
   // Each band's levels as far as the chapter reaches: a probe or a skip can reach any of them.
+  // The Legend's exam can ask any of them.
   const upto = {}, ch = chapterNow(w);
-  pathBands(PATHS[w.id]).forEach((b) => { upto[b] = reachOf(PATHS[w.id], ch, b); });
+  if (!legend) pathBands(PATHS[w.id]).forEach((b) => { upto[b] = reachOf(PATHS[w.id], ch, b); });
   needSprites(ALWAYS.concat(runSprites(w, upto)));
   voicePlan();
 }
@@ -619,6 +633,16 @@ function loadMonster(i, quiet) {
   // A boss powering up has a little more HP, a mega boss more (wings.js BOSS_HP).
   const stage = m.boss ? bossStage(G.depth) : 0;
   G.max = G.hp = Math.round(monsterHP(m, strandOf(m), recs, levelsFor(strandOf(m)).levels) * depthScale(i, G.floors.length) * depthHP(G.depth) * BOSS_HP[stage]);
+  // The Legend's exam (learn.js examKey): its HP from every fact the exam can ask (those seen),
+  // as much as a mega boss's, or up to twice that to last about one answer of every kind
+  // (examRound); no fact twice, so nothing missed comes back on its floor.
+  G.exam = null; G.examBand = null;
+  if (m.form === "legend") {
+    const path = PATHS[wing().id], all = examFacts(path), seenF = all.filter((f) => recs[f.key] && recs[f.key].n), scale = depthScale(i, G.floors.length) * depthHP(G.depth);
+    const megaHP = hpOf(m, seenF.length ? seenF : all, wing().band) * LEGEND_HP;
+    G.max = G.hp = Math.round(Math.max(megaHP, Math.min(2 * megaHP, examRound(path, recs))) * scale);
+    G.exam = { used: [], steps: [] }; G.retry = [];
+  }
   const el = $("mon");
   el.className = "mon";
   el.innerHTML = monsterArt(m);
@@ -628,22 +652,24 @@ function loadMonster(i, quiet) {
   // A mega boss has a second trait (traits.js mega): both icons, and the second one's name.
   const t = traitOf(m), t2 = mega(m) ? m.trait2 : null, badge = $("trait");
   badge.hidden = !t;
-  if (t) { badge.textContent = t2 ? `${t.icon}${t2.icon} ${t2.name}` : `${t.icon} ${t.name}`; badge.title = t2 ? `${t.text}. ${t2.text}` : t.text; }
-  // A long name (Professor Minustaur), or one that doesn't fit beside its trait badge on a small
-  // phone (Disco Squatch and 🟩 Arrays), shrinks to fit.
-  const nm = $("mName");
-  nm.classList.remove("long");
-  if (m.n.length > 13 || nm.scrollWidth > nm.clientWidth + 1) nm.classList.add("long");
+  // Two traits (a mega boss, the Legend): the icons, with the second one's name beside them when
+  // there's room (styles.css hides it on phones); a tap on the badge says both (traitTap).
+  if (t) { badge.innerHTML = t2 ? `<span class="ti">${t.icon}${t2.icon}</span><span class="tn"> ${esc(t2.name)}</span>` : `${t.icon} ${esc(t.name)}`; badge.title = t2 ? `${t.text}. ${t2.text}` : t.text; }
+  badge.classList.toggle("two", !!t2);
   G.onFloor = 0; G.halved = false; G.floorLost = 0; G.floorStreak = 0; G.floorSlow = false; G.barked = {};
-  if (!quiet) setMsg(t2 ? `👑 Mega boss! ${t2.icon} ${t2.name}: ${t2.text}` : m.form === "power" ? `${m.n} is getting stronger!` : t ? `${t.icon} ${t.name}: ${t.text}` : "Your answer is your attack.");
-  $("mon").classList.toggle("mega", !!t2);
-  $("floorLbl").textContent = (G.depth > 1 ? `Depth ${G.depth} · ` : "") + (m.boss ? "Boss floor" : m.cursed != null ? "Rescue floor" : `Floor ${i + 1} / ${G.floors.length}`);
+  if (!quiet) setMsg(m.form === "legend" ? `🌟 A legend awaits! Every kind of problem: ${t.icon} ${t.name} and ${t2.icon} ${t2.name}.` : t2 ? `👑 Mega boss! ${t2.icon} ${t2.name}: ${t2.text}` : m.form === "power" ? `${m.n} is getting stronger!` : t ? `${t.icon} ${t.name}: ${t.text}` : "Your answer is your attack.");
+  $("mon").classList.toggle("mega", !!t2 && m.form !== "legend");
+  $("mon").classList.toggle("legend", m.form === "legend");
+  $("floorLbl").textContent = (G.depth > 1 ? `Depth ${G.depth} · ` : "") + (m.form === "legend" ? "🌟 Legend" : m.boss ? "Boss floor" : m.cursed != null ? "Rescue floor" : `Floor ${i + 1} / ${G.floors.length}`);
   hpUI(); heartsUI(); streakUI(); slotsUI();
+  fitName(m);
   if (quiet) return;
   meet(seen, m, Date.now()); store.player(PID).set("bestiary", seen);
   sfx.appear(m.boss);
-  // "Mega boss ahead!" as a mega boss arrives (DESIGN.md §4.3), else "Boss floor!".
-  if (t2) say("p", PHRASE.megaAhead);
+  // "A legend awaits!" as the Legend arrives (DESIGN.md §14.2), "Mega boss ahead!" as a mega boss
+  // does (§4.3), else "Boss floor!".
+  if (m.form === "legend") say("p", PHRASE.legendAwaits);
+  else if (t2) say("p", PHRASE.megaAhead);
   else if (m.boss) say("p", PHRASE.boss);
   // A cursed hero (the rescue floor) is announced with the quips' light echo (CURSED_FX), then who
   // you're freeing; a trait says what it does, the first times you meet it.
@@ -653,6 +679,18 @@ function loadMonster(i, quiet) {
   // Powering up on the two depths before a mega boss; a mega boss's second trait, the first times.
   if (m.form === "power") say("p", PHRASE.stronger);
   if (t2 && once("trait2:" + (m.base || m.n), 2)) say("p", trait2Line(m));
+}
+// A long name (Professor Minustaur), or one that doesn't fit on one line with its trait badge and
+// the HP on a phone (Disco Squatch and 🟩 Arrays, Golden Sigma Rex and its two traits), shrinks to
+// fit, onto two lines if it must: the HP bar keeps some room and the HP never wraps under it.
+const HP_ROOM = 36;
+// First smaller (long), then, on a phone where that still doesn't fit, on two lines (wrap).
+function fitName(m) {
+  const nm = $("mName"), row = nm.parentElement, bar = $("hpBar").parentElement;
+  nm.classList.remove("long", "wrap");
+  const tight = () => row.clientWidth > 0 && matchMedia("(max-width: 759px)").matches && (row.scrollWidth > row.clientWidth + 1 || bar.offsetTop > nm.offsetTop + nm.offsetHeight / 2 || bar.clientWidth < HP_ROOM);
+  if (m.n.length > 13 || nm.scrollWidth > nm.clientWidth + 1 || tight()) nm.classList.add("long");
+  if (tight()) nm.classList.add("wrap");
 }
 // The next problem, chosen by the learning engine (learn.js): a missed fact when it's due back,
 // otherwise learning, review or new facts, with the monster's operation preferred.
@@ -667,23 +705,28 @@ function newProblem() {
   // Drawing a shape (Polly-Gon) needs a touch screen, as spells do: on a mouse or keyboard it's
   // never asked, and the shape strands' counting problems carry on (shapes.js keeps drawing under
   // half of every level, so each can still open the next).
-  const bk = strandOf(m), f = flowOf(bk), avoidAns = G.recentAns || [], op = m.op === "mix" || bk !== st.band ? null : m.op, kinds = drawable(asks(m));
+  // The Legend's exam: the next fact from every kind the path asks, the hardest most, none twice
+  // (learn.js examKey). It's asked from its own band, with no spells, probes or retries.
+  const exam = G.exam ? examKey(PATHS[wing().id], recs, { used: G.exam.used, steps: G.exam.steps }) : null;
+  if (exam) { G.exam.used.push(exam.key); G.exam.steps.push(exam.step); }
+  G.examBand = exam ? exam.band : null;
+  const bk = exam ? exam.band : strandOf(m), f = flowOf(bk), avoidAns = G.recentAns || [], op = m.op === "mix" || bk !== st.band ? null : m.op, kinds = drawable(asks(m));
   // What's open (the path's window, DESIGN.md §4.3): this band's levels in the open steps.
   const lv = levelsFor(bk);
   // Spell casting: about 1 problem in 6 is drawn as a sigil instead of typed (touch screens;
   // ?spells for every one): a fact already learned with a one-digit answer. It's picked before
   // probing, since a fluent player is probing nearly every problem and would never get one.
-  const spellTurn = !due && !m.blank && canSpell() && (SPELLS_ALWAYS || Math.random() < SPELL_SHARE);
+  const spellTurn = !exam && !due && !m.blank && canSpell() && (SPELLS_ALWAYS || Math.random() < SPELL_SHARE);
   const spell = spellTurn ? spellKey(bk, recs, { recent: G.recent, spells: G.spells, avoidAns, op, asks: kinds, open: lv.levels, review: lv.review }) : null;
   // The last few spells, across runs while the game is open, so the same one isn't cast fight after fight.
   if (spell) G.spells = [spell].concat(G.spells || []).slice(0, SPELL_MEMORY);
-  const probe = !due && !spell && f.on && f.cool <= 0 ? probeKey(bk, recs, null, G.recent, avoidAns, f.leap, kinds, reachOf(PATHS[wing().id], chapterNow(), bk)) : null;
+  const probe = !exam && !due && !spell && f.on && f.cool <= 0 ? probeKey(bk, recs, null, G.recent, avoidAns, f.leap, kinds, reachOf(PATHS[wing().id], chapterNow(), bk)) : null;
   // ?fact=<key> (URL-encoded, "%E2%8C%9At3%3A30" for ⌚t3:30) makes the first problem that fact, for testing.
   const forced = FACT_AT && !G.solved && !G.tries ? FACT_AT : null;
   // An earlier grade's facts (the path's review steps) are mixed in as reviews for the monsters
   // asking the stratum's own band, once seen.
   const reviews = bk === wing().band ? reviewFacts(PATHS[wing().id], bk) : null;
-  const key = forced || spell || probe || choose(bk, recs, { now: Date.now(), recent: G.recent, retry: due ? due.key : null, op, asks: kinds, like: prefers(m), depth: G.depth, avoidAns, open: lv.levels, review: lv.review, reviews,
+  const key = forced || (exam && exam.key) || spell || probe || choose(bk, recs, { now: Date.now(), recent: G.recent, retry: due ? due.key : null, op, asks: kinds, like: prefers(m), depth: G.depth, avoidAns, open: lv.levels, review: lv.review, reviews,
     // The captain's digit: held back in the first fight, then about a third of problems lean to it
     // until the captain's first moment has happened (captainLean).
     digit: team.captain, digitShare: captainLean() ? CAPTAIN_BIAS : 0, avoidDigitShare: firstFight() ? CAPTAIN_HOLD : 0 });
@@ -973,13 +1016,18 @@ function openWorked() {
   $("gotIt").onclick = nextAfterMiss;
 }
 $("hintBtn").onclick = () => { if (!G.busy) openHint(); };
+// A tap on a two-trait badge (a mega boss, the Legend: icons only on phones) says what both do.
+$("trait").onclick = () => {
+  const m = G.floors && G.floors[G.floor], t = m && traitOf(m), t2 = mega(m) ? m.trait2 : null;
+  if (t && t2) setMsg(`${t.icon} ${t.name}: ${t.text}. ${t2.icon} ${t2.name}: ${t2.text}.`);
+};
 
 // Saves the answer to the fact's record; says so when it opens a new level.
 // Returns what to say about it: a skip ahead, a new level, or nothing. A drawn answer (a spell)
 // is writing practice: it changes no record, timing, placement, skipping or the "all fast" star.
 function learnFrom(ok) {
   if (G.cur.spell) return null;
-  const bk = strandOf(G.floors[G.floor]), b = BANDS[bk], key = G.cur.key, ms = performance.now() - G.t0;
+  const bk = curBand(), b = BANDS[bk], key = G.cur.key, ms = performance.now() - G.t0;
   // Fluent: right, unhinted and quick, with a second more for each extra digit to tap.
   const limit = fluentTime(b.fluentMs, G.cur.sym || G.cur.ans);
   const before = stepsNow().open, fluent = ok && !G.hinted && ms < limit, f = flowOf(bk);
@@ -1103,7 +1151,8 @@ function miss(why) {
   const lost = G.hearts;
   learnFrom(false);
   // after counts down at each new problem, so 3–5 means 2–4 other problems in between.
-  G.retry = G.retry.filter((r) => r.key !== G.cur.key).concat([{ key: G.cur.key, after: 3 + Math.floor(Math.random() * 3) }]);
+  // (Not in the Legend's exam: no fact twice there. The miss still sends it back to learning.)
+  if (!G.exam) G.retry = G.retry.filter((r) => r.key !== G.cur.key).concat([{ key: G.cur.key, after: 3 + Math.floor(Math.random() * 3) }]);
   if (blocked) sfx.clang(); else if (cost > 1) sfx.thunder(); else sfx.miss(); // a charged miss is a thunder strike
   restartAnim($("mon"), "lunge");
   streakUI();
@@ -1171,7 +1220,7 @@ function cleared(chestDone) {
   sfx.victory(); // a floor cleared gets the fanfare (the user liked it better than the jingle)
   const nx = G.floors[G.floor + 1], news = newsHTML();
   const next = `<div class="cardmon">${monsterArt(nx)}</div>
-  <p>Next down the stairs: <strong>${nx.n}</strong>${nx.form === "mega" ? ", the 👑 mega boss" : nx.boss ? ", the boss" : ""}.${healed ? " You found a heart (+1)." : ""}</p>`;
+  <p>Next down the stairs: <strong>${nx.n}</strong>${nx.form === "legend" ? ", the 🌟 Legend" : nx.form === "mega" ? ", the 👑 mega boss" : nx.boss ? ", the boss" : ""}.${healed ? " You found a heart (+1)." : ""}</p>`;
   if (m.cursed != null && !crackCurse(team, m.cursed).freed) {
     // The curse cracks (heroes.js crackCurse): it takes CURSE_HITS wins to break.
     const h = HEROES[m.cursed], r = crackCurse(team, m.cursed);
@@ -1208,7 +1257,8 @@ function cleared(chestDone) {
   <div class="btns"><button class="big" id="next">Floor ${G.floor + 2}</button></div>`, "float");
   }
   if (healed) say("p", PHRASE.heart);
-  if (nx.form === "mega") say("p", PHRASE.megaAhead);
+  if (nx.form === "legend") say("p", PHRASE.legendAwaits);
+  else if (nx.form === "mega") say("p", PHRASE.megaAhead);
   else if (nx.boss) say("p", PHRASE.nextBoss);
   $("next").onclick = () => { hide(); loadMonster(G.floor + 1); newProblem(); };
 }
@@ -1219,7 +1269,16 @@ function end(win) {
   if (win) { progress[w.id] = progress[w.id] || { boss: 0, best: 0 }; progress[w.id].boss++; }
   // A mega boss beaten (DESIGN.md §4.3): the next chapter is reached. Counted by the depths whose
   // mega boss is beaten, so beating the same one again doesn't count twice.
-  const megaWin = win && G.floors[G.floor].form === "mega";
+  // The Legend at a mega boss's depth counts as that mega boss too.
+  const legendWin = win && G.floors[G.floor].form === "legend";
+  const megaWin = win && (G.floors[G.floor].form === "mega" || (legendWin && isMega(G.depth)));
+  // The Legend beaten (DESIGN.md §14.2): saved per stratum, and a legendBeaten event, the hook for
+  // its achievement and the golden crown (§14.1, still to build). ?legend's practice run saves
+  // nothing.
+  if (legendWin && !LEGEND_TEST) {
+    beatLegend(progress, w.id, Date.now()); store.player(PID).set("wings", progress);
+    document.dispatchEvent(new CustomEvent("legendBeaten", { detail: { wing: w.id, boss: G.floors[G.floor].base, depth: G.depth, player: PID } }));
+  }
   if (megaWin) { const p = progress[w.id]; p.megas = Math.max(megasOf(p), Math.floor(G.depth / MEGA_EVERY)); keepSteps(w); }
   const chOpened = chapterNow(w) > chBefore ? chapterNow(w) : 0;
   if (megaWin) arrived(stepsBefore, stepsNow(w).open);
@@ -1235,7 +1294,9 @@ function end(win) {
   // again on a rescue floor, and pick someone else to lead.
   const fallen = !win && hasCaptain() ? HEROES[team.captain] : null;
   // A stratum cleared: the fanfare for now; it's meant to get something really big (DESIGN.md §8.3).
-  if (win) { sfx.victory(); say("p", monsterCleared(m)); say("p", wingCleared(w)); } else say("p", monsterWon(m));
+  // A Legend beaten gets the big fanfare and "Legend!" first.
+  if (legendWin) { sfx.legend(); say("p", PHRASE.legend); say("p", monsterCleared(m)); }
+  else if (win) { sfx.victory(); say("p", monsterCleared(m)); say("p", wingCleared(w)); } else say("p", monsterWon(m));
   if (fallen) say("p", heroCursed(fallen));
   if (chOpened) say("p", PHRASE.chapter);
   if (opened) { say("p", PHRASE.unlocked); openedAll.forEach((x) => say("p", wingOpened(x))); }
@@ -1251,7 +1312,10 @@ function end(win) {
   const chapterNote = chOpened ? `<div class="unlocked chapter" role="status"><b>👑 Chapter ${chOpened} is open!</b><span>New steps join as you learn: ${esc(PATHS[w.id].filter((s) => s.chapter === chOpened && !s.ongoing && !s.review).map((s) => s.name).join(", "))}.</span></div>` : "";
   const left = chapterNote + (opened ? `<div class="unlocked" role="status"><b>🔓 New stratum unlocked!</b><span>${openedAll.map((x) => esc(x.name)).join(" and ")} ${openedAll.length > 1 ? "are" : "is"} open.</span></div>` : win ? nextWingHint() : "");
   pickOpen = false;
-  show(`<h2>${win ? wingCleared(w) : `${m.n} won this round`}</h2>
+  // The Legend's win card: "Legend!", the stratum's name and the golden boss, on its wall.
+  const legendHead = legendWin ? `<div class="legend-win" data-stratum="${w.id}"><h2 class="legend-title">🌟 Legend! 🌟</h2><p class="legend-wing">${esc(w.name)}</p>
+    <div class="cardmon legend">${monsterArt(m)}</div><p class="legend-note">You mastered every fact here. ${esc(m.n)} bows to you.</p></div>` : "";
+  show(`${legendHead || `<h2>${win ? wingCleared(w) : `${m.n} won this round`}</h2>`}
   ${win || fallen ? "" : `<div class="cardmon">${monsterArt(m)}</div>`}
   <p>${win ? `${esc(m.n)} ${esc(m.quip)} <strong>Depth ${depth + 1}</strong> is open below: tougher monsters, new floors.` : "Every miss shows the right answer, so the next run goes deeper."}</p>
   ${cursedLine}
@@ -1301,7 +1365,7 @@ const CHEST_ALWAYS = new URLSearchParams(location.search).get("chest");
 function openChest(m, done) {
   G.busy = true;
   // A mega boss's chest is a big one (DESIGN.md §4.3): more coins, or two items.
-  const C = G.chest = { done, boss: !!m.boss, big: m.form === "mega", tries: 0, key: null };
+  const C = G.chest = { done, boss: !!m.boss, big: m.form === "mega" || m.form === "legend", tries: 0, key: null };
   if (C.big) say("p", LOOT.bigChest, true);
   else say("p", LOOT.chest, true);
   if (once("chest", 3)) say("p", LOOT.chestHow);
@@ -1803,7 +1867,10 @@ function wingsHTML() {
     if (isOpen) note = (p.boss ? `Cleared ${p.boss}×` : p.best ? `Best: ${p.best} of ${w.floors.length + 1} floors` : "Not tried yet") + (ws.got ? ` · ★ ${ws.got} of ${ws.max}` : "");
     else { const t = toOpen(w, progress, recs); note = `🔒 Beat ${t.prev.boss}${t.boss ? " ✓" : ""} and learn ${Math.round(t.need * 100)}% of ${t.prev.name.replace(/^The /, "the ")} (now ${Math.round(t.share * 100)}%)`; }
     const d = deepest(w, progress);
-    return `<label class="wing ${w.id}${here ? " here" : ""}${isOpen ? "" : " locked"}"><input type="radio" name="wing" value="${w.id}" ${here ? "checked" : ""} ${isOpen ? "" : "disabled"}>
+    // A stratum whose Legend is beaten (DESIGN.md §14.2) gets a gold edge; one whose Legend awaits says so.
+    if (isOpen && legendBeaten(w, progress)) note = "🌟 Legend beaten · " + note;
+    else if (isOpen && legendNow(w)) note = "🌟 A legend awaits! · " + note;
+    return `<label class="wing ${w.id}${here ? " here" : ""}${isOpen ? "" : " locked"}${isOpen && legendBeaten(w, progress) ? " golden" : ""}"><input type="radio" name="wing" value="${w.id}" ${here ? "checked" : ""} ${isOpen ? "" : "disabled"}>
       <span><b>${w.name}</b><small>${b.label}</small><em>${note}</em>${here ? `<em class="level" id="levelLine">${levelLine()}</em>` : ""}
       ${isOpen ? depthTrack(w, d) : ""}</span></label>`;
   }).join("");
@@ -2042,9 +2109,11 @@ function bookPage() {
   for (const { wing: w, m } of roster()) {
     if (w !== lastWing) { if (lastWing) beasts += "</div>"; beasts += `<h3 class="book-wing">${esc(w.name)}</h3><div class="beasts">`; lastWing = w; }
     const s = seen[m.n], t = traitOf(m), share = mastery(m, w, recs), gold = s && share >= 1;
+    // A boss whose Legend is beaten shows golden (DESIGN.md §14.2).
+    const legendary = m.boss && legendBeaten(w, progress), art = legendary ? bossForm(m, "legend") : m;
     beasts += s
-      ? `<section class="beast${gold ? " gold" : ""}"><div class="beast-art">${ring(share)}${svg(m)}</div>
-          <b>${esc(m.n)}</b>${m.boss ? '<small class="boss-tag">Boss</small>' : ""}
+      ? `<section class="beast${gold ? " gold" : ""}${legendary ? " legendary" : ""}"><div class="beast-art">${ring(share)}${svg(art)}</div>
+          <b>${esc(m.n)}</b>${m.boss ? '<small class="boss-tag">Boss</small>' : ""}${legendary ? `<small class="legend-tag">🌟 ${esc(art.n)} beaten</small>` : ""}
           ${t ? `<span class="trait">${t.icon} ${esc(t.name)}</span><small>${esc(t.text)}</small>` : "<small>No tricks: a good first fight</small>"}
           <small>Beaten ${s.beaten || 0}× · Learned ${Math.round(share * 100)}%</small>${looksRow(m)}</section>`
       : `<section class="beast unmet"><div class="beast-art silhouette">${svg(m)}</div><b>???</b><small>Not met yet</small></section>`;
@@ -2224,15 +2293,16 @@ function descend(depth, mode) {
   const ov = $("ov");
   ov.classList.add("leaving");
   const fell = setTimeout(() => { ov.classList.remove("leaving"); hide(); }, reduced() ? 0 : 450);
-  // A mega boss's depth says so as it lands (DESIGN.md §4.3).
-  playDescent({ wing: wing(), depth: d, mode, reduced: reduced(), scene: enter ? sceneNow() : null, title: enter ? PHRASE.enter : `Depth ${d}`, sub: enter ? `${wing().name} · Depth ${d}` : wing().name, mega: isMega(d) ? "👑 " + PHRASE.megaAhead : "" },
+  // A mega boss's depth says so as it lands (DESIGN.md §4.3), and so does the Legend (§14.2).
+  playDescent({ wing: wing(), depth: d, mode, reduced: reduced(), scene: enter ? sceneNow() : null, title: enter ? PHRASE.enter : `Depth ${d}`, sub: enter ? `${wing().name} · Depth ${d}` : wing().name, mega: legendNow() ? "🌟 " + PHRASE.legendAwaits : isMega(d) ? "👑 " + PHRASE.megaAhead : "", legend: legendNow(), golden: WINGS.filter((x) => legendBeaten(x, progress)).map((x) => x.id) },
     () => { clearTimeout(fell); ov.classList.remove("leaving"); start(d, enter, true, reduced() ? 300 : AFTER_DESCENT_MS); });
 }
 // What's said as a run begins: "Now entering the Sumgeon!" (from the start screen), then the depth.
 function openingLines(enter, d) {
   if (enter) say("p", PHRASE.enter, false, null, ENTER_FX);
   if (d > 1 && d <= DEPTH_MAX_SPOKEN) say("p", depthLine(d), false, null, ENTER_FX); // "Depth two!" echoes like the entrance
-  if (isMega(d)) say("p", PHRASE.megaAhead, false, null, ENTER_FX);
+  if (legendNow()) say("p", PHRASE.legendAwaits, false, null, ENTER_FX);
+  else if (isMega(d)) say("p", PHRASE.megaAhead, false, null, ENTER_FX);
 }
 // enter: from the start screen's "Enter the dungeon", which says so first. voiced: the descent
 // already said the opening lines.
@@ -2607,7 +2677,7 @@ function countFor(p, bk) {
 }
 function castShape() {
   if (G.busy || !strokes.length) return;
-  const p = G.cur, strict = !!(BANDS[strandOf(G.floors[G.floor])] || {}).strict;
+  const p = G.cur, strict = !!(BANDS[curBand()] || {}).strict;
   const r = readShape(strokes, { strict }), j = judgeShape(r, p.shape, strict);
   if (j.outcome === "retry") {
     G.drawFails++;
@@ -2635,7 +2705,7 @@ function castShape() {
 // Two drawings that couldn't be read: a counting problem takes its place (no heart lost, and the
 // drawing's record unchanged).
 function drawToCount() {
-  const key = countFor(G.cur, strandOf(G.floors[G.floor]));
+  const key = countFor(G.cur, curBand());
   G.cur = factOf(key);
   G.recent = [key].concat(G.recent).slice(0, RECENT);
   G.input = ""; G.hinted = false; G.drawn = null; G.t0 = performance.now();

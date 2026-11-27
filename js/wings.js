@@ -4,7 +4,8 @@
 // for the tests.
 import { MON, LOOKS, lookOf, bossForm } from "./monsters.js";
 import { HEROES } from "./heroes.js";
-import { BANDS, pool, learned, stepFacts, openSteps, chaptersOf } from "./learn.js";
+import { BANDS, pool, learned, stepFacts, openSteps, chaptersOf, topBox } from "./learn.js";
+import { isDrawKey } from "./shapes.js";
 
 const mon = (n) => MON.find((m) => m.n === n);
 
@@ -171,7 +172,7 @@ export function stepMonsters(path, open, first) {
 // floor but the rescue floor and the boss is drawn from them. Without avail, the Wing's own floors
 // and pool. Variety: never the same monster twice in a row, and none twice in a run while there
 // are others, so each run down mixes them differently.
-export function runFloors(wing, team, rnd, depth, avail) {
+export function runFloors(wing, team, rnd, depth, avail, legend) {
   const r = rnd || Math.random, list = avail && avail.length ? avail : null, all = list || wing.pool, used = new Set();
   let last = null, next = 0;
   const pick = () => {
@@ -192,7 +193,7 @@ export function runFloors(wing, team, rnd, depth, avail) {
     if (f === "pool" || (depth || 1) > 1) return dressed(pick(), wing, depth, i);
     last = f;
     return mon(f);
-  }).concat([bossAt(wing, depth)]);
+  }).concat([bossAt(wing, depth, legend)]);
 }
 // Below depth 1, each floor's monster wears one of its looks (monsters.js LOOKS), the same one
 // every time you come back to that floor of that depth: a hash of the Wing, depth and floor.
@@ -217,9 +218,45 @@ export function bossStage(depth) { const k = (((depth || 1) - 1) % MEGA_EVERY) +
 export const isMega = (depth) => bossStage(depth) === 3;
 // How much more HP the boss has at each stage.
 export const BOSS_HP = [1, 1.1, 1.2, 1.4];
-export function bossAt(wing, depth) {
+// legend: the stratum's Legend is due (legendDue), and takes the boss's place at any depth.
+export function bossAt(wing, depth, legend) {
   const b = mon(wing.boss), s = bossStage(depth);
+  if (legend) return bossForm(b, "legend") || b;
   return (s === 3 ? bossForm(b, "mega") : s ? bossForm(b, "power", s) : null) || b;
+}
+
+/* ---------- the Legend boss (DESIGN.md §14.2) ----------
+   Once every fact of a stratum's priority steps is mastered (box 4), the next run there, at any
+   depth, ends with its boss's golden Legend form: a final exam (learn.js examKey), with the
+   boss's trait and its mega trait, and the mega boss's HP. Lost, it's there again on the next run
+   (saved as wings[id].legendOpen, so a miss that takes a fact out of box 4 doesn't take the Legend
+   away) until it's beaten (wings[id].legend: when). The priority steps are what "the stratum's
+   band" means since the paths (§4.3): the ones that open the next stratum. Drawn shapes don't
+   count (a drawing needs a touch screen); review steps are an earlier grade's. */
+export const LEGEND_HP = BOSS_HP[3];
+export function legendFacts(wing) { return priorityFacts(wing).filter((f) => !isDrawKey(f.key)); }
+// The share of them mastered (0–1).
+export function legendShare(wing, recs) { const fs = legendFacts(wing); return fs.filter((f) => topBox(recs[f.key])).length / fs.length; }
+export const legendReady = (wing, recs) => legendShare(wing, recs) >= 1;
+export const legendBeaten = (wing, progress) => !!((progress || {})[wing.id] || {}).legend;
+// Whether the next run here ends with the Legend: ready (or opened before and not beaten yet).
+// test: ?legend, treating the stratum as mastered.
+export function legendDue(wing, progress, recs, test) {
+  const p = (progress || {})[wing.id] || {};
+  return !p.legend && (!!test || !!p.legendOpen || legendReady(wing, recs));
+}
+// Saved progress: the Legend opened (it stays until beaten), and beaten (when). Both return the
+// stratum's progress.
+export function openLegend(progress, wingId) {
+  const p = progress[wingId] || (progress[wingId] = { boss: 0, best: 0 });
+  if (!p.legend) p.legendOpen = true;
+  return p;
+}
+export function beatLegend(progress, wingId, now) {
+  const p = progress[wingId] || (progress[wingId] = { boss: 0, best: 0 });
+  if (!p.legend) p.legend = now || Date.now();
+  delete p.legendOpen;
+  return p;
 }
 export const deepest = (wing, progress) => ((progress[wing.id] || {}).depth || 1);
 

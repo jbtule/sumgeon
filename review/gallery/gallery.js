@@ -4,8 +4,9 @@
 // sizes the game uses, to judge contrast and readability. Flags like the moments page's: ⚑ marks
 // a drawing with tags and a note, and Report copies the flags or opens a GitHub issue.
 // Marks live in localStorage ("sumgeon:gallery"), keyed by name: { s: "bad", tags, note, t }.
-// Boss forms: each boss beside its mega and Legend forms (monsters.js BOSS_FORMS, not in the game
-// yet), with their names, traits and lines, always at the small sizes too.
+// Boss forms: each boss, powering up (depths 3 and 4 of a chapter), its mega form (depth 5) and
+// its Legend form (monsters.js BOSS_FORMS), with their names, traits and lines, always at the
+// small sizes too.
 // Clothing (clothes.js, not in the game yet): every piece on its own, then all ten heroes in one
 // outfit, picked with three selects (head, face, neck) or stepped through sample outfits, big and
 // at the small sizes.
@@ -72,13 +73,16 @@ function card(it) {
 const ITEMS = { newGrid: NEW_MON.map(monItem), oldGrid: MON.map(monItem), heroGrid: HEROES.map(heroItem), retiredGrid: RETIRED.map(monItem) };
 
 /* ---------- boss forms ---------- */
-// One row per boss: the boss, its mega form and its Legend form, side by side on its stratum's
-// wall (or the wall picked above; "All four" keeps its own), big and at 72 px and 26 px.
+// One row per boss: the boss, powering up 1 and 2, its mega form and its Legend form, side by
+// side on its stratum's wall (or the wall picked above; "All four" keeps its own), big and at
+// 72 px and 26 px.
 const BOSS_ORDER = ["Make-Ten Golem", "Judo Judy", "The Centipede", "Sigma Rex"];
 const BOSSES = MON.filter((m) => m.boss).sort((a, b) => BOSS_ORDER.indexOf(a.n) - BOSS_ORDER.indexOf(b.n));
-const FORM_TAG = { boss: ["g-boss", "Boss"], mega: ["g-mega", "Mega"], legend: ["g-legend", "Legend"] };
-const formItem = (m) => ({ key: m.form ? "form:" + m.n : m.n, name: m.n, m, isForm: !!m.form, form: m.form || "boss" });
-const FORMS = BOSSES.map((b) => [b, bossForm(b, "mega"), bossForm(b, "legend")].map(formItem));
+const FORM_TAG = { boss: ["g-boss", "Boss"], power1: ["g-power", "Powering up 1"], power2: ["g-power", "Powering up 2"], mega: ["g-mega", "Mega"], legend: ["g-legend", "Legend"] };
+// A boss powering up keeps its name (and lines), so its key and tag carry the stage.
+const formOf = (m) => (m.form === "power" ? "power" + m.stage : m.form || "boss");
+const formItem = (m) => ({ key: m.form === "power" ? "form:" + formOf(m) + ":" + m.n : m.form ? "form:" + m.n : m.n, name: m.n, m, isForm: m.form === "mega" || m.form === "legend", form: formOf(m) });
+const FORMS = BOSSES.map((b) => [b, bossForm(b, "power", 1), bossForm(b, "power", 2), bossForm(b, "mega"), bossForm(b, "legend")].filter(Boolean).map(formItem));
 function formCol(it, wall) {
   const k = marks[it.key], m = it.m, t = traitOf(MON.find((x) => x.n === (m.base || m.n)));
   const lines = [monsterName(m), monsterCleared(m), monsterWon(m)];
@@ -88,7 +92,8 @@ function formCol(it, wall) {
     <div class="g-info">
       <div class="g-title"><b>${esc(it.name)}</b><span class="${FORM_TAG[it.form][0]}">${esc(FORM_TAG[it.form][1])}</span></div>
       ${t ? `<div class="g-trait">${esc(t.icon)} <b>${esc(t.name)}</b>: ${esc(t.text)}</div>` : ""}
-      ${m.trait2 ? `<div class="g-trait">+ ${esc(m.trait2.icon)} <b>${esc(m.trait2.name)}</b>: ${esc(m.trait2.text)} <span class="g-meta">(planned)</span></div>` : ""}
+      ${m.trait2 ? `<div class="g-trait">+ ${esc(m.trait2.icon)} <b>${esc(m.trait2.name)}</b>: ${esc(m.trait2.text)}</div>` : ""}
+      ${m.form === "power" ? `<div class="g-meta">Depth ${m.stage + 2} of each chapter: "I'm getting stronger!"</div>` : ""}
       ${it.isForm ? `<div class="g-lines">${lines.map((l) => `<div class="g-quip">"${esc(l)}"</div>`).join("")}</div>` : `<div class="g-quip">"${esc(lines[1])}"</div>`}
       ${k ? `<div class="g-note">⚑ ${esc([...(k.tags || []), k.note].filter(Boolean).join(" · ") || "Flagged")}</div>` : ""}
       <div class="g-row"><span></span><span>${k ? `<button type="button" class="flagbtn g-ok" data-act="ok">✓ Fine now</button> ` : ""}<button type="button" class="flagbtn" data-act="flag">⚑ ${k ? "Edit" : "Flag"}</button></span></div>

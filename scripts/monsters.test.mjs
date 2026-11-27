@@ -84,9 +84,9 @@ for (const m of RETIRED) {
   assert.ok(s.startsWith("<svg") && s.endsWith("</svg>") && !/NaN|undefined/.test(s), m.n);
   assert.ok(m.trait && m.sym && m.stratum, `${m.n} keeps what the gallery shows`);
 }
-// Boss forms (DESIGN.md §14.2): every boss has a mega form (crowned, with a planned second trait)
-// and a Legend form (in gold), each drawing with real numbers and no text, with a name of its
-// own, and its name, beaten and won lines recorded in the "bosses" sprite. Not in the game yet.
+// Boss forms (DESIGN.md §14.2): every boss has a mega form (crowned, with a second trait) and a
+// Legend form (in gold, with the same second trait), each drawing with real numbers and no text,
+// with a name of its own, and its name, beaten and won lines recorded in the "bosses" sprite.
 {
   const bosses = MON.filter((m) => m.boss), forms = bosses.flatMap((m) => ["mega", "legend"].map((f) => bossForm(m, f)));
   assert.deepEqual(Object.keys(BOSS_FORMS).sort(), bosses.map((m) => m.n).sort(), "every boss has its forms");
@@ -110,7 +110,9 @@ for (const m of RETIRED) {
       const same = Object.values(TRAITS).find((x) => x.name === t.name);
       assert.ok(!same || same.icon === t.icon, `${f.n}: ${t.name}`);
     } else {
-      assert.ok(/^Golden /.test(f.n) && !f.trait2, `${f.n} is the golden form`);
+      // The Legend fights with its mega form's second trait (DESIGN.md §14.2).
+      assert.ok(/^Golden /.test(f.n), `${f.n} is the golden form`);
+      assert.deepEqual(f.trait2, bossForm(boss, "mega").trait2, `${f.n} keeps its mega trait`);
       assert.ok(s.includes('id="bf-gold"') && s.includes("url(#bf-gold)"), `${f.n} is in gold`);
       // Gold only: no color of the boss's own is left but the outlines and eye whites.
       const left = [...new Set(goldify(boss.d(boss.c)).match(/#[0-9a-f]{6}\b/gi) || [])].filter((c) => c.toLowerCase() !== DK && c.toLowerCase() !== "#ffffff");

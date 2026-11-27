@@ -327,6 +327,76 @@ export function placeReviews(path, recs, now, fluentMs) {
   }
   return n;
 }
+/* ---------- the Legend boss (DESIGN.md §14.2) ----------
+   Each stratum's last test: once its priority steps are mastered (wings.js legendReady), its boss
+   comes back golden, and the fight is a final exam (examKey): every kind of problem the path asks,
+   mixed, weighted to the facts that took the longest to learn, and no fact twice. */
+// Mastered, for the Legend: the top box (4). Box 4 already takes right, unhinted answers spread
+// over days (a box-3 fact is due again after 10 minutes, box 4 after a day), so a slow but sure
+// player still gets there; mastered() above adds fluency, for the stars and achievements.
+export const topBox = (rec) => !!rec && rec.b >= BOX_MAX;
+// The exam's facts: every fact of the path's own steps (not the review steps, an earlier grade's),
+// each key once, with its band and step (an index into the path). Drawn shapes are left out: a
+// drawing needs a touch screen, and the exam's shapes are the counting ones.
+const examCache = new WeakMap();
+export function examFacts(path) {
+  if (examCache.has(path)) return examCache.get(path);
+  const seen = new Set(), out = [];
+  path.forEach((s, i) => { if (!s.review) for (const f of stepFacts(s)) if (!seen.has(f.key) && !isDrawKey(f.key)) { seen.add(f.key); out.push(Object.assign({ step: i }, f)); } });
+  examCache.set(path, out);
+  return out;
+}
+// How long a fact took to learn, from its record: its misses count most (each one sent it back
+// to box 0), then answers past the first couple, then how slow it still is against its band's
+// fluent time. 0 for a fact placed or known at once.
+export function struggle(rec, fluentMs) {
+  if (!rec || !rec.n) return 0;
+  const misses = Math.max(0, rec.n - rec.c);
+  return 2 * misses + 0.25 * Math.max(0, rec.n - 2) + (rec.ms > 0 ? Math.min(3, rec.ms / (fluentMs || 4000)) : 0);
+}
+// The exam's next fact: { key, band, step }, or null when there's none left. used: the keys asked
+// already this fight (never again); steps: the steps asked so far, in order (the next comes from
+// the steps asked least, so every kind comes round before any comes twice). Inside a step, a fact
+// is picked with weight 0.2 + struggle², so the ones that took longest come up most. Facts never
+// seen are left out while there are seen ones (it's an exam, not new learning; ?legend on a fresh
+// player has none seen).
+export function examKey(path, recs, opts = {}) {
+  const rnd = opts.rnd || Math.random, used = new Set(opts.used || []), asked = opts.steps || [];
+  const all = examFacts(path).filter((f) => !used.has(f.key) && (!opts.ok || opts.ok(f)));
+  const seen = all.filter((f) => recs[f.key] && recs[f.key].n), list = seen.length ? seen : all;
+  if (!list.length) return null;
+  const w = (f) => { const s = struggle(recs[f.key], BANDS[f.band].fluentMs); return 0.2 + s * s; };
+  const times = (i) => asked.filter((x) => x === i).length;
+  const steps = [...new Set(list.map((f) => f.step))], least = Math.min(...steps.map(times));
+  // Among the steps asked least, the one with the hardest facts more often (by its hardest).
+  const pickFrom = (items, weight) => { let r = rnd() * items.reduce((t, x) => t + weight(x), 0); for (const x of items) { r -= weight(x); if (r < 0) return x; } return items[items.length - 1]; };
+  // (Not the kind just asked, when there's another: a new round doesn't start with the last one.)
+  // And not the same operation as the last problem when there's another (two steps can share
+  // one: which is more to 5, then to 10).
+  const lastKey = (opts.used || [])[(opts.used || []).length - 1], lastOp = lastKey != null ? (examFacts(path).find((f) => f.key === lastKey) || {}).op : null;
+  const fresh = (fs) => { const o = fs.filter((f) => f.op !== lastOp); return o.length ? o : fs; };
+  let top = steps.filter((i) => times(i) === least);
+  if (top.length > 1) top = top.filter((i) => i !== asked[asked.length - 1]);
+  const other = top.filter((i) => list.some((f) => f.step === i && f.op !== lastOp));
+  if (other.length) top = other;
+  const step = pickFrom(top, (i) => 1 + Math.max(...list.filter((f) => f.step === i).map(w)));
+  const f = pickFrom(fresh(list.filter((x) => x.step === step)), w);
+  return { key: f.key, band: f.band, step };
+}
+
+// The Legend's HP floor: about one answer of every kind (the sum of each step's middle answer,
+// of the facts the exam would ask), so one big answer (7 × 50) can't end the exam before it's
+// started. app.js takes this, between a mega boss's HP and twice that.
+export function examRound(path, recs) {
+  const all = examFacts(path), seen = all.filter((f) => recs[f.key] && recs[f.key].n), list = seen.length ? seen : all;
+  let sum = 0;
+  for (const i of new Set(list.map((f) => f.step))) {
+    const a = list.filter((f) => f.step === i && typeof f.ans === "number").map((f) => f.ans).sort((x, y) => x - y);
+    if (a.length) sum += a[a.length >> 1];
+  }
+  return sum;
+}
+
 // Every band a path asks.
 export const pathBands = (path) => [...new Set(path.flatMap((s) => s.parts.map(([b]) => b)))];
 const allLevels = (bandKey) => BANDS[bandKey].levels.map((_, i) => i);
@@ -544,7 +614,10 @@ export function spellKey(bandKey, recs, opts) {
 // A few big answers (rounding to 100, 7 × 90) would make every fight long, so each answer counts
 // at most 3 times the middle one. levels: the band's open levels (openLevels; all when not given).
 export function monsterHP(m, bandKey, recs, levels) {
-  const open = asked(bandKey, recs, levels, asksOf(m));
+  return hpOf(m, asked(bandKey, recs, levels, asksOf(m)), bandKey);
+}
+// The HP from the facts a monster asks (open: [{ key, op, ans }]).
+export function hpOf(m, open, bandKey) {
   const mine = open.filter((f) => f.op === m.op);
   // A monster that hides a number (m.blank, Quizard) is hit by the hidden number: on average,
   // the mean of the fact's two numbers.

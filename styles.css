@@ -751,8 +751,12 @@ label.switch-row:focus-within{outline-offset:-3px}
   .game:has(.arena.shake)::before{animation:shake .35s}
   /* The monster's name and HP across the top of its box. */
   .mhead{grid-area:mhead;padding:8px 12px 0;z-index:1}
-  .mname{font-size:15px}
-  .hp{height:12px}
+  /* The name, trait badge, HP bar and HP on one line (app.js fitName shrinks a name that doesn't fit). */
+  .mhead{flex-wrap:nowrap;gap:8px}
+  .mname{font-size:15px;white-space:nowrap}
+  .mname.long{font-size:12px !important;line-height:1.05}
+  .mname.long.wrap{white-space:normal;flex:none;width:min-content}
+  .hp{height:12px;flex:1 1 40px}
   .hptxt{font-size:12px}
   /* The monster fills what's left of the arena, however tall the phone. */
   /* The monster's box: just the monster and its nameplate. */
@@ -801,7 +805,7 @@ label.switch-row:focus-within{outline-offset:-3px}
   .mhead{flex-wrap:nowrap;gap:6px}
   .mname{font-size:13px;white-space:nowrap}
   /* A name that doesn't fit beside its trait badge (Queen Triceraplus, app.js loadMonster) goes smaller, on two lines if it must. */
-  .mname.long{font-size:11px !important;white-space:normal;line-height:1.05;flex:none;width:min-content}
+  .mname.long{font-size:11px !important}
   .hp{flex:1 1 40px;height:10px}
   .hptxt{font-size:11px}
   .prob{font-size:clamp(26px,9vw,34px)}
@@ -1077,3 +1081,29 @@ body.on-scene>.top,body.on-scene>.who,body.on-scene>.game,body.on-scene>.badges{
   .wpiece{width:50px;height:50px}
 }
 @media(prefers-reduced-motion:reduce){.change .ctoken.back,.sthing.got .sart{animation:none}}
+/* The Legend boss (DESIGN.md §14.2): golden, with a warm glow in the fight; the win card with
+   "Legend!" on the stratum's wall; a gold edge on its stratum's layer (the depth map, the descent)
+   and on its boss in Monsters & Heroes. */
+.mon.legend svg{filter:drop-shadow(0 0 16px #ffd84dbb)}
+.legend-win{margin:-4px -4px 10px;padding:14px 10px 12px;border-radius:18px;text-align:center;border:3px solid #ffd23f;box-shadow:0 0 0 2px #0c171c,0 0 26px #ffc93c88;
+  background:radial-gradient(ellipse 70% 60% at 50% 55%,#ffd84d55,#0c171c00 70%),linear-gradient(#0c171c88,#0c171cc0),var(--wall-cellar)}
+.legend-win[data-stratum="hall"]{background:radial-gradient(ellipse 70% 60% at 50% 55%,#ffd84d55,#0c171c00 70%),linear-gradient(#0c171c88,#0c171cc0),var(--wall-hall)}
+.legend-win[data-stratum="mines"]{background:radial-gradient(ellipse 70% 60% at 50% 55%,#ffd84d55,#0c171c00 70%),linear-gradient(#0c171c88,#0c171cc0),var(--wall-mines)}
+.legend-win[data-stratum="tower"]{background:radial-gradient(ellipse 70% 60% at 50% 55%,#ffd84d55,#0c171c00 70%),linear-gradient(#0c171c88,#0c171cc0),var(--wall-tower)}
+.legend-title{margin:0;font:400 clamp(34px,11vw,56px)/1 Bungee,sans-serif;color:var(--gold);text-shadow:0 4px 0 var(--dark),0 0 24px #ffc93caa;animation:dslam .5s cubic-bezier(.2,1.4,.4,1)}
+.legend-wing{margin:6px 0 0;font:400 16px Bungee,sans-serif;color:var(--ink)}
+.cardmon.legend{width:170px;margin:4px auto 0;animation:freed .9s ease-out}
+.cardmon.legend svg{filter:drop-shadow(0 0 18px #ffd84daa)}
+.legend-note{margin:4px 0 0;font-weight:800;color:var(--ink)}
+.strata .wing.golden > span{box-shadow:inset 0 0 0 3px #ffd23f,inset 0 0 24px #ffc93c55}
+.strata .wing.golden input:checked+span{box-shadow:inset 0 0 0 3px #ffd23f,inset 0 0 0 6px #ffc93c66,inset 0 0 28px #ffc93c88}
+.strata .wing.golden b{color:var(--gold)}
+.d-layer.golden{box-shadow:inset 0 10px 18px #0008,inset 0 0 0 4px #ffd23f}
+.d-title p.d-mega.legend{background:linear-gradient(#fff2b0,#ffc93c 60%,#e0a222);color:#0c171c;border-color:#fff2b0;box-shadow:0 0 22px #ffc93ccc}
+.beast.legendary{border-color:var(--gold);box-shadow:0 0 0 2px #ffc93c88,0 0 22px #ffc93c66}
+.legend-tag{color:var(--gold)!important;font-weight:900}
+@media (prefers-reduced-motion:reduce){.legend-title,.cardmon.legend{animation:none}}
+/* Two traits on a boss's nameplate (a mega boss, the Legend): on phones only their icons, so the
+   name, the badge and the HP stay on one line; a tap on the badge says what they do. */
+.trait.two{cursor:pointer}
+@media (max-width: 759px){.trait.two .tn{display:none}}

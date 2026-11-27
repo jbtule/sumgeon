@@ -79,6 +79,9 @@ export var PHRASE = {
   bigThrow: "Big throw!",
   bigThrowMiss: "Big throw! You lost two hearts.",
   chapter: "A new chapter is open!",
+  // The Legend boss (DESIGN.md §14.2): in the descent and as it arrives, and on its win card.
+  legendAwaits: "A legend awaits!",
+  legend: "Legend!",
   win: "You cleared the Sumgeon!"
 };
 // Names spelled the way the voice should say them. The screen keeps the real spelling.
@@ -452,7 +455,7 @@ function index() {
   // Polly-Gon's squawks are only said on its floor, so they're in its sprite.
   shapeFacts().forEach(function (f) { names[squawk(f)] = "m-polly-gon"; });
   // Phrases by when they're said: the start screen and a run's end, explanations, and the fight.
-  [PHRASE.enter, PHRASE.pickGrade, PHRASE.pickHero, PHRASE.heroFirst, PHRASE.deeper, PHRASE.exitSure, PHRASE.unlocked, PHRASE.win]
+  [PHRASE.enter, PHRASE.pickGrade, PHRASE.pickHero, PHRASE.heroFirst, PHRASE.deeper, PHRASE.exitSure, PHRASE.unlocked, PHRASE.win, PHRASE.legend]
     .concat(WINGS.map(wingCleared), WINGS.map(wingOpened)).forEach(function (t) { phrases[t] = "phrases-start"; });
   [PHRASE.hitHow, PHRASE.cmpHow, PHRASE.cmpSame, PHRASE.spellHow, PHRASE.paused, PHRASE.tfHow, PHRASE.drawHow, PHRASE.flashHow]
     .concat(Object.values(TRAIT_LINE), Object.values(TRAIT2_LINE), HEROES.map(function (h) { return luckyLine(h.d); }), REVERSIBLE.map(reversedLine), [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map(howToWriteLine))
