@@ -9,11 +9,28 @@
 //
 // Names belong to the device and will never sync.
 
+// The dungeon's version, while we're before release. Bump it when a balance change (how fast heroes are freed, how strata
+// open) means saved runs should start over: each player's dungeon progress then resets the next
+// time they load, keeping what they've learned, their hero and their settings.
+// After release, a bump would wipe kids' real progress, so it should stop changing then.
+//   2 (2026-11-25): breaking a curse takes three wins.
+//   3 (2026-11-25): placement, skipping ahead and the "all fast" star. Also resets what's
+//      been learned (LEARNING_RESETS), since it changes how learning is counted.
+//   4 (2026-11-25): fluent time scales with digits (4 s + 1 s a digit), skipping tolerates a
+//      slip. Resets learning too: facts counted slow under 3 s weren't slow.
+//   5 (2026-11-25): the grade strata (DESIGN.md §4.1): one stratum per grade, K to 3rd, in a
+//      straight chain, with the Crystal Mines new for 2nd grade and monsters moved. Learning is
+//      kept: every fact keeps its key.
+//   6 (2026-11-26): the progression (DESIGN.md §4.3): paths, the window, chapters and mega bosses.
+//      Everyone starts at chapter 1 of their grade's stratum; learning is kept (no fact key changed
+//      meaning), so skipping ahead carries a player along the path.
+export var DUNGEON_VERSION = 6, DUNGEON_KEYS = ["wings", "bestiary", "best"], LEARNING_RESETS = [3, 4];
+
 export var DEVICE = "sumgeon:";
 export var STORAGE_VERSION = 2;
 // Every key saved per player. Add new ones here (the check fails on a key that isn't listed),
 // so Start over, removing a player and (later) sync can't miss one.
-// "dungeon": the dungeon version the player's progress was made under (app.js DUNGEON_VERSION).
+// "dungeon": the dungeon version the player's progress was made under (DUNGEON_VERSION above).
 // "spells": spell casting (app.js): { templates: { digit: [points, ...] } (their handwriting),
 // reversed: { digit: count }, cast: count }.
 // "told": how many times the voice has explained each thing ({ tag: count }, app.js `once`), so
@@ -22,7 +39,10 @@ export var STORAGE_VERSION = 2;
 // for their debut, and the chance building toward the next moment.
 // "wallet": money found in chests, in cents (loot.js), never lost, not even on a loss.
 // "items": the inventory (loot.js freshItems): { have: { id: count }, slots: [id or null] × 3 }.
-export var OWN_KEYS = ["settings", "best", "facts", "heroes", "wings", "bestiary", "dungeon", "spells", "told", "moments", "wallet", "items", "wardrobe", "shop"];
+// "link" and "syncBase": linking this player with other devices (sync.js), this device's own and
+// never synced: link = { key (the 43-character link key), at (last synced) }, syncBase = { version,
+// rec } (the last record merged here, and the server's version of it).
+export var OWN_KEYS = ["settings", "best", "facts", "heroes", "wings", "bestiary", "dungeon", "spells", "told", "moments", "wallet", "items", "wardrobe", "shop", "link", "syncBase"];
 // band: a grade band, "kinder" to "third" (learn.js BANDS); start: the band opened from the start; grade:
 // 0 = K … 5, picked by the player (wings.js withGrade), missing until they pick. ops and diff are the prototype's, kept only to
 // pick a band for a player who had them.

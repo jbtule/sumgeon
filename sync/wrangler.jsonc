@@ -1,0 +1,26 @@
+// Sumgeon's sync service, a Cloudflare Worker (see src/index.js), built from Sound Box's sync/.
+// Deployed by the sync-deploy job in .github/workflows/ci.yml with `wrangler deploy` from this
+// folder. It shares the Cloudflare account (and its free-plan quotas) with Sound Box's
+// `sound-box-sync`, so its limits are low (src/api.js, src/profile.js).
+{
+  "name": "sumgeon-sync",
+  "main": "src/index.js",
+  "compatibility_date": "2025-10-01",
+  // Only at its own address, on the audio host's zone, not on workers.dev.
+  "workers_dev": false,
+  "routes": [{ "pattern": "sumgeon-sync.asset-data.stream", "custom_domain": true }],
+  // SQLite Durable Objects (free plan): one per linked player, one per counter of new players a
+  // day, and one counting everyone's room.
+  "durable_objects": { "bindings": [
+    { "name": "PROFILE", "class_name": "Profile" },
+    { "name": "LIMITER", "class_name": "Limiter" },
+    { "name": "SPACE", "class_name": "Space" }
+  ] },
+  // Requests per network a minute (api.js NET_LIMIT, NET_PER_MINUTE): a nuisance guard against
+  // scripts, not a security boundary. Approximate and counted per Cloudflare location. Its own
+  // namespace, apart from Sound Box's 1001.
+  "ratelimits": [{ "name": "NET_LIMIT", "namespace_id": "1002", "simple": { "limit": 60, "period": 60 } }],
+  "migrations": [
+    { "tag": "v1", "new_sqlite_classes": ["Profile", "Limiter", "Space"] }
+  ]
+}

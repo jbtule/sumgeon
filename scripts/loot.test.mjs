@@ -6,7 +6,7 @@ import { CLOTHES, clothesById, findable } from "../js/clothes.js";
 import { pool, learned } from "../js/learn.js";
 import { seeded, decide, freshState, freshRun } from "../js/moments.js";
 import { WINGS, runFloors } from "../js/wings.js";
-import { openStore, OWN_KEYS } from "../js/store.js";
+import { openStore, OWN_KEYS, DUNGEON_KEYS } from "../js/store.js";
 import { walletSvg, walletMini, chestSvg } from "../js/chest.js";
 
 const r = seeded(7);
@@ -210,7 +210,7 @@ assert.ok(chestSvg("locked").includes("<svg") && chestSvg("open").includes("open
 }
 
 // Saving goes through store.js: wallet and items are listed per-player keys, and survive a
-// dungeon reset (app.js clears only DUNGEON_KEYS).
+// dungeon reset (app.js clears only DUNGEON_KEYS, from store.js).
 {
   assert.ok(OWN_KEYS.includes("wallet") && OWN_KEYS.includes("items"));
   const m = new Map(), ls = { getItem: (k) => (m.has(k) ? m.get(k) : null), setItem: (k, v) => m.set(k, String(v)), removeItem: (k) => m.delete(k), key: (i) => [...m.keys()][i] ?? null, get length() { return m.size; } };
@@ -219,8 +219,7 @@ assert.ok(chestSvg("locked").includes("<svg") && chestSvg("open").includes("open
   p.set("wallet", 123); p.set("items", { have: { pie: 1 }, slots: ["pie", null, null] });
   assert.equal(p.get("wallet", 0), 123);
   assert.deepEqual(freshItems(p.get("items", null)).have, { pie: 1 });
-  const app = readFileSync(new URL("../js/app.js", import.meta.url), "utf8");
-  assert.ok(/DUNGEON_KEYS = \["wings", "bestiary", "best"\]/.test(app), "a dungeon reset keeps the wallet and items");
+  assert.deepEqual(DUNGEON_KEYS, ["wings", "bestiary", "best"], "a dungeon reset keeps the wallet and items");
 }
 console.log("✓ loot");
 

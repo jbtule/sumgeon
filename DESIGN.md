@@ -873,6 +873,8 @@ _Copies sound-box-crosswords profiles (`profilePrefix`, `OWN_KEYS`, `GRADE_KEYS`
 - **Storage upgrade:** version 2 moves the prototype's `sumgeon` key (`{ops,diff,timer,best}`) into `sumgeon:@default:`, one key at a time, so an interrupted move finishes at the next launch.
 - Every key saved per player or per band has to be listed (`OWN_KEYS` / `BAND_KEYS`), and a check fails on one that isn't, so sync and Start over can't miss it.
 
+_Built 2026-11-26 (CLAUDE.md "Linking and sync"): linking, sealing, merging and the `sumgeon-sync` Worker, deliberately lazy and with low caps (3 new players a day per network, 50 in all, 10 MB stored, 32 KB a record, 60 requests a minute per network), since it shares the Cloudflare account's free plan with Sound Box. Start over (§15.5) was cut; removing a player stays local._
+
 ### 15.2 Linking devices
 Same flow and words as Sound Box's More → Players, one task at a time:
 - **Send ("Play on another device too")** shows the player's link, the site's address plus `#link=<key>`, as Sound Box's styled QR code with a copy button. Sumgeon draws it with its own colors and a monster in the middle.

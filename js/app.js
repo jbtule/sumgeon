@@ -6,7 +6,7 @@ import { spokenProblem, spokenFact } from "./problems.js";
 import { BANDS, choose, factOf, record as recordAnswer, helpFor, monsterHP, probeKey, tierOf, skipTo, SKIP_PROBES, SKIP_WINDOW, MAX_LEAP, fluentTime, spellKey, RECENT, pool, drawHit, openLevels, reachOf, chaptersOf, pathBands, reviewFacts, placeReviews, examKey, examFacts, examRound, hpOf } from "./learn.js";
 import { countSvg, readShape, judgeShape, cleanFor, squawkBody, isDrawKey, SHAPE_LINE, SHAPE_CODE, article } from "./shapes.js";
 import { hintFor, STRATEGIES } from "./hints.js";
-import { openStore, displayName } from "./store.js";
+import { openStore, displayName, DUNGEON_VERSION, DUNGEON_KEYS, LEARNING_RESETS } from "./store.js";
 import { PHRASE, monsterName, monsterCleared, monsterWon, heroJoins, heroCursed, heroRescue, heroAlmost, heroHelps, traitLine, BARK, wingCleared, wingOpened, depthLine, DEPTH_MAX_SPOKEN, reversedLine, howToWriteLine, quipLine, squawk, trait2Line, newMonsterLine } from "./lines.js";
 import { WINGS, wingOf, runFloors, openWings, toOpen, floorStars, wingStars, depthScale, depthHP, deepest, MAP_DEPTHS, GRADES, gradeLabel, gradeName, withGrade, bandOf, gradeBand, OLD_BANDS, PATHS, chapterOf, stepsOpen, bossStage, isMega, BOSS_HP, MEGA_EVERY, megasOf, stepMonsters, legendDue, openLegend, beatLegend, legendBeaten, LEGEND_HP } from "./wings.js";
 import { missingOf, pickBlank, filled, spokenMissing, MISSING_SHARE, canHide } from "./missing.js";
@@ -38,6 +38,10 @@ import { CLOTHES, SPOTS, clothesById, pieceSvg } from "./clothes.js";
 import { LOOT, askLine, itemName, itemWhat, itemUse, moneyLine, purseLine, ALWAYS, runSprites, SHOP, clothingName, priceLine, changeLine } from "./lines.js";
 import { stepRows, stratumSummary, strataOrder, gridOf, gridsFor, kindsFor, needsWork, factLabel, factDetail, factState, STATE_WORDS, secs } from "./progress.js";
 import { chestSvg, purseSvg, walletSvg, walletMini, stallSvg, priceTag, billSvg, pieSvg } from "./chest.js";
+import { newKey, keysFor, isKey, linkFor, keyFromLink } from "./seal.js";
+import { syncPlayer, remoteVersion, SYNC_URL } from "./sync.js";
+import { SYNCED_KEYS, canon, pack, unpack } from "./merge.js";
+import { linkQR } from "./linkqr.js";
 
 const $ = (id) => document.getElementById(id);
 const reduced = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -130,22 +134,8 @@ const wing = () => wingFor(st.band);
 // A floor's art: a cursed digit is its hero, darkened (DESIGN.md §6.6).
 const cracksOf = (d) => (team.cracks || {})[d] || 0;
 const monsterArt = (m, cls) => (m.cursed != null ? heroSvg(HEROES[m.cursed], { cursed: true, cls, cracks: cracksOf(m.cursed) }) : svg(m, cls));
-// The dungeon's version, while we're before release. Bump it when a balance change (how fast heroes are freed, how strata
-// open) means saved runs should start over: each player's dungeon progress then resets the next
-// time they load, keeping what they've learned, their hero and their settings.
-// After release, a bump would wipe kids' real progress, so it should stop changing then.
-//   2 (2026-11-25): breaking a curse takes three wins.
-//   3 (2026-11-25): placement, skipping ahead and the "all fast" star. Also resets what's
-//      been learned (LEARNING_RESETS), since it changes how learning is counted.
-//   4 (2026-11-25): fluent time scales with digits (4 s + 1 s a digit), skipping tolerates a
-//      slip. Resets learning too: facts counted slow under 3 s weren't slow.
-//   5 (2026-11-25): the grade strata (DESIGN.md §4.1): one stratum per grade, K to 3rd, in a
-//      straight chain, with the Crystal Mines new for 2nd grade and monsters moved. Learning is
-//      kept: every fact keeps its key.
-//   6 (2026-11-26): the progression (DESIGN.md §4.3): paths, the window, chapters and mega bosses.
-//      Everyone starts at chapter 1 of their grade's stratum; learning is kept (no fact key changed
-//      meaning), so skipping ahead carries a player along the path.
-const DUNGEON_VERSION = 6, DUNGEON_KEYS = ["wings", "bestiary", "best"], LEARNING_RESETS = [3, 4];
+// The dungeon's version (DUNGEON_VERSION, its history and what it resets) lives in store.js, so
+// merge.js can tell a record from before a bump.
 function upgradeDungeon(id) {
   const p = store.player(id), had = p.get("dungeon", null);
   if (had === DUNGEON_VERSION) return;
@@ -1339,6 +1329,7 @@ function end(win) {
   // A newly opened stratum, from its first depth.
   if (opened) $("nextStratum").onclick = () => { if (!ready()) return; st.band = opened.band; saveSettings(); start(1); };
   $("set").onclick = () => openMenu();
+  syncSoon(); // a linked player syncs at the end of a run
 }
 // A card over the game. It opens at the top, and its main button gets focus (Enter presses it)
 // without scrolling down to it. kind "page" (the menu, Settings, the book, a run's end) fills a
@@ -1795,7 +1786,7 @@ function playersHTML() {
       <div class="phead">
         <button class="pmain" type="button" data-act="play" ${me ? 'aria-current="true"' : ""} aria-label="${me ? `${name}, playing now` : `Play as ${name}`}">
           <span class="pav">${hero}</span>
-          <span class="pname"><b>${name}</b><small>${g != null ? gradeName(g) : "Grade not picked yet"}</small></span>
+          <span class="pname"><b>${name}</b><small>${g != null ? gradeName(g) : "Grade not picked yet"}${linkOf(p.id) ? " · 🔗 Linked" : ""}</small></span>
           ${me ? '<span class="pnow" aria-hidden="true">✓</span>' : ""}
         </button>
         <button class="icon-btn pedit${open ? " done" : ""}" type="button" data-act="edit" aria-expanded="${open}" aria-label="${open ? "Done editing" : "Edit"} ${name}">${open ? "Done" : "✎"}</button>
@@ -2019,7 +2010,8 @@ function settings(paused, tab) {
   const panel = (id, html) => `<div class="tabpanel" role="tabpanel" id="tp-${id}" aria-labelledby="tab-${id}" tabindex="0"${id === on ? "" : " hidden"}>${html}</div>`;
   show(`<div class="cardhead"><h2>Settings</h2></div>
   <div class="tabs" role="tablist" aria-label="Settings">${tabs.map((t) => `<button type="button" role="tab" id="tab-${t.id}" aria-controls="tp-${t.id}" aria-selected="${t.id === on}" tabindex="${t.id === on ? 0 : -1}"><span aria-hidden="true">${t.icon}</span>${t.label}</button>`).join("")}</div>
-  ${paused ? "" : panel("players", `<div class="grp"><span>Players</span><div id="players">${playersHTML()}</div></div>`)}
+  ${paused ? "" : panel("players", `<div class="grp" id="playersGrp"><span>Players</span><div id="players">${playersHTML()}</div></div>
+  <div class="grp"><span>Other devices</span><div class="link-box" id="linkBox"></div></div>`)}
   ${panel("game", `<div class="grp"><span>Chalk color</span><div class="swatches" id="swatches">${swatchesHTML()}</div></div>
   <div class="grp"><span>Sounds</span><div class="list">
     ${toggle("sfxOn", "Sound effects", "", st.sfx)}
@@ -2050,14 +2042,15 @@ function settings(paused, tab) {
   soundState(); const soundTimer = setInterval(() => { if (!$("soundState")) clearInterval(soundTimer); else soundState(); }, 800);
   $("soundTest").onclick = () => { sfx.restart(sfx.victory); setTimeout(soundState, 300); };
   wireSwatches();
-  if (!paused) { wirePlayers(); wireProgress(); }
-  $("done").onclick = paused ? pause : menu;
+  if (!paused) { wirePlayers(); wireProgress(); showLink(null); }
+  $("done").onclick = () => { if (linkView) showLink(null); (paused ? pause : menu)(); };
 }
 // Tabs (the WAI-ARIA tabs pattern): a tap, or ←/→/Home/End on the tab row, picks a tab and shows
 // its panel.
 function wireTabs() {
   const tabs = [...$("card").querySelectorAll("[role=tab]")];
-  const pick = (t) => tabs.forEach((x) => {
+  const pick = (t) => { if (t.id !== "tab-players" && linkView === "recv") showLink(null); pickTab(t); };
+  const pickTab = (t) => tabs.forEach((x) => {
     const sel = x === t;
     x.setAttribute("aria-selected", sel); x.tabIndex = sel ? 0 : -1;
     $(x.getAttribute("aria-controls")).hidden = !sel;
@@ -2083,6 +2076,7 @@ function aboutHTML() {
     <ul>
       <li><b>Fonts:</b> ${a("https://fonts.google.com/specimen/Bungee", "Bungee")} and ${a("https://fonts.google.com/specimen/Nunito", "Nunito")} (SIL Open Font License 1.1: ${a("fonts/Bungee-OFL.txt", "Bungee's")}, ${a("fonts/Nunito-OFL.txt", "Nunito's")}), from Google Fonts, served with the game so it plays offline.</li>
       <li><b>Voice:</b> recorded with ${a("https://huggingface.co/hexgrad/Kokoro-82M", "Kokoro-82M")} (Apache License 2.0).</li>
+      <li><b>Linking devices:</b> ${a("https://github.com/soldair/node-qrcode", "qrcode")} and ${a("https://github.com/tcort/dijkstrajs", "dijkstrajs")} (MIT: ${a("vendor/qrcode-LICENSE.txt", "license")}, ${a("vendor/dijkstrajs-LICENSE.txt", "license")}) draw the link code; ${a("https://github.com/cozmo/jsQR", "jsQR")} (Apache License 2.0: ${a("vendor/jsqr-LICENSE.txt", "license")}) reads it with the camera.</li>
       <li><b>Coins:</b> the portraits are traced from public-domain photos of US Mint coins on Wikimedia Commons. The coin backs are drawn for the game.</li>
       <li><b>Dollar bills:</b> drawn for the game, with the coins' traced portraits of Washington and Lincoln, and Hamilton and Jackson traced from the Bureau of Engraving and Printing's public-domain engraved portraits on Wikimedia Commons.</li>
     </ul>
@@ -2391,6 +2385,331 @@ function switchTo(id) {
   newRun();
   loadMonster(0, true);
   menu();
+}
+
+/* ---------- linking devices and sync (DESIGN.md §15; CLAUDE.md "Linking and sync") ----------
+   Settings → Players, below the player cards, as in Sound Box, one task at a time (linkView):
+   Send ("Play on another device too") shows the player's link code (seal.js linkFor: the game's
+   address + #link=<key>, also as a QR code, linkqr.js) after saving them to the sync service;
+   Receive ("Get a player from another device") scans the code (scan.js, jsQR) or pastes the link,
+   then asks "Who is this?": a player on this device (their progress here kept and added to, or
+   replaced) or someone new. A linked player syncs (sync.js), lazily, since the service shares the
+   Cloudflare account's free plan with Sound Box's: at launch, on coming back after 10 minutes or
+   more, and at the end of a run; never during one. Busy or over a limit, it waits until tomorrow.
+   Unlinked, nothing goes over the network. The status is only here, never where a kid plays. */
+const ME = store.device.get("device", null) || "device";
+// Local testing only: ?sync=<address> (remembered) points at `npx wrangler dev` in sync/.
+let SYNC_AT = SYNC_URL;
+if (/^(localhost|127\.0\.0\.1)$/.test(location.hostname)) {
+  const dev = new URLSearchParams(location.search).get("sync");
+  if (dev) store.device.set("devSync", dev);
+  SYNC_AT = store.device.get("devSync", null) || SYNC_URL;
+}
+const SYNC_AGAIN_MS = 10 * 60e3;
+const linkOf = (id) => { const l = store.player(id).get("link", null); return l && isKey(l.key) ? l : null; };
+const net = (u, o) => fetch(u, o);
+let syncing = null, lastSync = 0, linkView = null, incoming = null, stopScan = null;
+const syncErr = {};
+// A player's saved data, as merge.js reads it. The game saves as it goes, so storage is current
+// whenever a run isn't going (and a run's own state never syncs).
+function readPlayer(id) {
+  const p = store.player(id), d = {};
+  for (const k of SYNCED_KEYS) { const v = p.get(k, null); if (v != null) d[k] = v; }
+  return d;
+}
+// What a sync brings, saved. Not mid-run (the next sync brings it), and not once the player is
+// unlinked or linked to another key meanwhile. The player playing is reloaded when it changed.
+function writePlayer(id, key, data, next) {
+  if ((linkOf(id) || {}).key !== key || (id === PID && G.running)) return;
+  const p = store.player(id), was = canon(readPlayer(id));
+  for (const k of SYNCED_KEYS) if (data[k] !== undefined) p.set(k, data[k]);
+  p.set("syncBase", next ? { version: next.version, rec: pack(next.rec) } : null);
+  if (id !== PID || canon(readPlayer(id)) === was) return;
+  loadPlayer();
+  if (G.onMenu && !descending()) { newRun(); loadMonster(0, true); menu(); }
+}
+async function syncOne(id) {
+  const link = linkOf(id);
+  if (!link) return;
+  const keys = await keysFor(link.key), saved = store.player(id).get("syncBase", null);
+  const base = saved && saved.rec ? { version: saved.version, rec: unpack(saved.rec) } : null;
+  await syncPlayer({ fetch: net, url: SYNC_AT, keys, me: ME, base, read: () => readPlayer(id), apply: (data, next) => writePlayer(id, link.key, data, next) });
+  if (linkOf(id)) store.player(id).set("link", { ...linkOf(id), at: Date.now() });
+}
+// Midnight tonight: busy or over a limit, the next sync waits until then.
+const tomorrow = () => { const d = new Date(); d.setHours(24, 0, 0, 0); return d.getTime(); };
+// Every linked player on this device, one after another. force: Send and Receive, which a grown-up
+// asked for, go even when waiting for tomorrow.
+function syncAll(force) {
+  if (syncing) return syncing;
+  const linked = store.profiles().filter((p) => linkOf(p.id));
+  if (!linked.length || G.running) return Promise.resolve();
+  if (!force && Date.now() < store.device.get("syncHold", 0)) return Promise.resolve();
+  lastSync = Date.now();
+  syncing = (async () => {
+    for (const p of linked) {
+      try { await syncOne(p.id); delete syncErr[p.id]; } catch (e) {
+        const hold = e && (e.busy || e.limited || e.full);
+        syncErr[p.id] = hold ? "busy" : e && e.newer ? "newer" : e && e.big ? "big" : "offline";
+        if (hold) store.device.set("syncHold", tomorrow());
+      }
+    }
+  })().finally(() => { syncing = null; linkStatusUI(); });
+  linkStatusUI();
+  return syncing;
+}
+// At the end of a run, once its last saves are in.
+const syncSoon = () => setTimeout(() => syncAll(), 1500);
+document.addEventListener("visibilitychange", () => { if (!document.hidden && Date.now() - lastSync >= SYNC_AGAIN_MS) syncAll(); });
+
+function ago(t) {
+  const m = Math.round((Date.now() - t) / 60000);
+  return m < 1 ? "just now" : m < 60 ? m + " min ago" : m < 1440 ? Math.round(m / 60) + " h ago" : "on " + new Date(t).toLocaleDateString();
+}
+// The quiet status, for the player playing.
+function linkStatusText() {
+  const link = linkOf(PID), err = syncErr[PID];
+  if (!link) return { on: false, text: "Not linked with another device yet" };
+  if (syncing && !err) return { on: true, text: "Linked · syncing…" };
+  if (err === "busy") return { on: false, text: "Linked · sync busy. Saved on this device, will sync later" };
+  if (err === "newer") return { on: false, text: "Linked · another device has a newer Sumgeon. Saved on this device, will sync once this one updates" };
+  if (err === "big") return { on: false, text: "Linked · too big to sync. Saved on this device" };
+  if (err) return { on: false, text: "Linked · saved on this device, will sync when online" };
+  return { on: true, text: link.at ? "Linked · synced " + ago(link.at) : "Linked · will sync soon" };
+}
+function linkStatusUI() {
+  const el = $("linkStatus");
+  if (!el) return;
+  const s = linkStatusText();
+  el.textContent = s.text; el.classList.toggle("on", s.on);
+}
+// What Send and Receive say when the service couldn't be reached or turned it away.
+const SEND_TROUBLE = {
+  busy: "The sync service is busy. Try again later.",
+  newer: "Another device has a newer Sumgeon. Close Sumgeon and open it again to update, then try again.",
+  big: "This player's progress is too big to sync. It's still saved on this device.",
+  offline: "Couldn't reach the sync service. Check the connection, then try again."
+};
+
+function linkHTML() {
+  const back = '<button class="link back" type="button" data-back>‹ Back</button>';
+  if (linkView === "send") return `${back}
+    <p class="step">Scan this on the other device</p>
+    <p class="pnote" id="sendMsg" role="status">Getting the code ready…</p>
+    <button class="small" type="button" id="sendRetry" hidden>Try again</button>
+    <div id="sendBox" class="send-box" hidden>
+      <div class="link-qr" id="sendQr" role="img" aria-label="Link code"></div>
+      <p class="pnote center">On the other device: ⚙ Settings → Players → <b>Get a player from another device</b>.</p>
+      <div class="row-btns"><button class="small" type="button" id="sendShare"${typeof navigator.share === "function" ? "" : " hidden"}>Share…</button><button class="small" type="button" id="sendCopy">Copy link</button></div>
+      <p class="pnote center fine">Anyone with this code can change this player's progress. Show it only on your own devices.</p>
+    </div>`;
+  if (linkView === "recv") {
+    const installed = matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+    return `${back}
+    ${G.arrivedLink && !installed ? `<div class="arrive"><p class="pnote">This page opened with a link code. If Sumgeon is on your Home Screen, copy the link, then open Sumgeon there: ⚙ Settings → Players → Get a player → Paste link. Or link it right here, if you play in this browser.</p><button class="small" type="button" id="arriveCopy">Copy link</button></div>` : ""}
+    <div id="recvScan">
+      <p class="step">Scan the code on the other device</p>
+      <div class="scan-box" id="scanBox" hidden>
+        <div class="scan-view"><video id="scanVideo" playsinline muted aria-label="Camera"></video><div class="scan-got" role="status"><span aria-hidden="true">✓</span>Got it!</div></div>
+        <p class="pnote center">Blurry? Hold it a little farther away.</p>
+      </div>
+      <p class="pnote" id="receiveMsg" role="status"></p>
+      <div class="row-btns"><button class="small" type="button" id="scanAgain" hidden>Use the camera</button><button class="small" type="button" id="pasteBtn">Paste link instead</button></div>
+    </div>
+    <div id="receiveBox" hidden></div>`;
+  }
+  return `<p class="pnote">Linked devices share a player's progress, through a small server that keeps a sealed copy. Without the code no one can read it, the server included, and it holds no names. Each device keeps its own copy and plays offline.</p>
+    <p class="link-status" id="linkStatus" role="status"></p>
+    <div class="list">
+      <button class="list-link" type="button" id="goSend"><span class="task-ico" aria-hidden="true">📲</span><span><b>Play on another device too</b><small>Show a code for the other device to scan.</small></span><i aria-hidden="true">›</i></button>
+      <button class="list-link" type="button" id="goRecv"><span class="task-ico" aria-hidden="true">📥</span><span><b>Get a player from another device</b><small>Scan the code it shows, or paste its link.</small></span><i aria-hidden="true">›</i></button>
+    </div>`;
+}
+// Shows a task (null: the list of tasks), with the player cards hidden while one is open.
+function showLink(view) {
+  if (linkView === "recv" && view !== "recv") endScan();
+  linkView = view;
+  if (!view) { incoming = null; G.arrivedLink = null; }
+  const box = $("linkBox");
+  if (!box) return;
+  box.innerHTML = linkHTML();
+  $("playersGrp").hidden = !!view;
+  box.querySelectorAll("[data-back]").forEach((b) => { b.onclick = () => showLink(null); });
+  if (!view) {
+    linkStatusUI();
+    $("goSend").onclick = () => { showLink("send"); prepareSend(); };
+    $("goRecv").onclick = () => { showLink("recv"); startScan(); };
+  }
+  if (view === "send") {
+    $("sendRetry").onclick = prepareSend;
+    $("sendShare").onclick = () => navigator.share({ url: G.sendUrl }).catch(() => {});
+    $("sendCopy").onclick = () => copyButton($("sendCopy"), G.sendUrl);
+  }
+  if (view === "recv") {
+    $("scanAgain").onclick = startScan;
+    $("pasteBtn").onclick = pasteLink;
+    if ($("arriveCopy")) $("arriveCopy").onclick = () => copyButton($("arriveCopy"), linkFor(siteURL(), G.arrivedLink));
+  }
+  $("ov").scrollTop = 0;
+}
+const siteURL = () => location.origin + location.pathname;
+function copyButton(btn, text) {
+  const was = btn.textContent;
+  Promise.resolve().then(() => navigator.clipboard.writeText(text))
+    .then(() => { btn.textContent = "Copied!"; }, () => { btn.textContent = "Couldn't copy"; })
+    .then(() => setTimeout(() => { btn.textContent = was; }, 2000));
+}
+// Send: makes the player's key the first time (that links them), saves them to the service, then
+// shows the code. Until they're saved there, a code would bring nothing, so it waits.
+async function prepareSend() {
+  $("sendBox").hidden = true; $("sendRetry").hidden = true;
+  $("sendMsg").textContent = "Getting the code ready…";
+  const id = PID;
+  let link = linkOf(id);
+  if (!link) { link = { key: newKey() }; store.player(id).set("link", link); }
+  if (syncing) await syncing;
+  await syncAll(true);
+  if (linkView !== "send" || !$("sendMsg")) return;
+  const err = syncErr[id];
+  if (err) { $("sendMsg").textContent = SEND_TROUBLE[err] || SEND_TROUBLE.offline; $("sendRetry").hidden = false; return; }
+  G.sendUrl = linkFor(siteURL(), link.key);
+  $("sendMsg").textContent = "";
+  $("sendBox").hidden = false;
+  try {
+    const Q = await import("../vendor/qrcode-1.5.4.js");
+    if ($("sendQr")) $("sendQr").innerHTML = linkQR(Q, G.sendUrl);
+  } catch (e) { if ($("sendQr")) $("sendQr").hidden = true; }
+}
+// Receive: the camera starts at once; a key can also come from a pasted link, or a link this page
+// was opened with. Then one question: who is this?
+function endScan() {
+  if (stopScan) stopScan();
+  stopScan = null;
+  if ($("scanBox")) { $("scanBox").hidden = true; $("scanBox").classList.remove("found"); }
+}
+async function startScan() {
+  endScan();
+  $("scanBox").hidden = false; $("scanAgain").hidden = true; $("receiveMsg").textContent = "";
+  try {
+    const { scan } = await import("./scan.js");
+    const stop = await scan($("scanVideo"), (text, freeze) => {
+      const k = keyFromLink(text);
+      if (k) found(k, freeze);
+      return !!k;
+    });
+    if (linkView !== "recv" || incoming || !$("scanBox")) stop(); // left meanwhile
+    else stopScan = stop;
+  } catch (e) {
+    endScan();
+    if (!$("scanAgain")) return;
+    $("scanAgain").hidden = false;
+    $("receiveMsg").textContent = "Couldn't use the camera. Paste the link instead, or allow the camera and try again.";
+  }
+}
+// Found: the frame it was read from stays, the code outlined, with "Got it!", for a moment
+// before "Who is this?", so it's plain what happened.
+function found(key, freeze) {
+  const box = $("scanBox"), still = freeze("#ffc93c");
+  still.className = "scan-still"; still.setAttribute("aria-hidden", "true");
+  box.querySelector(".scan-view").insertBefore(still, box.querySelector(".scan-got"));
+  box.classList.add("found");
+  stopScan = null; // the scanner turns the camera off itself
+  setTimeout(() => { if (linkView === "recv" && $("receiveBox")) gotKey(key); }, 1100);
+}
+async function pasteLink() {
+  endScan();
+  let text = null;
+  try { text = await navigator.clipboard.readText(); } catch (e) { text = window.prompt("Paste the link from the other device:"); }
+  const k = keyFromLink(text);
+  if (k) gotKey(k);
+  else { $("scanAgain").hidden = false; $("receiveMsg").textContent = "No link code there. On the other device: ⚙ Settings → Players → Play on another device too → Copy link."; }
+}
+const hasProgress = (id) => { const d = readPlayer(id); return Object.keys(d.facts || {}).length > 0 || Object.keys(d.wings || {}).length > 0 || (d.wallet || 0) > 0; };
+function gotKey(key) {
+  endScan();
+  const list = store.profiles();
+  if (list.some((p) => (linkOf(p.id) || {}).key === key)) {
+    $("receiveMsg").textContent = "That player is already on this device.";
+    $("scanAgain").hidden = false;
+    return;
+  }
+  incoming = key;
+  // A player here who's linked already keeps their own link; the rest can be this one.
+  const here = list.filter((p) => !linkOf(p.id));
+  const pick = hasProgress(PID) || linkOf(PID) ? "new" : PID;
+  const row = (value, art, name, sub) => `<label class="choice"><input type="radio" name="recvWho" value="${esc(value)}"${value === pick ? " checked" : ""}><span class="pav">${art}</span><span class="pname"><b>${name}</b><small>${sub}</small></span></label>`;
+  $("recvScan").hidden = true;
+  const box = $("receiveBox");
+  box.hidden = false;
+  box.innerHTML = `<p class="step">Who is this?</p>
+    <div class="list choices">${here.map((p) => {
+      const h = p.id === PID ? team : (store.player(p.id).get("heroes", null) || {});
+      const art = h.captain != null ? heroSvg(HEROES[h.captain], { color: h.color || null }) : '<span class="pnone" aria-hidden="true">?</span>';
+      return row(p.id, art, esc(displayName(list, p.id)), "The same player as on this device");
+    }).join("")}${row("new", '<span class="pnone" aria-hidden="true">+</span>', "Someone new", "Adds them to this device")}</div>
+    <div class="choices-how" id="recvHow" hidden>
+      <label class="choice"><input type="radio" name="recvHow" value="merge" checked><span class="pname"><b>Keep both</b><small>Their progress and the progress here add up.</small></span></label>
+      <label class="choice"><input type="radio" name="recvHow" value="replace"><span class="pname"><b>Replace</b><small>The progress here goes; theirs takes its place.</small></span></label>
+    </div>
+    <label class="recv-name" id="recvNameBox" hidden>Their name <input type="text" id="recvName" maxlength="24" placeholder="Optional" autocomplete="off" autocorrect="off" spellcheck="false"></label>
+    <p class="pnote" id="recvMsg" role="status"></p>
+    <button class="small primary wide" type="button" id="recvGo">Link</button>`;
+  const show = () => {
+    const who = (box.querySelector("input[name=recvWho]:checked") || {}).value;
+    $("recvHow").hidden = !who || who === "new" || !hasProgress(who);
+    $("recvNameBox").hidden = who !== "new";
+    $("recvMsg").textContent = "";
+  };
+  box.querySelectorAll("input[name=recvWho]").forEach((r) => { r.onchange = show; });
+  show();
+  $("recvGo").onclick = () => linkIncoming();
+}
+async function linkIncoming() {
+  const key = incoming, box = $("receiveBox");
+  const who = (box.querySelector("input[name=recvWho]:checked") || {}).value;
+  const how = (box.querySelector("input[name=recvHow]:checked") || {}).value || "merge";
+  if (!who) { $("recvMsg").textContent = "Pick who this is."; return; }
+  $("recvGo").disabled = true; $("recvMsg").textContent = "Linking…";
+  let saved;
+  try {
+    if (syncing) await syncing;
+    saved = await remoteVersion({ fetch: net, url: SYNC_AT, keys: await keysFor(key) });
+  } catch (e) {
+    if (!$("recvGo")) return;
+    $("recvGo").disabled = false;
+    $("recvMsg").textContent = e && e.busy ? SEND_TROUBLE.busy : SEND_TROUBLE.offline;
+    return;
+  }
+  // Nothing saved for it (an old code whose copy expired; a code just shown always has the player
+  // saved): linking would bring nothing, and Replace would clear this device.
+  if (!saved) {
+    if (!$("recvGo")) return;
+    $("recvGo").disabled = false;
+    $("recvMsg").textContent = "Nothing is saved for that player yet. Open Sumgeon on the other device, show the code again, then scan it.";
+    return;
+  }
+  let target = who;
+  if (who === "new") target = store.addProfile($("recvName").value);
+  else if (how === "replace" || !hasProgress(who)) store.player(who).wipe(); // theirs takes its place
+  else store.player(who).clear("syncBase"); // kept, and merged in at the first sync
+  store.player(target).set("link", { key });
+  // A first sync is a merge (sync.js adopt): the linked player's settings and hero come along,
+  // and what was earned on each device adds up.
+  try { await syncOne(target); delete syncErr[target]; } catch (e) { syncErr[target] = e && e.busy ? "busy" : "offline"; } // otherwise it syncs next launch
+  showLink(null);
+  if (target === PID) { loadPlayer(); G.running = false; newRun(); loadMonster(0, true); menu(); }
+  else switchTo(target);
+}
+// Opened with a link code (#link=…, from the Camera app or a pasted link): out of the address bar
+// at once, then Receive opens over the start screen (welcomeLink, at launch).
+G.arrivedLink = keyFromLink(location.hash);
+if (G.arrivedLink) history.replaceState(null, "", location.pathname + location.search);
+function welcomeLink() {
+  if (!G.arrivedLink) return;
+  const key = G.arrivedLink;
+  settings(false, "players");
+  showLink("recv");
+  gotKey(key);
 }
 
 // After a win, what's left to open the Wings that come after this one, if they're still locked.
@@ -2932,3 +3251,5 @@ newRun();
 loadMonster(0, true);
 $("prob").textContent = "7 + 8 =";
 menu();
+welcomeLink();
+syncAll(); // a linked player syncs at launch
