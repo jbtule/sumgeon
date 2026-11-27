@@ -1,7 +1,7 @@
 // No DOM. Send's link code (Settings → Players → Play on another device too), drawn from the
 // vendored qrcode library's grid (vendor/qrcode-1.5.4.js) in Sumgeon's colors, as Sound Box's
-// linkqr.js draws its own: round chalk-slate dots on chalk, rounded corner eyes with a coral box in
-// each, and a gold key in the middle, since the code carries the player's key. The middle covers
+// linkqr.js draws its own: round chalk-slate dots on chalk, square corner eyes, all dark ink (a
+// thin coral edge on each center), and a gold key in the middle, since the code carries the player's key. The middle covers
 // a few percent of the code, which error correction H (up to 30%) reads through. Fixed colors,
 // light behind dark, whatever the stratum's palette, so any camera reads it (the end-to-end check
 // decodes a rendered one with jsQR).
@@ -25,8 +25,11 @@ export function linkQR(Q, text) {
   }
   const eyes = eyeAt.map(([r, c]) => {
     const x = c + pad, y = r + pad;
-    return `<rect x="${x + 0.5}" y="${y + 0.5}" width="6" height="6" rx="2" fill="none" stroke="${INK}" stroke-width="1"/>` +
-      `<rect x="${x + 2}" y="${y + 2}" width="3" height="3" rx="0.9" fill="${CORAL}"/>`;
+    // Dark ink, as dark as the dots: a reader finds the code by these three squares (dark, light,
+    // dark), and a coral center reads as mid-grey to a camera, so on an iPad it never found them.
+    // The coral is only a thin edge around the center now. Little rounding, for the same reason.
+    return `<rect x="${x + 0.5}" y="${y + 0.5}" width="6" height="6" rx="1" fill="none" stroke="${INK}" stroke-width="1"/>` +
+      `<rect x="${x + 2}" y="${y + 2}" width="3" height="3" rx="0.5" fill="${INK}" stroke="${CORAL}" stroke-width="0.25"/>`;
   }).join("");
   // The key in the middle: a gold ring, then the shaft and two teeth.
   const m = lo + pad, s = k, cy = m + s / 2, w = s * 0.09;

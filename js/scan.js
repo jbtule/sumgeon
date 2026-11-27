@@ -42,7 +42,7 @@ export async function scan(video, found) {
       const w = Math.min(800, Math.round(side));
       canvas.width = w; canvas.height = w;
       ctx.drawImage(video, (vw - side) / 2, (vh - side) / 2, side, side, 0, 0, w, w);
-      const code = jsQR(ctx.getImageData(0, 0, w, w).data, w, w, { inversionAttempts: "dontInvert" });
+      const code = jsQR(ctx.getImageData(0, 0, w, w).data, w, w, { inversionAttempts: "attemptBoth" });
       if (code && found(code.data, freezer(code.location, vw, vh, side, w))) { stop(); return; }
     }
     requestAnimationFrame(tick);
