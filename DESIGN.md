@@ -837,13 +837,13 @@ One per kind of math, earned when every fact of it is mastered. They come up as 
 - **Fraction Finder** ½, **Rounder** 🎯, **Area Ace** ▭ (3rd).
 
 ### 14.4 Learning tracks (secret, counting up once started)
-_Built 2026-11-27. Fluent facts are counted from the fact records (learned and quick on average), comebacks are a missed fact later right without a hint (a tally), practice days a set of local dates (a union, the earliest 100), Deep Diver the deepest depth opened. Rewards are items, a whole set at each track's top. The sheet lists a track's earned tiers and its next one, ??? with its count once started, named once a tier is earned._
+_Built 2026-11-27. Fluent facts are counted from the fact records (learned and quick on average), comebacks are a missed fact later right without a hint (a tally), practice days a set of local dates (a union, the earliest 100), the depth track the deepest depth opened. Rewards are items, a whole set at each track's top. The sheet lists a track's earned tiers and its next one, ??? with its count once started, named once a tier is earned._
 | Track | Tiers | Story |
 |---|---|---|
 | Fluent facts, known by heart: right, unhinted and quick (25, 100, 250, 500, 1000) | 🔋 Charged Up → ⚡ Quick Spark → 🌩️ Thunderclap → 🌪️ Whirlwind → ☄️ Lightning Legend | Fluency, for any player in any stratum |
 | Comebacks, a missed fact later right first try (1, 5, 10, 25, 50) | 🌧️ Through the Rain → 🌦️ Clearing Up → 🌈 Rainbow After → ☀️ Sunny Side → 🦅 Soaring | Weather clearing, for bouncing back |
 | Practice days (1, 3, 7, 14, 30, 60, 100), never a streak | 🕯️ First Torch → 🗝️ Key Finder → 🚪 Door Opener → 🪜 Deeper Down → 🏰 Castle Keeper → 🐉 Dragon's Den → 👑 Dungeon Royalty | Going deeper into the dungeon |
-| Deep Diver: deepest depth reached (10, 25, 50, 100) | 🤿 → 🐙 → 🐋 → 🌋 | Down past where the voice counts |
+| Spelunking: deepest depth reached (10, 25, 50, 100) | 🔦 Cave Crawler → ⛏️ Deep Delver → 🦇 Bat Cave → 🌋 Core Explorer | Down past where the voice counts, caving rather than diving (renamed 2026-11-27; the ids `deep:<n>` unchanged) |
 
 ### 14.5 Surprises (secret)
 _Built 2026-11-27. The ones seen in play are recorded as they happen (no event map: straight into earned); Piggy Bank and Every Quip are worked out from the state. Palindromes count from two digits (44), since a kindergartner's answers rarely reach three. Double High Five is any team hero's digit twice in the answer, not only 5s. Lucky Seven is the finishing hit of the win that frees the cursed 7. Rewards are items._
