@@ -6,7 +6,7 @@ import { spokenProblem, spokenFact } from "./problems.js";
 import { BANDS, choose, factOf, record as recordAnswer, helpFor, monsterHP, probeKey, tierOf, skipTo, SKIP_PROBES, SKIP_WINDOW, MAX_LEAP, fluentTime, spellKey, RECENT, pool, drawHit, openLevels, reachOf, chaptersOf, pathBands, reviewFacts, placeReviews, examKey, examFacts, examRound, hpOf } from "./learn.js";
 import { countSvg, readShape, judgeShape, cleanFor, squawkBody, isDrawKey, SHAPE_LINE, SHAPE_CODE, article } from "./shapes.js";
 import { hintFor, STRATEGIES } from "./hints.js";
-import { openStore, displayName } from "./store.js";
+import { openStore, displayName, DUNGEON_VERSION, DUNGEON_KEYS, LEARNING_RESETS } from "./store.js";
 import { PHRASE, monsterName, monsterCleared, monsterWon, heroJoins, heroCursed, heroRescue, heroAlmost, heroHelps, traitLine, BARK, wingCleared, wingOpened, depthLine, DEPTH_MAX_SPOKEN, reversedLine, howToWriteLine, quipLine, squawk, trait2Line, newMonsterLine } from "./lines.js";
 import { WINGS, wingOf, runFloors, openWings, toOpen, floorStars, wingStars, depthScale, depthHP, deepest, MAP_DEPTHS, GRADES, gradeLabel, gradeName, withGrade, bandOf, gradeBand, OLD_BANDS, PATHS, chapterOf, stepsOpen, bossStage, isMega, BOSS_HP, MEGA_EVERY, megasOf, stepMonsters, legendDue, openLegend, beatLegend, legendBeaten, LEGEND_HP } from "./wings.js";
 import { missingOf, pickBlank, filled, spokenMissing, MISSING_SHARE, canHide } from "./missing.js";
@@ -130,22 +130,8 @@ const wing = () => wingFor(st.band);
 // A floor's art: a cursed digit is its hero, darkened (DESIGN.md §6.6).
 const cracksOf = (d) => (team.cracks || {})[d] || 0;
 const monsterArt = (m, cls) => (m.cursed != null ? heroSvg(HEROES[m.cursed], { cursed: true, cls, cracks: cracksOf(m.cursed) }) : svg(m, cls));
-// The dungeon's version, while we're before release. Bump it when a balance change (how fast heroes are freed, how strata
-// open) means saved runs should start over: each player's dungeon progress then resets the next
-// time they load, keeping what they've learned, their hero and their settings.
-// After release, a bump would wipe kids' real progress, so it should stop changing then.
-//   2 (2026-11-25): breaking a curse takes three wins.
-//   3 (2026-11-25): placement, skipping ahead and the "all fast" star. Also resets what's
-//      been learned (LEARNING_RESETS), since it changes how learning is counted.
-//   4 (2026-11-25): fluent time scales with digits (4 s + 1 s a digit), skipping tolerates a
-//      slip. Resets learning too: facts counted slow under 3 s weren't slow.
-//   5 (2026-11-25): the grade strata (DESIGN.md §4.1): one stratum per grade, K to 3rd, in a
-//      straight chain, with the Crystal Mines new for 2nd grade and monsters moved. Learning is
-//      kept: every fact keeps its key.
-//   6 (2026-11-26): the progression (DESIGN.md §4.3): paths, the window, chapters and mega bosses.
-//      Everyone starts at chapter 1 of their grade's stratum; learning is kept (no fact key changed
-//      meaning), so skipping ahead carries a player along the path.
-const DUNGEON_VERSION = 6, DUNGEON_KEYS = ["wings", "bestiary", "best"], LEARNING_RESETS = [3, 4];
+// The dungeon's version (DUNGEON_VERSION, its history and what it resets) lives in store.js, so
+// merge.js can tell a record from before a bump.
 function upgradeDungeon(id) {
   const p = store.player(id), had = p.get("dungeon", null);
   if (had === DUNGEON_VERSION) return;
