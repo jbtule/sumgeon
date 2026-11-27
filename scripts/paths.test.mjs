@@ -90,10 +90,13 @@ const cellar = PATHS.cellar;
   // fewer, it practises the rest of its level too, so one seen fact isn't asked over and over
   // (on the iPhone, a 3rd grader got 266 + 302 every time).
   const seen = { "+321,406": { b: 1, n: 1, c: 1, ms: 9000, t: 0 } };
-  const asked1 = new Set(); for (let i = 0; i < 40; i++) asked1.add(choose("addT", seen, { now: 1, open: [0, 1], review: [0, 1] }));
+  // Seeded, with the recent problems kept out as the game does (so it's the same every run).
+  let sd = 9; const rnd = () => (sd = (sd * 16807) % 2147483647) / 2147483647;
+  const asked1 = new Set(); let rec = [];
+  for (let i = 0; i < 40; i++) { const k = choose("addT", seen, { now: 1, rnd, recent: rec, open: [0, 1], review: [0, 1] }); asked1.add(k); rec = [k].concat(rec).slice(0, 12); }
   assert.ok(asked1.size > 5, "a thin review practises its level");
   const many = Object.fromEntries(pool("addT").slice(0, 12).map((f) => [f.key, { b: 3, n: 2, c: 2, ms: 3000, t: 0 }]));
-  for (let i = 0; i < 40; i++) assert.ok(many[choose("addT", many, { now: 1e12, open: [0, 1], review: [0, 1] })], "with enough seen, only seen facts");
+  for (let i = 0; i < 40; i++) assert.ok(many[choose("addT", many, { now: 1e12, rnd, open: [0, 1], review: [0, 1] })], "with enough seen, only seen facts");
 }
 // Chapters: 1 + the mega bosses beaten, saved; everyone starts at chapter 1 (dungeon version 6
 // started runs over), however deep the saved depth.
