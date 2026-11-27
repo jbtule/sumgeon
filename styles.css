@@ -104,13 +104,10 @@ h1 b{color:var(--coral);font-weight:400}
    to the screen's edge (bottom: -16px). Phones' page cards have their own. */
 .card > .btns:last-child{position:sticky;bottom:-16px;z-index:2;margin:0 calc(-1 * var(--cp)) calc(-1 * var(--cp));
   padding:14px var(--cp) var(--cp);border-radius:0 0 22px 22px;background:linear-gradient(#0000,var(--panel) 14px)}
-/* More below (moreUI in app.js): a round dark badge with a gold arrow, bobbing over the docked
-   buttons. */
-.card.more > .btns:last-child::before{content:"";position:absolute;left:50%;top:0;width:34px;height:34px;border-radius:50%;
-  border:2px solid var(--gold);background:var(--dark) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M5 9l7 7 7-7' fill='none' stroke='%23ffc93c' stroke-width='4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/20px no-repeat;box-shadow:0 2px 0 #0c171c;
-  transform:translate(-50%,-75%);animation:more-bob 1.2s ease-in-out infinite;pointer-events:none}
-@keyframes more-bob{50%{transform:translate(-50%,-55%)}}
-@media(prefers-reduced-motion:reduce){.card.more > .btns:last-child::before{animation:none}}
+/* More below (moreUI in app.js): a shadow falls from the docked buttons over the content they
+   cover, so it reads as a bar on top with more under it. Gone at the end. */
+.card > .btns:last-child{transition:box-shadow .2s}
+.card.more > .btns:last-child{box-shadow:0 -20px 24px -12px #000000d9,inset 0 1px 0 #ffffff1a}
 .big{min-height:52px;padding:0 22px;border-radius:16px;border:0;background:var(--coral);color:#fff;font:400 18px Bungee,sans-serif;box-shadow:0 4px 0 var(--dark)}
 .big.alt{background:var(--btn2)}
 .stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;text-align:center}
