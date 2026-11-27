@@ -113,9 +113,11 @@ var SAY_AS = [[/\bTwodini\b/g, "Toodini"], [/\bJr\./g, "Junior"], [/\bMr\./g, "M
   // Margot-Rythm rhymes with "algorithm": MAR-go-rith-um, the t silent, and so is plain "Margot"
   // in its looks' names (Glitchy Margot).
   [/\bMargot-Rythm\b/g, "Margo-rithm"], [/\bMargot\b/g, "Margo"],
-  // Kokoro reads "Triceraplus" as try-ser-AP-lus; "Tricera-plus" keeps the plus (TRY-ser-uh-plus),
-  // and its look Triceracool is "Tricera-cool" the same way.
-  [/\bTriceraplus\b/g, "Tricera-plus"], [/\bTriceracool\b/g, "Tricera-cool"]];
+  // Triceraplus is stressed like triceratops, try-SAIR-uh-plus. Kokoro reads "Triceraplus" as
+  // try-ser-AP-lus and "Tricera-plus" as TRY-ser-uh-PLUS; "Trisaira-plus" is tɹaɪsˈeɪɹəplˈʌs (and
+  // SAY-ruh and SAIR-uh sound alike in American English). Its looks Triceracool and Tricera-tot
+  // the same way.
+  [/\bTriceraplus\b/g, "Trisaira-plus"], [/\bTriceracool\b/g, "Trisaira-cool"], [/\bTricera-tot\b/g, "Trisaira-tot"]];
 function sayAs(t) { return SAY_AS.reduce(function (s, r) { return s.replace(r[0], r[1]); }, t); }
 // A Hero Moment's quip (moments.js), as the voice says it.
 export function quipLine(q) { return sayAs(q); }
