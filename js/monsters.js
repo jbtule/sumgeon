@@ -329,7 +329,10 @@ const KIT = {
   crown: (a) => `<path d="M${a.top[0] - 22} ${a.top[1] + 2} l-4 -24 l13 11 l13 -18 l13 18 l13 -11 l-4 24 z" fill="#ffc93c" ${st}/><circle cx="${a.top[0]}" cy="${a.top[1] - 8}" r="3" fill="#ff5a4e"/>`,
   bow: (a) => { const x = a.top[0] - 20, y = a.top[1] + 4; return `<path d="M${x} ${y} l-14 -9 l0 18 z M${x} ${y} l14 -9 l0 18 z" fill="#ff7ac8" ${st}/><circle cx="${x}" cy="${y}" r="4.5" fill="#ff7ac8" ${st}/>`; },
   lashes: (a) => a.eyes.map(([x, y, r]) => `<path d="M${x - r * .7} ${y - r * .9} l-4 -5 M${x} ${y - r - 1} l0 -6 M${x + r * .7} ${y - r * .9} l4 -5" ${st}/>`).join(""),
-  blush: (a) => a.eyes.map(([x, y, r], i) => `<ellipse cx="${x + (i ? 1 : -1) * (r + 3)}" cy="${y + r + 4}" rx="6" ry="3.5" fill="#ff7ac8" opacity=".75"/>`).join(""),
+  // Each face's pair of eyes: a cheek outside each (by pair, so two faces, the Twinkle Twins and
+  // the Party Twins, each get theirs; it was outside the first eye only, so a second face's left cheek
+  // sat on its mouth).
+  blush: (a) => a.eyes.map(([x, y, r], i) => `<ellipse cx="${x + (i % 2 ? 1 : -1) * (r + 3)}" cy="${y + r + 4}" rx="6" ry="3.5" fill="#ff7ac8" opacity=".75"/>`).join(""),
   mustache: (a) => { const [x, y] = a.mouth; return `<path d="M${x} ${y - 3} q-8 -6 -16 -1 q-6 4 -10 -2 q2 10 14 8 q8 -1 12 -5 q4 4 12 5 q12 2 14 -8 q-4 6 -10 2 q-8 -5 -16 1 z" fill="#f3efe4" ${st}/>`; },
   glasses: (a) => a.eyes.map(([x, y, r]) => `<circle cx="${x}" cy="${y}" r="${r + 4}" fill="#ffffff22" ${st}/>`).join("") + (a.eyes.length > 1 ? `<path d="M${a.eyes[0][0] + a.eyes[0][2] + 4} ${a.eyes[0][1]} L${a.eyes[1][0] - a.eyes[1][2] - 4} ${a.eyes[1][1]}" ${st}/>` : ""),
   monocle: (a) => { const [x, y, r] = a.eyes[a.eyes.length - 1]; return `<circle cx="${x}" cy="${y}" r="${r + 4}" fill="#ffffff22" stroke="#ffc93c" stroke-width="3"/><path d="M${x + r + 3} ${y + 2} q6 14 -2 26" stroke="#ffc93c" stroke-width="2" fill="none"/>`; },
