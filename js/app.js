@@ -1851,8 +1851,8 @@ function itemsCard(fromPause, quiet, fromSlot) {
 
 /* ---------- pausing ----------
    ⏸ by the hearts (or Escape) pauses mid-problem: Keep fighting, Monsters & Heroes,
-   Settings, or Exit to
-   the start screen (a second tap confirms, since it ends the run). */
+   Achievements (the 🏆 sheet: looking only, its Back returns here), Items, Wardrobe, Settings,
+   the purse, or Exit to the start screen (a second tap confirms, since it ends the run). */
 // auto: the app was left mid-fight (autoPause): the same pause, without its line said to nobody.
 function pause(auto) {
   setBills(billsOK());
@@ -1866,11 +1866,12 @@ function pause(auto) {
   if (justPaused && !(auto === true && document.hidden) && once("pause", 3)) say("p", PHRASE.paused);
   show(`<h2>Paused</h2>
   <p>Floor ${G.floor + 1} of ${G.floors.length}: <strong>${esc(G.floors[G.floor].n)}</strong></p>
-  <div class="pause-btns"><button class="small" type="button" id="pBook">📖 Monsters &amp; Heroes</button><button class="small" type="button" id="pSettings">⚙ Settings</button><button class="small" type="button" id="pItems">🎒 Items</button><button class="small" type="button" id="pWardrobe">👕 Wardrobe</button>${moneyOK() ? `<button class="small purse-btn pwide" type="button" id="pPurse" aria-label="Your purse">${purseSvg()}<span class="wmini">${walletMini(wallet)}</span></button>` : ""}<button class="small danger" type="button" id="pExit">Exit the dungeon</button></div>
+  <div class="pause-btns"><button class="small" type="button" id="pBook">📖 Monsters &amp; Heroes</button><button class="small" type="button" id="pTrophies">🏆 Achievements</button><button class="small" type="button" id="pItems">🎒 Items</button><button class="small" type="button" id="pWardrobe">👕 Wardrobe</button><button class="small${moneyOK() ? "" : " pwide"}" type="button" id="pSettings">⚙ Settings</button>${moneyOK() ? `<button class="small purse-btn" type="button" id="pPurse" aria-label="Your purse">${purseSvg()}<span class="wmini">${walletMini(wallet)}</span></button>` : ""}<button class="small danger" type="button" id="pExit">Exit the dungeon</button></div>
   <p class="pause-ver" aria-label="Version ${esc(BUILD)}">v ${esc(BUILD)}</p>
   <div class="btns"><button class="big" id="resume">Keep fighting</button></div>`, "float");
   $("resume").onclick = resume;
   $("pBook").onclick = bookPage;
+  $("pTrophies").onclick = trophyPage; // the 🏆 sheet; its Back comes back here
   $("pItems").onclick = () => itemsCard(true);
   if ($("pPurse")) $("pPurse").onclick = () => purseCard(true);
   $("pWardrobe").onclick = () => wardrobeCard();
@@ -2590,19 +2591,26 @@ function rewardWords(r) {
   if (r.cents) out.push(r.cents + "¢");
   return out.join(" · ");
 }
-// A reward drawn: the captain wearing the piece (or the piece alone), the items, the coins.
-function rewardArt(r) {
-  const piece = !r.piece ? "" : hasCaptain()
+// A reward drawn: the captain wearing the piece (or the piece alone), standing with the card's
+// figures (rewardPiece); then the items and the coins, in a row of their own (rewardArt).
+function rewardPiece(r) {
+  if (!r.piece) return "";
+  return hasCaptain()
     ? `<div class="ach-cap">${heroSvg(HEROES[team.captain], { color: team.color, wear: Object.assign({}, dressOf(team.captain), { [clothesById[r.piece].spot]: r.piece }) })}</div>`
     : `<div class="ach-cap">${pieceSvg(r.piece)}</div>`;
+}
+function rewardArt(r) {
   const items = Object.entries(r.items).flatMap(([k, n]) => Array.from({ length: Math.min(n, 2) }, () => `<span class="ico" aria-hidden="true">${itemIcon(k)}</span>`)).join("");
   const f = r.cents ? fewest(r.cents) : null;
-  return piece + (items ? `<div class="ach-items">${items}</div>` : "") + (f ? `<div class="ach-coins">${coinsSvg({ q: f.q, d: f.d, n: f.n, p: f.p })}</div>` : "");
+  return (items ? `<div class="ach-items">${items}</div>` : "") + (f ? `<div class="ach-coins">${coinsSvg({ q: f.q, d: f.d, n: f.n, p: f.p })}</div>` : "");
 }
 // The stratum ones and the grand ones get the big card; the rest (mastery, the tracks, the
 // surprises) the small one.
 const AHEAD = ["champion", "legend", "grand"];
 const isBig = (a) => AHEAD.includes(a.kind);
+// The wall behind a card, on screen and in the share picture: its stratum's; none for the grand
+// ones (purple to slate); otherwise the stratum being played.
+const cardWall = (a) => a.wing || (a.kind === "grand" ? null : wing().id);
 // Who's involved, as the game's SVG art, for the card and the share card: a stratum's boss (mega
 // for a Champion, golden for a Legend; all four for the grand ones), a surprise's hero or monster
 // (Sevenstein, Trollar), or else the captain.
@@ -2623,7 +2631,7 @@ let shareFor = null, shareBlob = null;
 function prepareShare(a) {
   shareFor = a.id; shareBlob = null;
   const btn = $("achShare");
-  renderCard({ icon: a.icon, title: a.title, detail: a.detail, secret: a.secret }, earnedAt(a.id) || Date.now(), figuresOf(a), a.wing || (a.kind === "grand" ? null : wing().id)).then((b) => {
+  renderCard({ icon: a.icon, title: a.title, detail: a.detail, secret: a.secret }, earnedAt(a.id) || Date.now(), figuresOf(a), cardWall(a)).then((b) => {
     if (shareFor !== a.id || !btn.isConnected) return; // moved on meanwhile
     shareBlob = b; btn.hidden = false;
   }).catch(() => {}); // no canvas: just no Share button
@@ -2638,21 +2646,25 @@ function achievementCards(ids, i, from) {
   if (!from.test) markSeen(id);
   const r = a.reward, big = isBig(a), last = i >= ids.length - 1;
   const next = from.sheet ? "Back" : !last ? "Next" : from.mode === "deeper" ? "Go deeper" : "Enter the dungeon";
-  // The big card: the stratum's wall (the grand ones in gold), its boss and the captain in the
-  // reward. The small card: who's involved (Sevenstein, Trollar, the hero of Every Quip), if
-  // anyone besides the captain, and the reward.
-  const figs = figuresOf(a);
-  // The reward shows when it's earned; looked at again from the 🏆 sheet, it's just the achievement.
-  const prize = from.sheet ? "" : rewardArt(r);
-  const stage = big ? `<div class="ach-stage${figs.length > 1 ? " four" : ""}">${figs.map((f) => `<div class="ach-boss">${f}</div>`).join("")}${prize}</div>`
-    : (a.figure || prize ? `<div class="ach-stage small">${a.figure ? figs.map((f) => `<div class="ach-cap ach-fig">${f}</div>`).join("") : ""}${prize}</div>` : "");
-  show(`<div class="ach-card${big ? " huge" : ""}${a.wing ? "" : big ? " grand" : ""}"${a.wing ? ` data-stratum="${a.wing}"` : ""}>
+  // Every card is drawn like its share picture: a wall darkened behind (its stratum's, or the one
+  // being played; the grand ones purple to slate), a warm glow, a gold frame, and who's involved
+  // standing on a shadow: the stratum's boss (all four for the grand ones) and the captain wearing
+  // a piece won; otherwise the captain, or Sevenstein, Trollar, the hero of Every Quip. The items
+  // and coins won stand in a row under them.
+  const figs = figuresOf(a), wall = cardWall(a);
+  // The reward shows when it's earned; looked at again from the 🏆 sheet, it's the achievement and
+  // the day it was earned, as on the share picture.
+  const piece = from.sheet ? "" : rewardPiece(r), prize = from.sheet ? "" : rewardArt(r);
+  const stand = figs.map((f) => `<div class="${big ? "ach-boss" : "ach-cap ach-fig"}">${f}</div>`).join("") + piece;
+  const stage = stand || prize ? `<div class="ach-stage${figs.length > 1 ? " four" : ""}">${stand ? `<div class="ach-figs">${stand}</div>` : ""}${prize ? `<div class="ach-prize">${prize}</div>` : ""}</div>` : "";
+  const when = from.sheet && earnedAt(id) ? new Date(earnedAt(id)).toLocaleDateString(undefined, { month: "long", day: "numeric", year: "numeric" }) : "";
+  show(`<div class="ach-card${big ? " huge" : ""}${wall ? "" : " grand"}"${wall ? ` data-stratum="${wall}"` : ""}>
     <p class="ach-kicker">${a.secret ? "Secret achievement!" : "New achievement!"}</p>
     <div class="ach-icon" aria-hidden="true">${a.icon}</div>
     <h2 class="ach-title">${esc(a.title)}</h2>
     <p class="ach-detail">${esc(a.detail)}</p>
     ${stage}
-    ${from.sheet ? "" : `<p class="ach-got"><span>You got</span> ${esc(rewardWords(r))}</p>`}${!from.sheet && ids.length > 1 ? `<p class="ach-count">${i + 1} of ${ids.length}</p>` : ""}</div>
+    ${from.sheet ? "" : `<p class="ach-got"><span>You got</span> ${esc(rewardWords(r))}</p>`}${when ? `<p class="ach-date">${esc(when)}</p>` : ""}${!from.sheet && ids.length > 1 ? `<p class="ach-count">${i + 1} of ${ids.length}</p>` : ""}</div>
     <div class="btns"><button class="big alt ach-share" id="achShare" type="button" aria-label="Share" title="Share" hidden>📤</button><button class="big" id="achNext">${next}</button></div>`, "page ach");
   if (big) sfx.legend(); else sfx.chestOpen();
   cardLines(a).forEach((_, k) => say("p", achievementLine(a, k), k === 0));
@@ -2664,7 +2676,8 @@ function achievementCards(ids, i, from) {
     from.done();
   };
 }
-// The 🏆 sheet: the stratum ones with their progress, then the secret ones (??? until earned).
+// The 🏆 sheet: the stratum ones with their progress, then the secret ones (??? until earned),
+// each list with the earned ones on top, newest first. From the start screen or the pause card.
 // Earned ones not yet shown on a card are marked new; tapping an earned one plays its card. A
 // track's next tier shows its count once started ("12 of 25"), and its name too once a tier of
 // that track is earned (the track is no secret then). The tiers past a track's next one aren't
@@ -2694,8 +2707,10 @@ function trophyPage() {
     return `<div class="ach-row ahead"><span class="ach-ico" aria-hidden="true">${a.icon}</span><span class="ach-txt"><b>${esc(a.title)}</b><small>${esc(a.detail)}</small>
       ${bar(a)}<small class="ach-prog">${esc(a.progress)}</small></span></div>`;
   };
-  // The secrets: the tracks first (they count up), then mastery, then the surprises.
-  const strata = list.filter(isBig), secret = ["track", "mastery", "surprise"].flatMap((k) => list.filter((a) => a.kind === k));
+  // Each list puts the earned ones first, newest first, then the rest in their own order. The
+  // secrets: the tracks first (they count up), then mastery, then the surprises.
+  const earnedFirst = (as) => [...as.filter((a) => earnedAt(a.id)).sort((x, y) => earnedAt(y.id) - earnedAt(x.id)), ...as.filter((a) => !earnedAt(a.id))];
+  const strata = earnedFirst(list.filter(isBig)), secret = earnedFirst(["track", "mastery", "surprise"].flatMap((k) => list.filter((a) => a.kind === k)));
   const got = list.filter((a) => earnedAt(a.id)).length;
   show(`<div class="cardhead"><h2>🏆 Achievements</h2></div>
   <p class="ach-sum">${got} of ${list.length} earned</p>
@@ -2705,7 +2720,7 @@ function trophyPage() {
   <div class="ach-list">${secret.map(row).join("")}</div>
   <div class="btns"><button class="big" id="achBack">Back</button></div>`);
   $("card").querySelectorAll("[data-ach]").forEach((b) => b.onclick = () => achievementCards([b.dataset.ach], 0, { sheet: true, test: !ach.earned[b.dataset.ach] }));
-  $("achBack").onclick = () => menu();
+  $("achBack").onclick = () => G.paused ? pause() : menu(); // mid-run, back to the pause card
 }
 function bookPage() {
   G.onMenu = false; // an update waits until the start screen
