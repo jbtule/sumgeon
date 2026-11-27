@@ -66,7 +66,12 @@ function unlock() {
     var d = noiseBuf.getChannelData(0);
     for (var i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
   } catch (e) { ctx = null; lastError = "create: " + e.message; }
+  if (ctx) fresh.forEach(function (fn) { try { fn(ctx); } catch (e) { lastError = "onContext: " + e.message; } });
 }
+// Told about each new context, made on a tap (the first, or a remake after the old one was closed):
+// the background music (app.js) moves onto it, since a closed context's sounds are gone for good.
+var fresh = [];
+export function onContext(fn) { fresh.push(fn); }
 // Every tap, not just the first: it also wakes audio iOS paused in the background. Safari counts
 // some of these as a gesture that may start audio and not others, so listen to all of them.
 ["pointerdown", "pointerup", "click", "touchend", "keydown"].forEach(function (ev) { document.addEventListener(ev, unlock, true); });

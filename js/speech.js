@@ -368,6 +368,11 @@ export function say(kind, text, cancel, live, fx) {
   var done = function () { if (my === epoch) pending = Math.max(0, pending - 1); };
   queue = queue.then(function () {
     if (my !== epoch || (live && !live())) return;
+    talk(true);
+    var untalk = function () { if (my === epoch) talk(false); };
+    return line().then(untalk, untalk);
+  });
+  function line() { return Promise.resolve().then(function () {
     var key = clips[kind + ":" + text], hit = spriteOf[kind + ":" + text], c = ac();
     // Not recorded (or no audio.json, so no sprite map either): the device voice.
     if (!key) return speak(text, RATE[kind], PITCH[kind]);
@@ -384,9 +389,22 @@ export function say(kind, text, cancel, live, fx) {
     // A quip, or a line with a treatment (fx), through Web Audio with it.
     if (fx || kind === "h") return playHero(fx, hit).then(fallback);
     return playSprite(hit).then(fallback);
-  });
+  }); }
   queue = queue.then(done, done);
   return queue;
+}
+
+// Told when the voice starts and stops talking (onTalk(fn): fn(true), fn(false)): every line,
+// recorded, a quip or the device voice, so the background music (app.js) ducks under it. The
+// release waits a moment (TALK_GAP), so lines one after another keep it down between them.
+var talking = false, talkTimer = 0, talkers = [], TALK_GAP = 350;
+export function onTalk(fn) { talkers.push(fn); }
+export function isTalking() { return talking; }
+function tell(on) { talkers.forEach(function (fn) { try { fn(on); } catch (e) { /* a listener's own problem */ } }); }
+function talk(on) {
+  clearTimeout(talkTimer);
+  if (on) { if (!talking) { talking = true; tell(true); } return; }
+  talkTimer = setTimeout(function () { if (talking) { talking = false; tell(false); } }, TALK_GAP);
 }
 
 // Whether the voice is saying something, or has lines waiting: a Hero Moment that has to cut it
@@ -410,6 +428,7 @@ export function cutOff(play, playAt, afterS) {
 // Stops the clip or speech in progress and drops anything queued.
 export function stopSpeech() {
   epoch++; pending = 0;
+  talk(false);
   queue = Promise.resolve();
   if (finishClip) finishClip(true);
   if (player) { try { player.pause(); } catch (e) {} }

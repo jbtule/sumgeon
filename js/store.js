@@ -50,8 +50,9 @@ export var STORAGE_VERSION = 2;
 export var OWN_KEYS = ["settings", "best", "facts", "heroes", "wings", "bestiary", "dungeon", "spells", "told", "moments", "wallet", "items", "wardrobe", "shop", "achievements", "link", "syncBase", "run"];
 // band: a grade band, "kinder" to "third" (learn.js BANDS); start: the band opened from the start; grade:
 // 0 = K … 5, picked by the player (wings.js withGrade), missing until they pick. ops and diff are the prototype's, kept only to
-// pick a band for a player who had them.
-export var DEFAULT_SETTINGS = { band: "kinder", ops: ["+", "-"], diff: "easy", timer: false, sfx: true, voice: true };
+// pick a band for a player who had them. music: the background music in a run (app.js musicNow), on
+// its own switch, apart from the sound effects.
+export var DEFAULT_SETTINGS = { band: "kinder", ops: ["+", "-"], diff: "easy", timer: false, sfx: true, voice: true, music: true };
 
 export function profilePrefix(id) { return DEVICE + "@" + id + ":"; }
 
