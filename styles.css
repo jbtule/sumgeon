@@ -914,6 +914,16 @@ label.switch-row:focus-within{outline-offset:-3px}
   .pad{grid-area:pad}
   /* Your hero and hearts sit under the number pad, on your side. */
   .you{grid-area:you;margin-bottom:16px}
+  /* At least the height Safari really shows (--app-h), not 100vh: on an iPad, 100vh is the
+     height with the toolbar hidden, so the page scrolled by the toolbar's height. */
+  body{min-height:var(--app-h,100vh)}
+}
+/* A short iPad or desktop window (an iPad in landscape in Safari is about 680 tall): the footer
+   badges go (they're in Settings → About, as on phones) and the game takes the rest of the
+   height, so the page doesn't scroll. */
+@media (min-width: 760px) and (max-height: 820px) {
+  body > .badges{display:none}
+  .game{min-height:max(500px,calc(var(--app-h,100dvh) - 76px))}
 }
 
 /* The descent (js/descent.js, DESIGN.md §8.3): tapping Enter, the start card falls away and the
