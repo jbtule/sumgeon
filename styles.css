@@ -699,7 +699,7 @@ button.ach-row{cursor:pointer}
 }
 /* iPad and desktop: a portrait card, like the share picture. */
 @media (min-width: 760px){.ach-card{min-height:min(600px,calc(100dvh - 200px))}}
-/* A secret track on its way ("12 of 25"), and 📤 Share on an earned card opened from the sheet
+/* A secret track on its way ("12 of 25"), and Share on an earned card opened from the sheet
    (for grown-ups: beside Back, smaller). */
 .ach-row.secret.started{opacity:.85}
 .btns .ach-share{flex:none;padding:0 16px;font-size:15px;white-space:nowrap}
@@ -1407,9 +1407,9 @@ body.on-scene>.top,body.on-scene>.who,body.on-scene>.game,body.on-scene>.badges{
 .pg-pop dd .pc{vertical-align:-3px}
 .pg-x{position:absolute;right:8px;top:8px;width:40px;height:40px;border-radius:12px;border:0;background:var(--btn);color:var(--ink);font-size:24px;line-height:1;cursor:pointer}
 .pg-x:focus-visible{outline:3px solid var(--gold)}
-/* An earned achievement on the 🏆 sheet says it opens to share (its card has 📤 Share). */
+/* An earned achievement on the 🏆 sheet says it opens to share (its card has Share, the drawn symbol). */
 .ach-row .ach-share-hint{color:var(--gold);font-weight:800;opacity:.85}
-/* 📤 Share beside Next or "Enter the dungeon": a compact square, so the main button keeps its words (iPhone SE). */
+/* Share (Apple's share symbol, drawn: SHARE_ICON) beside Next or "Enter the dungeon": a compact square, so the main button keeps its words (iPhone SE). */
 .btns .big.ach-share{flex:0 0 auto;min-width:56px;padding:0 14px;font-size:24px}
 .card.ach .btns .big:not(.ach-share){padding-inline:10px;min-width:0}
 @media (max-width: 359px){.card.ach .btns .big:not(.ach-share){font-size:16px}}
@@ -1436,3 +1436,6 @@ body.on-scene>.top,body.on-scene>.who,body.on-scene>.game,body.on-scene>.badges{
 .a2hs-ico{display:grid;place-items:center;width:40px;height:40px;border-radius:12px;background:var(--dark);border:2px solid var(--line);color:#4aa3ff}
 .a2hs-ico:empty{visibility:hidden}
 .a2hs-fine{font-size:13px;line-height:1.35}
+/* The share symbol: sized to the button, or inline with the sheet's hint text. */
+.btns .big.ach-share .share-icon{width:26px;height:26px;display:block;margin:auto}
+.ach-share-hint .share-icon{width:1.15em;height:1.15em;vertical-align:-.2em}

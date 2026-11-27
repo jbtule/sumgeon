@@ -258,6 +258,9 @@ function captainUI() {
 }
 function saveSettings() { store.player(PID).set("settings", st); }
 
+// The share symbol Apple uses (a box open at the top, an arrow rising out of it), drawn in
+// currentColor, in place of the 📤 emoji, which reads as an inbox tray.
+const SHARE_ICON = '<svg class="share-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 9.5H6.8a1.8 1.8 0 0 0-1.8 1.8v8.4a1.8 1.8 0 0 0 1.8 1.8h10.4a1.8 1.8 0 0 0 1.8-1.8v-8.4a1.8 1.8 0 0 0-1.8-1.8h-1.7"/><path d="M12 14.5V2.8M8.2 6.4 12 2.6l3.8 3.8"/></svg>';
 const SPEAKER = '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></svg>';
 const GEAR = '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1"/><circle cx="12" cy="12" r="6.5"/></svg>';
 $("sayProb").innerHTML = SPEAKER;
@@ -2732,7 +2735,7 @@ function achievementCards(ids, i, from) {
     <p class="ach-detail">${esc(a.detail)}</p>
     ${stage}
     ${from.sheet ? "" : `<p class="ach-got"><span>You got</span> ${esc(rewardWords(r))}</p>`}${when ? `<p class="ach-date">${esc(when)}</p>` : ""}${!from.sheet && ids.length > 1 ? `<p class="ach-count">${i + 1} of ${ids.length}</p>` : ""}</div>
-    <div class="btns"><button class="big alt ach-share" id="achShare" type="button" aria-label="Share" title="Share" hidden>📤</button><button class="big" id="achNext">${next}</button></div>`, "page ach");
+    <div class="btns"><button class="big alt ach-share" id="achShare" type="button" aria-label="Share" title="Share" hidden>${SHARE_ICON}</button><button class="big" id="achNext">${next}</button></div>`, "page ach");
   if (big) sfx.legend(); else sfx.chestOpen();
   cardLines(a).forEach((_, k) => say("p", achievementLine(a, k), k === 0));
   prepareShare(a); // every card can be shared, the moment it's earned or later from the sheet
@@ -2760,7 +2763,7 @@ function trophyPage() {
   const row = (a) => {
     const t = earnedAt(a.id);
     if (t) return `<button type="button" class="ach-row earned${isNewAch(a.id) ? " new" : ""}${isBig(a) ? " top" : ""}" data-ach="${a.id}">
-      <span class="ach-ico" aria-hidden="true">${a.icon}</span><span class="ach-txt"><b>${esc(a.title)}${isNewAch(a.id) ? ' <i class="new-pill">New!</i>' : ""}</b><small>${esc(a.detail)}</small><small class="ach-when">Earned ${date(t)}</small><small class="ach-share-hint">📤 Tap to see it and share</small></span></button>`;
+      <span class="ach-ico" aria-hidden="true">${a.icon}</span><span class="ach-txt"><b>${esc(a.title)}${isNewAch(a.id) ? ' <i class="new-pill">New!</i>' : ""}</b><small>${esc(a.detail)}</small><small class="ach-when">Earned ${date(t)}</small><small class="ach-share-hint">${SHARE_ICON} Tap to see it and share</small></span></button>`;
     // A track lists its earned tiers and its next one; the tiers past that aren't listed yet.
     if (a.kind === "track" && nextTier[a.track] !== a) return "";
     if (a.kind === "track" && a.started) {
