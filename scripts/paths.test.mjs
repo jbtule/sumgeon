@@ -86,10 +86,14 @@ const cellar = PATHS.cellar;
   const r = Object.fromEntries(pool("third").filter((f) => f.level <= 4).map((f) => [f.key, learnedRec]));
   for (let i = 0; i < 50; i++) { const k = probeKey("third", r, Math.random, [], [], 4, null, reachOf(tower, 1, "third")); assert.ok(!k || pool("third").find((f) => f.key === k).level <= 5, k); }
   assert.ok(probeKey("third", r, Math.random, [], [], 4, null, reachOf(tower, 2, "third")), "a later chapter reaches further");
-  // A review step's facts are never new: a fresh player's Margot-Rythm asks nothing unseen... but
-  // with nothing seen at all there's nothing else to ask, so she asks them (placement places them).
+  // A review step asks only facts already seen once there are enough of them (REVIEW_MIN). With
+  // fewer, it practises the rest of its level too, so one seen fact isn't asked over and over
+  // (on the iPhone, a 3rd grader got 266 + 302 every time).
   const seen = { "+321,406": { b: 1, n: 1, c: 1, ms: 9000, t: 0 } };
-  for (let i = 0; i < 20; i++) assert.equal(choose("addT", seen, { now: 1, open: [0, 1], review: [0, 1] }), "+321,406");
+  const asked1 = new Set(); for (let i = 0; i < 40; i++) asked1.add(choose("addT", seen, { now: 1, open: [0, 1], review: [0, 1] }));
+  assert.ok(asked1.size > 5, "a thin review practises its level");
+  const many = Object.fromEntries(pool("addT").slice(0, 12).map((f) => [f.key, { b: 3, n: 2, c: 2, ms: 3000, t: 0 }]));
+  for (let i = 0; i < 40; i++) assert.ok(many[choose("addT", many, { now: 1e12, open: [0, 1], review: [0, 1] })], "with enough seen, only seen facts");
 }
 // Chapters: 1 + the mega bosses beaten, saved; everyone starts at chapter 1 (dungeon version 6
 // started runs over), however deep the saved depth.

@@ -630,9 +630,15 @@ export function hpOf(m, open, bandKey) {
 // The facts open to a monster: the open levels' facts of the kinds it asks (a review level's only
 // once seen: never new). With none open (a monster put on a floor for testing, ?monster=), its
 // kind from the lowest level that has it; with none at all, everything open.
+export const REVIEW_MIN = 8;
 function asked(bandKey, recs, levels, asks, review) {
   const lv = new Set(levels || allLevels(bandKey)), rv = new Set(review || []);
-  let open = pool(bandKey).filter((f) => lv.has(f.level) && (!rv.has(f.level) || (recs[f.key] && recs[f.key].n)));
+  const inLv = pool(bandKey).filter((f) => lv.has(f.level)), seen = (f) => recs[f.key] && recs[f.key].n;
+  // A review level asks only facts already seen, unless fewer than REVIEW_MIN of them have been:
+  // then the rest of it too, so a review with one learned fact (a 3rd grader's adding within 1000)
+  // practises the level instead of asking that one fact over and over.
+  const thin = inLv.filter((f) => rv.has(f.level) && seen(f)).length < REVIEW_MIN;
+  let open = inLv.filter((f) => !rv.has(f.level) || thin || seen(f));
   if (!open.length) open = pool(bandKey).filter((f) => lv.has(f.level));
   if (!open.length) open = pool(bandKey).filter((f) => f.level === 0);
   if (!asks) return open;
