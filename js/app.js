@@ -1392,6 +1392,9 @@ function hide() { $("ov").hidden = true; }
 const CHEST_ALWAYS = new URLSearchParams(location.search).get("chest");
 function openChest(m, done) {
   G.busy = true;
+  // Saved before it opens: a run picked up again goes on to the floor's card, so closing the app
+  // mid-chest loses that chest rather than opening it twice.
+  saveRun("chested");
   // A mega boss's chest is a big one (DESIGN.md §4.3): more coins, or two items.
   const C = G.chest = { done, boss: !!m.boss, big: m.form === "mega" || m.form === "legend", tries: 0, key: null };
   if (C.big) say("p", LOOT.bigChest, true);
@@ -1856,7 +1859,7 @@ function redrawFight() {
    RUN_KEEP_MS is offered as "Keep going?" (keepGoing), at the problem it was on. Anything in it
    that doesn't fit the game as it is now (an update, a dungeon version change) and it's dropped,
    quietly, with its armed items back in the bag. */
-const RUN_V = 1, RUN_KEEP_MS = 4 * 3600e3, RUN_STAGES = ["problem", "next", "beaten", "floor"];
+const RUN_V = 1, RUN_KEEP_MS = 4 * 3600e3, RUN_STAGES = ["problem", "next", "beaten", "chested", "floor"];
 let RUN_KEYS = null; // every fact key the game asks, made when first needed (checkRun)
 // A floor's monster by name (a look's own name, a boss's form by its depth), or a cursed digit.
 const floorRef = (m) => (m.cursed != null ? { cursed: m.cursed } : m.boss ? { boss: m.n, legend: m.form === "legend" } : { n: m.n });
@@ -1867,7 +1870,8 @@ function floorFrom(ref, w, depth) {
   return MON.find((x) => x.n === ref.n && !x.boss) || allLooks().find((x) => x.n === ref.n) || null;
 }
 // stage: "problem" (G.cur being worked on), "next" (answered: a new problem next), "beaten" (the
-// monster's HP is gone: its chest and card next) or "floor" (cleared: the next floor). o.hp: the
+// monster's HP is gone: its chest and card next), "chested" (its chest has come up: only the card
+// next, so a run picked up again never opens the same chest twice) or "floor" (cleared: the next floor). o.hp: the
 // HP once the hit that's playing lands.
 function saveRun(stage, o = {}) {
   if (!G.running || !G.floors || !PID) return;
@@ -1912,7 +1916,7 @@ function checkRun(s) {
   const last = floors.length - 1;
   if (!int(s.floor, 0, s.stage === "floor" ? last - 1 : last)) return null;
   if (!int(s.hearts, 1, BANDS[s.band].hearts) || !fin(s.hp) || !fin(s.max) || s.max <= 0 || s.hp > s.max) return null;
-  if (s.stage === "beaten" ? s.hp > 0 : s.stage !== "floor" && s.hp <= 0) return null;
+  if (s.stage === "beaten" || s.stage === "chested" ? s.hp > 0 : s.stage !== "floor" && s.hp <= 0) return null;
   if (![s.streak, s.solved, s.tries, s.runStars, s.onFloor, s.floorLost, s.floorStreak].every((n) => int(n, 0, 1e6))) return null;
   if (!Array.isArray(s.retry) || !Array.isArray(s.recent) || !s.retry.every((r) => r && typeof r.key === "string" && fin(r.after))) return null;
   if (s.stage === "problem") {
@@ -1951,7 +1955,7 @@ function keepGoing(R) {
   if (half && half.curl) $("mon").classList.add("curled");
   hpUI(); heartsUI(); streakUI(); slotsUI();
   say("m", monsterName(m));
-  if (s.stage === "beaten") { G.busy = true; $("mon").className = "mon dead"; setTimeout(() => { if (G.running) cleared(); }, 600); return; }
+  if (s.stage === "beaten" || s.stage === "chested") { const chested = s.stage === "chested"; G.busy = true; $("mon").className = "mon dead"; setTimeout(() => { if (G.running) cleared(chested); }, 600); return; }
   setMsg("Welcome back! Keep fighting.", "good");
   if (s.stage === "next") { newProblem(); return; }
   G.cur = s.cur; G.charged = s.charged; $("charge").hidden = !G.charged;
