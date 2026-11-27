@@ -9,10 +9,10 @@ import { join } from "node:path";
 // browsers, Safari most of all, keep an icon long after it changes, but fetch a new address.
 export const STAMPED = ['href="styles.css"', 'src="js/app.js"', 'href="manifest.webmanifest"', 'href="favicon.svg"', 'href="apple-touch-icon.png"', 'href="fonts/bungee-latin.woff2"', 'href="fonts/nunito-latin.woff2"'];
 // The grown-up pages: [folder, script]. Each loads the game's modules through its own import map.
-export const PAGES = [["review/listen", "listen.js"], ["review/spell", "spell.js"], ["review/moments", "moments.js"], ["review/gallery", "gallery.js"], ["review/proto", "proto.js"]];
-// Other local files a grown-up page loads (the moments page, the gallery and the prototype use
+export const PAGES = [["review/listen", "listen.js"], ["review/spell", "spell.js"], ["review/moments", "moments.js"], ["review/gallery", "gallery.js"], ["review/proto", "proto.js"], ["review/music", "music.js"]];
+// Other local files a grown-up page loads (the moments page, the gallery, the prototype and the music page use
 // the game's stylesheet).
-const PAGE_EXTRA = { "review/moments": ['href="../../styles.css"'], "review/gallery": ['href="../../styles.css"'], "review/proto": ['href="../../styles.css"'] };
+const PAGE_EXTRA = { "review/moments": ['href="../../styles.css"'], "review/gallery": ['href="../../styles.css"'], "review/proto": ['href="../../styles.css"'], "review/music": ['href="../../styles.css"'] };
 
 const modules = (root) => readdirSync(join(root, "js")).filter((f) => f.endsWith(".js"));
 
