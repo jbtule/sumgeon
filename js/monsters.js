@@ -174,8 +174,9 @@ MON.push(
    const tie=(x)=>`<path d="M${x} 116 l-12 -7 v14 z M${x} 116 l12 -7 v14 z" fill="${CORAL}" stroke="${DK}" stroke-width="3" stroke-linejoin="round"/><circle cx="${x}" cy="116" r="4" fill="${CORAL}" stroke="${DK}" stroke-width="3"/>`;
    const face=(x)=>`${eye(x-9,82,8)}${eye(x+9,82,8)}<path d="M${x-7} 96 Q${x} 102 ${x+7} 96" ${ds} stroke-width="3"/>`;
    return `${foot(48,160,13)}${foot(70,160,13)}${foot(130,160,13)}${foot(152,160,13)}`
-   +solid(`<rect x="8" y="72" width="94" height="34" rx="15"/><rect x="98" y="72" width="94" height="34" rx="15"/>`,c)+one(59)+one(141)
-   +solid(`<circle cx="94" cy="89" r="12"/><circle cx="106" cy="89" r="12"/>`,c)+`<path d="M100 79 v20" ${ds} stroke-width="3"/>`
+   // Two whole pluses side by side, a small gap between their arms (2026-11-27: their arms used to
+   // meet in clasped hands, which read as a drawing error at game size).
+   +solid(`<rect x="21" y="74" width="76" height="30" rx="13"/><rect x="103" y="74" width="76" height="30" rx="13"/>`,c)+one(59)+one(141)
    +face(59)+face(141)+tie(59)+tie(141)}},
  {n:'Triceraplus',op:'Σ',sym:'+ + +',stratum:'hall',c:'#ff9a4a',hits:3,
   quip:'stomps off to find a bigger sum.',
@@ -328,7 +329,10 @@ const KIT = {
   crown: (a) => `<path d="M${a.top[0] - 22} ${a.top[1] + 2} l-4 -24 l13 11 l13 -18 l13 18 l13 -11 l-4 24 z" fill="#ffc93c" ${st}/><circle cx="${a.top[0]}" cy="${a.top[1] - 8}" r="3" fill="#ff5a4e"/>`,
   bow: (a) => { const x = a.top[0] - 20, y = a.top[1] + 4; return `<path d="M${x} ${y} l-14 -9 l0 18 z M${x} ${y} l14 -9 l0 18 z" fill="#ff7ac8" ${st}/><circle cx="${x}" cy="${y}" r="4.5" fill="#ff7ac8" ${st}/>`; },
   lashes: (a) => a.eyes.map(([x, y, r]) => `<path d="M${x - r * .7} ${y - r * .9} l-4 -5 M${x} ${y - r - 1} l0 -6 M${x + r * .7} ${y - r * .9} l4 -5" ${st}/>`).join(""),
-  blush: (a) => a.eyes.map(([x, y, r], i) => `<ellipse cx="${x + (i ? 1 : -1) * (r + 3)}" cy="${y + r + 4}" rx="6" ry="3.5" fill="#ff7ac8" opacity=".75"/>`).join(""),
+  // Each face's pair of eyes: a cheek outside each (by pair, so two faces, the Twinkle Twins and
+  // the Party Twins, each get theirs; it was outside the first eye only, so a second face's left cheek
+  // sat on its mouth).
+  blush: (a) => a.eyes.map(([x, y, r], i) => `<ellipse cx="${x + (i % 2 ? 1 : -1) * (r + 3)}" cy="${y + r + 4}" rx="6" ry="3.5" fill="#ff7ac8" opacity=".75"/>`).join(""),
   mustache: (a) => { const [x, y] = a.mouth; return `<path d="M${x} ${y - 3} q-8 -6 -16 -1 q-6 4 -10 -2 q2 10 14 8 q8 -1 12 -5 q4 4 12 5 q12 2 14 -8 q-4 6 -10 2 q-8 -5 -16 1 z" fill="#f3efe4" ${st}/>`; },
   glasses: (a) => a.eyes.map(([x, y, r]) => `<circle cx="${x}" cy="${y}" r="${r + 4}" fill="#ffffff22" ${st}/>`).join("") + (a.eyes.length > 1 ? `<path d="M${a.eyes[0][0] + a.eyes[0][2] + 4} ${a.eyes[0][1]} L${a.eyes[1][0] - a.eyes[1][2] - 4} ${a.eyes[1][1]}" ${st}/>` : ""),
   monocle: (a) => { const [x, y, r] = a.eyes[a.eyes.length - 1]; return `<circle cx="${x}" cy="${y}" r="${r + 4}" fill="#ffffff22" stroke="#ffc93c" stroke-width="3"/><path d="M${x + r + 3} ${y + 2} q6 14 -2 26" stroke="#ffc93c" stroke-width="2" fill="none"/>`; },
