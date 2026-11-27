@@ -7,7 +7,7 @@ import { join } from "node:path";
 
 // Attributes in index.html that load a local file, e.g. 'src="js/app.js"'. The icons too:
 // browsers, Safari most of all, keep an icon long after it changes, but fetch a new address.
-export const STAMPED = ['href="styles.css"', 'src="js/app.js"', 'href="manifest.webmanifest"', 'href="favicon.svg"', 'href="apple-touch-icon.png"'];
+export const STAMPED = ['href="styles.css"', 'src="js/app.js"', 'href="manifest.webmanifest"', 'href="favicon.svg"', 'href="apple-touch-icon.png"', 'href="fonts/bungee-latin.woff2"', 'href="fonts/nunito-latin.woff2"'];
 // The grown-up pages: [folder, script]. Each loads the game's modules through its own import map.
 export const PAGES = [["review/listen", "listen.js"], ["review/spell", "spell.js"], ["review/moments", "moments.js"], ["review/gallery", "gallery.js"], ["review/proto", "proto.js"]];
 // Other local files a grown-up page loads (the moments page, the gallery and the prototype use

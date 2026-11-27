@@ -13,6 +13,15 @@
 :root{--top-extra:max(0px,calc(env(safe-area-inset-top,0px) - 12px))}
 body{margin:0;background:var(--bg);color:var(--ink);font:600 16px/1.5 Nunito,system-ui,sans-serif;overflow-x:clip;min-height:100vh}
 button{font:inherit;color:inherit;cursor:pointer}
+/* Opening: index.html keeps the page hidden on the launch color (html.boot) until the start screen
+   is drawn; then it fades in from that color (booted). Reloading for an update fades out to it
+   first (reloading), so the reload isn't a hard blink. */
+html.booted,html.reloading{background:#1c1411}
+html.booted body{animation:bootin .2s ease-out}
+html.reloading body{animation:bootout .15s ease-in forwards}
+@keyframes bootin{from{opacity:0}}
+@keyframes bootout{to{opacity:0}}
+@media (prefers-reduced-motion:reduce){html.booted body,html.reloading body{animation:none}}
 /* No accidental zoom: fast taps on the number pad were double-tap zooming on iPhone, and a stray
    pinch zoomed the whole game. app.js stops the pinch (Safari ignores maximum-scale for it). */
 html{touch-action:manipulation;-webkit-text-size-adjust:100%;text-size-adjust:100%}
@@ -27,6 +36,7 @@ h1 b{color:var(--coral);font-weight:400}
 .arena{position:relative;border-radius:22px;padding:14px;background:linear-gradient(rgb(5 9 11 / var(--murk,0)),rgb(5 9 11 / var(--murk,0))),radial-gradient(ellipse 58% 46% at 50% 76%,#ffe9b838 0,#ffe9b814 42%,#0000 70%),radial-gradient(ellipse 95% 90% at 50% 55%,#0000 40%,#05090bc0 100%),var(--wall);border:2px solid var(--line);overflow:hidden;transition:box-shadow .2s}
 .arena.hurt{box-shadow:inset 0 0 0 4px var(--coral),inset 0 0 60px #ff5a4e66}
 .mhead{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.arena.empty .mhead{visibility:hidden}
 .mname{font:400 18px Bungee,sans-serif}
 .mname.long{font-size:14px !important;line-height:1.1}
 .hp{flex:1 1 120px;height:14px;background:var(--dark);border-radius:9px;overflow:hidden;border:2px solid var(--dark)}

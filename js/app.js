@@ -1917,14 +1917,21 @@ function comeBack() {
     if ($("ov").hidden && !G.busy && !G.next) { G.pauseWanted = false; pause(true); }
     return;
   }
-  // The start screen, drawn fresh (not Settings or the book over it).
-  if (G.onMenu && !$("ov").hidden && $("go")) menu();
+  // The start screen, drawn fresh (not Settings or the book over it), where it was scrolled to:
+  // menu() opens a card at the top, which jumped a scrolled start screen back up on every return.
+  if (G.onMenu && !$("ov").hidden && $("go")) {
+    const ov = $("ov"), top = ov.scrollTop, inner = $("card").scrollTop;
+    menu();
+    ov.scrollTop = top; $("card").scrollTop = inner;
+  }
 }
 // The fight's parts as they should be now: the monster, its HP, the hearts, the streak, the
 // slots, and the problem and pad.
 function redrawFight() {
   const m = G.floors && G.floors[G.floor], el = $("mon");
-  if (!m) return;
+  // Not while the room waits empty after the descent (start's pause): the run's first monster
+  // isn't loaded yet, and drawing one there showed it early, with no nameplate or problem.
+  if (!m || $("arena").classList.contains("empty")) return;
   ["hit", "lunge", "roar", "throw", "squawk"].forEach((c) => el.classList.remove(c));
   if (G.hp > 0 && !el.querySelector("svg")) el.innerHTML = monsterArt(m);
   $("arena").classList.remove("hurt", "shake", "rumble");
@@ -3316,8 +3323,12 @@ function start(depth, enter, voiced, pause) {
     newProblem();
   };
   if (!pause) return go();
+  // The room shows empty: the nameplate too, which still named the start screen's monster, and
+  // the run's own hearts (they showed the last run's until the monster came).
   G.busy = true; $("mon").innerHTML = ""; $("prob").innerHTML = "";
-  setTimeout(go, pause);
+  heartsUI(); streakUI();
+  $("arena").classList.add("empty");
+  setTimeout(() => { $("arena").classList.remove("empty"); go(); }, pause);
 }
 
 /* ---------- update checking ----------
@@ -3346,7 +3357,13 @@ function reloadForUpdate() {
   try { sessionStorage.setItem("sumgeon:update", updateReady); } catch (e) { /* fine */ }
   const u = new URL(location.href);
   u.searchParams.set("v", updateReady);
-  location.replace(u.toString());
+  // A short fade to the launch color first (styles.css html.reloading), where the new page fades
+  // in from, so the start screen doesn't blink off and on.
+  const go = () => location.replace(u.toString());
+  if (reduced() || document.hidden) return go();
+  document.documentElement.classList.add("reloading");
+  setTimeout(go, 160);
+  setTimeout(() => document.documentElement.classList.remove("reloading"), 4000); // if the reload never comes
 }
 function applyUpdate() { if (updateReady && !G.running && G.onMenu) reloadForUpdate(); }
 document.addEventListener("visibilitychange", () => { if (!document.hidden) checkUpdate(); });
@@ -3818,3 +3835,20 @@ menu();
 }
 welcomeLink();
 syncAll(); // a linked player syncs at launch
+// The page shows (index.html's "boot") once the start screen is drawn and its fonts are in, or
+// after a moment without them. Before, a slow load (or iOS reloading the Home Screen app in the
+// background) showed the bare markup: a dimmed, half-drawn fight with an empty card, the footer
+// and "7 + 8 =". The scene is drawn again with the fonts in, since its horizon is measured from
+// the card's text; a font that arrives later redraws it too.
+{
+  const booted = () => {
+    const h = document.documentElement;
+    if (!h.classList.contains("boot")) return;
+    if (sceneOn() && !descending()) drawScene();
+    h.classList.remove("boot");
+    if (!reduced()) { h.classList.add("booted"); setTimeout(() => h.classList.remove("booted"), 300); } // a short fade in from the launch color
+  };
+  const fonts = document.fonts ? Promise.all(["400 1em Bungee", "600 1em Nunito"].map((f) => document.fonts.load(f))) : Promise.resolve();
+  Promise.race([fonts, wait(1200)]).then(booted, booted);
+  if (document.fonts) document.fonts.addEventListener("loadingdone", redrawScene);
+}
