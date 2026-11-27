@@ -2085,10 +2085,10 @@ function wingsHTML() {
     else if (isOpen && legendNow(w)) note = "🌟 A legend awaits! · " + note;
     // How far along to the Legend: rounded down, so 100% only when it's ready.
     const pct = isOpen && !legendBeaten(w, progress) && !legendNow(w) ? Math.floor(legendProgress(w, recs) * 100) : null;
-    const toLegend = pct == null ? "" : `<em class="to-legend"><i style="--p:${pct}%"></i><span>${pct}% to the 🌟 Legend</span></em>`;
+    const toLegend = pct == null ? "" : `<em class="to-legend"><b aria-hidden="true">🌟</b><span>Legendary depths · ${pct}%</span><i style="--p:${pct}%" aria-hidden="true"></i></em>`;
     return `<label class="wing ${w.id}${here ? " here" : ""}${isOpen ? "" : " locked"}${isOpen && legendBeaten(w, progress) ? " golden" : ""}"><input type="radio" name="wing" value="${w.id}" ${here ? "checked" : ""} ${isOpen ? "" : "disabled"}>
-      <span><b>${w.name}</b><small>${b.label}</small><em>${note}</em>${toLegend}${here ? `<em class="level" id="levelLine">${levelLine()}</em>` : ""}
-      ${isOpen ? depthTrack(w, d) : ""}</span></label>`;
+      <span><b>${w.name}</b><small>${b.label}</small><em>${note}</em>${here ? `<em class="level" id="levelLine">${levelLine()}</em>` : ""}
+      ${isOpen ? depthTrack(w, d) : ""}${toLegend}</span></label>`;
   }).join("");
 }
 // The start screen, top to bottom: the title (with ⚙ Settings), your hero, the Wings, and
