@@ -23,7 +23,7 @@ import { coinsSvg, pileOf, coinOf } from "./coins.js";
 import { stackOf } from "./twodigit.js";
 import { read as readSigil, judge as judgeSigil } from "./sigil.js";
 import { HANDWRITING } from "./handwriting.js";
-import { traitOf, charged, prefers, hitBy, atHalf, asks, flipOf, flashOf, dieSvg, FLASH_MS, mega } from "./traits.js";
+import { traitOf, charged, prefers, hitBy, atHalf, asks, flipOf, flashOf, dieSvg, mega } from "./traits.js";
 import { roster, mastery, meet, beat } from "./bestiary.js";
 import { HEROES, CHALK, heroSvg, freePick, pickHero, curseCaptain, crackCurse, CURSE_HITS, resetTeam } from "./heroes.js";
 import * as sfx from "./sfx.js";
@@ -388,8 +388,9 @@ function probUI() {
   // Four two-digit numbers (Triceraplus in the Mines) smaller still, so the line fits an iPhone SE.
   // (Thin spaces round the + signs for four numbers.)
   else if (p.op === "Σ") { const four = p.nums && p.nums.length > 3; box.innerHTML = `<span class="sum3${four ? " sum4" : Math.max(...(p.nums || [0])) >= 10 ? " sum3w" : ""}">${four ? esc(p.q).replace(/ \+ /g, "\u2009+\u2009") : esc(p.q)} =</span>`; }
-  // Dice (Pipsqueak's Flash): each number as a die, until diceFlash turns them into numbers.
-  else if (p.dice) box.innerHTML = `<span class="dn" data-n="${p.x}">${dieSvg(p.x)}</span> + <span class="dn" data-n="${p.y}">${dieSvg(p.y)}</span> =`;
+  // Dice (Pipsqueak's Flash): each number as a die, to count by sight. They stay dice: once the
+  // hint is open (G.hinted), each die gets its number in a little gold badge beside it.
+  else if (p.dice) { const die = (n) => `<span class="dn${G.hinted ? " told" : ""}" data-n="${n}">${dieSvg(n)}${G.hinted ? `<b class="dnum" aria-hidden="true">${n}</b>` : ""}</span>`; box.innerHTML = `${die(p.x)} + ${die(p.y)} =`; }
   // "How many quarters?": the pile, then "quarters = ?" with a □ that fills as you type, as a
   // missing number does, under the pile (styles.css .game.find), so it fits a phone.
   else if (p.op === "¢" && p.find) box.innerHTML = coinsSvg(p.pile) + `<span class="find">${coinOf(p.find).names} = <span class="blank" id="blank">?</span></span>`;
@@ -761,7 +762,7 @@ function newProblem() {
   // problem is the flipped one from the start, so the 🔊 button, a miss and the hint all read it.
   const flipped = flipOf(m, G.cur);
   if (flipped) G.cur = flipped;
-  // Flash (Pipsqueak): 3 + 5 comes as two dice, which turn into the numbers (traits.js flashOf).
+  // Flash (Pipsqueak): 3 + 5 comes as two dice, to count (traits.js flashOf).
   const dice = flashOf(m, G.cur);
   if (dice) G.cur = dice;
   // Stacked in columns (two- and three-digit + and −, and up to four numbers added): a quarter of
@@ -782,7 +783,6 @@ function newProblem() {
   clockArt();
   if (onChompers() && G.chomp !== G.chompFace) chompTurn(G.chompFace);
   if (flipped) judoThrow(G.cur);
-  if (dice) diceFlash(G.cur);
   if (G.flash) flashHide(G.cur);
   // Polly-Gon squawks the shape it wants before it's asked.
   pollySquawk(G.cur);
@@ -834,21 +834,6 @@ function judoThrow(p) {
     if (G.cur !== p || G.paused) return;
     G.busy = false; G.t0 = performance.now();
   }, THROW_MS);
-}
-// Pipsqueak's Flash (🎲): the problem comes as two dice, to count by sight; after FLASH_MS each die
-// flips over and is its number, so nobody is left stuck. Answering works the whole time, and the
-// clock isn't touched: speed never changes damage. With reduced motion they just swap.
-function diceFlash(p) {
-  setTimeout(() => {
-    if (G.cur !== p) return;
-    $("prob").querySelectorAll(".dn").forEach((d, i) => {
-      const show = () => { d.textContent = d.dataset.n; d.classList.add("shown"); };
-      if (reduced() || !d.animate) return show();
-      setTimeout(() => d.animate([{ transform: "rotateY(0)" }, { transform: "rotateY(90deg)" }], { duration: 160, easing: "ease-in" }).finished.then(() => {
-        show(); d.animate([{ transform: "rotateY(-90deg)" }, { transform: "rotateY(0)" }], { duration: 180, easing: "ease-out" });
-      }), i * 120);
-    });
-  }, FLASH_MS);
 }
 // The dot flash (Pipsqueak): the dots show for FLASH_DOTS_MS, then turn face down. It's a look,
 // not a race: the clock isn't touched, "Show me again" peeks once more (a hint: G.hinted), and the
@@ -1006,6 +991,7 @@ function openHint() {
   const inline = "⌚…◐✓✎↔#$⁙".includes(G.cur.op) || (G.cur.op === "◇" && !G.cur.draw);
   if (G.flash) G.flash.grouped = true; // the dots come back, grouped
   if (inline) { probUI(); ansUI(); clockArt(h.layer); }
+  else if (G.cur.dice) probUI(); // Pipsqueak's dice get their numbers beside them
   // An equation in their words doesn't break across lines ("35 + 2 = ?").
   box.innerHTML = (inline ? "" : `<div class="model">${h.model}</div>`) + `<p class="hsay">${esc(inline ? h.say.replace(/ ([=+−→]) /g, "\u00a0$1\u00a0") : h.say.replace(/ \? (\S+)$/, "\u00a0?\u00a0$1"))}</p>`; // nor a comparison ("2/3 ? 2/6")
   box.classList.toggle("words", inline);

@@ -75,7 +75,7 @@ Each monster gets one simple trait that changes *how* you do math, never anythin
 - **Trollar**: 🪙 *Toll*. Asks only coin problems: count the coins, type the cents.
 - **Quizard**: ❓ *Mystery*. Every problem hides a number (3 + □ = 7); the hidden number is the damage. Its body is a big question mark in a wizard hat.
 - **Sigma Rex**: 👑 *Second wind*. At half HP it armors up like Timesaur.
-- **Pipsqueak** (the Cellar): 🎲 *Flash*. Dots flash for a moment (a die, a five-frame, a domino, small groups): how many? Then a sum of two small numbers comes as two dice to count by sight, and after a moment each die flips over into its number.
+- **Pipsqueak** (the Cellar): 🎲 *Flash*. Dots flash for a moment (a die, a five-frame, a domino, small groups): how many? Then a sum of two small numbers comes as two dice to count by sight. They stay dice (counting the dots is the point): only the 💡 hint puts each die's number beside it, and a miss's Oops card shows the fact in numbers.
 - **Doublet** (the Hall): 👯 *Doubles*. Asks only doubles and taking half away (8 + 8, 16 − 8).
 - **Triceraplus** (the Hall): 🦕 *Three horns*. Adds three numbers, two of which make 10 (4 + 3 + 6: find the ten first).
 - **Margot-Rythm** (the Mines): 🔁 *Carry the One*. Problems that need regrouping hit double.
@@ -123,7 +123,7 @@ One stratum per grade, in a **straight chain**: each opens only the next. The le
   - **2nd (Mines):** two-digit ± mixed without regrouping → with regrouping → 10 and 100 more or less within 1000; counting coins with ¢. Haberhasher and Trollar, with Plusquito and Minustaur standing in, and The Centipede as its boss. Not yet: four addends, three-digit place value (34 tens), odd and even, $, arrays.
   - **3rd (Tower):** × and ÷ only, in the school's order (× 0, 1, 2, 5, 10 and ÷ → × 3, 4, 6 and ÷ → × 7, 8, 9 and ÷), then × tens, fractions as a hidden whole number (1/2 = □/4, 2/4 = □/2, 1 = □/4), rounding to the nearest 10 and 100, area and perimeter of a drawn rectangle, and × ÷ 11 and 12 last. Not yet: fractions on a number line and comparing them (Halfling), time.
 - **Built in step 3 (2026-11-25): six new monsters**, with facts the game already has where it could:
-  - **Pipsqueak** (Cellar, 🎲 Flash): dice sums (both numbers 1 to 6), shown as dice that flip into numbers after 2.5 s. Floor 2 at depth 1; Minustaur stays in the pool.
+  - **Pipsqueak** (Cellar, 🎲 Flash): dice sums (both numbers 1 to 6), shown as dice, which stay dice: the 💡 hint puts the numbers beside them. Floor 2 at depth 1; Minustaur stays in the pool.
   - **Doublet** (Hall, 👯 Doubles): only doubles and taking half away, from every kind the Hall has (8 + 8, 16 − 8, 40 + 40, 7 + □ = 14).
   - **Triceraplus** (Hall, 🦕 Three horns): one small new set, 20 sums of three one-digit numbers with a make-ten pair (1.OA.A.2, 1.OA.B.3), as its own strand, so the Hall's 60% doesn't wait on it. Hint: find the ten, then add the rest.
   - **Margot-Rythm** (Mines, 🔁 Carry the One): the Mines' + and −, and a problem that needs regrouping (in any place) hits double.

@@ -358,9 +358,13 @@ h1 b{color:var(--coral);font-weight:400}
 .frac>span:last-child{padding-top:.06em}
 .frac .blank{font-size:1em;line-height:1}
 .game.find .prob svg.rectfig{max-width:min(60vw,260px);max-height:min(18vh,170px);width:auto;height:auto}
-/* Pipsqueak's Flash: the numbers as dice, which flip over into the numbers (diceFlash in app.js). */
-.prob .dn{display:inline-block;vertical-align:middle;min-width:1.1em;text-align:center;line-height:1}
+/* Pipsqueak's Flash: the numbers as dice, to count. They stay dice; the open hint (.told) puts
+   each die's number in a small gold badge at its corner, out of the layout so nothing moves. */
+.prob .dn{position:relative;display:inline-block;vertical-align:middle;min-width:1.1em;text-align:center;line-height:1}
 .prob .dn svg.die{display:block;width:1.15em;height:1.15em}
+.prob .dn .dnum{position:absolute;right:-.28em;bottom:-.22em;min-width:1.25em;padding:.12em .2em .08em;font:400 .42em/1 Bungee,sans-serif;color:#0c171c;background:#ffc93c;border:.1em solid #0c171c;border-radius:.7em;animation:dnum .3s ease-out both}
+@keyframes dnum{from{transform:scale(.3);opacity:0}to{transform:none;opacity:1}}
+@media(prefers-reduced-motion:reduce){.prob .dn .dnum{animation:none}}
 /* Triceraplus's three numbers, a little smaller so the row fits on an iPhone SE. */
 .prob .sum3{font-size:.8em;white-space:nowrap}
 /* Three and four two-digit numbers (Triceraplus in the Mines), smaller again. */
