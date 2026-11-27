@@ -1459,7 +1459,12 @@ function end(win) {
     $("set").onclick = () => openMenu();
   };
   G.endCard = card;
-  card();
+  // Achievements earned during the run (recorded quietly, never mid-fight) play now, as the run
+  // ends, one card each, then this card: whatever's tapped next (Play again, Try again, Menu, Go
+  // deeper), they've been seen. Before, they waited for the next descent, so Play again or Menu
+  // didn't show them.
+  const pending = achievementQueue();
+  if (pending.length) achievementCards(pending, 0, { mode: "end", done: card }); else card();
   syncSoon(); // a linked player syncs at the end of a run
 }
 // A card over the game. It opens at the top, and its main button gets focus (Enter presses it)
@@ -2743,7 +2748,7 @@ function achievementCards(ids, i, from) {
   if (!a) return from.sheet ? trophyPage() : from.done();
   if (!from.test) markSeen(id);
   const r = a.reward, big = isBig(a), last = i >= ids.length - 1;
-  const next = from.sheet ? "Back" : !last ? "Next" : from.mode === "deeper" ? "Go deeper" : "Enter the dungeon";
+  const next = from.sheet || !last || from.mode === "end" ? (from.sheet ? "Back" : "Next") : from.mode === "deeper" ? "Go deeper" : "Enter the dungeon";
   // Every card is drawn like its share picture: a wall darkened behind (its stratum's, or the one
   // being played; the grand ones purple to slate), a warm glow, a gold frame, and who's involved
   // standing on a shadow: the stratum's boss (all four for the grand ones) and the captain wearing
@@ -2765,7 +2770,8 @@ function achievementCards(ids, i, from) {
     ${from.sheet ? "" : `<p class="ach-got"><span>You got</span> ${esc(rewardWords(r))}</p>`}${when ? `<p class="ach-date">${esc(when)}</p>` : ""}${!from.sheet && ids.length > 1 ? `<p class="ach-count">${i + 1} of ${ids.length}</p>` : ""}</div>
     <div class="btns"><button class="big alt ach-share" id="achShare" type="button" aria-label="Share" title="Share" hidden>${SHARE_ICON}</button><button class="big" id="achNext">${next}</button></div>`, "page ach");
   if (big) sfx.legend(); else sfx.chestOpen();
-  cardLines(a).forEach((_, k) => say("p", achievementLine(a, k), k === 0));
+  // At a run's end, the first card's lines wait for the win or loss lines already said (no cut-off).
+  cardLines(a).forEach((_, k) => say("p", achievementLine(a, k), k === 0 && !(from.mode === "end" && i === 0)));
   prepareShare(a); // every card can be shared, the moment it's earned or later from the sheet
   $("achNext").onclick = () => {
     shareFor = shareBlob = null;
