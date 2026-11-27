@@ -138,7 +138,7 @@ assert.equal(catalog({ ach: days }).filter((a) => a.track === "days" && a.met).l
 assert.deepEqual(keepDays([5, 3], [3, 1]), [1, 3, 5]);
 assert.equal(keepDays(Array.from({ length: 150 }, (_, i) => 150 - i)).length, DAYS_KEPT);
 assert.ok(catalog({ ach: { days: keepDays(Array.from({ length: 100 }, (_, i) => i + 1)) } }).find((a) => a.id === "days:100").met);
-// Deep Diver: the deepest depth opened anywhere.
+// Deep Delver (the depth track): the deepest depth opened anywhere.
 assert.deepEqual(catalog({ wings: { cellar: { depth: 4 }, hall: { depth: 26 } } }).filter((a) => a.track === "deep" && a.met).map((a) => a.id), ["deep:10", "deep:25"]);
 
 /* ---------- the surprises (§14.5) ---------- */

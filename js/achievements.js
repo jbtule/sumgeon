@@ -125,7 +125,7 @@ export const TRACKS = {
     detail: (n) => (n === 1 ? "Your first day of practice" : `${n} days of practice, any days at all`),
     sayDetail: (n) => (n === 1 ? "Your first day of practice!" : `${Cap(spoken(n))} days of practice!`),
     progress: "Days of practice", rewards: [...TIER_ITEMS, { pie: 1, shield: 1 }, { totem: 1, magnet: 1 }, EVERY] },
-  deep: { tiers: [[10, "🤿", "Deep Diver"], [25, "🐙", "Ink-credible Depths"], [50, "🐋", "Whale of a Dive"], [100, "🌋", "Core Explorer"]],
+  deep: { tiers: [[10, "🔦", "Cave Crawler"], [25, "⛏️", "Deep Delver"], [50, "🦇", "Bat Cave"], [100, "🌋", "Core Explorer"]],
     detail: (n) => `Reached depth ${n}`, sayDetail: (n) => `You reached depth ${spoken(n)}!`,
     progress: "Deepest depth", rewards: [{ shield: 1 }, { totem: 1 }, { magnet: 1 }, EVERY] }
 };
