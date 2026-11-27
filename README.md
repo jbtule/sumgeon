@@ -35,6 +35,10 @@ licenses:
   engraved portrait).jpg" (`design/bills/` has how). The bills are drawn for the game, stylized to stay within the US rules
   on illustrations of currency: the front only, one green tint, far under real size, and no
   lettering but the numerals.
+- [qrcode](https://github.com/soldair/node-qrcode) 1.5.4 (MIT), with its dependency
+  [dijkstrajs](https://github.com/tcort/dijkstrajs) 1.0.3 (MIT), draws the code that links a player to
+  another device, and [jsQR](https://github.com/cozmo/jsQR) 1.4.0 (Apache License 2.0) reads it
+  with the camera. They're served with the game from `vendor/`, with their license texts.
 - The recorded voice is made with [Kokoro-82M](https://huggingface.co/hexgrad/Kokoro-82M)
   (Apache License 2.0), voice `af_heart`. The heroes' quips use a second voice from the same
   model, `af_bella` (same license).

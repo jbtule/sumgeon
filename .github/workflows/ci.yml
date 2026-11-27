@@ -7,6 +7,9 @@
 #                     <audio> asks for; bare pages.dev doesn't)
 #   GitHub Pages      the game, at tools.tuley.name/sumgeon/ (the jbtule user site's custom
 #                     domain covers project pages)
+#   Cloudflare Worker the sync service (sync/), sumgeon-sync at sumgeon-sync.asset-data.stream:
+#                     sealed copies of a linked player's progress. It shares the Cloudflare
+#                     account (and its free-plan quotas) with Sound Box's sound-box-sync.
 #
 # audio.json (which line has which clip, and the audio sprites: every line is in one) only ever
 # lists clips and sprites that are live, so the game never asks for one that isn't there. Clips
@@ -14,7 +17,9 @@
 # new lines aren't recorded and use the device voice until it's set.
 #
 # One-time setup: Settings → Pages → Source: GitHub Actions. Repo secrets CLOUDFLARE_API_TOKEN
-# (Cloudflare Pages: Edit) and CLOUDFLARE_ACCOUNT_ID.
+# and CLOUDFLARE_ACCOUNT_ID. The token needs Cloudflare Pages: Edit (audio), and Workers Scripts:
+# Edit plus Workers Routes: Edit on asset-data.stream (sync). The Worker, its Durable Objects and
+# its custom domain come from sync/wrangler.jsonc. Without the secrets, sync-deploy skips.
 name: CI
 
 on:
@@ -127,6 +132,40 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           command: pages deploy _audio --project-name=sumgeon-audio --branch=main
+
+  # Deploys the sync service (sync/), as Sound Box does. It holds the Cloudflare token and runs
+  # nothing but wrangler, from a sparse checkout of sync/ only.
+  sync-deploy:
+    if: github.event_name == 'push'
+    needs: check
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - id: creds
+        env:
+          TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          if [ -n "$TOKEN" ] && [ -n "$ACCOUNT" ]; then
+            echo "ok=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::warning::Cloudflare secrets aren't set; skipping the sync service deploy."
+            echo "ok=false" >> "$GITHUB_OUTPUT"
+          fi
+      - if: steps.creds.outputs.ok == 'true'
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          sparse-checkout: sync
+      - if: steps.creds.outputs.ok == 'true'
+        uses: cloudflare/wrangler-action@953926a2e2182532811c01a25e53647d93bf07c0 # v4.1.3
+        with:
+          wranglerVersion: "4.151.0"
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: sync
+          command: deploy
 
   site:
     needs: [audio, audio-deploy]
