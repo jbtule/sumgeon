@@ -456,13 +456,13 @@ Replaces the between-floor choice. Clearing a floor still heals 1 heart.
 
 **Saved per player:** `wallet` (cents), `items` (the inventory's counts and the 3 quick-use slots), `wardrobe` (what's found and what each hero wears). Each goes in `OWN_KEYS`.
 
-### 6.4 Endless Descent
+### 6.4 Endless Descent (maybe later, §12)
 - Unlocked after you clear any Wing once.
 - Monsters cycle through every unlocked Wing with HP scaling about +8% per floor. A boss appears every 7th floor.
 - The score is **total damage dealt**, so harder problems are worth more. It's shown alongside the deepest floor.
 - Keep a local high score table per band, with optional initials (no names required).
 
-### 6.5 Daily Dungeon
+### 6.5 Daily Dungeon (maybe later, §12)
 - A seeded run that is the same for everyone on the same date: 5 floors, fixed monsters, fixed modifiers such as "Crits from streak 2".
 - One attempt per day for score and unlimited practice tries. It works offline because the seed is just the date.
 
@@ -733,10 +733,14 @@ Each milestone should be playable and shippable on its own. Revised 2026-11-25 f
    - the Fraction Forge;
    - the Parenthesis Pyramid (Shoutandcomma with *Unwrap*);
    - Pirate Cavern (π Pirate).
-7. **M7 — Replay.** Hero Moments, the slow-motion hero close-ups with quips in a second voice (§8.4; small enough to build any time). Achievements (§14, revised 2026-11-25: mostly secret, each with coins or an item, shown before the next descent, with spoken and share cards), math-locked chests with money and items (§6.3, built 2026-11-25), then clothing and Trollar's shop, Endless Descent (the Endless Specter) and Daily Dungeon.
+7. **M7 — Replay.** Hero Moments, the slow-motion hero close-ups with quips in a second voice (§8.4; small enough to build any time). Achievements (§14, revised 2026-11-25: mostly secret, each with coins or an item, shown before the next descent, with spoken and share cards), math-locked chests with money and items (§6.3, built 2026-11-25), then clothing and Trollar's shop. (Endless Descent and Daily Dungeon moved to *Maybe later*, below.)
 8. **M8 — Grown-ups' corner and offline.** Progress heat-maps, custom practice, export, offline play with saved voice clips (the manifest and Home Screen icon are done), and device linking and sync (§15.2–15.4).
    - *Offline play, done (2026-11-26):* a service worker (`sw.js`) precaches each version's shell, the fonts are self-hosted, and every voice sprite is saved in the background, the ones needed first; Settings → Game says how far it's got (CLAUDE.md "Offline"). *Still to do:* confirm it on the iPhone's Home Screen app (airplane mode after "Offline: ready").
 
+
+**Maybe later (enhancements, not planned):** decided with the user on 2026-11-26. The dungeon is already deep (strata of chapters every 5 depths, with mega and Legend bosses), so these wait until there's a reason for them:
+- **Endless Descent** (§6.4): a high-score mode cycling through every open stratum.
+- **Daily Dungeon** (§6.5): the same seeded run for everyone on a date.
 ---
 
 ## 13. Voice: recorded speech
