@@ -203,6 +203,9 @@ export function arrivals() {
   return out;
 }
 export function wingOpened(w) { return w.name + " is open!"; }
+// The stratum, said as you enter it (after "Now entering the Sumgeon!", before the depth): "The
+// Balance Hall!" Its own clip, so the depths stay one line each.
+export function wingEnter(w) { return w.name + "!"; }
 // A spell drawn backwards (sigil.js): "Your three is facing backwards. It faces this way." The
 // screen adds an arrow. For the digits whose mirror image looks different.
 export var REVERSIBLE = [1, 2, 3, 4, 5, 6, 7, 9];
@@ -346,6 +349,7 @@ export function spokenLines() {
   WINGS.forEach(function (w, i) {
     add("p", wingCleared(w), "Phrases");
     if (i) add("p", wingOpened(w), "Phrases");
+    add("p", wingEnter(w), "Phrases");
   });
   facts().forEach(function (f) {
     var g = f.op === "+" || f.op === "-" ? "Add & subtract" : "Times & divide";
@@ -463,7 +467,7 @@ function index() {
   shapeFacts().forEach(function (f) { names[squawk(f)] = "m-polly-gon"; });
   // Phrases by when they're said: the start screen and a run's end, explanations, and the fight.
   [PHRASE.enter, PHRASE.pickGrade, PHRASE.pickHero, PHRASE.keepGoing, PHRASE.heroFirst, PHRASE.deeper, PHRASE.exitSure, PHRASE.unlocked, PHRASE.win, PHRASE.legend]
-    .concat(WINGS.map(wingCleared), WINGS.map(wingOpened)).forEach(function (t) { phrases[t] = "phrases-start"; });
+    .concat(WINGS.map(wingCleared), WINGS.map(wingOpened), WINGS.map(wingEnter)).forEach(function (t) { phrases[t] = "phrases-start"; });
   [PHRASE.hitHow, PHRASE.cmpHow, PHRASE.cmpSame, PHRASE.spellHow, PHRASE.paused, PHRASE.tfHow, PHRASE.drawHow, PHRASE.flashHow, PHRASE.hintNudge, PHRASE.diceHow]
     .concat(Object.values(TRAIT_LINE), Object.values(TRAIT2_LINE), HEROES.map(function (h) { return luckyLine(h.d); }), REVERSIBLE.map(reversedLine), [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map(howToWriteLine))
     .forEach(function (t) { phrases[t] = "phrases-explain"; });
