@@ -68,7 +68,7 @@ function play(id) {
   stopNow();
   lastEvent = "";
   now = start(c, id, c.destination, {
-    seed: seed(), level: level[id], fadeIn: 2500,
+    seed: seed(), level: level[id], fadeIn: 2500, accents: $("accents").checked,
     onEvent: (ev, t) => { if (ev.kind !== "pulse") setTimeout(() => { if (now && now.id === id) lastEvent = EVENT_NAMES[ev.kind] + (ev.chord ? " " + ev.chord : ""); }, Math.max(0, (t - c.currentTime) * 1000)); }
   });
   startedAt = c.currentTime;
@@ -106,6 +106,8 @@ document.querySelectorAll("[data-voice]").forEach((b) => (b.onclick = async () =
 $("stopAll").onclick = () => { stopNow(); stopSpeech(); };
 $("reseed").onclick = () => { $("seed").value = String(seed() + 1); if (now) play(now.id); };
 $("seed").onchange = () => { if (now) play(now.id); };
+// Accents only, or the full ambience: switching replays what's playing.
+$("accents").onchange = () => { if (now) play(now.id); };
 
 const clock = (s) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
 setInterval(() => {
