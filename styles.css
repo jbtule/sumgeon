@@ -1451,3 +1451,6 @@ body.on-scene>.top,body.on-scene>.who,body.on-scene>.game,body.on-scene>.badges{
 /* The share symbol: sized to the button, or inline with the sheet's hint text. */
 .btns .big.ach-share .share-icon{width:26px;height:26px;display:block;margin:auto}
 .ach-share-hint .share-icon{width:1.15em;height:1.15em;vertical-align:-.2em}
+/* An iPhone SE: two buttons side by side under a full-width one (Menu, Play again under Go deeper)
+   keep their words inside them. */
+@media (max-width: 380px){.card .btns .big{padding-inline:12px}.card .btns.deeper .big.alt{font-size:16px}}

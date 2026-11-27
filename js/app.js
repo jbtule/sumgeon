@@ -1432,29 +1432,34 @@ function end(win) {
   // The Legend's win card: "Legend!", the stratum's name and the golden boss, on its wall.
   const legendHead = legendWin ? `<div class="legend-win" data-stratum="${w.id}"><h2 class="legend-title">🌟 Legend! 🌟</h2><p class="legend-wing">${esc(w.name)}</p>
     <div class="cardmon legend">${monsterArt(m)}</div><p class="legend-note">You mastered every fact here. ${esc(m.n)} bows to you.</p></div>` : "";
-  show(`${legendHead || `<h2>${win ? wingCleared(w) : `${m.n} won this round`}</h2>`}
-  ${win || fallen ? "" : `<div class="cardmon">${monsterArt(m)}</div>`}
-  <p>${win ? `${esc(m.n)} ${esc(m.quip)} <strong>Depth ${depth + 1}</strong> is open below: tougher monsters, new floors.` : "Every miss shows the right answer, so the next run goes deeper."}</p>
-  ${cursedLine}
-  ${stars}
-  ${left}
-  ${news}
-  <div class="stats"><div><b>${f}</b><small>floors cleared</small></div><div><b>${G.solved}</b><small>solved</small></div><div><b>${acc}%</b><small>accuracy</small></div></div>
-  <p>Best run: <strong>${progress[w.id].best} of ${G.floors.length} floors</strong></p>
-  ${captainHTML("Next run")}
-  <div class="btns${deeper || opened ? " deeper" : ""}"><p class="warn" id="warn" role="status"></p><button class="big alt" id="set">Menu</button><button class="big${deeper || opened ? " alt" : ""}" id="again">${win ? "Play again" : "Try again"}</button>${deeper ? `<button class="big${opened ? " alt" : ""}" id="deeper">Go deeper</button>` : ""}${opened ? `<button class="big" id="nextStratum">Enter ${esc(opened.name.replace(/^The /, "the "))}</button>` : ""}</div>`);
-  wireCaptain();
-  const ready = () => {
-    if (hasCaptain()) return true;
-    $("warn").textContent = freePick(team, fresh()) ? "Pick your hero first." : "Pick who leads first."; $("captain").scrollIntoView({ block: "center", behavior: "smooth" });
-    say("p", PHRASE.heroFirst, true);
-    return false;
+  // The card and its buttons, drawn again when the 👕 wardrobe (from the Next run line) comes back.
+  const card = () => {
+    show(`${legendHead || `<h2>${win ? wingCleared(w) : `${m.n} won this round`}</h2>`}
+    ${win || fallen ? "" : `<div class="cardmon">${monsterArt(m)}</div>`}
+    <p>${win ? `${esc(m.n)} ${esc(m.quip)} <strong>Depth ${depth + 1}</strong> is open below: tougher monsters, new floors.` : "Every miss shows the right answer, so the next run goes deeper."}</p>
+    ${cursedLine}
+    ${stars}
+    ${left}
+    ${news}
+    <div class="stats"><div><b>${f}</b><small>floors cleared</small></div><div><b>${G.solved}</b><small>solved</small></div><div><b>${acc}%</b><small>accuracy</small></div></div>
+    <p>Best run: <strong>${progress[w.id].best} of ${G.floors.length} floors</strong></p>
+    ${captainHTML("Next run")}
+    <div class="btns${deeper || opened ? " deeper" : ""}"><p class="warn" id="warn" role="status"></p><button class="big alt" id="set">Menu</button><button class="big${deeper || opened ? " alt" : ""}" id="again">${win ? "Play again" : "Try again"}</button>${deeper ? `<button class="big${opened ? " alt" : ""}" id="deeper">Go deeper</button>` : ""}${opened ? `<button class="big" id="nextStratum">Enter ${esc(opened.name.replace(/^The /, "the "))}</button>` : ""}</div>`);
+    wireCaptain();
+    const ready = () => {
+      if (hasCaptain()) return true;
+      $("warn").textContent = freePick(team, fresh()) ? "Pick your hero first." : "Pick who leads first."; $("captain").scrollIntoView({ block: "center", behavior: "smooth" });
+      say("p", PHRASE.heroFirst, true);
+      return false;
+    };
+    $("again").onclick = () => { if (ready()) start(depth); };
+    if (deeper) $("deeper").onclick = () => { if (ready()) descend(depth + 1, "deeper"); };
+    // A newly opened stratum, from its first depth.
+    if (opened) $("nextStratum").onclick = () => { if (!ready()) return; st.band = opened.band; saveSettings(); start(1); };
+    $("set").onclick = () => openMenu();
   };
-  $("again").onclick = () => { if (ready()) start(depth); };
-  if (deeper) $("deeper").onclick = () => { if (ready()) descend(depth + 1, "deeper"); };
-  // A newly opened stratum, from its first depth.
-  if (opened) $("nextStratum").onclick = () => { if (!ready()) return; st.band = opened.band; saveSettings(); start(1); };
-  $("set").onclick = () => openMenu();
+  G.endCard = card;
+  card();
   syncSoon(); // a linked player syncs at the end of a run
 }
 // A card over the game. It opens at the top, and its main button gets focus (Enter presses it)
@@ -2976,7 +2981,7 @@ function captainHTML(label) {
     return `<div class="grp" id="captain"><span>${label || "Your hero"}</span>
       <div class="cap-row"><div class="cap-art">${heroArt(h.d)}</div>
         <div class="cap-text"><b>${esc(h.n)}</b><small>Power hits on ${h.d}s</small></div>
-        ${label ? "" : `<button class="small wear-btn" type="button" id="openWardrobe" aria-label="Wardrobe"><span aria-hidden="true">👕</span></button>`}<button class="small" type="button" id="changeHero">Change</button></div></div>`;
+        <button class="small wear-btn" type="button" id="openWardrobe" aria-label="Wardrobe"><span aria-hidden="true">👕</span></button><button class="small" type="button" id="changeHero">Change</button></div></div>`;
   }
   const any = freePick(team, fresh());
   const heroes = HEROES.map((h) => {
@@ -2994,7 +2999,8 @@ function wireCaptain() {
   const custom = ["Pick your hero", "Pick who leads next", "Your hero"].includes(label) ? "" : label;
   const redraw = () => { const n = $("captain"); n.outerHTML = captainHTML(custom); wireCaptain(); };
   if ($("changeHero")) $("changeHero").onclick = () => { pickOpen = true; redraw(); };
-  if ($("openWardrobe")) $("openWardrobe").onclick = () => wardrobeCard();
+  // From a run's end card (the "Next run" line), the wardrobe's Done comes back to that card.
+  if ($("openWardrobe")) $("openWardrobe").onclick = () => wardrobeCard(custom && G.endCard ? G.endCard : undefined);
   box.querySelectorAll(".hpick:not([disabled])").forEach((b) => b.onclick = () => {
     const next = pickHero(team, Number(b.dataset.d), fresh());
     if (!next) return;
