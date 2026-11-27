@@ -63,7 +63,7 @@ export const MUSIC = {
   },
   hall: {
     name: "The Balance Hall", trim: 1.6, verb: 4,
-    about: "Airy: soft moving air, and slow consonant chords in F that walk away and come home (I–IV–V–I and friends), through a long echo and a big room, with a rest between phrases. Now and then one high note echoes away.",
+    about: "Airy: a soft warm pad that swells and dims, and slow consonant chords in F that walk away and come home (I–IV–V–I and friends), through a long echo and a big room, with a rest between phrases. Now and then one high note echoes away.",
     streams: [
       { kind: "air", first: [0, 0], gap: [10, 18], make: function (r) { return { cut: between(r, 900, 2200), level: between(r, 0.6, 1) }; } },
       { kind: "chord", first: [0.5, 1.5], gap: function (r, ev) { return ev.dur * 0.85 + (ev.last ? between(r, 6, 12) : 0); }, state: function () { return { prog: null, i: 0 }; },
@@ -90,7 +90,7 @@ export const MUSIC = {
   },
   tower: {
     name: "The Tables Tower", trim: 3.4, verb: 3.5,
-    about: "Stone and wind: filtered noise in slow gusts, a calm steady low pulse (about 25 a minute, E with a lower B every eighth), and a slow distant bell now and then.",
+    about: "Stone and wind: a hollow low tone that rises and falls in slow gusts, a low hum, a calm steady low pulse (about 25 a minute, E with a lower B every eighth), and a slow distant bell now and then.",
     streams: [
       { kind: "gust", first: [0, 0], gap: [5, 12], make: function (r) { return { cut: between(r, 300, 1100), level: between(r, 0.35, 1), q: between(r, 0.6, 1.4), pan: between(r, -0.5, 0.5) }; } },
       { kind: "pulse", first: [1, 1], gap: [2.4, 2.4], state: function () { return { n: 0 }; }, make: function (r, s) { return { low: s.n++ % 8 === 7, level: between(r, 0.85, 1) }; } },
@@ -217,11 +217,14 @@ var SOUND = {
     dl.delayTime.value = 0.48; fb.gain.value = 0.38; wet.gain.value = 0.5;
     dl.connect(tone); tone.connect(fb); fb.connect(dl); tone.connect(wet); wet.connect(bus.send); wet.connect(bus.dry);
     var echoIn = function (pan, amt) { var p = panIn(ctx, bus, pan, 0.8), s = ctx.createGain(); s.gain.value = amt; p.connect(s); s.connect(dl); return p; };
-    var bp = ctx.createBiquadFilter(), ag = ctx.createGain();
-    bp.type = "bandpass"; bp.frequency.value = 1400; bp.Q.value = 0.4; ag.gain.value = 0.018;
-    loop(ctx, bed, noiseBuffer(ctx, r, 5, 0.5), bp); bp.connect(ag); ag.connect(panIn(ctx, bus, 0, 0.5));
+    // The air: a soft pad, F and C, low and warm, that swells and dims (it was filtered noise, which
+    // the kids heard as rain).
+    var bp = lowpass(ctx, 700, 0.3), ag = ctx.createGain();
+    ag.gain.value = 0.02;
+    osc(ctx, bed, "triangle", hz(41), bp); osc(ctx, bed, "sine", hz(48), bp, 4); osc(ctx, bed, "sine", hz(53), bp, -5);
+    bp.connect(ag); ag.connect(panIn(ctx, bus, 0, 0.5));
     return {
-      air: function (ev, t) { bp.frequency.setTargetAtTime(ev.cut, t, 4); ag.gain.setTargetAtTime(0.018 * ev.level, t, 4); },
+      air: function (ev, t) { bp.frequency.setTargetAtTime(ev.cut * 0.45, t, 4); ag.gain.setTargetAtTime(0.02 * ev.level, t, 4); },
       chord: function (ev, t) {
         var p = echoIn(0, 0.35), f = lowpass(ctx, 1300, 0.4), g = ctx.createGain(), lv = 0.022 * ev.level, att = ev.dur * 0.35, rel = 3.5;
         f.connect(g); g.connect(p);
@@ -261,19 +264,22 @@ var SOUND = {
     };
   },
   tower: function (ctx, bus, r, bed) {
-    var buf = noiseBuffer(ctx, r, 6, 0.3);
-    var bp = ctx.createBiquadFilter(), wg = ctx.createGain(), wp = panIn(ctx, bus, 0, 0.6);
-    bp.type = "bandpass"; bp.frequency.value = 600; bp.Q.value = 0.9; wg.gain.value = 0.07;
-    loop(ctx, bed, buf, bp); bp.connect(wg); wg.connect(wp);
-    // Stone: a very low rumble under the wind.
+    // The wind: a hollow tone (E and B, slightly apart so it breathes) that rises and falls and drifts
+    // side to side in gusts. It was filtered noise, which the kids heard as rain.
+    var bp = lowpass(ctx, 600, 0.7), wg = ctx.createGain(), wp = panIn(ctx, bus, 0, 0.6);
+    wg.gain.value = 0.01;
+    osc(ctx, bed, "sine", hz(52), bp); osc(ctx, bed, "sine", hz(59), bp, 6); osc(ctx, bed, "triangle", hz(64), bp, -7);
+    bp.connect(wg); wg.connect(wp);
+    // Stone: a very low hum under the wind.
     var lp = lowpass(ctx, 140, 0.5), rg = ctx.createGain();
-    rg.gain.value = 0.06;
-    loop(ctx, bed, noiseBuffer(ctx, r, 4, 0.9), lp); lp.connect(rg); rg.connect(panIn(ctx, bus, 0, 0.1));
+    rg.gain.value = 0.016;
+    osc(ctx, bed, "sine", hz(28), lp); osc(ctx, bed, "sine", hz(40), lp, 3);
+    lp.connect(rg); rg.connect(panIn(ctx, bus, 0, 0.1));
     var pulseIn = panIn(ctx, bus, 0, 0.3);
     return {
       gust: function (ev, t) {
         bp.frequency.setTargetAtTime(ev.cut, t, 2.5); bp.Q.setTargetAtTime(ev.q, t, 3);
-        wg.gain.setTargetAtTime(0.07 * ev.level, t, 2.2);
+        wg.gain.setTargetAtTime(0.01 * ev.level, t, 2.2);
         if (wp.pan) wp.pan.setTargetAtTime(ev.pan, t, 4);
       },
       pulse: function (ev, t) {
