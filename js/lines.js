@@ -204,8 +204,8 @@ export function arrivals() {
 }
 export function wingOpened(w) { return w.name + " is open!"; }
 // The stratum, said as you enter it (after "Now entering the Sumgeon!", before the depth): "The
-// Balance Hall!" Its own clip, so the depths stay one line each.
-export function wingEnter(w) { return w.name + "!"; }
+// Balance Hall stratum!", so the word is heard. Its own clip, so the depths stay one line each.
+export function wingEnter(w) { return w.name + " stratum!"; }
 // A spell drawn backwards (sigil.js): "Your three is facing backwards. It faces this way." The
 // screen adds an arrow. For the digits whose mirror image looks different.
 export var REVERSIBLE = [1, 2, 3, 4, 5, 6, 7, 9];

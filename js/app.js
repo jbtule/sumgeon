@@ -2982,7 +2982,7 @@ function descend(depth, mode) {
 function openingLines(enter, d) {
   if (enter) say("p", PHRASE.enter, false, null, ENTER_FX);
   const w = wing();
-  say("p", wingEnter(w), false, null, ENTER_FX); // "The Balance Hall!", echoing like the entrance
+  say("p", wingEnter(w), false, null, ENTER_FX); // "The Balance Hall stratum!", echoing like the entrance
   if (d > 1 && d <= DEPTH_MAX_SPOKEN) say("p", depthLine(d), false, null, ENTER_FX); // "Depth two!" echoes like the entrance
   if (legendNow()) say("p", PHRASE.legendAwaits, false, null, ENTER_FX);
   else if (isMega(d)) say("p", PHRASE.megaAhead, false, null, ENTER_FX);
@@ -3504,5 +3504,15 @@ newRun();
 loadMonster(0, true);
 $("prob").textContent = "7 + 8 =";
 menu();
+// ?enter=3 (testing, for the iOS Simulator, which can't be tapped by a script here): picks grade 3
+// and a hero when there are none, then taps Enter the dungeon, as a player would.
+{
+  const g = new URLSearchParams(location.search).get("enter");
+  if (g != null) setTimeout(() => {
+    const tap = (sel) => { const b = document.querySelector(sel); if (b) b.click(); };
+    tap(`.gpick[data-g="${Number(g) || 0}"]`);
+    setTimeout(() => { if (!hasCaptain()) tap(".hpick:not([disabled])"); setTimeout(() => tap("#go"), 300); setTimeout(() => { if (!G.running && !descending()) tap("#go"); }, 1200); }, 300);
+  }, 500);
+}
 welcomeLink();
 syncAll(); // a linked player syncs at launch
