@@ -17,9 +17,11 @@
 # new lines aren't recorded and use the device voice until it's set.
 #
 # One-time setup: Settings → Pages → Source: GitHub Actions. Repo secrets CLOUDFLARE_API_TOKEN
-# and CLOUDFLARE_ACCOUNT_ID. The token needs Cloudflare Pages: Edit (audio), and Workers Scripts:
-# Edit plus Workers Routes: Edit on asset-data.stream (sync). The Worker, its Durable Objects and
-# its custom domain come from sync/wrangler.jsonc. Without the secrets, sync-deploy skips.
+# and CLOUDFLARE_ACCOUNT_ID. The token (a user token) needs Cloudflare Pages: Edit (audio) and
+# Workers: Admin (sync; Admin creates the Worker, Editor only updates it). The Worker and its
+# Durable Objects come from sync/wrangler.jsonc; its custom domain, sumgeon-sync.asset-data.stream,
+# was attached once in the dashboard, so the token needs no zone permission. Without the secrets,
+# sync-deploy skips.
 name: CI
 
 on:

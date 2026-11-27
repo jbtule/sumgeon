@@ -6,9 +6,11 @@
   "name": "sumgeon-sync",
   "main": "src/index.js",
   "compatibility_date": "2025-10-01",
-  // Only at its own address, on the audio host's zone, not on workers.dev.
+  // Only at its own address, sumgeon-sync.asset-data.stream, not on workers.dev. The custom domain
+  // is attached once in the Cloudflare dashboard (Workers & Pages → sumgeon-sync → Settings →
+  // Domains & Routes), not here: Sumgeon's CI token is a user token with Pages and Workers but no
+  // zone permission, so a deploy must never touch routes. Deploys leave the domain as it is.
   "workers_dev": false,
-  "routes": [{ "pattern": "sumgeon-sync.asset-data.stream", "custom_domain": true }],
   // SQLite Durable Objects (free plan): one per linked player, one per counter of new players a
   // day, and one counting everyone's room.
   "durable_objects": { "bindings": [
