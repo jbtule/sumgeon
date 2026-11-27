@@ -181,18 +181,22 @@ const SURPRISE = [
   { id: "surprise:lastheart", icon: "♻️", title: "Never Gave Up", detail: "Cleared a floor on your last heart", sayDetail: "You cleared a floor on your last heart!", reward: { items: { pie: 1 } } },
   { id: "surprise:exact", icon: "🪙", title: "Exact Change", detail: "Paid Trollar the exact amount, no change back", sayDetail: "You paid Trollar the exact amount!", figure: { monster: "Trollar" }, reward: { items: { pie: 1 } } },
   { id: "surprise:piggy", icon: "🐷", title: "Piggy Bank", detail: "A whole dollar in your purse at once", sayDetail: "A whole dollar in your purse!", figure: { monster: "Trollar" }, test: (s) => (Number(s.wallet) || 0) >= 100, reward: { items: { shield: 1 } } },
-  { id: "surprise:quips", icon: "💬", title: "Every Quip", detail: "Heard every one of a hero's quips", sayDetail: "You heard every one of a hero's quips!", test: (s) => quipHero(s) != null, reward: { items: { magnet: 1 } } },
+  // Quip Fan: one hero's quips all heard (its id predates the name: it was "Every Quip" until
+  // 2026-11-27). Every Quip: all ten heroes' quips, a long goal that counts up on the sheet.
+  { id: "surprise:quips", icon: "💬", title: "Quip Fan", detail: "Heard every one of a hero's quips", sayDetail: "You heard every one of a hero's quips!", test: (s) => quipHero(s) != null, reward: { items: { magnet: 1 } } },
+  { id: "surprise:allquips", icon: "🎙️", title: "Every Quip", detail: "Heard every quip of all ten heroes", sayDetail: "You heard every quip of every hero!", test: (s) => quipHeroes(s).length >= Object.keys(QUIPS).length, reward: { items: EVERY } },
   // Holidays (holidaysOn, Sound Box's dates): an answer on one of these days, any year.
   { id: "holiday:thanksgiving", icon: "🦃", title: "Gobble Gobble", detail: "Fought monsters between bites of turkey", sayDetail: "Fought monsters between bites of turkey!", reward: { items: { pie: 1 } } },
   { id: "holiday:winter", icon: "⛄", title: "Snow Much Fun", detail: "Did math over winter break, snow or no snow", sayDetail: "Math over winter break, snow or no snow!", reward: { items: { shield: 1 } } },
   { id: "holiday:summer", icon: "🏖️", title: "Summer Sums", detail: "Did math in the summer sun", sayDetail: "Math in the summer sun!", reward: { items: { totem: 1 } } }
 ].map((a) => Object.assign({ kind: "surprise", say: a.title + "!" }, a));
-// The hero whose quips have all been heard (the first, by digit), or null.
-export function quipHero(state) {
+// The heroes whose quips have all been heard, by digit.
+export function quipHeroes(state) {
   const m = (state && state.moments) || {};
-  for (const d of Object.keys(QUIPS).map(Number)) { const h = heardOf({ heard: m.heard || {} }, d); if (h.of && h.heard >= h.of) return d; }
-  return null;
+  return Object.keys(QUIPS).map(Number).filter((d) => { const h = heardOf({ heard: m.heard || {} }, d); return h.of && h.heard >= h.of; });
 }
+// The hero whose quips have all been heard (the first, by digit), or null.
+export function quipHero(state) { const hs = quipHeroes(state); return hs.length ? hs[0] : null; }
 // The holiday surprises a local date falls in (Sound Box's holidaysOn): Thanksgiving weekend (the
 // 4th Thursday of November through Sunday), winter break (Dec 24 to Jan 1) and summer (June 1 to
 // Aug 14). Returns achievement ids.
@@ -291,6 +295,12 @@ export function catalog(state) {
   const earned = ((state && state.ach) || {}).earned || {}, qh = quipHero(state);
   for (const a of SURPRISE) {
     const met = a.test ? a.test(state || {}) : !!earned[a.id];
+    // Every Quip counts up once a hero's quips are all heard: "Heroes heard in full: 3 of 10".
+    if (a.id === "surprise:allquips") {
+      const n = quipHeroes(state).length, all = Object.keys(QUIPS).length;
+      out.push(entry(a, { goal: all, have: n, met: n >= all, secret: true, started: n > 0, progress: `Heroes heard in full: ${n} of ${all}` }));
+      continue;
+    }
     out.push(entry(a, { goal: 1, have: met ? 1 : 0, met, secret: true, figure: a.id === "surprise:quips" ? (qh != null ? { hero: qh } : null) : a.figure || null }));
   }
   return out;

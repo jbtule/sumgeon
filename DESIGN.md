@@ -857,7 +857,8 @@ _Built 2026-11-27. The ones seen in play are recorded as they happen (no event m
 - ♻️ **Never Gave Up**: win a floor while on your last heart.
 - 🪙 **Exact Change**: pay Trollar with no change back.
 - 🐷 **Piggy Bank**: a whole dollar in the purse at once.
-- 💬 **Every Quip**: heard all of one hero's quips.
+- 💬 **Quip Fan**: heard all of one hero's quips (it was called Every Quip at first; same id).
+- 🎙️ **Every Quip**: heard every quip of all ten heroes, a long goal counting up on the sheet ("Heroes heard in full: 3 of 10"); one of every item.
 - 🦃 **Gobble Gobble** / ⛄ **Snow Much Fun** / 🏖️ **Summer Sums**: holiday play, reusing Sound Box's `holidaysOn` dates.
 
 ### 14.6 Left out (they repeat something the game already shows)

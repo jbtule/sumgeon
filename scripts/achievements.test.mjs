@@ -224,3 +224,15 @@ assert.deepEqual(cardLines(catalog({}).find((a) => a.id === "days:100")),
 assert.ok(spokenLines().every((t) => !/\d/.test(t)), "numbers in achievement lines are words");
 
 console.log(`✓ achievements (${ACHIEVEMENT_IDS.length})`);
+
+// Quip Fan (one hero's quips) and Every Quip (all ten heroes', counting up).
+{
+  const { QUIPS } = await import("../js/moments.js");
+  const heard = Object.fromEntries(Object.entries(QUIPS).map(([d, qs]) => [d, qs.map((_, i) => i)]));
+  const one = { moments: { heard: { 7: heard[7] } } }, all = { moments: { heard } };
+  const c1 = catalog(one), c10 = catalog(all);
+  assert.equal(c1.find((a) => a.id === "surprise:quips").title, "Quip Fan");
+  const e1 = c1.find((a) => a.id === "surprise:allquips");
+  assert.ok(!e1.met && e1.started && e1.have === 1 && /1 of 10/.test(e1.progress), JSON.stringify(e1));
+  assert.ok(c10.find((a) => a.id === "surprise:allquips").met);
+}
