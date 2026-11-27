@@ -27,7 +27,8 @@ import { traitOf, charged, prefers, hitBy, atHalf, asks, flipOf, flashOf, dieSvg
 import { roster, mastery, meet, beat, renamed, RENAMED } from "./bestiary.js";
 import { HEROES, CHALK, heroSvg, freePick, pickHero, curseCaptain, crackCurse, CURSE_HITS, resetTeam } from "./heroes.js";
 import * as sfx from "./sfx.js";
-import { say, stopSpeech, setVoice, speaking, cutOff, needSprites, spriteStatus, saveVoice, offlineStatus } from "./speech.js";
+import { say, stopSpeech, setVoice, speaking, cutOff, needSprites, spriteStatus, saveVoice, offlineStatus, onTalk, isTalking } from "./speech.js";
+import { start as startMusic, DEFAULT_LEVEL as MUSIC_LEVEL } from "./music.js";
 import { byLevel, offlineLine } from "./offline.js";
 import { freshState as freshMoments, freshRun, decide as decideMoment, joined, heardOf, nameLine } from "./moments.js";
 import { playMoment } from "./slowmo.js";
@@ -1029,10 +1030,12 @@ function heroMoment(mo, typed, crit) {
   if (mo.partner != null) rest = rest.replace(String(mo.partner), "");
   const from = $("blank") && $("blank").offsetParent ? $("blank") : $("ans");
   const colorOf = (d) => (d === team.captain ? team.color : null);
+  momentDuck = true; duckMusic(); // the music stays down for the whole moment, not only its quip
+  const unduck = () => { momentDuck = false; duckMusic(); };
   return playMoment({ hero: mo.hero, partner: mo.partner, color: colorOf(mo.hero), partnerColor: mo.partner != null ? colorOf(mo.partner) : null, wear: dressOf(mo.hero), partnerWear: mo.partner != null ? dressOf(mo.partner) : null, quip: mo.quip,
     before: () => speaking() ? cutOff(sfx.scratch, sfx.SCRATCH_AT, sfx.SCRATCH) : null,
     speak: () => say("h", quipLine(mo.quip), true), from, to: $("mon"), room: document.querySelector(".game"),
-    reduced: reduced(), onSnap: () => { if (rest) fly(rest, crit); } });
+    reduced: reduced(), onSnap: () => { if (rest) fly(rest, crit); } }).then((v) => { unduck(); return v; }, (e) => { unduck(); throw e; });
 }
 // Chalk sparks bursting from the monster on impact.
 function burst(crit) {
@@ -1377,6 +1380,7 @@ function cleared(chestDone) {
 }
 function end(win) {
   G.running = false;
+  musicNow();
   clearRun();
   refundArmed();
   const w = wing(), before = openWings(progress, recs, st.start), chBefore = chapterNow(w), stepsBefore = stepsNow(w).open;
@@ -1876,6 +1880,7 @@ function pause(auto) {
     if (!G.running || G.busy || G.next) return;
     G.paused = { at: performance.now() };
     saveRun("problem"); // with the answer time so far
+    musicNow(MUSIC_PAUSE_FADE);
   }
   stopSpeech();
   if (justPaused && !(auto === true && document.hidden) && once("pause", 3)) say("p", PHRASE.paused);
@@ -1894,7 +1899,7 @@ function pause(auto) {
   $("pExit").onclick = () => {
     const b = $("pExit");
     if (b.dataset.sure !== "1") { b.dataset.sure = "1"; b.textContent = "Exit? This run ends"; say("p", PHRASE.exitSure, true); return; }
-    G.paused = null; G.running = false; clearRun(); record(); refundArmed();
+    G.paused = null; G.running = false; clearRun(); record(); refundArmed(); musicNow();
     newRun(); loadMonster(0, true);
     menu();
   };
@@ -1904,10 +1909,54 @@ function resume() {
   const p = G.paused; if (!p) return;
   G.paused = null; hide(); G.busy = false;
   G.t0 += performance.now() - p.at;
+  musicNow();
   slotsUI(); // slots set from the pause screen's 🎒 Items
   // The dot flash's dots waited through the pause: their whole look again.
   if (G.flash && G.flash.held) { G.flash.held = false; flashHide(G.cur); }
 }
+/* ---------- background music ----------
+   Each stratum's Accents-only ambience (music.js: the Cellar's drips and music-box notes, the
+   Hall's echoing high notes, the Mines' chimes, the Tower's bells), on the one Web Audio context
+   (sfx.audioContext), only while a run is being played: not on the start screen, a pause (⏸, or
+   Settings and the book from it), the end card, or with the page hidden. musicNow() works out
+   whether it should be playing and starts or stops it to match; it's called wherever that can
+   change, and once a second besides, as a safety net. A fresh start each time (a new seed), with
+   music.js's fade in; a stop fades out. It ducks under every spoken line (speech.js onTalk) and
+   for a whole Hero Moment. st.music is its own switch, apart from the sound effects. */
+let music = null, musicCtx = null, momentDuck = false;
+const MUSIC_FADE_IN = 3000, MUSIC_FADE_OUT = 1200, MUSIC_PAUSE_FADE = 500;
+function musicWanted() {
+  return !!(st && st.music !== false && G.running && !G.paused && !G.onMenu && !document.hidden && !descending());
+}
+function musicNow(fadeMs) {
+  const ctx = sfx.audioContext(), want = musicWanted() && ctx && ctx.state !== "closed";
+  // Playing on a context that's gone (sfx remade it) or in another stratum: let it go at once.
+  if (music && (musicCtx !== ctx || music.id !== wing().id)) stopMusic(0);
+  if (!want) { if (music) stopMusic(fadeMs == null ? MUSIC_FADE_OUT : fadeMs); return; }
+  if (music) return;
+  try {
+    music = startMusic(ctx, wing().id, ctx.destination, { accents: true, level: MUSIC_LEVEL, seed: 1 + Math.floor(Math.random() * 1e6), fadeIn: MUSIC_FADE_IN });
+    musicCtx = ctx;
+    if (isTalking() || momentDuck) music.duck(true);
+  } catch (e) { music = null; musicCtx = null; }
+}
+function stopMusic(fadeMs) {
+  const m = music;
+  music = null; musicCtx = null;
+  if (m) { try { m.stop(fadeMs); } catch (e) { /* its context is closed: nothing left to hear */ } }
+}
+function duckMusic() { if (music) { try { music.duck(isTalking() || momentDuck); } catch (e) { /* closed */ } } }
+onTalk(duckMusic);
+// A new context (the first tap, or sfx remade a silent one): the music moves onto it.
+sfx.onContext(() => musicNow());
+setInterval(() => musicNow(), 1000);
+// For ?debug's sumgeonState and the Sound check.
+const musicLine = () => {
+  const m = musicState();
+  return `Music: ${!m.on ? "off" : m.playing ? `playing (${m.id}${m.ducked ? ", ducked" : ""})` : "on, not playing (only in a fight)"}`;
+};
+const musicState = () => ({ playing: !!music, id: music ? music.id : null, seed: music ? music.seed : null, ducked: isTalking() || momentDuck, on: !st || st.music !== false });
+
 /* ---------- leaving the app mid-run ----------
    The page hidden (another app, the Home Screen, the phone locked) mid-fight pauses it as ⏸ does,
    so coming back shows the pause card and Keep fighting picks up the same problem with its time.
@@ -1918,6 +1967,7 @@ function autoPause() {
   settle();
   // Mid-descent: it ends now (the run starts under it) and pauses at its first problem.
   if (descending()) { skipDescent(); G.pauseWanted = true; return; }
+  stopMusic(0); // hidden: nothing to hear, and iOS may stop the context under it
   if (!G.running) return;
   stopSpeech();
   if (G.paused) { saveRun(G.stage || "problem"); return; }
@@ -2213,6 +2263,7 @@ function wingsHTML() {
 // Settings, as in Sound Box. Names are optional.
 function menu() {
   G.onMenu = true;
+  musicNow();
   // With no hero yet, the first tap here asks for one out loud (below), once per player a visit.
   if ((!hasCaptain() || st.grade == null) && G.askedFor !== PID) G.askHero = true;
   if (updateReady && !G.running) { reloadForUpdate(); return; } // a new version is waiting
@@ -2462,6 +2513,7 @@ function settings(paused, tab) {
   <div class="grp"><span>Sounds</span><div class="list">
     ${toggle("sfxOn", "Sound effects", "", st.sfx)}
     ${toggle("voiceOn", "Voice", "Reads monsters and answers aloud", st.voice)}
+    ${toggle("musicOn", "Music", "Quiet sounds of each stratum in a fight", st.music !== false)}
   </div></div>
   <div class="grp"><span>Sound check</span><div class="soundcheck"><pre id="soundState"></pre><button class="small" type="button" id="soundTest">🔊 Test sound</button></div></div>`)}
   ${paused ? "" : panel("progress", progressHTML())}
@@ -2471,13 +2523,14 @@ function settings(paused, tab) {
   $("openHelp").onclick = () => { helpFrom = !!paused; helpPage(); };
   $("sfxOn").onchange = () => { st.sfx = $("sfxOn").checked; sfx.setSfx(st.sfx); saveSettings(); };
   $("voiceOn").onchange = () => { st.voice = $("voiceOn").checked; setVoice(st.voice); saveSettings(); };
+  $("musicOn").onchange = () => { st.music = $("musicOn").checked; saveSettings(); musicNow(0); };
   // Sound check (Game tab): what the sound effects' audio reports, as ?audio shows, for the Home
   // Screen app, which has no address bar. Test plays the floor-cleared fanfare.
   // The voice's sprites: how many of those this stratum needs are in, the bytes held, and the lines
   // decoded (speech.js spriteStatus).
   const soundState = () => {
     const a = sfx.status(), v = spriteStatus(), mb = (b) => (b / 1e6).toFixed(1);
-    if ($("soundState")) $("soundState").textContent = `Audio: ${a.state}\nPlayed: ${a.played}  Restarted: ${a.remade || 0}\nError: ${a.error || "none"}\nVoice sprites: ${v.loaded} of ${v.wanted} in (${v.listed} in all), ${mb(v.bytes)} MB\nDecoded: ${v.decodedLines} lines, ${mb(v.decodedBytes)} MB\n${offlineLine(offlineStatus())}${storageNote}`;
+    if ($("soundState")) $("soundState").textContent = `Audio: ${a.state}\nPlayed: ${a.played}  Restarted: ${a.remade || 0}\nError: ${a.error || "none"}\nVoice sprites: ${v.loaded} of ${v.wanted} in (${v.listed} in all), ${mb(v.bytes)} MB\nDecoded: ${v.decodedLines} lines, ${mb(v.decodedBytes)} MB\n${musicLine()}\n${offlineLine(offlineStatus())}${storageNote}`;
   };
   // How much the device holds for the game (offline play), when the browser says.
   let storageNote = "";
@@ -3450,6 +3503,7 @@ function start(depth, enter, voiced, pause) {
   Object.assign(G, { hearts: band().hearts, streak: 0, solved: 0, tries: 0, running: true, retry: [], recent: [], next: false, paused: null, runStars: 0,
     fx: {}, chest: null, news: [] });
   MR = freshRun();
+  musicNow();
   if (!voiced) { stopSpeech(); openingLines(enter, G.depth); }
   const go = () => {
     if (!G.running) return;
@@ -3989,7 +4043,7 @@ document.addEventListener("keydown", (e) => {
 
 // ?debug lets a test script read the game's state (window.sumgeonState()): the problem, the floor,
 // the open steps. For testing only; nothing reads it otherwise.
-if (new URLSearchParams(location.search).has("debug")) window.sumgeonState = () => ({ G, steps: stepsNow(), chapter: chapterNow(), progress });
+if (new URLSearchParams(location.search).has("debug")) window.sumgeonState = () => ({ G, steps: stepsNow(), chapter: chapterNow(), progress, music: musicState(), audio: sfx.status() });
 
 loadPlayer();
 newRun();

@@ -1,5 +1,5 @@
 // Background music: a quiet, generative ambience for each stratum, synthesized with Web Audio
-// (no files, no samples), like sfx.js. Not in the game yet: review/music/ auditions it first.
+// (no files, no samples), like sfx.js. The game plays Accents only in a run (app.js musicNow); review/music/ auditions it.
 //
 // Each stratum is a soft bed that never stops (a drone, air, a hum, wind) under sparse events
 // on a slow random schedule (a drip, a music-box note, a chord, a chime, a bell), drawn from a
