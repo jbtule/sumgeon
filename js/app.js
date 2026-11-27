@@ -359,8 +359,19 @@ function streakUI() {
   f.setAttribute("aria-label", `${G.streak} in a row, critical hits`);
 }
 function setMsg(t, c = "") { const m = $("msg"); m.textContent = t; m.className = "msg " + c; }
+// Ones first (right to left): a stacked problem anywhere, and on Margot-Rythm's floor every + or −
+// answer of two or more columns, written across too, so her floor is all one way (the kids found
+// switching confusing). Not a □ problem (typed into its □) or one with slots.
+const onMargot = () => { const m = G.floors && G.floors[G.floor]; return !!m && (m.base || m.n) === "Margot-Rythm" && G.hp > 0; };
+function onesFirst(p) {
+  if (!p) return false;
+  if (p.stacked) return true;
+  return onMargot() && (p.op === "+" || p.op === "-") && !p.sym && !p.slots && !p.fact && !p.blank && !p.missing && stackWidth(p) > 1 && !$("blank");
+}
 function ansUI() {
-  $("ans").textContent = G.input;
+  // Across, ones first (Margot-Rythm's floor): the answer box gets the same cells as a stacked answer.
+  if (onesFirst(G.cur) && !G.cur.stacked) { $("ans").innerHTML = `<span class="scells">${stackCells(G.cur, G.input)}</span>`; $("ans").classList.add("ones"); }
+  else { $("ans").textContent = G.input; $("ans").classList.remove("ones"); }
   // A whole time in two slots (Tick-Tockus): the one being typed glows, the one to come waits,
   // and Hit! says which: "Hour ✓", then "Minutes!".
   const go = $("pad").dataset.mode === "num" ? $("pad").querySelector('[data-k="go"]') : null;
@@ -481,7 +492,9 @@ function fixLine(p) {
 // How many columns a stacked problem has: the widest number or the answer.
 const stackWidth = (p) => Math.max(...(p.nums || [p.x, p.y]).map((n) => String(n).length), String(p.ans).length);
 // The answer row under the line: one cell per column, filled from the right as digits are typed
-// (right to left, ones first), with a blinking cursor in the next column to fill.
+// (right to left, ones first, as it's worked on paper), with a blinking cursor in the next column to
+// fill. On Margot-Rythm's floor an answer written across is typed the same way (onesFirst), in the
+// same cells, so her floor never switches direction.
 function stackCells(p, typed) {
   const w = stackWidth(p), t = String(typed || "");
   return Array.from({ length: w }, (_, i) => {
@@ -493,7 +506,7 @@ function stackCells(p, typed) {
 function stackHTML(p) {
   const nums = p.nums || [p.x, p.y], w = stackWidth(p);
   const rows = nums.map((n, i) => `<span class="sop">${i === nums.length - 1 ? (p.op === "-" ? "−" : "+") : ""}</span><span class="snum">${n}</span>`).join("");
-  return `<span class="stacked${nums.length > 2 ? " rows" + nums.length : ""}" style="--w:${w}" role="img" aria-label="${esc(p.q)}">${rows}<span class="sbar"></span><span class="sop"></span><span class="snum sans"><span class="blank scells" id="blank" aria-label="Answer, typed from the right">${stackCells(p, "")}</span></span></span>`;
+  return `<span class="stacked${nums.length > 2 ? " rows" + nums.length : ""}" style="--w:${w}" role="img" aria-label="${esc(p.q)}">${rows}<span class="sbar"></span><span class="sop"></span><span class="snum sans"><span class="blank scells" id="blank" aria-label="Answer, typed from the ones">${stackCells(p, "")}</span></span></span>`;
 }
 // A shape problem (Polly-Gon): what to draw (the voice says it too; the body flashes it), or the
 // shape to count over its line, with the hint drawn on it once it's open.
@@ -857,6 +870,9 @@ function presentProblem(key, flipped, restored, elapsed) {
   if (G.cur.op === "✓" && once("truefalse", 2)) say("p", PHRASE.tfHow, false, asked(G.cur));
   // The first comparison: how the < = > keys work.
   if (G.cur.op === "○" && once("compare")) { say("p", PHRASE.cmpHow, false, asked(G.cur)); say("p", PHRASE.cmpSame, false, asked(G.cur)); }
+  // Typed ones first (a stacked problem, or across on Margot-Rythm's floor): the cursor blinks in the
+  // ones column, and the first 3 times it's said.
+  if (onesFirst(G.cur) && once("onesFirst", 3)) { setMsg("Start with the ones!", "good"); say("p", PHRASE.onesFirst, false, asked(G.cur)); }
   if (G.cur.spell) {
     setMsg("Cast a spell! Draw the answer.", "good"); say("p", PHRASE.spell);
     if (once("spell", 3)) say("p", PHRASE.spellHow, false, asked(G.cur)); // the first few spells
@@ -3490,9 +3506,10 @@ function press(k) {
   const cmp = !!(G.cur && G.cur.sym), sym = "<=>".includes(k);
   if (k !== "del" && sym !== cmp) return; // digits for numbers, < = > for comparisons
   sfx.tick();
-  // Stacked in columns (G.cur.stacked): typed right to left, ones first, as it's worked on paper.
-  // Each digit goes in the next column to the left; delete takes back the last one typed.
-  const rtl = G.cur && G.cur.stacked;
+  // Ones first (onesFirst: stacked in columns, or anything on Margot-Rythm's floor): typed right to
+  // left, as it's worked on paper. Each digit goes in the next column to the left; delete takes back
+  // the last one typed.
+  const rtl = onesFirst(G.cur);
   if (k === "del") G.input = rtl ? G.input.slice(1) : G.input.slice(0, -1);
   else if (sym) { G.input = k; chompTurn(mouthOf(k)); }
   else if (rtl) { if (G.input.length < stackWidth(G.cur)) G.input = k + G.input; }
