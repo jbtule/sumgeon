@@ -652,18 +652,17 @@ function loadMonster(i, quiet) {
   // A mega boss has a second trait (traits.js mega): both icons, and the second one's name.
   const t = traitOf(m), t2 = mega(m) ? m.trait2 : null, badge = $("trait");
   badge.hidden = !t;
-  if (t) { badge.textContent = t2 ? `${t.icon}${t2.icon} ${t2.name}` : `${t.icon} ${t.name}`; badge.title = t2 ? `${t.text}. ${t2.text}` : t.text; }
-  // A long name (Professor Minustaur), or one that doesn't fit beside its trait badge on a small
-  // phone (Disco Squatch and 🟩 Arrays), shrinks to fit.
-  const nm = $("mName");
-  nm.classList.remove("long");
-  if (m.n.length > 13 || nm.scrollWidth > nm.clientWidth + 1) nm.classList.add("long");
+  // Two traits (a mega boss, the Legend): the icons, with the second one's name beside them when
+  // there's room (styles.css hides it on phones); a tap on the badge says both (traitTap).
+  if (t) { badge.innerHTML = t2 ? `<span class="ti">${t.icon}${t2.icon}</span><span class="tn"> ${esc(t2.name)}</span>` : `${t.icon} ${esc(t.name)}`; badge.title = t2 ? `${t.text}. ${t2.text}` : t.text; }
+  badge.classList.toggle("two", !!t2);
   G.onFloor = 0; G.halved = false; G.floorLost = 0; G.floorStreak = 0; G.floorSlow = false; G.barked = {};
   if (!quiet) setMsg(m.form === "legend" ? `🌟 A legend awaits! Every kind of problem: ${t.icon} ${t.name} and ${t2.icon} ${t2.name}.` : t2 ? `👑 Mega boss! ${t2.icon} ${t2.name}: ${t2.text}` : m.form === "power" ? `${m.n} is getting stronger!` : t ? `${t.icon} ${t.name}: ${t.text}` : "Your answer is your attack.");
   $("mon").classList.toggle("mega", !!t2 && m.form !== "legend");
   $("mon").classList.toggle("legend", m.form === "legend");
   $("floorLbl").textContent = (G.depth > 1 ? `Depth ${G.depth} · ` : "") + (m.form === "legend" ? "🌟 Legend" : m.boss ? "Boss floor" : m.cursed != null ? "Rescue floor" : `Floor ${i + 1} / ${G.floors.length}`);
   hpUI(); heartsUI(); streakUI(); slotsUI();
+  fitName(m);
   if (quiet) return;
   meet(seen, m, Date.now()); store.player(PID).set("bestiary", seen);
   sfx.appear(m.boss);
@@ -680,6 +679,18 @@ function loadMonster(i, quiet) {
   // Powering up on the two depths before a mega boss; a mega boss's second trait, the first times.
   if (m.form === "power") say("p", PHRASE.stronger);
   if (t2 && once("trait2:" + (m.base || m.n), 2)) say("p", trait2Line(m));
+}
+// A long name (Professor Minustaur), or one that doesn't fit on one line with its trait badge and
+// the HP on a phone (Disco Squatch and 🟩 Arrays, Golden Sigma Rex and its two traits), shrinks to
+// fit, onto two lines if it must: the HP bar keeps some room and the HP never wraps under it.
+const HP_ROOM = 36;
+// First smaller (long), then, on a phone where that still doesn't fit, on two lines (wrap).
+function fitName(m) {
+  const nm = $("mName"), row = nm.parentElement, bar = $("hpBar").parentElement;
+  nm.classList.remove("long", "wrap");
+  const tight = () => row.clientWidth > 0 && matchMedia("(max-width: 759px)").matches && (row.scrollWidth > row.clientWidth + 1 || bar.offsetTop > nm.offsetTop + nm.offsetHeight / 2 || bar.clientWidth < HP_ROOM);
+  if (m.n.length > 13 || nm.scrollWidth > nm.clientWidth + 1 || tight()) nm.classList.add("long");
+  if (tight()) nm.classList.add("wrap");
 }
 // The next problem, chosen by the learning engine (learn.js): a missed fact when it's due back,
 // otherwise learning, review or new facts, with the monster's operation preferred.
@@ -1005,6 +1016,11 @@ function openWorked() {
   $("gotIt").onclick = nextAfterMiss;
 }
 $("hintBtn").onclick = () => { if (!G.busy) openHint(); };
+// A tap on a two-trait badge (a mega boss, the Legend: icons only on phones) says what both do.
+$("trait").onclick = () => {
+  const m = G.floors && G.floors[G.floor], t = m && traitOf(m), t2 = mega(m) ? m.trait2 : null;
+  if (t && t2) setMsg(`${t.icon} ${t.name}: ${t.text}. ${t2.icon} ${t2.name}: ${t2.text}.`);
+};
 
 // Saves the answer to the fact's record; says so when it opens a new level.
 // Returns what to say about it: a skip ahead, a new level, or nothing. A drawn answer (a spell)

@@ -171,12 +171,14 @@ for (const w of WINGS) {
 }
 
 // The app: the Legend's exam takes the place of the usual choice, no retries on its floor, saved
-// with a legendBeaten event.
+// with a legendBeaten event; the nameplate's two-trait badge keeps to one line on phones.
 {
   const app = readFileSync(new URL("../js/app.js", import.meta.url), "utf8"), css = readFileSync(new URL("../styles.css", import.meta.url), "utf8");
   assert.ok(/examKey\(PATHS\[wing\(\)\.id\], recs/.test(app) && /forced \|\| \(exam && exam\.key\)/.test(app), "the exam picks the Legend's problems");
   assert.ok(/megaHP = hpOf\(m, .*?\) \* LEGEND_HP;\s+G\.max = G\.hp = Math\.round\(Math\.max\(megaHP, Math\.min\(2 \* megaHP, examRound\(path, recs\)\)\)/.test(app), "a mega boss's HP, up to twice that for a round of the exam");
   assert.ok(/if \(!G\.exam\) G\.retry/.test(app), "no fact twice: nothing comes back on the Legend's floor");
   assert.ok(/beatLegend\(progress, w\.id/.test(app) && /new CustomEvent\("legendBeaten"/.test(app), "saved, with the hook for the achievement");
+  assert.ok(/<span class="ti">[^`]*<span class="tn">/.test(app), "a two-trait badge: icons, then the name");
+  assert.ok(/@media \(max-width: 759px\)\{\.trait\.two \.tn\{display:none\}\}/.test(css), "on phones, just the icons");
 }
 console.log("✓ legend: when it's due, the exam, saving");
