@@ -36,6 +36,7 @@ import { chestAfter, lockKey, lockOf, contents, moneyFor, fewest, setBills, ITEM
 import { kPrices, priceOf, freshShop, restock, forSale, TOKENS, valueOf, empty as emptyCounter, total as counterTotal, left as purseLeft, purseFor, putDown, takeBack, enough, pay, canAfford } from "./shop.js";
 import { CLOTHES, SPOTS, clothesById, pieceSvg } from "./clothes.js";
 import { LOOT, askLine, itemName, itemWhat, itemUse, moneyLine, purseLine, ALWAYS, runSprites, SHOP, clothingName, priceLine, changeLine } from "./lines.js";
+import { stepRows, stratumSummary, strataOrder, gridOf, gridsFor, kindsFor, needsWork, factLabel, factDetail, factState, STATE_WORDS, secs } from "./progress.js";
 import { chestSvg, purseSvg, walletSvg, walletMini, stallSvg, priceTag, billSvg, pieSvg } from "./chest.js";
 
 const $ = (id) => document.getElementById(id);
@@ -2011,6 +2012,7 @@ function settings(paused, tab) {
   const tabs = [
     ...(paused ? [] : [{ id: "players", icon: "👥", label: "Players" }]),
     { id: "game", icon: "🎨", label: "Game" },
+    ...(paused ? [] : [{ id: "progress", icon: "📈", label: "Progress" }]),
     { id: "about", icon: "ℹ️", label: "About" },
   ];
   const on = tabs.some((t) => t.id === tab) ? tab : tabs[0].id;
@@ -2024,6 +2026,7 @@ function settings(paused, tab) {
     ${toggle("voiceOn", "Voice", "Reads monsters and answers aloud", st.voice)}
   </div></div>
   <div class="grp"><span>Sound check</span><div class="soundcheck"><pre id="soundState"></pre><button class="small" type="button" id="soundTest">🔊 Test sound</button></div></div>`)}
+  ${paused ? "" : panel("progress", progressHTML())}
   ${panel("about", aboutHTML())}
   <div class="btns"><button class="big" id="done">Done</button></div>`);
   wireTabs();
@@ -2047,7 +2050,7 @@ function settings(paused, tab) {
   soundState(); const soundTimer = setInterval(() => { if (!$("soundState")) clearInterval(soundTimer); else soundState(); }, 800);
   $("soundTest").onclick = () => { sfx.restart(sfx.victory); setTimeout(soundState, 300); };
   wireSwatches();
-  if (!paused) wirePlayers();
+  if (!paused) { wirePlayers(); wireProgress(); }
   $("done").onclick = paused ? pause : menu;
 }
 // Tabs (the WAI-ARIA tabs pattern): a tap, or ←/→/Home/End on the tab row, picks a tab and shows
@@ -2085,6 +2088,124 @@ function aboutHTML() {
     </ul>
   </div></div>
   ${badgesCopy()}`;
+}
+
+/* ---------- Settings → Progress (DESIGN.md §9, js/progress.js) ----------
+   For a grown-up, about the player playing: where they are on each open stratum's path, what needs
+   work, and maps of their facts. Read-only: nothing here changes anything, so it needs no lock.
+   Tap a fact (a grid cell or a chip) for its details. Left out of Settings from the pause screen. */
+const pct = (x) => Math.round(x * 100) + "%";
+// A small bar: learned (box 3+), with mastered (box 4) as its brighter start.
+const pgBar = (learnedShare, masteredShare = 0) => `<span class="pg-bar" aria-hidden="true"><i style="width:${(learnedShare * 100).toFixed(1)}%"></i><b style="width:${(masteredShare * 100).toFixed(1)}%"></b></span>`;
+// A fact's look: its state's class (and box while learning), ★ when mastered, a dot when fluent.
+const factCls = (s) => `s-${s.state}${s.state === "learning" ? " b" + s.box : ""}${s.fluent ? " f" : ""}`;
+const factWords = (s) => STATE_WORDS[s.state] + (s.fluent ? ", fluent" : "");
+const starIn = (s) => (s.state === "mastered" ? '<span aria-hidden="true">★</span>' : "");
+function factChip(key, extra = "") {
+  const s = factState(recs[key], key), label = factLabel(key);
+  return `<button type="button" class="pg-chip ${factCls(s)}" data-key="${esc(key)}" aria-label="${esc(label)}: ${factWords(s)}${extra ? ", " + esc(extra) : ""}">${starIn(s)}${esc(label)}${extra ? `<small aria-hidden="true">${esc(extra)}</small>` : ""}</button>`;
+}
+function progressHTML() {
+  const openIds = openWings(progress, recs, st.start), cur = wing(), strata = strataOrder(openIds, cur.id);
+  // Where they are: each open stratum's path, the one being played first and open.
+  const paths = strata.map((w) => {
+    const s = stratumSummary(w, progress, recs, openIds), rows = stepRows(w, progress, recs, chapterNow(w));
+    const next = !s.next ? "" : s.next.open ? `<li>Next stratum, ${esc(s.next.name)}: open</li>`
+      : `<li>Next stratum: ${pct(s.next.share)} of ${pct(s.next.need)} learned${s.next.boss ? ", boss beaten ✓" : ", and beat the boss"}</li>`;
+    const legend = { beaten: "Legend: beaten ✓", open: "Legend: open (it waits at the end of the next run)", locked: `Legend: opens when the ★ steps are mastered (${pct(s.legend.share)} now)` }[s.legend.state];
+    let lastCh = 0;
+    const steps = rows.map((r) => {
+      const head = r.chapter !== lastCh ? `<li class="pg-ch">Chapter ${r.chapter}${r.chapter > s.chapter ? " (not open yet)" : ""}</li>` : "";
+      lastCh = r.chapter;
+      const tags = [r.priority ? '<span class="pg-star" title="Priority standard"><span aria-hidden="true">★</span><span class="sr">priority</span></span>' : "", r.ongoing ? '<span class="pg-tag">ongoing</span>' : "", r.review ? '<span class="pg-tag">review</span>' : ""].join("");
+      const state = { learned: "Learned ✓", now: r.seen ? "In progress" : "Up now", later: "Not started" }[r.state];
+      return `${head}<li class="pg-step st-${r.state}"><div class="pg-step-top"><b>${esc(r.name)}</b>${tags}<span class="pg-state">${state}</span></div>
+        ${pgBar(r.share, r.total ? r.mastered / r.total : 0)}<small>${r.learned} of ${r.total} learned${r.mastered ? ` · ${r.mastered} mastered` : ""}${r.seen && r.state !== "learned" ? ` · ${r.seen} seen` : ""}</small></li>`;
+    }).join("");
+    const all = rows.filter((r) => !r.review), share = all.reduce((t, r) => t + r.learned, 0) / Math.max(1, all.reduce((t, r) => t + r.total, 0));
+    return `<details class="pg-stratum"${w.id === cur.id ? " open" : ""}><summary><b>${esc(w.name)}</b>${w.id === cur.id ? '<span class="pg-tag">playing</span>' : ""}<span class="pg-sum">${pct(share)} learned</span></summary>
+      <ul class="pg-facts"><li>Chapter ${s.chapter} of ${s.chapters} · next mega boss at depth ${s.nextMega} (deepest so far: ${s.deepest})</li>${next}<li>${legend}</li></ul>
+      <ol class="pg-steps">${steps}</ol></details>`;
+  }).join("");
+  // Needs work: the most missed and the slow ones.
+  const nw = needsWork(recs);
+  const missed = nw.missed.length ? nw.missed.map((m) => factChip(m.key, `missed ${m.misses} of ${recs[m.key].n}`)).join("") : '<p class="pg-none">Nothing missed yet.</p>';
+  const slow = nw.slow.length ? nw.slow.map((m) => factChip(m.key, secs(m.ms))).join("") : '<p class="pg-none">None: everything learned comes quickly.</p>';
+  // Fact maps: the grids for the facts their strata ask (or they've seen), open when the stratum
+  // being played asks them; then every other kind as a list.
+  const curKeys = new Set(stepRows(cur, progress, recs, chapterNow(cur)).flatMap((r) => r.keys));
+  const grids = gridsFor(openIds, recs).map((id) => {
+    const g = gridOf(id, recs), openNow = g.rows.some((r) => r.cells.some((c) => c && curKeys.has(c.key)));
+    const head = `<tr><th scope="col" class="pg-corner"><span aria-hidden="true">${g.corner}</span><span class="sr">${g.rowHead || "row"} by ${g.colHead || "column"}</span></th>${g.cols.map((c) => `<th scope="col">${c}</th>`).join("")}</tr>`;
+    const body = g.rows.map((r) => `<tr><th scope="row">${r.row}</th>${r.cells.map((c) => c
+      ? `<td><button type="button" class="pc ${factCls(c)}" data-key="${esc(c.key)}" data-text="${esc(c.text)}" aria-label="${esc(c.label)}" tabindex="-1">${starIn(c)}</button></td>`
+      : '<td class="pc-none"></td>').join("")}</tr>`).join("");
+    const axes = g.rowHead ? `<p class="pg-axes">Rows: ${g.rowHead}. Columns: the ${g.colHead}.</p>` : "";
+    return `<details class="pg-map"${openNow ? " open" : ""}><summary><b>${g.name}</b><span class="pg-sum">${g.learned} of ${g.total} learned</span></summary>${axes}
+      <div class="pg-scroll"><table class="pg-grid" data-grid="${id}" style="--n:${g.cols.length + 1}"><caption class="sr">${g.name} facts${g.rowHead ? `, by ${g.rowHead} and ${g.colHead}` : ""}</caption><colgroup><col class="pg-hcol"><col span="${g.cols.length}"></colgroup><thead>${head}</thead><tbody>${body}</tbody></table></div></details>`;
+  }).join("");
+  const kinds = kindsFor(openIds, recs).map((k) => `<li><button type="button" class="pg-kind" aria-expanded="false" aria-controls="pk-${k.id}" data-kind="${k.id}">
+      <span><b>${esc(k.name)}</b><small>${k.learned} of ${k.total} learned${k.mastered ? ` · ${k.mastered} mastered` : ""}</small>${pgBar(k.learned / k.total, k.mastered / k.total)}</span><i aria-hidden="true">›</i></button>
+      <div class="pg-chips" id="pk-${k.id}" hidden></div></li>`).join("");
+  const legendRow = `<ul class="pg-legend" aria-label="What the colors mean">
+      <li><span class="pc s-new" aria-hidden="true"></span>Not seen</li>
+      <li><span class="pc s-learning b0" aria-hidden="true"></span><span class="pc s-learning b1" aria-hidden="true"></span><span class="pc s-learning b2" aria-hidden="true"></span>Learning (striped, box 0–2)</li>
+      <li><span class="pc s-learned" aria-hidden="true"></span>Learned</li>
+      <li><span class="pc s-mastered" aria-hidden="true">★</span>Mastered</li>
+      <li><span class="pc s-learned f" aria-hidden="true"></span>Fluent (dot)</li></ul>`;
+  return `<p class="pg-intro">How <b>${esc(displayName(store.profiles(), PID))}</b> is doing. Tap any fact for its details.</p>
+  <div class="grp"><span>Where they are</span>${paths}</div>
+  <div class="grp"><span>Needs work</span>
+    <div class="pg-need"><h3>Missed most</h3><div class="pg-chips">${missed}</div></div>
+    <div class="pg-need"><h3>Learned, but slow</h3><div class="pg-chips">${slow}</div></div></div>
+  <div class="grp"><span>Fact maps</span>${legendRow}${grids}<ul class="pg-kinds">${kinds}</ul></div>
+  <div class="pg-pop" id="pgPop" role="dialog" aria-labelledby="pgPopT" hidden></div>`;
+}
+// Taps on the Progress tab: a fact opens its details; a kind opens its facts; arrow keys move
+// around a grid (one cell of each grid is in the tab order).
+function wireProgress() {
+  const tp = $("tp-progress");
+  if (!tp) return;
+  tp.querySelectorAll(".pg-grid").forEach((t) => { const b = t.querySelector("button.pc"); if (b) b.tabIndex = 0; });
+  let opener = null;
+  const closePop = () => { $("pgPop").hidden = true; if (opener && opener.isConnected) opener.focus({ preventScroll: true }); opener = null; };
+  const openPop = (btn) => {
+    const key = btn.dataset.key, d = factDetail(key, recs[key], Date.now());
+    opener = btn;
+    const box = d.box == null ? "not seen yet" : `box ${d.box} of 4, ${STATE_WORDS[d.state]}`;
+    const shown = btn.dataset.text && btn.dataset.text + " = " !== d.text.slice(0, btn.dataset.text.length + 3) ? `<p class="pg-also">Shown as ${esc(btn.dataset.text)}: turnarounds share one record.</p>` : "";
+    $("pgPop").innerHTML = `<button type="button" class="pg-x" id="pgClose" aria-label="Close">×</button>
+      <h3 id="pgPopT">${esc(d.text)}</h3>${shown}
+      <dl><dt>State</dt><dd><span class="pc ${factCls(d)}" aria-hidden="true">${starIn(d)}</span>${box}${d.fluent ? ", fluent" : ""}</dd>
+      <dt>Seen</dt><dd>${d.seen} ${d.seen === 1 ? "time" : "times"}</dd>
+      <dt>Right</dt><dd>${d.right} of ${d.seen}</dd>
+      <dt>Average time</dt><dd>${d.avg ? `${d.avg} (fluent: under ${d.fluentIn})` : "none yet"}</dd>
+      <dt>Last practised</dt><dd>${d.last || "never"}${d.placed ? " (known from skipping ahead)" : ""}</dd></dl>`;
+    $("pgPop").hidden = false;
+    $("pgClose").onclick = closePop;
+    $("pgClose").focus({ preventScroll: true });
+  };
+  tp.onclick = (e) => {
+    const f = e.target.closest("[data-key]");
+    if (f && !f.closest("#pgPop")) { openPop(f); return; }
+    const k = e.target.closest(".pg-kind");
+    if (!k) return;
+    const list = $(k.getAttribute("aria-controls")), open = k.getAttribute("aria-expanded") !== "true";
+    if (open && !list.innerHTML) list.innerHTML = kindsFor(openWings(progress, recs, st.start), recs).find((x) => x.id === k.dataset.kind).keys.map((key) => factChip(key)).join("");
+    k.setAttribute("aria-expanded", open); list.hidden = !open;
+  };
+  tp.onkeydown = (e) => {
+    if (e.key === "Escape" && !$("pgPop").hidden) { e.stopPropagation(); closePop(); return; }
+    const b = e.target.closest(".pg-grid button.pc"), step = { ArrowRight: [0, 1], ArrowLeft: [0, -1], ArrowDown: [1, 0], ArrowUp: [-1, 0] }[e.key];
+    if (!b || !step) return;
+    e.preventDefault();
+    const td = b.parentElement, tr = td.parentElement, rows = [...tr.parentElement.children], row = rows.indexOf(tr), col = [...tr.children].indexOf(td);
+    // The next cell that way that's a fact.
+    for (let r = row + step[0], c = col + step[1]; r >= 0 && r < rows.length && c >= 1 && c < tr.children.length; r += step[0], c += step[1]) {
+      const n = rows[r].children[c].querySelector("button.pc");
+      if (n) { b.tabIndex = -1; n.tabIndex = 0; n.focus(); return; }
+    }
+  };
 }
 
 // The footer's badges (deployed version, license), repeated in Settings → About, since phones hide the footer.
@@ -2257,7 +2378,11 @@ function wirePlayers() {
     if (input) input.focus();
   };
 }
-function refreshPlayers() { $("players").innerHTML = playersHTML(); wirePlayers(); whoUI(); }
+function refreshPlayers() {
+  $("players").innerHTML = playersHTML(); wirePlayers(); whoUI();
+  // A grade change can open strata: the Progress tab follows.
+  if ($("tp-progress")) { $("tp-progress").innerHTML = progressHTML(); wireProgress(); }
+}
 // Another player's turn: their own settings, best run and a fresh dungeon.
 function switchTo(id) {
   store.setActive(id);
