@@ -60,7 +60,7 @@ h1 b{color:var(--coral);font-weight:400}
 .pad .del-icon{width:1.45em;height:1.06em;display:block;margin:auto}
 .ov{position:fixed;inset:0;background:#081014d9;display:grid;place-items:center;padding:16px;z-index:9;overflow:auto}
 .ov[hidden]{display:none}
-.card{background:var(--panel);border:2px solid var(--line);border-radius:24px;padding:clamp(18px,4vw,28px);width:min(560px,100%);display:grid;gap:14px}
+.card{--cp:clamp(18px,4vw,28px);background:var(--panel);border:2px solid var(--line);border-radius:24px;padding:var(--cp);width:min(560px,100%);display:grid;gap:14px}
 .card h2{font:400 clamp(28px,6vw,40px)/1.05 Bungee,sans-serif;margin:0;color:var(--gold);text-wrap:balance}
 .card p{margin:0;color:var(--muted);max-width:60ch}
 .card p strong{color:var(--ink)}
@@ -98,6 +98,18 @@ h1 b{color:var(--coral);font-weight:400}
 @media(prefers-reduced-motion:reduce){.unlocked{animation:none}}
 .card.page .btns.deeper{flex-wrap:wrap}
 .btns .warn:empty{display:none}
+/* A card's buttons dock at the bottom of the screen when the card is taller than it, so the main
+   button is always in reach without scrolling: sticky in the overlay's scroll, over a fade of the
+   card's color, reaching its edges (--cp is its padding) and down past the overlay's 16px padding
+   to the screen's edge (bottom: -16px). Phones' page cards have their own. */
+.card > .btns:last-child{position:sticky;bottom:-16px;z-index:2;margin:0 calc(-1 * var(--cp)) calc(-1 * var(--cp));
+  padding:14px var(--cp) var(--cp);border-radius:0 0 22px 22px;background:linear-gradient(#0000,var(--panel) 14px)}
+/* More below (moreUI in app.js): the docked buttons sit on frosted glass, the content under them
+   blurred, with a hairline on top. Gone at the end, where there's nothing under them. */
+.card > .btns:last-child{transition:background-color .2s}
+.card.more > .btns:last-child{background:color-mix(in srgb,var(--panel) 62%,transparent);-webkit-backdrop-filter:blur(10px) saturate(1.2);backdrop-filter:blur(10px) saturate(1.2);
+  box-shadow:inset 0 1px 0 #ffffff1f,0 -10px 18px -12px #00000080}
+.card.page.more > .btns:last-child{background:color-mix(in srgb,var(--bg) 62%,transparent)}
 .big{min-height:52px;padding:0 22px;border-radius:16px;border:0;background:var(--coral);color:#fff;font:400 18px Bungee,sans-serif;box-shadow:0 4px 0 var(--dark)}
 .big.alt{background:var(--btn2)}
 .stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;text-align:center}
@@ -542,6 +554,9 @@ body{transition:background-color .4s;--hint-empty:var(--edge);--hint-line:var(--
    (a floor cleared, a miss) floats over the game as a centered card. */
 .card.float{text-align:center;justify-items:center;width:min(440px,100%)}
 .card.float .btns{width:100%}
+/* A floating card's buttons never cut their words off (the chest's "👕 Put it on" beside Next on an
+   iPhone SE): too wide for one row, they wrap to two. */
+.card.float .btns .big{min-width:max-content}
 .card.float p{margin-inline:auto}
 .card.float h2{font-size:clamp(24px,5vw,32px)}
 .card .grp>span{font:400 13px Bungee,sans-serif;letter-spacing:.5px;color:var(--muted)}
@@ -726,6 +741,7 @@ body{transition:background-color .4s;--hint-empty:var(--edge);--hint-line:var(--
 .switch-row,.list-link{display:flex;align-items:center;gap:12px;min-height:56px;padding:8px 14px;cursor:pointer;text-align:left;background:none;border:0;width:100%}
 .list>*+*{border-top:1.5px solid var(--line)}
 .switch-row>span,.list-link>span{flex:1;display:grid}
+.list-link>.task-ico{flex:none;display:block;font-size:24px} /* the emoji keeps its size; the words take the rest */
 .switch-row b,.list-link b{font-weight:900;font-size:16px}
 .switch-row small,.list-link small{color:var(--muted);font-weight:700;font-size:13px}
 .list-link i{font-style:normal;font-size:26px;color:var(--muted);line-height:1}
@@ -757,10 +773,10 @@ label.switch-row:focus-within{outline-offset:-3px}
   .card.page{display:flex;flex-direction:column;width:100%;min-height:100%;border:0;border-radius:0;gap:16px;
     padding:max(14px,calc(env(safe-area-inset-top,0px) + 10px)) max(16px,env(safe-area-inset-right,0px)) 0 max(16px,env(safe-area-inset-left,0px))}
   .card.page .btns{position:sticky;bottom:0;margin:auto -16px 0;padding:12px 16px max(12px,env(safe-area-inset-bottom,0px));
-    background:linear-gradient(#12242b00,var(--bg) 14px);flex-wrap:nowrap;z-index:2}
+    background:linear-gradient(#12242b00,var(--bg) 14px);flex-wrap:nowrap;z-index:2;border-radius:0}
   .card.page .btns .warn{position:absolute;bottom:100%;left:0;right:0;padding:4px}
   .card.page h2{font-size:clamp(26px,8vw,34px)}
-  .card.float{padding:18px 16px;gap:10px}
+  .card.float{--cp:16px;padding:18px 16px;gap:10px}
   .card.float h2{font-size:clamp(24px,7.4vw,32px)}
   .card.float .cardmon{width:110px}
   .card.float .cardmon.small{width:80px}

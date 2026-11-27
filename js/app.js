@@ -1384,8 +1384,18 @@ function show(h, kind = "page") {
   // The main button is the last one in the row (Menu, then Play again).
   const bs = $("card").querySelectorAll(".btns button.big"), b = bs[bs.length - 1] || $("card").querySelector("button.big");
   if (b) b.focus({ preventScroll: true });
+  requestAnimationFrame(moreUI);
 }
 function hide() { $("ov").hidden = true; }
+// A card taller than the screen shows a bouncing arrow over its docked buttons while there's more
+// below (.card.more), gone once it's scrolled to the end. Checked on scroll, and when the card
+// changes size (a tab, a section opening).
+function moreUI() {
+  const o = $("ov");
+  $("card").classList.toggle("more", !o.hidden && o.scrollHeight - o.scrollTop - o.clientHeight > 24);
+}
+$("ov").addEventListener("scroll", moreUI, { passive: true });
+if (window.ResizeObserver) new ResizeObserver(moreUI).observe($("card"));
 
 /* ---------- chests (DESIGN.md §6.3, loot.js) ----------
    After the floor's monster, about 1 floor in 3, and after every boss: a chest with a padlock that
