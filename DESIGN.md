@@ -850,7 +850,7 @@ _Built 2026-11-27. The ones seen in play are recorded as they happen (no event m
 - 🎯 **Exactly Zero**: the finishing hit leaves the monster at exactly 0 HP.
 - 🪞 **Palindrome**: an answer that reads the same backward, like 121.
 - 💯 **Triple Digits**: a single hit of 100 or more.
-- 🪞🖐️ **Double High Five**: two of the same hero at once, like 55.
+- 👀 **Seeing Double**: two of the same hero at once, like 55 or 77 (it was Double High Five, which only fit 55; same id).
 - 🎆 **All Hands**: an answer of three or more digits where every digit is a rescued hero.
 - 7️⃣ **Lucky Seven**: break Sevenstein's curse with an answer containing a 7.
 - 🧊 **Ice Cold Boss**: beat a boss without losing a heart.
