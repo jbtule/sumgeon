@@ -29,7 +29,7 @@ The age range is 5–14 (kindergarten to 8th grade), which is too wide for one d
 | **Adept** | 10–11 (4–5) | Multi-digit ×÷, tables to 12, fractions (equivalent, add like denominators), decimals to tenths and hundredths | 5 hearts |
 | **Master** | 12–14 (6–8) | Negatives, order of operations, percents, exponents and roots, one-step equations | 5 hearts, harder bosses |
 
-The current Easy, Medium and Hard settings become difficulty levels *inside* a band. The operation checkboxes become a "custom practice" option for parents and teachers (§9).
+The current Easy, Medium and Hard settings become difficulty levels *inside* a band. The operation checkboxes were to become a "custom practice" option for parents and teachers, since cut (§9).
 
 **Plan (2026-11-25): one band per grade, K through 5th.** The four bands above were drawn by age. A review against the Missouri Learning Standards and the curriculum guides of the players' school found that this mixes grades: Apprentice made a 3rd grader clear sums within 20 before multiplication, the Sprout Wing asked 2nd-grade coin counting, and 2nd grade's two-digit math hid in the Tables Tower. So Sprout, Balance and Apprentice become a band per grade, K, 1st, 2nd and 3rd, and Adept becomes 4th and 5th. Each grade's band is one stratum (§4), with its levels in the order the school teaches them. **The game tops out at 6th grade:** one stretch stratum of 6th-grade math (§4.1) replaces Master, and the 7th–8th grade strata are dropped.
 - A new player picks their **grade** (K–5) instead of a band. It opens every stratum up to that grade, as the band does now. **Built (2026-11-25):** the kid picks it on the start screen ("What grade are you in?", K and 1–5) and can change it in Settings → Players. **Rebuilt by grade (M5 step 1, 2026-11-25):** K starts in the Counting Cellar, 1st in the Balance Hall, 2nd in the Crystal Mines, 3rd–5th in the Tables Tower, each with every stratum above it open.
@@ -647,21 +647,27 @@ In the game, `?moments` makes every qualifying hit a moment, for testing, and `?
 
 ---
 
-## 9. Grown-ups' corner (parents and teachers)
+## 9. Grown-ups' corner: Progress (parents and teachers)
+
+_What players see is Settings → 📈 **Progress**; "grown-ups' corner" is only this section's name._
 
 **No lock, because nothing needs one.** Any gate a kid can't pass, a strong 3rd grader can: a "hard math problem" gate is a puzzle in a math game, and a hold-to-open button is a dare. So, as in Sound Box, **nothing in settings can make progress easier or skip mastery**, and then there's nothing worth guarding:
 - **Wings** unlock only through mastery (§4). There's no manual unlock to abuse.
 - **Grade/band** only sets the starting Wings and help defaults. Faking a higher grade on a new player just means harder math.
 - **Hints and read-aloud** are comfort settings. Hinted solves never count toward mastery (§5.3), so turning hints on is no shortcut.
-- **Custom practice**, e.g. "only the 6, 7 and 8 times tables", runs as a separate Practice run outside the Wings. It builds fact mastery like any other play but never unlocks a Wing.
-- **Destructive actions only ever touch this device.** Start over asks for a typed phrase (§15.5). Removing a player asks for a second tap, and the **Remove button only exists on a device with two or more players**, never for the one playing. A kid's own device, with only them on it, has no delete at all. A shared device (a parent's phone) holds players linked from the kids' devices, so if a sibling removes the other there, their own device still has them and can send them back (§15.2).
+- **Progress only shows things.** It changes nothing, so it needs no lock either.
+- **Destructive actions only ever touch this device.** Removing a player asks for a second tap, and the **Remove button only exists on a device with two or more players**, never for the one playing. A kid's own device, with only them on it, has no delete at all. A shared device (a parent's phone) holds players linked from the kids' devices, so if a sibling removes the other there, their own device still has them and can send them back (§15.2).
 
-The corner holds:
-- **Custom practice** (above).
-- **Progress view** for each profile: a heat-map grid of facts (e.g. a 12×12 times table colored by mastery box), the most-missed facts, and time played this week.
-- **Session length nudge**: optional "take a break" after N minutes, phrased kindly.
-- **Export progress** as a downloaded JSON or a printable page, so data stays local unless they choose to share it.
-- No leaderboards against other people and no social features.
+**Built (2026-11-26): the Progress tab** (`js/progress.js`, pure data tested in `scripts/progress.test.mjs`; drawn by `progressHTML` in app.js). A fourth Settings tab, for the player playing, only from the start screen (left out from the pause screen, like Players). Read-only.
+- **Where they are:** each open stratum (the one being played first and open; the others fold), its path's steps in teaching order under chapter headings: the step's name, ★ for a priority step, "ongoing" and "review" tags, a bar (learned, box 3+, with mastered, box 4, brighter), "12 of 40 learned · 3 mastered · 20 seen", and a state in words: Learned ✓ (70% of its facts learned, the share that counts a skip-ahead tier as known), In progress / Up now (open), or Not started (dimmed, dashed). Above it: "Chapter 2 of 3 · next mega boss at depth 10 (deepest so far: 7)", the next stratum ("42% of 60% learned, and beat the boss", or "open"), and the Legend (locked with the share mastered, open, or beaten).
+- **Needs work:** up to 8 most-missed facts (by misses, then miss rate; leaving out the ones since mastered) and up to 8 slow ones (learned, but their average time over `fluentTime`), as chips with "missed 4 of 6" or "6.2 s".
+- **Fact maps:** grids of addition (a + b, 0–10 by 0–10), subtraction (laid out like its addition: a row for what's taken away, a column for the answer), times (0–12 × 0–12) and division (a row for the divisor, 1–12, a column for the answer), shown when an open stratum asks them or one has been seen. Turnarounds share a key, so both cells show one record. Every other kind (teen facts like 13 + 4, two- and three-digit ±, coins and money, time, patterns, shapes, fractions, place value, comparing, …) is a list with a bar; tapping one opens its facts as chips.
+- **Colors and marks:** not seen (an empty outline), learning (striped coral, lighter with each box 0–2), learned (gold), mastered (bright gold with a ★), fluent (a dot). A legend says so. State is never color alone.
+- **A fact's details** (tap a cell or chip): the fact as written ("7 × 8 = 56"), its state and box, times seen and right, average time against its fluent time, and when it was last practised ("2 days ago").
+- **Fit:** the 13 × 13 times table fits an iPhone SE at 24 px a cell (with its gap), and scrolls inside its own box on anything narrower, never the page.
+- **Accessibility:** the grids are tables with row and column headers and a label per cell ("7 times 8: mastered, fluent"); arrow keys move around a grid, with one cell in the tab order; the details close with × or Escape and give focus back.
+
+**Cut** (decided with the user, 2026-11-26): custom practice (a Practice run of chosen facts), a "take a break" nudge, exporting progress, and Start over (§15.5). No leaderboards against other people and no social features. **Linking devices** (§15) stays planned, as Part B.
 
 ---
 
@@ -734,7 +740,7 @@ Each milestone should be playable and shippable on its own. Revised 2026-11-25 f
    - the Parenthesis Pyramid (Shoutandcomma with *Unwrap*);
    - Pirate Cavern (π Pirate).
 7. **M7 — Replay.** Hero Moments, the slow-motion hero close-ups with quips in a second voice (§8.4; small enough to build any time). Achievements (§14, revised 2026-11-25: mostly secret, each with coins or an item, shown before the next descent, with spoken and share cards), math-locked chests with money and items (§6.3, built 2026-11-25), then clothing and Trollar's shop. (Endless Descent and Daily Dungeon moved to *Maybe later*, below.)
-8. **M8 — Grown-ups' corner and offline.** Progress heat-maps, custom practice, export, offline play with saved voice clips (the manifest and Home Screen icon are done), and device linking and sync (§15.2–15.4).
+8. **M8 — Grown-ups' corner and offline.** Progress (built 2026-11-26: Settings → Progress, §9; custom practice and export cut), offline play with saved voice clips (the manifest and Home Screen icon are done), and device linking and sync (§15.2–15.4).
    - *Offline play, done (2026-11-26):* a service worker (`sw.js`) precaches each version's shell, the fonts are self-hosted, and every voice sprite is saved in the background, the ones needed first; Settings → Game says how far it's got (CLAUDE.md "Offline"). *Still to do:* confirm it on the iPhone's Home Screen app (airplane mode after "Offline: ready").
 
 
@@ -888,8 +894,8 @@ Merging must work in either order, and merging twice must change nothing:
 - **The in-progress run does not sync.** It's per device, the way Sound Box doesn't sync a puzzle in progress.
 - **The record format has a version (`RECORD_VERSION`).** An older app leaves a newer record alone until it updates, so it never drops fields it doesn't know.
 
-### 15.5 Start over
-Start over sits in Settings and asks the grown-up to type "start over", as in Sound Box. It clears the player's progress in the current band and **unlinks** the player, so the erased data can't sync back. Other devices keep the shared player.
+### 15.5 Start over (cut, 2026-11-26)
+_Cut with the rest of the grown-ups' corner's tools (§9); kept here as it was planned._ Start over sat in Settings and asks the grown-up to type "start over", as in Sound Box. It clears the player's progress in the current band and **unlinks** the player, so the erased data can't sync back. Other devices keep the shared player.
 
 ---
 
