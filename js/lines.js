@@ -56,6 +56,10 @@ export var PHRASE = {
   flashHow: "Look quick! How many dots?",
   // A new fact's 💡 pulses after a while with nothing typed (app.js hintNudge); the first 3 times.
   hintNudge: "Stuck? Tap the light bulb!",
+  // Pipsqueak's dice sums: read as they appear and by 🔊 (a pre-reader can't read the dots as
+  // "3 + 5"); the first 2 times, how.
+  diceAll: "How many dots in all?",
+  diceHow: "Count the dots on both dice!",
   deeper: "Go deeper for tougher monsters, or play again!",
   paused: "Paused. Tap the big button to keep fighting.",
   // A run the app lost in the background, offered on the start screen (app.js keepGoing).
@@ -460,7 +464,7 @@ function index() {
   // Phrases by when they're said: the start screen and a run's end, explanations, and the fight.
   [PHRASE.enter, PHRASE.pickGrade, PHRASE.pickHero, PHRASE.keepGoing, PHRASE.heroFirst, PHRASE.deeper, PHRASE.exitSure, PHRASE.unlocked, PHRASE.win, PHRASE.legend]
     .concat(WINGS.map(wingCleared), WINGS.map(wingOpened)).forEach(function (t) { phrases[t] = "phrases-start"; });
-  [PHRASE.hitHow, PHRASE.cmpHow, PHRASE.cmpSame, PHRASE.spellHow, PHRASE.paused, PHRASE.tfHow, PHRASE.drawHow, PHRASE.flashHow, PHRASE.hintNudge]
+  [PHRASE.hitHow, PHRASE.cmpHow, PHRASE.cmpSame, PHRASE.spellHow, PHRASE.paused, PHRASE.tfHow, PHRASE.drawHow, PHRASE.flashHow, PHRASE.hintNudge, PHRASE.diceHow]
     .concat(Object.values(TRAIT_LINE), Object.values(TRAIT2_LINE), HEROES.map(function (h) { return luckyLine(h.d); }), REVERSIBLE.map(reversedLine), [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map(howToWriteLine))
     .forEach(function (t) { phrases[t] = "phrases-explain"; });
   // Problems: every line a band can say, found from its facts the way the game asks them (both

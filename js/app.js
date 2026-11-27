@@ -8,7 +8,7 @@ import { countSvg, readShape, judgeShape, cleanFor, isDrawKey, SHAPE_LINE, SHAPE
 import { hintFor, STRATEGIES } from "./hints.js";
 import { openStore, displayName, DUNGEON_VERSION, DUNGEON_KEYS, LEARNING_RESETS } from "./store.js";
 import { PHRASE, monsterName, monsterCleared, monsterWon, heroJoins, heroCursed, heroRescue, heroAlmost, heroHelps, traitLine, BARK, wingCleared, wingOpened, depthLine, DEPTH_MAX_SPOKEN, reversedLine, howToWriteLine, quipLine, squawk, trait2Line, newMonsterLine } from "./lines.js";
-import { WINGS, wingOf, runFloors, bossAt, cursedMonster, openWings, toOpen, floorStars, wingStars, depthScale, depthHP, deepest, MAP_DEPTHS, GRADES, gradeLabel, gradeName, withGrade, bandOf, gradeBand, OLD_BANDS, PATHS, chapterOf, stepsOpen, bossStage, isMega, BOSS_HP, MEGA_EVERY, megasOf, stepMonsters, legendDue, openLegend, beatLegend, legendBeaten, LEGEND_HP } from "./wings.js";
+import { WINGS, wingOf, runFloors, bossAt, cursedMonster, openWings, toOpen, floorStars, wingStars, depthScale, depthHP, deepest, MAP_DEPTHS, GRADES, gradeLabel, gradeName, withGrade, bandOf, gradeBand, OLD_BANDS, PATHS, chapterOf, stepsOpen, bossStage, isMega, BOSS_HP, MEGA_EVERY, megasOf, stepMonsters, legendDue, openLegend, beatLegend, legendBeaten, legendProgress, LEGEND_HP } from "./wings.js";
 import { missingOf, pickBlank, filled, spokenMissing, MISSING_SHARE, canHide } from "./missing.js";
 import { rectSvg } from "./third.js";
 import { arraySvg } from "./arrays.js";
@@ -219,8 +219,13 @@ const GEAR = '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="cu
 $("sayProb").innerHTML = SPEAKER;
 $("sayProb").onclick = () => {
   if (!G.cur) return;
-  if (G.cur.fact) say("q", spokenMissing(G.cur), true);
+  // Pipsqueak's dice are read as dots to count, not as the sum they stand for.
+  if (G.cur.dice) say("p", PHRASE.diceAll, true);
+  else if (G.cur.fact) say("q", spokenMissing(G.cur), true);
   else say("q", spokenProblem(G.cur), true);
+  // A spell or a shape to draw: what to do, every time it's asked for.
+  if (G.cur.spell) say("p", PHRASE.spellHow);
+  else if (G.cur.draw) say("p", PHRASE.drawHow);
 };
 
 function whoUI() {
@@ -801,6 +806,8 @@ function presentProblem(key, flipped, restored, elapsed) {
   // The dot flash: "How many dots?", and the first time "Look quick! How many dots?".
   if (G.cur.op === "⁙" && once("flash")) say("p", PHRASE.flashHow, false, asked(G.cur));
   else if ("¢○⌚…◐✓✎↔#$◇⁙".includes(G.cur.op) || G.cur.op === "more") say("q", spokenProblem(G.cur), false, asked(G.cur));
+  // Pipsqueak's dice: "How many dots in all?", and the first 2 times how.
+  if (G.cur.dice) { if (once("dice", 2)) say("p", PHRASE.diceHow, false, asked(G.cur)); say("p", PHRASE.diceAll, false, asked(G.cur)); }
   // Drawing a shape: how, the first few times.
   if (G.cur.draw) { setMsg(`Draw ${article(G.cur.shape)}${G.cur.shape}!`, "good"); if (once("draw", 3)) say("p", PHRASE.drawHow, false, asked(G.cur)); }
   // The first true or false problems: how the two big keys work.
@@ -2076,8 +2083,11 @@ function wingsHTML() {
     // A stratum whose Legend is beaten (DESIGN.md §14.2) gets a gold edge; one whose Legend awaits says so.
     if (isOpen && legendBeaten(w, progress)) note = "🌟 Legend beaten · " + note;
     else if (isOpen && legendNow(w)) note = "🌟 A legend awaits! · " + note;
+    // How far along to the Legend: rounded down, so 100% only when it's ready.
+    const pct = isOpen && !legendBeaten(w, progress) && !legendNow(w) ? Math.floor(legendProgress(w, recs) * 100) : null;
+    const toLegend = pct == null ? "" : `<em class="to-legend"><i style="--p:${pct}%"></i><span>${pct}% to the 🌟 Legend</span></em>`;
     return `<label class="wing ${w.id}${here ? " here" : ""}${isOpen ? "" : " locked"}${isOpen && legendBeaten(w, progress) ? " golden" : ""}"><input type="radio" name="wing" value="${w.id}" ${here ? "checked" : ""} ${isOpen ? "" : "disabled"}>
-      <span><b>${w.name}</b><small>${b.label}</small><em>${note}</em>${here ? `<em class="level" id="levelLine">${levelLine()}</em>` : ""}
+      <span><b>${w.name}</b><small>${b.label}</small><em>${note}</em>${toLegend}${here ? `<em class="level" id="levelLine">${levelLine()}</em>` : ""}
       ${isOpen ? depthTrack(w, d) : ""}</span></label>`;
   }).join("");
 }
