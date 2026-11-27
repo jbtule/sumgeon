@@ -42,6 +42,8 @@ import { newKey, keysFor, isKey, linkFor, keyFromLink } from "./seal.js";
 import { syncPlayer, remoteVersion, SYNC_URL } from "./sync.js";
 import { SYNCED_KEYS, canon, pack, unpack } from "./merge.js";
 import { linkQR } from "./linkqr.js";
+import { award as awardAchievements, catalog as achCatalog, freshAchievements, unseen as unseenAchievements, rewardOf, achievementOf, cardLines, ACHIEVEMENT_IDS } from "./achievements.js";
+import { achievementLine } from "./lines.js";
 
 const $ = (id) => document.getElementById(id);
 const reduced = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -127,7 +129,8 @@ store.upgrade();
 // progress: { [wingId]: { boss: wins, best: floors } }.
 // seen: the Bestiary, { [monster]: { met, beaten } }.
 // wallet: money in cents; inv: the items (loot.js freshItems: counts and the 3 quick-use slots).
-let PID, st, recs, team, progress, seen, wallet = 0, inv = freshItems(), wardrobe = freshWardrobe(), shop = freshShop();
+// ach: achievements (achievements.js), { earned: { id: time }, seen: [ids shown on a card] }.
+let PID, st, recs, team, progress, seen, wallet = 0, inv = freshItems(), wardrobe = freshWardrobe(), shop = freshShop(), ach = freshAchievements();
 const band = () => BANDS[st.band] || BANDS.kinder;
 const wingFor = (b) => WINGS.find((w) => w.band === b) || WINGS[0];
 const wing = () => wingFor(st.band);
@@ -162,6 +165,10 @@ function loadPlayer() {
   wardrobe = freshWardrobe(store.player(PID).get("wardrobe", null));
   shop = freshShop(store.player(PID).get("shop", null));
   if (WALLET_AT != null) { wallet = WALLET_AT; saveWallet(); }
+  // Achievements already met (a player who qualified before they were built, or progress a sync
+  // brought) are awarded now, quietly; their cards play before the next descent.
+  ach = freshAchievements(store.player(PID).get("achievements", null));
+  checkAchievements();
   // A captain picked before heroes could change stays on the team.
   if (team.captain != null && !team.rescued.includes(team.captain)) { team.rescued.push(team.captain); saveTeam(); }
   // Bands saved before the grade strata (dungeon version 5) become a grade's: a player who picked a
@@ -183,6 +190,23 @@ function saveWallet() { store.player(PID).set("wallet", wallet); }
 function saveItems() { store.player(PID).set("items", inv); }
 function saveWardrobe() { store.player(PID).set("wardrobe", wardrobe); }
 function saveShop() { store.player(PID).set("shop", shop); }
+function saveAch() { store.player(PID).set("achievements", ach); }
+// Achievements newly met (achievements.js award), recorded quietly with their rewards (coins into
+// the wallet, items into the inventory, a special piece into the wardrobe), never interrupting a
+// fight: their cards play before the next descent (achievementCards). Checked as the player loads,
+// after each answer and lock, and at a run's end.
+function checkAchievements() {
+  const got = awardAchievements({ facts: recs, wings: progress }, ach.earned, Date.now());
+  if (!got.length) return got;
+  for (const a of got) {
+    const r = rewardOf(a.id);
+    wallet += r.cents;
+    for (const [k, n] of Object.entries(r.items)) gain(inv, k, n);
+    if (r.piece) addPiece(wardrobe, r.piece);
+  }
+  saveAch(); saveWallet(); saveItems(); saveWardrobe();
+  return got;
+}
 // ?wallet=<cents> sets the wallet, for testing the shop.
 const WALLET_AT = new URLSearchParams(location.search).has("wallet") ? Math.max(0, Math.floor(Number(new URLSearchParams(location.search).get("wallet"))) || 0) : null;
 // The voice explains a thing only the first time or first few (`times`): true while it still
@@ -1076,6 +1100,7 @@ function learnFrom(ok) {
   if (!fluent) G.floorSlow = true; // the "all fast" star (wings.js floorStars)
   f.cool--;
   store.player(PID).set("facts", recs);
+  checkAchievements(); // a kind mastered (DESIGN.md §14.3): recorded quietly, its card waits
   // A step joins the path's window (DESIGN.md §4.3) when the oldest new one is partly learned.
   const after = stepsNow().open, joined = after.filter((i) => !before.includes(i));
   if (joined.length) { keepSteps(); arrived(before, after); }
@@ -1306,8 +1331,8 @@ function end(win) {
   const legendWin = win && G.floors[G.floor].form === "legend";
   const megaWin = win && (G.floors[G.floor].form === "mega" || (legendWin && isMega(G.depth)));
   // The Legend beaten (DESIGN.md §14.2): saved per stratum, and a legendBeaten event, the hook for
-  // its achievement and the golden crown (§14.1, still to build). ?legend's practice run saves
-  // nothing.
+  // its achievement (achievements.js reads the saved Legend; the event is a hook for more). ?legend's
+  // practice run saves nothing.
   if (legendWin && !LEGEND_TEST) {
     beatLegend(progress, w.id, Date.now()); store.player(PID).set("wings", progress);
     document.dispatchEvent(new CustomEvent("legendBeaten", { detail: { wing: w.id, boss: G.floors[G.floor].base, depth: G.depth, player: PID } }));
@@ -1341,6 +1366,9 @@ function end(win) {
   // A win opens the next depth of this Wing: "Go deeper" goes there, "Play again" replays this one.
   const depth = G.depth;
   if (win) { progress[w.id].depth = Math.max(deepest(w, progress), depth + 1); store.player(PID).set("wings", progress); }
+  // A Champion (the last chapter's mega boss) or a Legend won: recorded now, its card shown before
+  // the next descent (DESIGN.md §14.1).
+  checkAchievements();
   const deeper = win;
   const chapterNote = chOpened ? `<div class="unlocked chapter" role="status"><b>👑 Chapter ${chOpened} is open!</b><span>New steps join as you learn: ${esc(PATHS[w.id].filter((s) => s.chapter === chOpened && !s.ongoing && !s.review).map((s) => s.name).join(", "))}.</span></div>` : "";
   const left = chapterNote + (opened ? `<div class="unlocked" role="status"><b>🔓 New stratum unlocked!</b><span>${openedAll.map((x) => esc(x.name)).join(" and ")} ${openedAll.length > 1 ? "are" : "is"} open.</span></div>` : win ? nextWingHint() : "");
@@ -1475,6 +1503,7 @@ function chestSubmit(C) {
   const ms = performance.now() - C.t0, limit = fluentTime(BANDS[st.band].fluentMs, p.sym || p.ans);
   recs[C.key] = recordAnswer(recs[C.key], { ok, ms, hinted: false, now: Date.now(), fluentMs: limit });
   store.player(PID).set("facts", recs);
+  checkAchievements();
   if (ok) {
     sfx.chestOpen();
     say("p", LOOT.chestOpen, true);
@@ -2114,7 +2143,7 @@ function menu() {
   const list = store.profiles();
   // The scene-gap is the window onto the start scene (drawScene): the door and your team show
   // there, between the title and the rest of the card.
-  const head = `<div class="cardhead logo-head"><h2 class="logo">Sum<b>geon</b></h2><button class="icon-btn book-btn" id="openBook" type="button" aria-label="Monsters and Heroes">📖</button><button class="icon-btn" id="openSettings" type="button" aria-label="Settings">${GEAR}</button></div>
+  const head = `<div class="cardhead logo-head"><h2 class="logo">Sum<b>geon</b></h2>${trophyButton()}<button class="icon-btn book-btn" id="openBook" type="button" aria-label="Monsters and Heroes">📖</button><button class="icon-btn" id="openSettings" type="button" aria-label="Settings">${GEAR}</button></div>
   <div class="scene-gap" aria-hidden="true"></div>
   ${st.grade == null ? "" : `<p class="tag"><strong>Your answer is your attack.</strong> Get it right and your digits fly at the monster.</p>`}
   ${list.length > 1 ? `<p class="playing">Playing as <b>${esc(displayName(list, PID))}</b> <button class="link" type="button" id="switchPlayer">Switch</button></p>` : ""}`;
@@ -2125,6 +2154,7 @@ function menu() {
     wireGrades(() => { if (!hasCaptain()) { G.askHero = false; G.askedFor = PID; say("p", PHRASE.pickHero, true); } menu(); });
     $("openSettings").onclick = () => settings();
     $("openBook").onclick = bookPage; // 📖 Monsters & Heroes, also on the pause screen
+    $("openTrophies").onclick = () => trophyPage();
     if ($("switchPlayer")) $("switchPlayer").onclick = () => settings();
     return;
   }
@@ -2152,6 +2182,7 @@ function menu() {
   wireCaptain();
   $("openSettings").onclick = () => settings();
   $("openBook").onclick = bookPage; // 📖 Monsters & Heroes, also on the pause screen
+  $("openTrophies").onclick = () => trophyPage(); // 🏆 achievements
   if ($("switchPlayer")) $("switchPlayer").onclick = () => settings();
   if ($("openPurse")) $("openPurse").onclick = () => purseCard(false);
   $("openItems").onclick = () => itemsCard(false);
@@ -2463,6 +2494,106 @@ function badgesCopy() {
 // Monsters & Heroes (DESIGN.md §6.2, §6.6): every Wing's monsters, met or not, with their trait
 // and a mastery ring for their kind of math (gold once it's full); and the ten heroes, rescued or
 // still cursed.
+/* ---------- achievements (achievements.js, DESIGN.md §14) ----------
+   Earned quietly (checkAchievements), shown before the next descent: Enter the dungeon and Go
+   deeper first play each unseen achievement's card, one at a time, then the descent starts. The
+   stratum ones get the big card (the stratum's wall, a fanfare, the boss and the captain wearing
+   the reward). The 🏆 sheet, by 📖 and ⚙ on the start screen, lists them all.
+   ?achievements=all (or ?achieve=<id>,<id>) plays those cards before the next descent and shows
+   them earned on the sheet, without saving or paying anything, for testing. */
+const ACH_TEST = (() => {
+  const q = new URLSearchParams(location.search);
+  if (q.get("achievements") === "all") return ACHIEVEMENT_IDS.slice();
+  const ids = q.getAll("achieve").flatMap((v) => v.split(",")).filter((id) => achievementOf(id));
+  return ids.length ? ids : null;
+})();
+let achTestLeft = ACH_TEST ? ACH_TEST.slice() : [];
+const earnedAt = (id) => ach.earned[id] || (ACH_TEST && ACH_TEST.includes(id) ? Date.now() : 0);
+const isNewAch = (id) => !!earnedAt(id) && !ach.seen.includes(id);
+// The cards to play before this descent: the test aid's once, else the unseen ones.
+function achievementQueue() { return achTestLeft.length ? achTestLeft.splice(0) : unseenAchievements(ach); }
+function markSeen(id) { if (ach.earned[id] && !ach.seen.includes(id)) { ach.seen.push(id); saveAch(); } }
+function trophyButton() {
+  const fresh = ACHIEVEMENT_IDS.filter(isNewAch).length;
+  return `<button class="icon-btn trophy-btn" id="openTrophies" type="button" aria-label="Achievements${fresh ? `, ${fresh} new` : ""}">🏆${fresh ? '<i class="new-dot" aria-hidden="true"></i>' : ""}</button>`;
+}
+const STRATUM_BOSS = (id) => MON.find((m) => m.n === wingOf(id).boss);
+const ITEM_WORD = { pie: "Pie", shield: "Shield", totem: "Times Two Totem", magnet: "Hero Magnet" };
+// What a reward is, in words for the card: "Champion badge · 50¢".
+function rewardWords(r) {
+  const out = [];
+  if (r.piece) out.push(clothesById[r.piece].name);
+  const items = Object.entries(r.items);
+  if (items.length === ITEMS.length && items.every(([, n]) => n === items[0][1])) out.push(`${items[0][1]} of every item`);
+  else for (const [k, n] of items) out.push((n > 1 ? n + " × " : "") + ITEM_WORD[k]);
+  if (r.cents) out.push(r.cents + "¢");
+  return out.join(" · ");
+}
+// A reward drawn: the captain wearing the piece (or the piece alone), the items, the coins.
+function rewardArt(r) {
+  const piece = !r.piece ? "" : hasCaptain()
+    ? `<div class="ach-cap">${heroSvg(HEROES[team.captain], { color: team.color, wear: Object.assign({}, dressOf(team.captain), { [clothesById[r.piece].spot]: r.piece }) })}</div>`
+    : `<div class="ach-cap">${pieceSvg(r.piece)}</div>`;
+  const items = Object.entries(r.items).flatMap(([k, n]) => Array.from({ length: Math.min(n, 2) }, () => `<span class="ico" aria-hidden="true">${itemIcon(k)}</span>`)).join("");
+  const f = r.cents ? fewest(r.cents) : null;
+  return piece + (items ? `<div class="ach-items">${items}</div>` : "") + (f ? `<div class="ach-coins">${coinsSvg({ q: f.q, d: f.d, n: f.n, p: f.p })}</div>` : "");
+}
+// One achievement's card. from: { mode (the descent waiting: "enter" or "deeper"), done } or
+// { sheet: true }.
+function achievementCards(ids, i, from) {
+  G.onMenu = false; // no update reload while the cards are up
+  const id = ids[i], a = achCatalog({ facts: recs, wings: progress }).find((x) => x.id === id);
+  if (!a) return from.sheet ? trophyPage() : from.done();
+  if (!from.test) markSeen(id);
+  const r = a.reward, big = a.kind !== "mastery", last = i >= ids.length - 1;
+  const next = from.sheet ? "Back" : !last ? "Next" : from.mode === "deeper" ? "Go deeper" : "Enter the dungeon";
+  // The big card: the stratum's wall (the grand ones in gold), its boss (mega for a Champion,
+  // golden for a Legend; all four for the grand ones) and the captain in the reward.
+  const form = a.kind === "legend" || a.id === "grand:legend" ? "legend" : "mega";
+  const bosses = a.wing ? [STRATUM_BOSS(a.wing)] : big ? WINGS.map((w) => STRATUM_BOSS(w.id)) : [];
+  const stage = big ? `<div class="ach-stage${bosses.length > 1 ? " four" : ""}">${bosses.map((m) => `<div class="ach-boss">${svg(bossForm(m, form) || m)}</div>`).join("")}${rewardArt(r)}</div>` : `<div class="ach-stage small">${rewardArt(r)}</div>`;
+  show(`<div class="ach-card${big ? " huge" : ""}${a.wing ? "" : big ? " grand" : ""}"${a.wing ? ` data-stratum="${a.wing}"` : ""}>
+    <p class="ach-kicker">${a.secret ? "Secret achievement!" : "New achievement!"}</p>
+    <div class="ach-icon" aria-hidden="true">${a.icon}</div>
+    <h2 class="ach-title">${esc(a.title)}</h2>
+    <p class="ach-detail">${esc(a.detail)}</p>
+    ${stage}
+    <p class="ach-got"><span>You got</span> ${esc(rewardWords(r))}</p>${!from.sheet && ids.length > 1 ? `<p class="ach-count">${i + 1} of ${ids.length}</p>` : ""}</div>
+    <div class="btns"><button class="big" id="achNext">${next}</button></div>`, "page ach");
+  if (big) sfx.legend(); else sfx.chestOpen();
+  cardLines(a).forEach((_, k) => say("p", achievementLine(a, k), k === 0));
+  $("achNext").onclick = () => {
+    if (from.sheet) return trophyPage();
+    if (!last) return achievementCards(ids, i + 1, from);
+    from.done();
+  };
+}
+// The 🏆 sheet: the stratum ones with their progress, then the secret ones (??? until earned).
+// Earned ones not yet shown on a card are marked new; tapping an earned one plays its card.
+function trophyPage() {
+  G.onMenu = false; // an update waits until the start screen
+  const list = achCatalog({ facts: recs, wings: progress });
+  const date = (t) => new Date(t).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  const row = (a) => {
+    const t = earnedAt(a.id);
+    if (t) return `<button type="button" class="ach-row earned${isNewAch(a.id) ? " new" : ""}${a.kind !== "mastery" ? " top" : ""}" data-ach="${a.id}">
+      <span class="ach-ico" aria-hidden="true">${a.icon}</span><span class="ach-txt"><b>${esc(a.title)}${isNewAch(a.id) ? ' <i class="new-pill">New!</i>' : ""}</b><small>${esc(a.detail)}</small><small class="ach-when">Earned ${date(t)} · ${esc(rewardWords(a.reward))}</small></span></button>`;
+    if (a.secret) return `<div class="ach-row secret"><span class="ach-ico" aria-hidden="true">❓</span><span class="ach-txt"><b>???</b><small>A secret achievement</small></span></div>`;
+    return `<div class="ach-row ahead"><span class="ach-ico" aria-hidden="true">${a.icon}</span><span class="ach-txt"><b>${esc(a.title)}</b><small>${esc(a.detail)}</small>
+      <span class="ach-bar" aria-hidden="true"><i style="width:${Math.round(a.share * 100)}%"></i></span><small class="ach-prog">${esc(a.progress)}</small><small class="ach-when">Reward: ${esc(rewardWords(a.reward))}</small></span></div>`;
+  };
+  const strata = list.filter((a) => a.kind !== "mastery"), secret = list.filter((a) => a.kind === "mastery");
+  const got = list.filter((a) => earnedAt(a.id)).length;
+  show(`<div class="cardhead"><h2>🏆 Achievements</h2></div>
+  <p class="ach-sum">${got} of ${list.length} earned</p>
+  <h3 class="book-title">The strata</h3>
+  <div class="ach-list">${strata.map(row).join("")}</div>
+  <h3 class="book-title">Secrets <small>${secret.filter((a) => earnedAt(a.id)).length} of ${secret.length} found</small></h3>
+  <div class="ach-list">${secret.map(row).join("")}</div>
+  <div class="btns"><button class="big" id="achBack">Back</button></div>`);
+  $("card").querySelectorAll("[data-ach]").forEach((b) => b.onclick = () => achievementCards([b.dataset.ach], 0, { sheet: true, test: !ach.earned[b.dataset.ach] }));
+  $("achBack").onclick = () => menu();
+}
 function bookPage() {
   G.onMenu = false; // an update waits until the start screen
   const ring = (share) => {
@@ -3040,6 +3171,9 @@ const DEPTH_AT = Math.max(0, Math.floor(Number(new URLSearchParams(location.sear
 const FLOOR_AT = Math.max(0, Math.min(6, Number(new URLSearchParams(location.search).get("floor")) || 0)), MONSTER_AT = new URLSearchParams(location.search).get("monster");
 function descend(depth, mode) {
   if (descending()) return;
+  // Achievements earned since the last descent play first, one card each (DESIGN.md §14.1).
+  const cards = achievementQueue();
+  if (cards.length) { achievementCards(cards, 0, { mode, done: () => descend(depth, mode) }); return; }
   const d = depth || DEPTH_AT || deepest(wing(), progress), enter = mode === "enter";
   G.onMenu = false; // no update reload, no stratum double-tap, mid-descent
   stopSpeech(); openingLines(enter, d);
