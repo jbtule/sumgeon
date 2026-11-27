@@ -218,6 +218,17 @@ export function read(strokes, personal) {
   };
 }
 
+/* ---------- off the edge ---------- */
+// Did a drawing run off the pad? Strokes are in the pad's own px (0 to width, 0 to height). With
+// pointer capture (app.js sigilSetup), a finger that slides off keeps sending points, outside the
+// box (they aren't clamped); a point within EDGE_PX of a side counts too, since the line went at
+// least that far. judge and judgeShape (shapes.js) never call such a drawing wrong.
+export const EDGE_PX = 4;
+export function offEdge(strokes, width, height, m = EDGE_PX) {
+  if (!(width > 0 && height > 0)) return false;
+  return (strokes || []).some((s) => s.some(([x, y]) => x <= m || y <= m || x >= width - m || y >= height - m));
+}
+
 /* ---------- reading a spell, knowing the answer ---------- */
 // The game knows the answer, so a drawing only has to look like it, not be sure it's nothing
 // else. A wrong answer costs a heart, so only a clear read of another digit is wrong. Outcomes:
@@ -236,8 +247,15 @@ export function read(strokes, personal) {
 // digit at 0.6 or better but a kindergartner's squared-U 4 (0.27), so good starts at 0.5 and the
 // floor sits just under 0.27. A scribble fits its best digit at 0.3 or more, so the floor alone
 // doesn't stop nonsense; the gap does: 0.05 of fit is about a third of the clear margin.
+// edge: the drawing ran off the pad (offEdge, below). Part of it may be missing, so a read that
+// would be wrong or backwards is unclear instead ("retry", edge: true: no heart lost, "Try again!
+// Stay inside the box."). A hit or a poor match (right, full damage) stays as it is.
 export const ACCEPT = { floor: 0.25, gap: 0.05, good: 0.5, near: 0.05 };
-export function judge(r, answer, builtin) {
+export function judge(r, answer, builtin, edge) {
+  const j = judgeRead(r, answer, builtin);
+  return edge && (j.outcome === "wrong" || j.outcome === "backwards") ? { outcome: "retry", learn: false, fit: j.fit, edge: true } : j;
+}
+function judgeRead(r, answer, builtin) {
   if (!r) return { outcome: "retry", learn: false, fit: 0 };
   if (r.clear && r.digit !== answer) return { outcome: "wrong", learn: false, fit: r.fit };
   if (r.clear && r.digit === answer && r.reversed) return { outcome: "backwards", learn: false, fit: r.fit };
