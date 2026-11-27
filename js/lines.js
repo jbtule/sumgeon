@@ -280,7 +280,10 @@ export function purseLine(c) {
 // Only the findable pieces: the special ones come from achievements (their cards say "You got …"). In the "clothes"
 // sprite.
 var PAIRS = { glasses: true, sunglasses: true, starglasses: true, bunnyears: true };
-function pieceWords(id) { var p = clothesById[id]; return p.name[0] + p.name.slice(1).toLowerCase(); }
+// How a piece's name is said, where Kokoro says it wrong: "bandana" is ban-DAH-na to it (espeak
+// bændˈɑːnə), and "bandanna", the other spelling, ban-DAN-a (bændˈænə).
+var PIECE_SAY = { bandana: "Bandanna" };
+function pieceWords(id) { var p = clothesById[id], n = PIECE_SAY[id] || p.name; return n[0] + n.slice(1).toLowerCase(); }
 export function clothingName(id) {
   var w = pieceWords(id), low = w[0].toLowerCase() + w.slice(1);
   return PAIRS[id] ? w + "!" : (/^[aeiou]/i.test(w) ? "An " : "A ") + low + "!";

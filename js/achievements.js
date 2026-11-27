@@ -172,7 +172,7 @@ export function notePracticeDay(ach, now) {
    one, the captain. */
 const SURPRISE = [
   { id: "surprise:zero", icon: "🎯", title: "Exactly Zero", detail: "A finishing hit that left the monster at exactly 0 HP", sayDetail: "Your last hit left exactly zero!", reward: { items: { totem: 1 } } },
-  { id: "surprise:palindrome", icon: "🪞", title: "Palindrome", detail: "An answer that reads the same backward, like 121 or 44", sayDetail: "Your answer reads the same backward!", reward: { items: { shield: 1 } } },
+  { id: "surprise:palindrome", icon: "🪞", title: "Palindrome", say: "Pal-in-drome!" /* Kokoro: PAY-lin-drome as spelled */, detail: "An answer that reads the same backward, like 121 or 44", sayDetail: "Your answer reads the same backward!", reward: { items: { shield: 1 } } },
   { id: "surprise:triple", icon: "💯", title: "Triple Digits", detail: "A single hit of 100 or more", sayDetail: "One hit of a hundred or more!", reward: { items: { totem: 1 } } },
   { id: "surprise:double", icon: "👀", title: "Seeing Double", detail: "Two of the same hero in one answer, like 55 or 77", sayDetail: "Two of the same hero in one answer!", reward: { items: { magnet: 1 } } },
   { id: "surprise:allhands", icon: "🎆", title: "All Hands", detail: "An answer of 3 or more digits, every digit a hero on your team", sayDetail: "Every digit in your answer was a hero!", reward: { items: { magnet: 1 } } },
