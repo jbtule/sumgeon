@@ -28,6 +28,7 @@ import { clothesById, findable } from "./clothes.js";
 import { allPrices } from "./shop.js";
 import { coinWords } from "./coins.js";
 import { BANDS, pool, factOf, pathBands } from "./learn.js";
+import { spokenLines as achievementLines, cardLines } from "./achievements.js";
 
 export var PHRASE = {
   enter: "Now entering the Sumgeon!",
@@ -272,7 +273,7 @@ export function purseLine(c) {
 
 // Clothing (clothes.js, DESIGN.md §6.3): a piece's name, said when it's found in a chest, bought,
 // or tapped in the wardrobe: "A party hat!", "An eye patch!", "Bunny ears!" (no "a" for a pair).
-// Only the findable pieces: the special ones come from achievements (later). In the "clothes"
+// Only the findable pieces: the special ones come from achievements (their cards say "You got …"). In the "clothes"
 // sprite.
 var PAIRS = { glasses: true, sunglasses: true, starglasses: true, bunnyears: true };
 function pieceWords(id) { var p = clothesById[id]; return p.name[0] + p.name.slice(1).toLowerCase(); }
@@ -305,10 +306,13 @@ export function priceLine(thing, c) {
 }
 // Change from Trollar: "Here's ten cents back!" (always under a dollar: shop.js pay).
 export function changeLine(c) { return "Here's " + cents(c) + " back!"; }
+// An achievement card's line k (achievements.js cardLines): "New achievement!", its title, what it
+// took and its reward.
+export function achievementLine(a, k) { return cardLines(a)[k]; }
 
 // [{ kind, text }], each once.
 // The groups the listen check (review/listen/) plays lines in.
-export var GROUPS = ["Phrases", "Monsters & heroes", "Add & subtract", "Times & divide", "Missing numbers", "Which is more", "Coins", "Two-digit", "Three-digit", "Balance Hall", "Compare to 1000", "Three numbers", "Up to four numbers", "Arrays", "Time", "Patterns", "True or false", "Place value", "Dollars", "Number line", "Shapes", "Fractions", "Compare fractions", "Rounding", "Area & perimeter", "Dot flash", "Hero quips", "Team-ups", "Captain lines", "Boss forms", "Chests & items", "Money", "Shop", "Clothing"];
+export var GROUPS = ["Phrases", "Monsters & heroes", "Add & subtract", "Times & divide", "Missing numbers", "Which is more", "Coins", "Two-digit", "Three-digit", "Balance Hall", "Compare to 1000", "Three numbers", "Up to four numbers", "Arrays", "Time", "Patterns", "True or false", "Place value", "Dollars", "Number line", "Shapes", "Fractions", "Compare fractions", "Rounding", "Area & perimeter", "Dot flash", "Hero quips", "Team-ups", "Captain lines", "Boss forms", "Chests & items", "Money", "Shop", "Clothing", "Achievements"];
 
 // [{ kind, text, group, sprite? }], each once.
 export function spokenLines() {
@@ -432,6 +436,9 @@ export function spokenLines() {
   allPrices().forEach(function (t) { add("p", priceLine(t, t.c), "Shop", "shop"); });
   for (c = 1; c < 100; c++) add("p", changeLine(c), "Shop", "change");
   findable().forEach(function (p) { add("p", clothingName(p.id), "Clothing", "clothes"); });
+  // Achievement cards (achievements.js, DESIGN.md §14): "New achievement!", each one's title,
+  // what it took and its reward, in their own sprite, "achievements".
+  achievementLines().forEach(function (t) { add("p", t, "Achievements", "achievements"); });
   var seen = {};
   return packSprites(out.filter(function (l) { var k = l.kind + ":" + l.text; if (seen[k]) return false; seen[k] = true; return true; }));
 }
@@ -451,7 +458,7 @@ export function estSeconds(text) { return text.length / CHARS_PER_S + SPRITE_GAP
 // Loaded whenever the game has a voice (after the first tap), in any stratum. The purse's dollar
 // amounts ("purse") and every problem and monster sprite wait for a run that needs them
 // (runSprites).
-export var ALWAYS = ["phrases-start", "phrases-fight", "phrases-explain", "heroes", "quips", "captains", "bosses", "loot", "money", "depths", "shop", "change", "clothes"];
+export var ALWAYS = ["phrases-start", "phrases-fight", "phrases-explain", "heroes", "quips", "captains", "bosses", "loot", "money", "depths", "shop", "change", "clothes", "achievements"];
 var slug = function (t) { return t.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, ""); };
 var KIND = { "+": "add", "-": "sub", "×": "mul", "÷": "div", "□": "bonds", "○": "cmp", "=": "bal", "¢": "coins", "M": "more", "/": "frac", "≈": "round", "▭": "rect", "Σ": "three", "▦": "arrays", "✓": "tf", "✎": "fix", "↔": "line", "#": "pv", "$": "dollars", "◇": "shapes", "⁙": "flash" };
 var memo = null;

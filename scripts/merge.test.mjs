@@ -4,6 +4,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { toRecord, merge, adopt, fromRecord, canon, pack, unpack, walletOf, RECORD_VERSION, SYNCED_KEYS, LOCAL_KEYS } from "../js/merge.js";
 import { OWN_KEYS, DUNGEON_VERSION } from "../js/store.js";
+import { rewardOf } from "../js/achievements.js";
 import { busyRecord, busyPlayer, DEVICES } from "./sync-size.mjs";
 
 const clone = (x) => JSON.parse(JSON.stringify(x));
@@ -35,7 +36,8 @@ test("every saved key is synced or kept on the device on purpose", () => {
 // The record's shape, so a change to it can't go out without a new RECORD_VERSION: older apps
 // would drop what they don't know when they merge and save it back.
 const SHAPE = {
-  1: ["best", "bestiary", "dungeon", "facts", "items", "moments", "owned", "reg", "spells", "told", "v", "wallet", "wings"]
+  1: ["best", "bestiary", "dungeon", "facts", "items", "moments", "owned", "reg", "spells", "told", "v", "wallet", "wings"],
+  2: ["ach", "best", "bestiary", "dungeon", "facts", "items", "moments", "owned", "reg", "spells", "told", "v", "wallet", "wings"]
 };
 test("the record's shape matches its version", () => {
   const rec = busyRecord();
@@ -198,6 +200,61 @@ test("items: each item is a ledger like the wallet; the slots go by the latest e
   server = sync(b, server); server = sync(a, server); server = sync(b, server);
   for (const d of [a, b]) assert.deepEqual(d.data.items.have, { shield: 3 });
   assert.deepEqual(b.data.items.slots, ["shield", null, null]);
+});
+
+// An achievement awarded on a device, as app.js does it: recorded, and its reward added at once.
+function earn(dev, id, t = now) {
+  const ach = dev.data.achievements = dev.data.achievements || { earned: {}, seen: [] };
+  if (ach.earned[id]) return;
+  ach.earned[id] = t;
+  const r = rewardOf(id);
+  dev.data.wallet += r.cents;
+  for (const [k, n] of Object.entries(r.items)) dev.data.items.have[k] = (dev.data.items.have[k] || 0) + n;
+  if (r.piece && !dev.data.wardrobe.owned.includes(r.piece)) dev.data.wardrobe.owned.push(r.piece);
+}
+
+test("achievements: earned ones only grow, keep the earliest time, and seen only grows", () => {
+  const a = device("a"), b = device("b");
+  earn(a, "master:make10", now);
+  let server = sync(a, null); server = sync(b, server);
+  assert.deepEqual(b.data.achievements.earned, { "master:make10": now });
+  earn(b, "master:bonds", now + 60000);
+  earn(a, "master:doubles", now + 120000);
+  earn(b, "master:doubles", now + 60000); // b earned it too, earlier, while apart
+  a.data.achievements.seen.push("master:make10");
+  server = sync(a, server); server = sync(b, server); server = sync(a, server);
+  for (const d of [a, b]) {
+    assert.deepEqual(d.data.achievements.earned, { "master:make10": now, "master:bonds": now + 60000, "master:doubles": now + 60000 });
+    assert.deepEqual(d.data.achievements.seen, ["master:make10"]);
+  }
+  // Never taken away: a record without them doesn't remove them.
+  const bare = toRecord(empty(), null, "c");
+  assert.ok(merge(server, bare).ach.e["master:make10"]);
+});
+
+test("achievements' rewards: paid once, whichever devices awarded them, and spent like any coins", () => {
+  const a = device("a"), b = device("b");
+  a.data.wallet = 10;
+  let server = sync(a, null); server = sync(b, server);
+  // Both devices award the Counting Cellar Champion while apart (50¢ and the badge), and the
+  // Make-Ten Master (a pie) on a only.
+  earn(a, "champion:cellar"); earn(b, "champion:cellar", now + 60000); earn(a, "master:make10");
+  assert.equal(a.data.wallet, 60); assert.equal(b.data.wallet, 60);
+  server = sync(a, server); server = sync(b, server); server = sync(a, server);
+  for (const d of [a, b]) {
+    assert.equal(d.data.wallet, 60, "the champion's 50¢ counted once");
+    assert.deepEqual(d.data.items.have, { pie: 1 });
+    assert.ok(d.data.wardrobe.owned.includes("badge-cellar"));
+  }
+  // Spending the reward's coins and eating its pie syncs like anything else.
+  b.data.wallet -= 55; b.data.items.have = {};
+  a.data.wallet += 5; // and a finds a nickel
+  for (let i = 0; i < 4; i++) server = sync(i % 2 ? a : b, server);
+  for (const d of [a, b]) { assert.equal(d.data.wallet, 10); assert.deepEqual(d.data.items.have, {}); }
+  assert.equal(walletOf(server), 10);
+  // Merging the records again, in either order, pays nothing more.
+  const ra = toRecord(a.data, a.base, "a"), rb = toRecord(b.data, b.base, "b");
+  assert.equal(walletOf(merge(ra, rb)), 10); assert.equal(walletOf(merge(rb, merge(ra, rb))), 10);
 });
 
 test("a dungeon bump: the newer record's dungeon progress wins, and old shares don't come back", () => {

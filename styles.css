@@ -605,6 +605,59 @@ body{transition:background-color .4s;--hint-empty:var(--edge);--hint-line:var(--
 .logo-head .logo{flex:1}
 .logo-head{gap:8px}
 .icon-btn.book-btn{font-size:22px;line-height:1}
+/* 🏆 Achievements (app.js trophyPage, achievementCards; DESIGN.md §14): its button by 📖 and ⚙,
+   with a gold dot while there are new ones. On an iPhone SE the three buttons and the logo share
+   one line, so they're a little smaller there. */
+.icon-btn.trophy-btn{font-size:21px;line-height:1;position:relative}
+.trophy-btn .new-dot{position:absolute;top:-4px;right:-4px;width:14px;height:14px;border-radius:50%;background:var(--coral);border:2px solid var(--dark)}
+@media (max-width:360px){.logo-head{gap:5px}.logo-head .icon-btn{width:40px;height:40px}.logo-head .logo{font-size:28px}}
+.ach-sum{margin:-4px 0 0;font-weight:800;color:var(--muted)}
+.ach-list{display:grid;gap:8px}
+.ach-row{display:flex;align-items:flex-start;gap:12px;width:100%;padding:10px 12px;border-radius:16px;background:var(--dark);border:2px solid var(--line);color:var(--ink);text-align:left;font:inherit}
+button.ach-row{cursor:pointer}
+.ach-row.earned{border-color:var(--gold)}
+.ach-row.earned.top{box-shadow:0 0 0 2px #ffc93c55,0 0 16px #ffc93c44}
+.ach-row.new{box-shadow:0 0 0 2px var(--coral),0 0 16px #ff5a4e55}
+.ach-row.ahead .ach-ico{filter:grayscale(1);opacity:.6}
+.ach-row.secret{opacity:.6;border-style:dashed}
+.ach-ico{flex:none;width:40px;font-size:30px;line-height:40px;text-align:center}
+.ach-txt{display:grid;gap:2px;min-width:0;flex:1}
+.ach-txt b{font:400 16px/1.2 Bungee,sans-serif;color:var(--gold)}
+.ach-row.ahead .ach-txt b,.ach-row.secret .ach-txt b{color:var(--ink)}
+.ach-txt small{color:var(--muted);font-weight:700;font-size:13px}
+.ach-txt .ach-when{color:var(--ink);opacity:.8}
+.ach-txt .ach-prog{color:var(--ink);font-weight:800}
+.new-pill{font:400 11px/1 Bungee,sans-serif;font-style:normal;padding:2px 6px;border-radius:8px;background:var(--coral);color:var(--dark);vertical-align:2px}
+.ach-bar{display:block;height:8px;margin:4px 0 1px;border-radius:5px;background:var(--line);overflow:hidden}
+.ach-bar i{display:block;height:100%;background:var(--gold);border-radius:5px}
+/* An achievement's card: "New achievement!", the title, what it took and the reward. The stratum
+   ones are big: the stratum's wall behind, the boss and the captain in the reward. */
+.ach-card{display:grid;justify-items:center;text-align:center;gap:6px;padding:14px 10px 16px;border-radius:18px;background:var(--dark);border:2px solid var(--line)}
+.ach-card.huge{border:3px solid #ffd23f;box-shadow:0 0 0 2px #0c171c,0 0 26px #ffc93c88;
+  background:radial-gradient(ellipse 70% 60% at 50% 60%,#ffd84d44,#0c171c00 70%),linear-gradient(#0c171c88,#0c171cc0),var(--wall-cellar)}
+.ach-card.huge[data-stratum="hall"]{background:radial-gradient(ellipse 70% 60% at 50% 60%,#ffd84d44,#0c171c00 70%),linear-gradient(#0c171c88,#0c171cc0),var(--wall-hall)}
+.ach-card.huge[data-stratum="mines"]{background:radial-gradient(ellipse 70% 60% at 50% 60%,#ffd84d44,#0c171c00 70%),linear-gradient(#0c171c88,#0c171cc0),var(--wall-mines)}
+.ach-card.huge[data-stratum="tower"]{background:radial-gradient(ellipse 70% 60% at 50% 60%,#ffd84d44,#0c171c00 70%),linear-gradient(#0c171c88,#0c171cc0),var(--wall-tower)}
+.ach-card.grand{background:radial-gradient(ellipse 80% 70% at 50% 55%,#ffd84d66,#0c171c00 70%),linear-gradient(160deg,#3a2a5a,#12242b)}
+.ach-kicker{margin:0;font:400 15px Bungee,sans-serif;letter-spacing:.5px;color:var(--coral);text-shadow:0 2px 0 var(--dark)}
+.ach-icon{font-size:48px;line-height:1;filter:drop-shadow(0 3px 0 #0008);animation:freed .9s ease-out}
+.ach-title{margin:0;font:400 clamp(24px,7.5vw,38px)/1.1 Bungee,sans-serif;color:var(--gold);text-shadow:0 3px 0 var(--dark),0 0 18px #ffc93c88;animation:dslam .5s cubic-bezier(.2,1.4,.4,1)}
+.ach-detail{margin:0;font-weight:800;color:var(--ink)}
+.ach-stage{display:flex;align-items:flex-end;justify-content:center;flex-wrap:wrap;gap:6px 10px;margin:4px 0}
+.ach-boss{width:min(130px,34vw)}
+.ach-stage.four .ach-boss{width:min(64px,17vw)}
+.ach-stage.four{max-width:330px}
+.ach-boss svg,.ach-cap svg{width:100%;height:auto;overflow:visible;filter:drop-shadow(0 0 14px #ffd84d99)}
+.ach-cap{width:min(110px,30vw)}
+.ach-items{display:flex;gap:8px}
+.ach-items .ico{font-size:52px;line-height:1;filter:drop-shadow(0 4px 0 #0008)}
+.ach-items .pie svg{width:56px;height:auto}
+.ach-items .tot{font:400 34px Bungee,sans-serif;color:var(--gold)}
+.ach-coins svg{max-width:min(220px,60vw);height:auto;filter:drop-shadow(0 4px 0 #0008)}
+.ach-got{margin:0;font-weight:800;color:var(--ink)}
+.ach-got span{font:400 14px Bungee,sans-serif;color:var(--gold);margin-right:4px}
+.ach-count{margin:0;width:100%;text-align:center;font-weight:800;color:var(--muted)}
+@media (prefers-reduced-motion:reduce){.ach-icon,.ach-title{animation:none}}
 /* ⏸ by the hearts, and the pause card */
 .pause{flex:none;width:40px;height:40px;margin-left:10px}
 .flame[hidden]+.pause{margin-left:auto}

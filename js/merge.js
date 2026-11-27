@@ -34,6 +34,10 @@
 //   items        each item a ledger like the wallet; the quick-use slots: the latest edit wins
 //   wardrobe     pieces owned only grow; what each hero wears: the latest edit wins
 //   shop         the stock on sale: the latest edit wins
+//   achievements earned ones only grow, each keeping its earliest time; seen (shown on a card)
+//                only grows. Their rewards (achievements.js rewardOf) are credited to the wallet
+//                and the items by the achievements earned, not by the device that awarded them
+//                (below), so an achievement two devices both awarded pays once
 //   dungeon      the dungeon version (DUNGEON_VERSION): a record from before a bump gives way
 //                to one after it, for what the bump resets (DUNGEON_KEYS and heroes; facts too
 //                across LEARNING_RESETS), as upgradeDungeon resets them on a device
@@ -48,18 +52,26 @@
 // (merge takes the larger f, so two devices forgiving the same overspend forgive it once).
 // Nothing is ever duplicated beyond that overspend, and nothing earned is ever lost.
 //
+// Achievements' rewards: a device that awards an achievement adds its coins and items to its own
+// wallet and inventory at once. In the record they're kept apart, as the earnings of a device of
+// their own, REWARDS ("★"), whose share is always worked out from the achievements earned
+// (rewardsOf): never more, never less. So a device's own change since base leaves them out, and
+// two devices awarding the same achievement while apart are paid for it once when they merge.
+//
 // "Latest" for edits is an edit counter, [n, device]: one more than the highest in the base,
 // the device id breaking ties, never the device's clock, which may be wrong. A fact's "latest"
 // is its last-seen time, since that is the practice itself; ties go to the larger copy.
 import { DUNGEON_VERSION, DUNGEON_KEYS, LEARNING_RESETS } from "./store.js";
+import { rewardsOf, freshAchievements } from "./achievements.js";
 
 // The record's format. Every device merges and saves records back, and an older app would drop
 // what it doesn't know, so a change here needs a new version (older apps then leave the record
 // alone until they update: NewerRecord in sync.js) and its shape in SHAPE in the test.
-export const RECORD_VERSION = 1;
+// 2 (2026-11-27): achievements (ach), and their rewards in the wallet and items (REWARDS).
+export const RECORD_VERSION = 2;
 // The keys a record carries (store.js OWN_KEYS minus the device's own). The test checks every
 // saved key is here or in LOCAL_KEYS.
-export const SYNCED_KEYS = ["settings", "best", "facts", "heroes", "wings", "bestiary", "dungeon", "spells", "told", "moments", "wallet", "items", "wardrobe", "shop"];
+export const SYNCED_KEYS = ["settings", "best", "facts", "heroes", "wings", "bestiary", "dungeon", "spells", "told", "moments", "wallet", "items", "wardrobe", "shop", "achievements"];
 // Saved per player but never synced: the link itself, which is this device's own, and the run in
 // progress (app.js saveRun), this device's game.
 export const LOCAL_KEYS = ["link", "syncBase", "run"];
@@ -129,6 +141,13 @@ function ledger(total, base, me) {
   return settle({ e, s, f: b.f });
 }
 const mergeLedger = (a, b) => settle({ e: maxEach(obj(a).e, obj(b).e), s: maxEach(obj(a).s, obj(b).s), f: Math.max(num(obj(a).f), num(obj(b).f)) });
+// The achievements' rewards in a ledger: REWARDS's earnings set to what the earned ones pay.
+export const REWARDS = "★";
+function withRewards(l, n) {
+  const out = { ...obj(l), e: { ...obj(obj(l).e) } };
+  if (n > 0) out.e[REWARDS] = n; else delete out.e[REWARDS];
+  return out;
+}
 const mergeLedgers = (a, b) => {
   const out = {};
   for (const k of keys(a, b)) { const l = mergeLedger(obj(a)[k], obj(b)[k]); if (Object.keys(l).length) out[k] = l; }
@@ -306,9 +325,10 @@ export function toRecord(data, base, me) {
   const heard = {};
   for (const k of keys(m.heard, bm.heard)) heard[k] = sortU([...arr(obj(m.heard)[k]), ...arr(obj(bm.heard)[k])]);
   const sp = obj(d.spells), bsp = obj(b.spells);
+  const ach = achRecord(d.achievements, b.ach), paid = rewardsOf(Object.keys(ach.e));
   const items = {};
   const have = obj(obj(d.items).have);
-  for (const k of keys(have, b.items)) { const l = ledger(have[k], obj(b.items)[k], me); if (Object.keys(l).length) items[k] = l; }
+  for (const k of keys(have, b.items, paid.items)) { const l = ledger(have[k], withRewards(obj(b.items)[k], num(paid.items[k])), me); if (Object.keys(l).length) items[k] = l; }
   const best = Math.max(num(d.best), num(b.best));
   return {
     v: RECORD_VERSION,
@@ -321,10 +341,22 @@ export function toRecord(data, base, me) {
     told: maxMap(d.told, b.told),
     moments: { heard, captains: sortU([...arr(m.captains), ...arr(bm.captains)]), named: sortU([...arr(m.named), ...arr(bm.named)]) },
     spells: { reversed: tallyMap(sp.reversed, bsp.reversed, me), cast: tally(sp.cast, bsp.cast, me) },
-    wallet: ledger(d.wallet, b.wallet, me),
+    wallet: ledger(d.wallet, withRewards(b.wallet, paid.cents), me),
     items,
-    owned: sortU([...arr(obj(d.wardrobe).owned), ...arr(b.owned)])
+    owned: sortU([...arr(obj(d.wardrobe).owned), ...arr(b.owned)]),
+    ach
   };
+}
+// Achievements in a record: { e: { id: earliest time }, s: [ids seen] }.
+function achRecord(saved, base) {
+  const a = freshAchievements(saved), b = obj(base), e = {};
+  for (const k of keys(a.earned, b.e)) { const t = earliest(a.earned[k], obj(b.e)[k]); if (t) e[k] = t; }
+  return { e, s: sortU([...a.seen, ...arr(b.s)].filter((k) => e[k])) };
+}
+function mergeAch(a, b) {
+  const e = {};
+  for (const k of keys(obj(a).e, obj(b).e)) { const t = earliest(obj(obj(a).e)[k], obj(obj(b).e)[k]); if (t) e[k] = t; }
+  return { e, s: sortU([...arr(obj(a).s), ...arr(obj(b).s)].filter((k) => e[k])) };
 }
 
 // A device's first sync of a player (just linked, or linked by merging a player it had): the
@@ -366,10 +398,16 @@ export function merge(a, b) {
       named: sortU([...arr(obj(a.moments).named), ...arr(obj(b.moments).named)])
     },
     spells: { reversed: mergeTallyMap(obj(a.spells).reversed, obj(b.spells).reversed), cast: maxEach(obj(a.spells).cast, obj(b.spells).cast) },
-    wallet: mergeLedger(a.wallet, b.wallet),
-    items: mergeLedgers(a.items, b.items),
-    owned: sortU([...arr(a.owned), ...arr(b.owned)])
+    wallet: null,
+    items: null,
+    owned: sortU([...arr(a.owned), ...arr(b.owned)]),
+    ach: mergeAch(a.ach, b.ach)
   };
+  // The rewards are what the achievements earned (on either side) pay, counted once.
+  const paid = rewardsOf(Object.keys(out.ach.e));
+  out.wallet = settle(withRewards(mergeLedger(a.wallet, b.wallet), paid.cents));
+  out.items = mergeLedgers(a.items, b.items);
+  for (const k of keys(out.items, paid.items)) { const l = settle(withRewards(out.items[k], num(paid.items[k]))); if (Object.keys(l).length) out.items[k] = l; else delete out.items[k]; }
   const best = bumped ? num(hi.best) : Math.max(num(a.best), num(b.best));
   if (best) out.best = best;
   for (const k of ["wings", "bestiary"]) if (!out[k]) out[k] = {};
@@ -465,7 +503,8 @@ export function fromRecord(rec, data) {
     wallet: Math.max(0, balance(r.wallet)),
     items: { have, slots: reg["items.slots"] ? arr(reg["items.slots"].v) : arr(obj(d.items).slots) },
     wardrobe: { owned: ordered(obj(d.wardrobe).owned, arr(r.owned)), wear: Object.fromEntries(Object.entries(wear).filter(([, v]) => v)) },
-    shop: { ...obj(d.shop), stock: reg["shop.stock"] ? arr(reg["shop.stock"].v) : arr(obj(d.shop).stock) }
+    shop: { ...obj(d.shop), stock: reg["shop.stock"] ? arr(reg["shop.stock"].v) : arr(obj(d.shop).stock) },
+    achievements: { earned: { ...obj(obj(r.ach).e) }, seen: ordered(obj(d.achievements).seen, arr(obj(r.ach).s)) }
   };
   if (r.best) out.best = r.best;
   // A part neither this device nor the record has stays left out, as it was (a player who hasn't
@@ -477,6 +516,7 @@ export function fromRecord(rec, data) {
   if (!has("items") && !Object.keys(have).length) delete out.items;
   if (!has("wardrobe") && !arr(r.owned).length) delete out.wardrobe;
   if (!has("shop")) delete out.shop;
+  if (d.achievements == null && !Object.keys(obj(obj(r.ach).e)).length) delete out.achievements;
   if (d.spells == null && !Object.keys(obj(rs.reversed)).length && !sum(rs.cast)) delete out.spells;
   return out;
 }
