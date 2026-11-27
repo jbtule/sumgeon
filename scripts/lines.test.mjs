@@ -95,7 +95,7 @@ for (const l of spokenLines().filter((l) => l.kind === "h")) assert.ok(words(l.t
 {
   const judy = MON.find((m) => m.n === "Judo Judy");
   for (const t of ["Judo Judy!"]) assert.ok(ids.has("m:" + t) && names.includes(t), t);
-  for (const t of ["Judo Judy taps out and bows.", "Judo Judy won this round."]) assert.ok(ids.has("p:" + t) && names.includes(t), t);
+  for (const t of ["Judo Judy taps out and bowse.", "Judo Judy won this round."]) assert.ok(ids.has("p:" + t) && names.includes(t), t);
   assert.equal(traitLine(judy), "Watch out! Judo Judy flips your problem. Same answer!");
   assert.ok(ids.has("p:" + traitLine(judy)));
   assert.ok(!ids.has("p:This boss switches between compare and balance!"), "The Unknown's trait line is retired");
@@ -123,7 +123,7 @@ for (const l of spokenLines().filter((l) => l.kind === "h")) assert.ok(words(l.t
   }
   assert.ok(ids.has("m:Margo-rithm!") && ids.has("p:Margo-rithm carries the one and shuts down for the night.") && ids.has("m:Glitchy Margo!"));
   assert.ok(![...ids].some((id) => /Margot/.test(id)), "no line says Margot as written");
-  assert.ok(ids.has("p:Doublet bows twice and skips away."));
+  assert.ok(ids.has("p:Doublet bowse twice and skips away.") && ![...ids].some((id) => /\bbows\b/.test(id)), "bows, as in bending, is said bowse");
   // Said try-SAIR-uh-plus, stressed like triceratops: "Trisaira-plus" (lines.js SAY_AS).
   assert.ok(ids.has("m:Trisaira-plus!") && ids.has("m:Queen Trisaira-plus!") && ids.has("m:Trisaira-cool!") && ids.has("m:Trisaira-tot!") && ![...ids].some((id) => /Triceraplus|Triceracool|Tricera-/.test(id)), "Triceraplus keeps its plus, stressed like triceratops");
   assert.ok(ids.has("q:three plus four plus six") && ids.has("q:three plus four plus six is thirteen"), "three numbers");

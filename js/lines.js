@@ -117,6 +117,9 @@ var SAY_AS = [[/\bTwodini\b/g, "Toodini"], [/\bJr\./g, "Junior"], [/\bMr\./g, "M
   // try-ser-AP-lus and "Tricera-plus" as TRY-ser-uh-PLUS; "Trisaira-plus" is tɹaɪsˈeɪɹəplˈʌs (and
   // SAY-ruh and SAIR-uh sound alike in American English). Its looks Triceracool and Tricera-tot
   // the same way.
+  // "bows" (bending, the bosses' and Doublet's beaten lines) is BOZE to Kokoro, as in bow and arrow;
+  // "bowse" is baʊz, rhyming with cows.
+  [/\bbows\b/g, "bowse"],
   [/\bTriceraplus\b/g, "Trisaira-plus"], [/\bTriceracool\b/g, "Trisaira-cool"], [/\bTricera-tot\b/g, "Trisaira-tot"]];
 function sayAs(t) { return SAY_AS.reduce(function (s, r) { return s.replace(r[0], r[1]); }, t); }
 // A Hero Moment's quip (moments.js), as the voice says it.
