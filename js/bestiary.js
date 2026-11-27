@@ -23,6 +23,21 @@ export function mastery(m, wing, recs) {
   return facts.filter((f) => learned(recs[f.key])).length / facts.length;
 }
 
+// Looks that were renamed (old name -> new): saved records keep counting under the new name.
+// "Margot in Shades" became "Margot Plus" (2026-11-27).
+export const RENAMED = { "Margot in Shades": "Margot Plus" };
+// A saved bestiary with any old names moved to the new ones (met: the earliest; beaten: added).
+// Run on load, and again after a sync, since a device on an older version can send the old name.
+export function renamed(seen) {
+  for (const [old, now] of Object.entries(RENAMED)) {
+    const o = seen && seen[old];
+    if (!o) continue;
+    const n = seen[now];
+    seen[now] = n ? { met: Math.min(n.met || o.met, o.met || n.met), beaten: (n.beaten || 0) + (o.beaten || 0) } : o;
+    delete seen[old];
+  }
+  return seen;
+}
 // Records that a monster was met or beaten: seen = { [name]: { met: time, beaten: count } }.
 export function meet(seen, m, now) {
   if (m.cursed != null) return seen;

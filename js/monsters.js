@@ -364,7 +364,7 @@ export const LOOKS = {
   Triceraplus: [["Tricera-tot", ["mini"]], ["Captain Triceraplus", ["bandana", "eyepatch"]], ["Queen Triceraplus", ["crown", "lashes"], "she"], ["Triceracool", ["sunglasses"]]],
   Squaresquatch: [["Baby Squatch", ["mini"]], ["Snowsquatch", ["scarf", "nightcap"]], ["Sir Squarington", ["tophat", "monocle"], "he"], ["Disco Squatch", ["sunglasses", "sparkles"]]],
   Halfling: [["Half Pint", ["mini"]], ["Lady Halfling", ["bow", "lashes"], "she"], ["Dizzy Halfling", ["spiral"]], ["Halfling Hero", ["headband", "medal"]]],
-  "Margot-Rythm": [["Sleep Mode", ["lids"]], ["Glitchy Margot", ["spiral"]], ["Mini Margot", ["mini"]], ["Margot in Shades", ["sunglasses"]]],
+  "Margot-Rythm": [["Sleep Mode", ["lids"]], ["Glitchy Margot", ["spiral"]], ["Mini Margot", ["mini"]], ["Margot Plus", ["sunglasses"]]],
   // Batch 1 (time and patterns). Tick-Tockus's extras sit on its case, never its face.
   "Tick-Tockus": [["Tick-Tock Tot", ["mini"]], ["Grandfather Tockus", ["tophat", "bowtie"], "he"], ["Bedtime Tockus", ["nightcap", "scarf"]], ["Cuckoo Tockus", ["bow", "sparkles"]]],
   Slimelipsis: [["Slimelets", ["mini"]], ["Slime Time", ["sunglasses"]], ["Snoozelipsis", ["nightcap", "lids"]], ["Gooey Belle", ["bow", "lashes"], "she"]],
