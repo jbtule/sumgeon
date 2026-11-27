@@ -511,11 +511,11 @@ h1 b{color:var(--coral);font-weight:400}
 .prob .stacked .sans{display:flex;justify-content:flex-end}
 .prob .stacked .sans .blank{min-width:calc(var(--w) * .82em);text-align:right;padding:0 .08em;border-radius:10px}
 /* Typed right to left (ones first): a cell per column, and a blinking cursor in the next one. */
-.prob .stacked .scells{display:inline-flex;justify-content:flex-end}
-.prob .stacked .scell{display:inline-block;width:.82em;text-align:center;position:relative;min-height:1em}
-.prob .stacked .scell.cur::after{content:"";position:absolute;left:.12em;right:.12em;bottom:.04em;height:.09em;border-radius:.05em;background:var(--gold,#ffc93c);animation:scaret 1s steps(1) infinite}
+.prob .stacked .scells,.ans.ones .scells{display:inline-flex;justify-content:flex-end}
+.prob .stacked .scell,.ans.ones .scell{display:inline-block;width:.82em;text-align:center;position:relative;min-height:1em}
+.prob .stacked .scell.cur::after,.ans.ones .scell.cur::after{content:"";position:absolute;left:.12em;right:.12em;bottom:.04em;height:.09em;border-radius:.05em;background:var(--gold,#ffc93c);animation:scaret 1s steps(1) infinite}
 @keyframes scaret{50%{opacity:0}}
-@media(prefers-reduced-motion:reduce){.prob .stacked .scell.cur::after{animation:none}}
+@media(prefers-reduced-motion:reduce){.prob .stacked .scell.cur::after,.ans.ones .scell.cur::after{animation:none}}
 .game.stack .probrow{justify-self:center}
 /* Three or four numbers added (Triceraplus in the Mines): more rows, so smaller and tighter. */
 .prob .stacked.rows3{font-size:.6em}
