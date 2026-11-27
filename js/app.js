@@ -2615,7 +2615,7 @@ function figuresOf(a) {
   if (f && f.monster) { const m = MON.find((x) => x.n === f.monster); return m ? [svg(m)] : []; }
   return hasCaptain() ? [heroArt(team.captain)] : [];
 }
-// Share: the PNG is drawn as soon as an earned card opens from the sheet, because iOS only opens
+// Share: the PNG is drawn as soon as an earned card opens (before the descent, or from the sheet), because iOS only opens
 // the share sheet straight from a tap (no waiting on drawing in between). For grown-ups, so the
 // button isn't said aloud.
 let shareFor = null, shareBlob = null;
@@ -2650,10 +2650,10 @@ function achievementCards(ids, i, from) {
     <p class="ach-detail">${esc(a.detail)}</p>
     ${stage}
     <p class="ach-got"><span>You got</span> ${esc(rewardWords(r))}</p>${!from.sheet && ids.length > 1 ? `<p class="ach-count">${i + 1} of ${ids.length}</p>` : ""}</div>
-    <div class="btns">${from.sheet ? `<button class="big alt ach-share" id="achShare" type="button" hidden>📤 Share</button>` : ""}<button class="big" id="achNext">${next}</button></div>`, "page ach");
+    <div class="btns"><button class="big alt ach-share" id="achShare" type="button" aria-label="Share" title="Share" hidden>📤</button><button class="big" id="achNext">${next}</button></div>`, "page ach");
   if (big) sfx.legend(); else sfx.chestOpen();
   cardLines(a).forEach((_, k) => say("p", achievementLine(a, k), k === 0));
-  if (from.sheet) prepareShare(a);
+  prepareShare(a); // every card can be shared, the moment it's earned or later from the sheet
   $("achNext").onclick = () => {
     shareFor = shareBlob = null;
     if (from.sheet) return trophyPage();
@@ -2677,7 +2677,7 @@ function trophyPage() {
   const row = (a) => {
     const t = earnedAt(a.id);
     if (t) return `<button type="button" class="ach-row earned${isNewAch(a.id) ? " new" : ""}${isBig(a) ? " top" : ""}" data-ach="${a.id}">
-      <span class="ach-ico" aria-hidden="true">${a.icon}</span><span class="ach-txt"><b>${esc(a.title)}${isNewAch(a.id) ? ' <i class="new-pill">New!</i>' : ""}</b><small>${esc(a.detail)}</small><small class="ach-when">Earned ${date(t)} · ${esc(rewardWords(a.reward))}</small></span></button>`;
+      <span class="ach-ico" aria-hidden="true">${a.icon}</span><span class="ach-txt"><b>${esc(a.title)}${isNewAch(a.id) ? ' <i class="new-pill">New!</i>' : ""}</b><small>${esc(a.detail)}</small><small class="ach-when">Earned ${date(t)} · ${esc(rewardWords(a.reward))}</small><small class="ach-share-hint">📤 Tap to see it and share</small></span></button>`;
     // A track lists its earned tiers and its next one; the tiers past that aren't listed yet.
     if (a.kind === "track" && nextTier[a.track] !== a) return "";
     if (a.kind === "track" && a.started) {

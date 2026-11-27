@@ -1377,3 +1377,9 @@ body.on-scene>.top,body.on-scene>.who,body.on-scene>.game,body.on-scene>.badges{
 .pg-pop dd .pc{vertical-align:-3px}
 .pg-x{position:absolute;right:8px;top:8px;width:40px;height:40px;border-radius:12px;border:0;background:var(--btn);color:var(--ink);font-size:24px;line-height:1;cursor:pointer}
 .pg-x:focus-visible{outline:3px solid var(--gold)}
+/* An earned achievement on the 🏆 sheet says it opens to share (its card has 📤 Share). */
+.ach-row .ach-share-hint{color:var(--gold);font-weight:800;opacity:.85}
+/* 📤 Share beside Next or "Enter the dungeon": a compact square, so the main button keeps its words (iPhone SE). */
+.btns .big.ach-share{flex:0 0 auto;min-width:56px;padding:0 14px;font-size:24px}
+.card.ach .btns .big:not(.ach-share){padding-inline:10px;min-width:0}
+@media (max-width: 359px){.card.ach .btns .big:not(.ach-share){font-size:16px}}
