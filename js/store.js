@@ -4,7 +4,8 @@
 // storage can be missing or full (private browsing), and the game must still run.
 //
 //   sumgeon:            the device's own: profiles [{ id, name }], profile (who's playing),
-//                       storage (version), device (a random id, for linking later)
+//                       storage (version), device (a random id, for linking later),
+//                       homeHint ("later": Add to Home Screen dismissed, app.js installHTML)
 //   sumgeon:@<id>:      one player's own: OWN_KEYS
 //
 // Names belong to the device and will never sync.
