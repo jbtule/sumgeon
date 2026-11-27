@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="boot">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
@@ -20,6 +20,14 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
+<!-- Until app.js has drawn the start screen (and its fonts are in), the page is just the start
+     scene's color, the same as the Home Screen app's launch color (manifest.webmanifest): the
+     markup below is a fight that isn't set up yet, and a slow load or a reload in the background
+     showed it half-drawn. app.js removes "boot" (booted); the animation shows the page anyway if
+     it never does. -->
+<style>html.boot{background:#1c1411}html.boot body{visibility:hidden;transition:none;animation:boot 0s 10s forwards}@keyframes boot{to{visibility:visible}}</style>
+<link rel="preload" href="fonts/bungee-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="fonts/nunito-latin.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="styles.css">
 <!-- Every module goes through this map; scripts/stamp.mjs adds ?v=<sha> to each at deploy. -->
 <script type="importmap">
