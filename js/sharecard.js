@@ -65,10 +65,18 @@ async function wallPattern(ctx, id) {
   const v = getComputedStyle(document.documentElement).getPropertyValue("--wall-" + id);
   const m = v.trim().match(/^url\(\s*(["']?)(data:[\s\S]*)\1\s*\)$/), url = m && m[2];
   if (!url) return null;
-  const img = await load(url), p = ctx.createPattern(img, "repeat");
-  if (p && p.setTransform && typeof DOMMatrix === "function") p.setTransform(new DOMMatrix().scale(2.5));
-  return p;
+  // Safari taints the canvas for a pattern made straight from an SVG image ("The operation is
+  // insecure" at toBlob), so the tile is drawn onto a small canvas of its own first, at the scale
+  // it's shown, and the pattern made from that; if even that taints, there's no wall.
+  const img = await load(url), k = 2.5, tile = document.createElement("canvas");
+  tile.width = Math.max(1, Math.round((img.width || 200) * k)); tile.height = Math.max(1, Math.round((img.height || 200) * k));
+  const tc = tile.getContext("2d");
+  tc.drawImage(img, 0, 0, tile.width, tile.height);
+  if (!clean(tc)) return null;
+  return ctx.createPattern(tile, "repeat");
 }
+// Whether a canvas can still be read (and so saved): false once something has tainted it.
+function clean(ctx) { try { ctx.getImageData(0, 0, 1, 1); return true; } catch (e) { return false; } }
 function roundRect(ctx, x, y, w, h, r) {
   ctx.beginPath();
   if (ctx.roundRect) ctx.roundRect(x, y, w, h, r); else ctx.rect(x, y, w, h);
@@ -78,6 +86,11 @@ function roundRect(ctx, x, y, w, h, r) {
 // of the monsters or heroes involved (up to 4); wall = a stratum's id for its wall behind (else a
 // gold-on-purple ground, as the grand ones' card). Resolves to a PNG Blob.
 export async function renderCard(a, when, figures, wall) {
+  // If the art taints the canvas anyway (Safari is stricter than Chromium about SVG images), draw
+  // it again without the wall or figures, so there's always a card to share.
+  try { return await draw(a, when, figures, wall); } catch (e) { return draw(a, when, [], null); }
+}
+async function draw(a, when, figures, wall) {
   // Draw with the game's own fonts (self-hosted in fonts/), not a fallback.
   try { await Promise.all([document.fonts.load(`400 80px ${DISPLAY}`), document.fonts.load(`900 40px ${BODY}`), document.fonts.load(`700 40px ${BODY}`)]); } catch (e) {}
   const c = document.createElement("canvas");
@@ -127,7 +140,13 @@ export async function renderCard(a, when, figures, wall) {
 
   // The monsters or heroes involved, standing on a shadow.
   const imgs = [];
-  for (const f of (figures || []).slice(0, 4)) { try { imgs.push(await svgImage(f)); } catch (e) {} }
+  for (const f of (figures || []).slice(0, 4)) {
+    try {
+      const x = await svgImage(f), t = document.createElement("canvas").getContext("2d");
+      t.canvas.width = t.canvas.height = 4; t.drawImage(x.img, 0, 0, 4, 4);
+      if (clean(t)) imgs.push(x); // one that would taint the card is left out
+    } catch (e) {}
+  }
   if (imgs.length) {
     const bottom = 1130, h = imgs.length > 2 ? 230 : 330, gap = 30;
     const ws = imgs.map((x) => h * x.ratio), total = ws.reduce((s, w) => s + w, 0) + gap * (imgs.length - 1);
