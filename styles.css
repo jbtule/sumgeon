@@ -657,6 +657,10 @@ button.ach-row{cursor:pointer}
 .ach-got{margin:0;font-weight:800;color:var(--ink)}
 .ach-got span{font:400 14px Bungee,sans-serif;color:var(--gold);margin-right:4px}
 .ach-count{margin:0;width:100%;text-align:center;font-weight:800;color:var(--muted)}
+/* A secret track on its way ("12 of 25"), and 📤 Share on an earned card opened from the sheet
+   (for grown-ups: beside Back, smaller). */
+.ach-row.secret.started{opacity:.85}
+.btns .ach-share{flex:none;padding:0 16px;font-size:15px;white-space:nowrap}
 @media (prefers-reduced-motion:reduce){.ach-icon,.ach-title{animation:none}}
 /* ⏸ by the hearts, and the pause card */
 .pause{flex:none;width:40px;height:40px;margin-left:10px}

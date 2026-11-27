@@ -44,8 +44,8 @@ export var STORAGE_VERSION = 2;
 // rec } (the last record merged here, and the server's version of it).
 // "run": the run in progress (app.js saveRun), so a run the app lost in the background can be
 // picked up again ("Keep going?"). This device's own, never synced; cleared when the run ends.
-// "achievements": achievements.js, { earned: { id: time first earned }, seen: [ids shown on a card] };
-// never taken away.
+// "achievements": achievements.js, { earned: { id: time first earned }, seen: [ids shown on a card],
+// days: [local days with practice, achievements.js dayNumber], comebacks: count }; never taken away.
 export var OWN_KEYS = ["settings", "best", "facts", "heroes", "wings", "bestiary", "dungeon", "spells", "told", "moments", "wallet", "items", "wardrobe", "shop", "achievements", "link", "syncBase", "run"];
 // band: a grade band, "kinder" to "third" (learn.js BANDS); start: the band opened from the start; grade:
 // 0 = K … 5, picked by the player (wings.js withGrade), missing until they pick. ops and diff are the prototype's, kept only to

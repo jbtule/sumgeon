@@ -791,7 +791,7 @@ A pre-reader can't use a menu she can't hear, and the device voice is hit and mi
 
 _Revised with the user on 2026-11-25. Sumgeon already rewards play in many ways (stars, depths, Hero Moments, rescued heroes, chests, clothing), so achievements are fewer than in Sound Box, where they were the big reward. They mark two things nothing else does: **learning the math** and **delightful surprises**. The mechanics still copy sound-box-crosswords `js/achievements.js`: worked out from saved progress, never taken away, secrets shown as ???, a spoken card and a share card._
 
-**Built (2026-11-27, the first of two PRs):** the rules, cards and 🏆 sheet (§14.1, but the share card), the stratum ones (§14.2) and the mastery ones (§14.3), with their rewards and syncing (CLAUDE.md's Achievements section). Still to come: the learning tracks (§14.4), the surprises (§14.5) and the share card.
+**Built (2026-11-27, in two PRs):** the rules, cards, 🏆 sheet and share card (§14.1), the stratum ones (§14.2), the mastery ones (§14.3), the learning tracks (§14.4) and the surprises (§14.5), with their rewards and syncing (CLAUDE.md's Achievements section).
 
 ### 14.1 Rules
 - **Computed from progress** (`catalog(state)` with no DOM), and `award()` records newly met ones as `{id: time}`. Earned achievements are **never taken away**, and there are **no daily streaks** to lose.
@@ -837,6 +837,7 @@ One per kind of math, earned when every fact of it is mastered. They come up as 
 - **Fraction Finder** ½, **Rounder** 🎯, **Area Ace** ▭ (3rd).
 
 ### 14.4 Learning tracks (secret, counting up once started)
+_Built 2026-11-27. Fluent facts are counted from the fact records (learned and quick on average), comebacks are a missed fact later right without a hint (a tally), practice days a set of local dates (a union, the earliest 100), Deep Diver the deepest depth opened. Rewards are items, a whole set at each track's top. The sheet lists a track's earned tiers and its next one, ??? with its count once started, named once a tier is earned._
 | Track | Tiers | Story |
 |---|---|---|
 | Fluent facts, known by heart: right, unhinted and quick (25, 100, 250, 500, 1000) | 🔋 Charged Up → ⚡ Quick Spark → 🌩️ Thunderclap → 🌪️ Whirlwind → ☄️ Lightning Legend | Fluency, for any player in any stratum |
@@ -845,6 +846,7 @@ One per kind of math, earned when every fact of it is mastered. They come up as 
 | Deep Diver: deepest depth reached (10, 25, 50, 100) | 🤿 → 🐙 → 🐋 → 🌋 | Down past where the voice counts |
 
 ### 14.5 Surprises (secret)
+_Built 2026-11-27. The ones seen in play are recorded as they happen (no event map: straight into earned); Piggy Bank and Every Quip are worked out from the state. Palindromes count from two digits (44), since a kindergartner's answers rarely reach three. Double High Five is any team hero's digit twice in the answer, not only 5s. Lucky Seven is the finishing hit of the win that frees the cursed 7. Rewards are items._
 - 🎯 **Exactly Zero**: the finishing hit leaves the monster at exactly 0 HP.
 - 🪞 **Palindrome**: an answer that reads the same backward, like 121.
 - 💯 **Triple Digits**: a single hit of 100 or more.

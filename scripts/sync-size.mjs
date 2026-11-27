@@ -1,5 +1,6 @@
 // How big a busy player's sync record gets, sealed: every fact of every band seen on three
-// devices, every stratum deep with stars, every monster met, every quip deck, the whole wardrobe.
+// devices, every stratum deep with stars, every monster met, every quip deck, the whole wardrobe,
+// every achievement with a hundred practice days.
 // bigRecord sizes MAX_BYTES (sync/src/api.js); scripts/sync.test.mjs checks it still fits.
 // Run alone: node scripts/sync-size.mjs
 import { BANDS, pool } from "../js/learn.js";
@@ -9,6 +10,7 @@ import { QUIPS } from "../js/moments.js";
 import { CLOTHES } from "../js/clothes.js";
 import { ITEMS } from "../js/loot.js";
 import { toRecord, merge, pack } from "../js/merge.js";
+import { ACHIEVEMENT_IDS } from "../js/achievements.js";
 
 export const DEVICES = ["a1b2c3d4", "e5f6g7h8", "i9j0k1l2"];
 
@@ -36,7 +38,9 @@ export function busyPlayer(seed = 1) {
     told,
     moments: { decks, heard, debut: [], dry: 2, last: 4, captains: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9], named: [3, 5, 1] },
     wallet: 4321, items: { have: Object.fromEntries(ITEMS.map((i) => [i.id, 7])), slots: [ITEMS[0].id, ITEMS[1].id, null] },
-    wardrobe: { owned, wear: { 3: { head: owned[0] } } }, shop: { stock: owned.slice(0, 4) }
+    wardrobe: { owned, wear: { 3: { head: owned[0] } } }, shop: { stock: owned.slice(0, 4) },
+    achievements: { earned: Object.fromEntries(ACHIEVEMENT_IDS.map((id) => [id, 1795000000000 + Math.floor(rnd() * 9e9)])), seen: ACHIEVEMENT_IDS.slice(),
+      days: Array.from({ length: 100 }, (_, i) => 20700 + seed + 3 * i), comebacks: 60 + seed }
   };
 }
 

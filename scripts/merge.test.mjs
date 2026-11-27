@@ -37,12 +37,16 @@ test("every saved key is synced or kept on the device on purpose", () => {
 // would drop what they don't know when they merge and save it back.
 const SHAPE = {
   1: ["best", "bestiary", "dungeon", "facts", "items", "moments", "owned", "reg", "spells", "told", "v", "wallet", "wings"],
-  2: ["ach", "best", "bestiary", "dungeon", "facts", "items", "moments", "owned", "reg", "spells", "told", "v", "wallet", "wings"]
+  2: ["ach", "best", "bestiary", "dungeon", "facts", "items", "moments", "owned", "reg", "spells", "told", "v", "wallet", "wings"],
+  3: ["ach", "best", "bestiary", "dungeon", "facts", "items", "moments", "owned", "reg", "spells", "told", "v", "wallet", "wings"]
 };
+// Inside the record's achievements, by version (3 added the practice days and comebacks).
+const ACH_SHAPE = { 2: ["e", "s"], 3: ["c", "d", "e", "s"] };
 test("the record's shape matches its version", () => {
   const rec = busyRecord();
   assert.equal(rec.v, RECORD_VERSION);
   assert.deepEqual(Object.keys(rec).sort(), SHAPE[RECORD_VERSION], "the record's keys changed: bump RECORD_VERSION and add its SHAPE");
+  assert.deepEqual(Object.keys(rec.ach).sort(), ACH_SHAPE[RECORD_VERSION], "the record's achievements changed: bump RECORD_VERSION");
 });
 
 test("facts: seen and right add up per device; box and time come from the latest practice", () => {
@@ -255,6 +259,55 @@ test("achievements' rewards: paid once, whichever devices awarded them, and spen
   // Merging the records again, in either order, pays nothing more.
   const ra = toRecord(a.data, a.base, "a"), rb = toRecord(b.data, b.base, "b");
   assert.equal(walletOf(merge(ra, rb)), 10); assert.equal(walletOf(merge(rb, merge(ra, rb))), 10);
+});
+
+// The achievements' counters, as app.js keeps them: a practice day, and a comeback.
+const day = (n) => 20000 + n;
+function practise(dev, n) { const a = dev.data.achievements = dev.data.achievements || { earned: {}, seen: [] }; a.days = [...new Set([...(a.days || []), day(n)])].sort((x, y) => x - y); }
+function comeback(dev) { const a = dev.data.achievements = dev.data.achievements || { earned: {}, seen: [] }; a.comebacks = (a.comebacks || 0) + 1; }
+
+test("practice days: a union of the days played anywhere, each day once", () => {
+  const a = device("a"), b = device("b");
+  practise(a, 1); practise(a, 2); practise(b, 2); practise(b, 5);
+  let server = sync(a, null); server = sync(b, server); server = sync(a, server);
+  for (const d of [a, b]) assert.deepEqual(d.data.achievements.days, [day(1), day(2), day(5)], "the same day on two devices counts once");
+  for (let i = 0; i < 3; i++) { server = sync(a, server); server = sync(b, server); }
+  assert.deepEqual(a.data.achievements.days, [day(1), day(2), day(5)]);
+  // Only the earliest hundred are kept (the top tier needs no more), the same whichever order.
+  const x = device("x"), y = device("y");
+  for (let i = 0; i < 80; i++) practise(x, 2 * i);
+  for (let i = 0; i < 80; i++) practise(y, 2 * i + 1);
+  const rx = toRecord(x.data, null, "x"), ry = toRecord(y.data, null, "y");
+  assert.equal(merge(rx, ry).ach.d.length, 100);
+  assert.deepEqual(merge(rx, ry).ach.d, merge(ry, rx).ach.d);
+  assert.deepEqual(merge(rx, ry).ach.d, Array.from({ length: 100 }, (_, i) => day(i)));
+});
+
+test("comebacks: a tally per device, never counted twice", () => {
+  const a = device("a"), b = device("b");
+  comeback(a); comeback(a); comeback(b);
+  let server = sync(a, null); server = sync(b, server); server = sync(a, server);
+  for (const d of [a, b]) assert.equal(d.data.achievements.comebacks, 3);
+  for (let i = 0; i < 3; i++) { server = sync(a, server); server = sync(b, server); }
+  assert.equal(a.data.achievements.comebacks, 3);
+  comeback(b);
+  server = sync(b, server); server = sync(a, server);
+  for (const d of [a, b]) assert.equal(d.data.achievements.comebacks, 4);
+  // The records merged again, in either order, add nothing.
+  const ra = toRecord(a.data, a.base, "a"), rb = toRecord(b.data, b.base, "b");
+  assert.deepEqual(merge(ra, rb).ach.c, merge(rb, merge(ra, rb)).ach.c);
+});
+
+test("surprises seen in play: earned like any achievement, paid once", () => {
+  const a = device("a"), b = device("b");
+  let server = sync(a, null); server = sync(b, server);
+  earn(a, "surprise:zero", now + 60000); earn(b, "surprise:zero", now); earn(b, "holiday:thanksgiving");
+  server = sync(a, server); server = sync(b, server); server = sync(a, server);
+  for (const d of [a, b]) {
+    assert.equal(d.data.achievements.earned["surprise:zero"], now, "the earliest");
+    assert.ok(d.data.achievements.earned["holiday:thanksgiving"]);
+    assert.deepEqual(d.data.items.have, { totem: 1, pie: 1 }, "the totem paid once");
+  }
 });
 
 test("a dungeon bump: the newer record's dungeon progress wins, and old shares don't come back", () => {

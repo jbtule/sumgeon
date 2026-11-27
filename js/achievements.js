@@ -4,19 +4,25 @@
 // No DOM, runs in Node; app.js shows them (the cards before the next descent, and the 🏆 sheet).
 //
 // state = {
-//   facts: the player's fact records ({ key: { b, … } }, learn.js)
-//   wings: the player's stratum progress ({ [wingId]: { megas, legend, … } }, wings.js)
+//   facts:   the player's fact records ({ key: { b, n, ms, … } }, learn.js)
+//   wings:   the player's stratum progress ({ [wingId]: { megas, legend, depth, … } }, wings.js)
+//   moments: the Hero Moments save (moments.js: heard, for Every Quip)
+//   wallet:  the purse, in cents (Piggy Bank)
+//   ach:     the achievements save itself ({ earned, days, comebacks }, freshAchievements): the
+//            surprises seen in play are recorded straight into earned (noteEvent), the practice
+//            days and comebacks are counted there
 // }
 //
-// Built (this PR): the stratum ones (§14.2: each stratum's Champion and Legend, Champion of
-// Champions and Legend of Legends), shown ahead with their progress, and the mastery ones (§14.3),
-// secret until earned. Still to come: the learning tracks (§14.4) and the surprises (§14.5), which
-// count things the game will save in state.counts (a hook: catalog ignores it for now), and the
-// share card.
+// The stratum ones (§14.2: each stratum's Champion and Legend, Champion of Champions and Legend of
+// Legends) are shown ahead with their progress; the mastery ones (§14.3), the learning tracks
+// (§14.4) and the surprises (§14.5) are secret until earned (a track's next tier shows its count,
+// "12 of 25", once started). The share card is drawn by sharecard.js.
 import { BANDS, pool, topBox, chaptersOf } from "./learn.js";
 import { WINGS, PATHS, megasOf, legendShare, legendFacts } from "./wings.js";
 import { isDrawKey } from "./shapes.js";
 import { spoken } from "./problems.js";
+import { factState } from "./progress.js";
+import { heardOf, QUIPS } from "./moments.js";
 
 /* ---------- rewards ----------
    Every achievement has a fixed reward: coins (cents, into the wallet), items ({ id: count }) and
@@ -90,7 +96,143 @@ const GRAND = [
     reward: { items: { pie: 2, shield: 2, totem: 2, magnet: 2 } } }
 ];
 
-const ALL = [...STRATUM, ...GRAND, ...MASTERY];
+/* ---------- the learning tracks (§14.4): secret, counting up once started ----------
+   Each tier is an achievement of its own ("fluent:25"), earned when the track's count reaches it.
+   The counts:
+   - fluent: facts known by heart, counted from the fact records (progress.js factState: learned,
+     box 3+, and answered on average inside the fact's fluent time). Counted, not tallied: the
+     records already sync (merge.js), a fact counts once however often it's answered, and a fact
+     placed by skipping ahead without being answered doesn't count (it has no time).
+   - comeback: a missed fact later right, unhinted (isComeback: its record still at box 0 after a
+     miss). A tally in the achievements save (comebacks), synced per device (merge.js).
+   - days: local dates with an answer (dayNumber), never a streak. The set of days (the earliest
+     DAYS_KEPT: the top tier needs no more), synced as a union.
+   - deep: the deepest depth opened in any stratum (wings[id].depth: where the next descent goes,
+     so its card plays just before diving there).
+   Rewards are items (a kindergartner may not have met money yet), a whole set at the top. */
+const EVERY = { pie: 1, shield: 1, totem: 1, magnet: 1 };
+const TIER_ITEMS = [{ pie: 1 }, { shield: 1 }, { totem: 1 }, { magnet: 1 }];
+const Cap = (t) => t[0].toUpperCase() + t.slice(1);
+export const TRACKS = {
+  fluent: { tiers: [[25, "🔋", "Charged Up"], [100, "⚡", "Quick Spark"], [250, "🌩️", "Thunderclap"], [500, "🌪️", "Whirlwind"], [1000, "☄️", "Lightning Legend"]],
+    detail: (n) => `${n} facts known by heart: right, quick and without a hint`, sayDetail: (n) => `${Cap(spoken(n))} facts, known by heart!`,
+    progress: "Facts known by heart", rewards: [...TIER_ITEMS, EVERY] },
+  comeback: { tiers: [[1, "🌧️", "Through the Rain"], [5, "🌦️", "Clearing Up"], [10, "🌈", "Rainbow After"], [25, "☀️", "Sunny Side"], [50, "🦅", "Soaring"]],
+    detail: (n) => (n === 1 ? "A missed fact, later right on your own" : `${n} missed facts, later right on your own`),
+    sayDetail: (n) => (n === 1 ? "A missed fact, later right on your own!" : `${Cap(spoken(n))} missed facts, later right on your own!`),
+    progress: "Comebacks", rewards: [...TIER_ITEMS, EVERY] },
+  days: { tiers: [[1, "🕯️", "First Torch"], [3, "🗝️", "Key Finder"], [7, "🚪", "Door Opener"], [14, "🪜", "Deeper Down"], [30, "🏰", "Castle Keeper"], [60, "🐉", "Dragon's Den"], [100, "👑", "Dungeon Royalty"]],
+    detail: (n) => (n === 1 ? "Your first day of practice" : `${n} days of practice, any days at all`),
+    sayDetail: (n) => (n === 1 ? "Your first day of practice!" : `${Cap(spoken(n))} days of practice!`),
+    progress: "Days of practice", rewards: [...TIER_ITEMS, { pie: 1, shield: 1 }, { totem: 1, magnet: 1 }, EVERY] },
+  deep: { tiers: [[10, "🤿", "Deep Diver"], [25, "🐙", "Ink-credible Depths"], [50, "🐋", "Whale of a Dive"], [100, "🌋", "Core Explorer"]],
+    detail: (n) => `Reached depth ${n}`, sayDetail: (n) => `You reached depth ${spoken(n)}!`,
+    progress: "Deepest depth", rewards: [{ shield: 1 }, { totem: 1 }, { magnet: 1 }, EVERY] }
+};
+export const DAYS_KEPT = 100;
+const TRACK = Object.entries(TRACKS).flatMap(([track, t]) => t.tiers.map(([n, icon, title], i) => ({
+  id: `${track}:${n}`, kind: "track", track, tier: i, goal: n, icon, title, say: title + "!", detail: t.detail(n), sayDetail: t.sayDetail(n), reward: { items: t.rewards[i] } })));
+// The counts the tracks need, from the state.
+export function trackCounts(state) {
+  const s = state || {}, facts = s.facts || {}, wings = s.wings || {}, a = s.ach || {};
+  let fluent = 0;
+  for (const k of Object.keys(facts)) if (factState(facts[k], k).fluent) fluent++;
+  return {
+    fluent,
+    comeback: Math.max(0, Math.floor(Number(a.comebacks) || 0)),
+    days: Array.isArray(a.days) ? a.days.length : 0,
+    deep: Math.max(0, ...Object.values(wings).map((p) => Math.floor(Number((p || {}).depth) || 0)))
+  };
+}
+// A comeback: a fact whose record shows a miss not yet made up (box 0, fewer right than seen),
+// now answered right without a hint. `rec` is the record before this answer.
+export const isComeback = (rec, ok, hinted) => !!(ok && !hinted && rec && rec.n > 0 && !rec.b && (rec.c || 0) < rec.n);
+// A local date as a whole number of days (1970-01-01 is 0), for the practice days.
+export function dayNumber(t) { const d = new Date(t); return Math.round(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) / 864e5); }
+// The practice days kept: unique, in order, the earliest DAYS_KEPT (so the union of two copies,
+// cut to these, is the same whichever order they merge in, and merging again changes nothing).
+export function keepDays(...lists) {
+  return [...new Set(lists.flat().filter((d) => Number.isInteger(d) && d > 0))].sort((x, y) => x - y).slice(0, DAYS_KEPT);
+}
+// Records the day of `now` as a practice day; true when it's a new one.
+export function notePracticeDay(ach, now) {
+  const d = dayNumber(now);
+  if (ach.days.includes(d) || ach.days.length >= DAYS_KEPT) return false;
+  ach.days = keepDays(ach.days, [d]);
+  return true;
+}
+
+/* ---------- the surprises (§14.5): secret ----------
+   Most happen in play and can't be worked out from progress later (a hit, a payment), so app.js
+   records them straight into earned as they happen (noteEvent), quietly; their cards wait for the
+   next descent like the rest. Piggy Bank and Every Quip are worked out from the state (test).
+   Rewards are items, since a kindergartner can hit most of them before meeting money (and coins
+   paid mid-shop would upset the purse laid out for the visit).
+   figure: who's on the card and the share card (a hero's digit, or a monster's name); without
+   one, the captain. */
+const SURPRISE = [
+  { id: "surprise:zero", icon: "🎯", title: "Exactly Zero", detail: "A finishing hit that left the monster at exactly 0 HP", sayDetail: "Your last hit left exactly zero!", reward: { items: { totem: 1 } } },
+  { id: "surprise:palindrome", icon: "🪞", title: "Palindrome", detail: "An answer that reads the same backward, like 121 or 44", sayDetail: "Your answer reads the same backward!", reward: { items: { shield: 1 } } },
+  { id: "surprise:triple", icon: "💯", title: "Triple Digits", detail: "A single hit of 100 or more", sayDetail: "One hit of a hundred or more!", reward: { items: { totem: 1 } } },
+  { id: "surprise:double", icon: "🪞🖐️", title: "Double High Five", detail: "Two of the same hero in one answer, like 55", sayDetail: "Two of the same hero in one answer!", reward: { items: { magnet: 1 } } },
+  { id: "surprise:allhands", icon: "🎆", title: "All Hands", detail: "An answer of 3 or more digits, every digit a hero on your team", sayDetail: "Every digit in your answer was a hero!", reward: { items: { magnet: 1 } } },
+  { id: "surprise:seven", icon: "7️⃣", title: "Lucky Seven", detail: "Freed Sevenstein with a 7 in the winning hit", sayDetail: "You freed Sevenstein with a seven!", figure: { hero: 7 }, reward: { items: { shield: 1 } } },
+  { id: "surprise:iceboss", icon: "🧊", title: "Ice Cold Boss", detail: "Beat a boss without losing a heart on its floor", sayDetail: "You beat a boss without losing a heart!", reward: { items: { shield: 1 } } },
+  { id: "surprise:lastheart", icon: "♻️", title: "Never Gave Up", detail: "Cleared a floor on your last heart", sayDetail: "You cleared a floor on your last heart!", reward: { items: { pie: 1 } } },
+  { id: "surprise:exact", icon: "🪙", title: "Exact Change", detail: "Paid Trollar the exact amount, no change back", sayDetail: "You paid Trollar the exact amount!", figure: { monster: "Trollar" }, reward: { items: { pie: 1 } } },
+  { id: "surprise:piggy", icon: "🐷", title: "Piggy Bank", detail: "A whole dollar in your purse at once", sayDetail: "A whole dollar in your purse!", figure: { monster: "Trollar" }, test: (s) => (Number(s.wallet) || 0) >= 100, reward: { items: { shield: 1 } } },
+  { id: "surprise:quips", icon: "💬", title: "Every Quip", detail: "Heard every one of a hero's quips", sayDetail: "You heard every one of a hero's quips!", test: (s) => quipHero(s) != null, reward: { items: { magnet: 1 } } },
+  // Holidays (holidaysOn, Sound Box's dates): an answer on one of these days, any year.
+  { id: "holiday:thanksgiving", icon: "🦃", title: "Gobble Gobble", detail: "Fought monsters between bites of turkey", sayDetail: "Fought monsters between bites of turkey!", reward: { items: { pie: 1 } } },
+  { id: "holiday:winter", icon: "⛄", title: "Snow Much Fun", detail: "Did math over winter break, snow or no snow", sayDetail: "Math over winter break, snow or no snow!", reward: { items: { shield: 1 } } },
+  { id: "holiday:summer", icon: "🏖️", title: "Summer Sums", detail: "Did math in the summer sun", sayDetail: "Math in the summer sun!", reward: { items: { totem: 1 } } }
+].map((a) => Object.assign({ kind: "surprise", say: a.title + "!" }, a));
+// The hero whose quips have all been heard (the first, by digit), or null.
+export function quipHero(state) {
+  const m = (state && state.moments) || {};
+  for (const d of Object.keys(QUIPS).map(Number)) { const h = heardOf({ heard: m.heard || {} }, d); if (h.of && h.heard >= h.of) return d; }
+  return null;
+}
+// The holiday surprises a local date falls in (Sound Box's holidaysOn): Thanksgiving weekend (the
+// 4th Thursday of November through Sunday), winter break (Dec 24 to Jan 1) and summer (June 1 to
+// Aug 14). Returns achievement ids.
+export function holidaysOn(d) {
+  const m = d.getMonth(), day = d.getDate(), out = [];
+  if (m === 10) {
+    const thu = 1 + (4 - new Date(d.getFullYear(), 10, 1).getDay() + 7) % 7 + 21; // 4th Thursday
+    if (day >= thu && day <= thu + 3) out.push("holiday:thanksgiving");
+  }
+  if ((m === 11 && day >= 24) || (m === 0 && day === 1)) out.push("holiday:winter");
+  if (m === 5 || m === 6 || (m === 7 && day <= 14)) out.push("holiday:summer");
+  return out;
+}
+// The surprises a right answer's hit earns (app.js, as the hit lands):
+//   ans:    the answer, when it's a number typed on the pad (null for a symbol, a drawing, a time)
+//   typed:  the digits that fly at the monster (heroes on the team fly as their hero)
+//   dmg:    the hit's damage; hpLeft: the monster's HP after it (app.js doesn't clamp it at 0)
+//   team:   the team's digits (the captain and the rescued heroes)
+// Palindromes count from two digits (11, 44, 121): a kindergartner's answers are mostly two digits
+// at most, and 44 reads the same both ways just as 121 does.
+export function hitSurprises({ ans, typed, dmg, hpLeft, team }) {
+  const out = [], digits = /^\d+$/.test(String(typed ?? "")) ? String(typed) : "", on = new Set(team || []);
+  if (hpLeft === 0) out.push("surprise:zero");
+  if (Number.isInteger(ans) && ans >= 10 && String(ans) === [...String(ans)].reverse().join("")) out.push("surprise:palindrome");
+  if (dmg >= 100) out.push("surprise:triple");
+  const count = {};
+  for (const c of digits) count[c] = (count[c] || 0) + 1;
+  if (Object.keys(count).some((c) => count[c] >= 2 && on.has(Number(c)))) out.push("surprise:double");
+  if (digits.length >= 3 && [...digits].every((c) => on.has(Number(c)))) out.push("surprise:allhands");
+  return out;
+}
+export const EVENT_IDS = SURPRISE.filter((a) => !a.test).map((a) => a.id);
+// Records a surprise seen in play in earned ({ id: time }); true when it's new.
+export function noteEvent(earned, id, now) {
+  if (!EVENT_IDS.includes(id) || earned[id]) return false;
+  earned[id] = now;
+  return true;
+}
+
+const ALL = [...STRATUM, ...GRAND, ...MASTERY, ...TRACK, ...SURPRISE];
 const byId = Object.fromEntries(ALL.map((a) => [a.id, a]));
 // An achievement's fixed reward: { cents, items: { id: n }, piece } (missing parts are 0 or none).
 export function rewardOf(id) {
@@ -109,10 +251,12 @@ export function rewardsOf(ids) {
 }
 
 /* ---------- the catalog ---------- */
-// Every achievement: [{ id, icon, title, detail, goal, have, met, secret, kind, wing?, progress,
-// reward, spoken }] in the 🏆 sheet's order: the stratum ones (each stratum's Champion, then
-// Legend), the grand ones, then the mastery ones. progress: words for the sheet ("0 of 1 mega
-// bosses", "42% mastered"), for the ones shown ahead.
+// Every achievement: [{ id, icon, title, detail, goal, have, met, secret, kind, wing?, track?,
+// tier?, started?, figure?, progress, reward, spoken }] in the 🏆 sheet's order: the stratum ones
+// (each stratum's Champion, then Legend), the grand ones, the mastery ones, the tracks, then the
+// surprises. kind: "champion", "legend", "grand", "mastery", "track" or "surprise". progress: words
+// for the sheet ("Mega bosses beaten: 0 of 1", "Comebacks: 12 of 25"), for the ones shown ahead and
+// a started track.
 export function catalog(state) {
   const facts = (state && state.facts) || {}, wings = (state && state.wings) || {};
   const out = [];
@@ -138,10 +282,21 @@ export function catalog(state) {
     }
     out.push(entry(a, { goal: best.goal, have: best.have, met: best.have >= best.goal, secret: true }));
   }
+  // The tracks: each tier counts up, started once its count is above 0.
+  const counts = trackCounts(state);
+  for (const a of TRACK) {
+    const have = Math.min(a.goal, counts[a.track]);
+    out.push(entry(a, { goal: a.goal, have, met: have >= a.goal, secret: true, started: have > 0, progress: `${TRACKS[a.track].progress}: ${counts[a.track]} of ${a.goal}` }));
+  }
+  const earned = ((state && state.ach) || {}).earned || {}, qh = quipHero(state);
+  for (const a of SURPRISE) {
+    const met = a.test ? a.test(state || {}) : !!earned[a.id];
+    out.push(entry(a, { goal: 1, have: met ? 1 : 0, met, secret: true, figure: a.id === "surprise:quips" ? (qh != null ? { hero: qh } : null) : a.figure || null }));
+  }
   return out;
 }
 function entry(a, o) {
-  return Object.assign({ id: a.id, icon: a.icon, title: a.title, detail: a.detail, kind: a.kind || "mastery", wing: a.wing || null, secret: false, reward: rewardOf(a.id), spoken: spokenParts(a), share: Math.min(1, o.have / o.goal) }, o);
+  return Object.assign({ id: a.id, icon: a.icon, title: a.title, detail: a.detail, kind: a.kind || "mastery", wing: a.wing || null, track: a.track || null, tier: a.tier ?? null, secret: false, reward: rewardOf(a.id), spoken: spokenParts(a), share: Math.min(1, o.have / o.goal) }, o);
 }
 
 /* ---------- what a card says ---------- */
@@ -185,12 +340,13 @@ export function award(state, earned, now) {
     return true;
   });
 }
-// The saved achievements ({ earned: { id: time }, seen: [ids] }), cleaned.
+// The saved achievements, cleaned: { earned: { id: time }, seen: [ids], days: [day numbers,
+// dayNumber], comebacks: count }.
 export function freshAchievements(saved) {
   const s = saved && typeof saved === "object" ? saved : {}, earned = {};
   for (const [k, t] of Object.entries(s.earned && typeof s.earned === "object" ? s.earned : {})) if (byId[k] && typeof t === "number" && t > 0) earned[k] = t;
   const seen = Array.isArray(s.seen) ? [...new Set(s.seen.filter((k) => earned[k]))] : [];
-  return { earned, seen };
+  return { earned, seen, days: keepDays(Array.isArray(s.days) ? s.days : []), comebacks: Math.max(0, Math.floor(Number(s.comebacks) || 0)) };
 }
 // The earned ones not yet shown on a card, in the catalog's order (the stratum ones first).
 export function unseen(ach) { return ALL.map((a) => a.id).filter((id) => ach.earned[id] && !ach.seen.includes(id)); }
