@@ -297,11 +297,8 @@ h1 b{color:var(--coral);font-weight:400}
 .wing small{color:var(--muted);font-weight:800}
 .wing em{font-style:normal;font-size:13px;color:var(--muted);line-height:1.35}
 .wing em.level{margin:2px 0 0;color:var(--ink)}
-/* How far along to the Legend (legendProgress), as one more row under the depths: a 🌟 in line
-   with the depth dots, then "Legendary depths · 37%". */
-.wing em.to-legend{display:grid;grid-template-columns:24px auto;column-gap:4px;align-items:center;justify-content:start;margin-top:8px;font-weight:800;color:var(--ink);text-align:left}
-.wing em.to-legend b{text-align:center;font-size:15px}
-.wing em.to-legend span{padding:0;margin:0;border:0;background:none}
+/* How far along to the Legend (legendProgress): under the depths, in the note's style. */
+.wing em.to-legend{margin-top:6px}
 .wing.locked em{font-size:12px}
 .wing input:checked+span{border-color:var(--gold);background:#ffc93c1f}
 .wing input:focus-visible+span{outline:3px solid var(--ink);outline-offset:2px}
