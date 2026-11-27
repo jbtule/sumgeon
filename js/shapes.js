@@ -600,7 +600,14 @@ export function shapeFacts() {
 // Asked: "Draw a triangle!", "How many sides does this hexagon have?", "How many corners?",
 // "How many faces does this cube have?", "How many equal parts?", "How many squares in all?",
 // and 3rd grade's "The whole is cut into equal parts. Each part is one what?"
-export function spokenShape(p) {
+// Kokoro says "hexagon" HEK-sag-un and "pentagon" PEN-tag-un (espeak: hˈɛksæɡən); spelled
+// "hexa-gon" and "penta-gon" it says HEK-suh-gon and PEN-tuh-gon, as a teacher does. Only in what's
+// spoken: the screen keeps the words.
+export const sayShapes = (t) => t.replace(/([Hh])exagon/g, "$1exa-gon").replace(/([Pp])entagon/g, "$1enta-gon");
+export function spokenShape(p) { return sayShapes(spokenShapeText(p)); }
+export function spokenShapeAnswer(p) { return sayShapes(spokenShapeAnswerText(p)); }
+export function squawkLine(p) { return sayShapes(squawkLineText(p)); }
+function spokenShapeText(p) {
   if (p.kind === "draw") return spokenDraw(p.shape);
   if (p.kind === "sides" || p.kind === "corners") return p.shape ? `How many ${p.kind} does this ${p.shape} have?` : `How many ${p.kind}?`;
   if (p.kind === "faces") return `How many faces does this ${p.solid === "cube" ? "cube" : "pyramid"} have?`;
@@ -614,7 +621,7 @@ export function spokenShape(p) {
 const DRAWN = { circle: "A circle is round, with no corners.", triangle: "A triangle has three sides and three corners.", square: "A square has four sides, all the same length.",
   rectangle: "A rectangle has four sides and four square corners.", rhombus: "A rhombus has four sides, all the same length.", pentagon: "A pentagon has five sides and five corners.",
   hexagon: "A hexagon has six sides and six corners.", quadrilateral: "A quadrilateral has four sides and four corners." };
-export function spokenShapeAnswer(p) {
+function spokenShapeAnswerText(p) {
   if (p.kind === "draw") return DRAWN[p.shape];
   if (p.kind === "sides" || p.kind === "corners") return `${p.shape ? cap(article(p.shape)) + p.shape : "It"} has ${spoken(p.n)} ${p.kind}.`;
   if (p.kind === "faces") return p.solid === "cube" ? "A cube has six faces." : "A square pyramid has five faces.";
@@ -624,7 +631,7 @@ export function spokenShapeAnswer(p) {
 }
 // Polly-Gon's squawk before each problem: "Squawk! Polly want a
 // triangle!" for a drawing, the shape's name for a named one, else what's counted.
-export function squawkLine(p) {
+function squawkLineText(p) {
   if (p.kind === "draw") return `Squawk! Polly want ${article(p.shape)}${p.shape}!`;
   if (p.shape) return `Squawk! ${cap(p.shape)}!`;
   if (p.kind === "faces") return p.solid === "cube" ? "Squawk! Cube!" : "Squawk! Pyramid!";

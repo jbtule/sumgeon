@@ -206,7 +206,8 @@ import { spokenProblem, spokenFact } from "../js/problems.js";
   assert.equal(spokenShape(shapeFactOf("◇draw:tri")), "Draw a triangle!");
   assert.equal(spokenShapeAnswer(shapeFactOf("◇unit:circle4")), "Each part is one fourth.");
   assert.equal(spokenShapeAnswer(shapeFactOf("◇parts:rect2x")), "Two equal parts: halves.");
-  assert.equal(squawkLine(shapeFactOf("◇draw:hex")), "Squawk! Polly want a hexagon!");
+  assert.equal(squawkLine(shapeFactOf("◇draw:hex")), "Squawk! Polly want a hexa-gon!");
+assert.ok(!/hexagon|pentagon/i.test(shapeFacts().map((f) => { const g = shapeFactOf(f.key, () => 0.3); return spokenShape(g) + spokenShapeAnswer(g) + squawkLine(g); }).join(" ")), "hexagon and pentagon are spelled for Kokoro");
   // Named shapes come turned the ways they're met, and still have their corners.
   for (let i = 0; i < 40; i++) for (const k of ["◇sides:tri", "◇sides:sq", "◇sides:rect", "◇sides:rhom", "◇sides:pent", "◇sides:hex"]) { const g = shapeFactOf(k); assert.equal(g.pts.length, g.ans, k); }
 }
