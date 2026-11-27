@@ -124,7 +124,8 @@ for (const l of spokenLines().filter((l) => l.kind === "h")) assert.ok(words(l.t
   assert.ok(ids.has("m:Margo-rithm!") && ids.has("p:Margo-rithm carries the one and shuts down for the night.") && ids.has("m:Glitchy Margo!"));
   assert.ok(![...ids].some((id) => /Margot/.test(id)), "no line says Margot as written");
   assert.ok(ids.has("p:Doublet bows twice and skips away."));
-  assert.ok(ids.has("m:Tricera-plus!") && ids.has("m:Queen Tricera-plus!") && ids.has("m:Tricera-cool!") && ![...ids].some((id) => /Triceraplus|Triceracool/.test(id)), "Triceraplus keeps its plus");
+  // Said try-SAIR-uh-plus, stressed like triceratops: "Trisaira-plus" (lines.js SAY_AS).
+  assert.ok(ids.has("m:Trisaira-plus!") && ids.has("m:Queen Trisaira-plus!") && ids.has("m:Trisaira-cool!") && ids.has("m:Trisaira-tot!") && ![...ids].some((id) => /Triceraplus|Triceracool|Tricera-/.test(id)), "Triceraplus keeps its plus, stressed like triceratops");
   assert.ok(ids.has("q:three plus four plus six") && ids.has("q:three plus four plus six is thirteen"), "three numbers");
   assert.ok(ids.has("q:Three rows of five. How many in all?") && ids.has("q:Three rows of five make fifteen."), "arrays");
   assert.ok(GROUPS.includes("Three numbers") && GROUPS.includes("Arrays"));
