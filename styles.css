@@ -425,10 +425,6 @@ h1 b{color:var(--coral);font-weight:400}
 @media (max-width: 759px) and (max-height: 700px){.game.find .prob svg.shape{height:17dvh}}
 .prob .drawask{font:900 .55em Nunito,sans-serif;white-space:nowrap}
 .prob .drawask b{font-family:Bungee,sans-serif;font-weight:400;color:var(--gold);font-size:1.15em;margin-left:.15em}
-/* Polly-Gon's Squawk Back: a hop as its body turns into the shape. */
-.mon.squawk{animation:squawk .5s ease-out}
-@keyframes squawk{0%{transform:none}30%{transform:translateY(-8%) scale(1.1) rotate(-4deg)}60%{transform:translateY(-2%) scale(.98) rotate(3deg)}100%{transform:none}}
-@media(prefers-reduced-motion:reduce){.mon.squawk{animation:none}}
 /* Fix it: the wrong number, crossed out, lifts above its place, small and red; the □ takes its
    place on the line. Right, the number drops in and the crossed-out one fades. */
 .prob .fixline{font-size:.75em}

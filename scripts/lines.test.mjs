@@ -45,7 +45,7 @@ assert.ok(spokenLines().every((l) => l.group), "every line has a listen-check gr
 for (const k of Object.keys(TRAITS)) assert.ok(TRAITS[k].name in TRAIT_LINE, `no line for ${k}'s trait`);
 for (const m of MON.concat(allLooks())) {
   const t = traitLine(m);
-  if (m.n === "Plusquito") assert.equal(t, null);
+  if (m.n === "Plusquito" || (m.base || m.n) === "Polly-Gon") assert.equal(t, null);
   else if (traitOf(m)) { assert.ok(ids.has("p:" + t), t); assert.ok(words(t) <= 12, t); }
 }
 assert.equal(traitLine(cursedMonster(8)), "Answers with an eight hit double!");

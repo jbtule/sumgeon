@@ -163,7 +163,7 @@ const SOUNDS = [
     ["Chomp", "Chompers: a right comparison, the bigger number eaten", () => sfx.chomp()],
     ["Happy snap", "Chompers: a right \"=\", a closed-mouth bounce", () => sfx.chomp(true)],
     ["Empty clack", "Chompers: a wrong comparison, his jaws snap on nothing", () => sfx.clack()],
-    ["Squawk", "Polly-Gon: its body flashes the shape it asks for", () => sfx.squawk()],
+    ["Squawk", "Polly-Gon: it squawks the shape it wants", () => sfx.squawk()],
     ["Boss roar", "Every 9–15 s of a boss fight", () => sfx.roar()],
     ["Monster appears", "A new floor's monster", () => sfx.appear(false)],
     ["Boss appears", "The boss floor", () => sfx.appear(true)]]],

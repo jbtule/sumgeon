@@ -4,7 +4,7 @@ import { MON, svg, LOOKS, lookOf, allLooks, CHOMP_SHUT, bossForm } from "./monst
 import { chompPose, morePose, mouthOf, SNAP, FLIP_MS, SNAP_MS, EAT_MS } from "./chomp.js";
 import { spokenProblem, spokenFact } from "./problems.js";
 import { BANDS, choose, factOf, record as recordAnswer, helpFor, monsterHP, probeKey, tierOf, skipTo, SKIP_PROBES, SKIP_WINDOW, MAX_LEAP, fluentTime, spellKey, RECENT, pool, drawHit, openLevels, reachOf, chaptersOf, pathBands, reviewFacts, placeReviews, examKey, examFacts, examRound, hpOf } from "./learn.js";
-import { countSvg, readShape, judgeShape, cleanFor, squawkBody, isDrawKey, SHAPE_LINE, SHAPE_CODE, article } from "./shapes.js";
+import { countSvg, readShape, judgeShape, cleanFor, isDrawKey, SHAPE_LINE, SHAPE_CODE, article } from "./shapes.js";
 import { hintFor, STRATEGIES } from "./hints.js";
 import { openStore, displayName, DUNGEON_VERSION, DUNGEON_KEYS, LEARNING_RESETS } from "./store.js";
 import { PHRASE, monsterName, monsterCleared, monsterWon, heroJoins, heroCursed, heroRescue, heroAlmost, heroHelps, traitLine, BARK, wingCleared, wingOpened, depthLine, DEPTH_MAX_SPOKEN, reversedLine, howToWriteLine, quipLine, squawk, trait2Line, newMonsterLine } from "./lines.js";
@@ -784,8 +784,8 @@ function newProblem() {
   if (flipped) judoThrow(G.cur);
   if (dice) diceFlash(G.cur);
   if (G.flash) flashHide(G.cur);
-  // Polly-Gon squawks the shape as its body flashes it (🦜 Squawk Back), before it's asked.
-  squawkFlash(G.cur);
+  // Polly-Gon squawks the shape it wants before it's asked.
+  pollySquawk(G.cur);
   // Coins ("How many dimes?") and comparisons can't be read off the screen by a pre-reader, so
   // the voice reads them, after the monster's name. Skipped if it's answered first.
   // Time and patterns too: "What time is it?" isn't on the screen, and a row of slimes is read
@@ -1075,7 +1075,6 @@ function submit() {
   if (G.cur.op === "✓") { G.tfDone = true; probUI(); }
   // A comparison's answer is its symbol (<, = or >); everything else is a number.
   // A drawn shape was judged as it was cast (castShape).
-  unsquawk();
   const right = G.cur.draw ? G.drawn === "right" : G.cur.slots ? G.slot.vals.every((v, i) => v !== "" && Number(v) === G.cur.slots[i]) : G.cur.sym ? G.input === G.cur.sym : Number(G.input) === G.cur.ans;
   if (right && G.fix) { G.fix.done = true; probUI(); ansUI(); }
   if (right) {
@@ -2936,7 +2935,6 @@ async function chompAct(pose) {
 function press(k) {
   if (G.next && k === "go") return nextAfterMiss();
   if (G.busy) return;
-  unsquawk(); // Polly-Gon's flash ends as soon as anything's pressed
   if (G.cur && (G.cur.spell || G.cur.draw)) {
     if (k === "go") return G.cur.draw ? castShape() : castSpell();
     if (k === "clear" || k === "del") { sfx.tick(); sigilReset(); }
@@ -3035,7 +3033,7 @@ let strokes = [], drawing = null;
 function sigilSetup() {
   const c = $("sigil");
   sigilReset();
-  c.onpointerdown = (e) => { if (G.busy) return; e.preventDefault(); unsquawk(); c.setPointerCapture(e.pointerId); drawing = [sigilPoint(e)]; strokes.push(drawing); paintSigil(); };
+  c.onpointerdown = (e) => { if (G.busy) return; e.preventDefault(); c.setPointerCapture(e.pointerId); drawing = [sigilPoint(e)]; strokes.push(drawing); paintSigil(); };
   c.onpointermove = (e) => { if (!drawing) return; drawing.push(sigilPoint(e)); paintSigil(); };
   c.onpointerup = c.onpointercancel = () => { drawing = null; };
 }
@@ -3203,38 +3201,21 @@ function drawToCount() {
   G.recent = [key].concat(G.recent).slice(0, RECENT);
   G.input = ""; G.hinted = false; G.drawn = null; G.t0 = performance.now();
   probUI(); ansUI();
-  squawkFlash(G.cur, true);
+  pollySquawk(G.cur, true);
   setMsg("Let's count instead!", "bad");
   say("p", PHRASE.countInstead, true);
   say("q", spokenProblem(G.cur), false, asked(G.cur));
   showHelp(helpFor(recs[key]));
 }
 
-/* ---------- Polly-Gon's Squawk Back (🦜, traits.js) ----------
-   Before each of its problems, Polly-Gon squawks and its hexagon body becomes the problem's shape
-   (the shape to draw, or the one to count, with its cuts or grid: shapes.js squawkBody), with a
-   little hop, then turns back after SQUAWK_MS. Never during input: the first tap, key or stroke
-   turns it back at once, and a hit does too. With reduced motion, no hop: the body just changes
-   and changes back. */
+/* ---------- Polly-Gon's squawk ----------
+   Before each of its problems, Polly-Gon squawks the shape it wants ("Squawk! Polly want a
+   triangle!"). Quiet: just the sound (a counting problem taking a drawing's place). */
 const onPolly = () => { const m = G.floors && G.floors[G.floor]; return !!m && (m.base || m.n) === "Polly-Gon" && G.hp > 0; };
-const SQUAWK_MS = 1300;
-let squawkTimer = null;
-function squawkFlash(p, quiet) {
+function pollySquawk(p, quiet) {
   if (!onPolly() || !p || p.op !== "◇") return;
-  $("mon").innerHTML = monsterArt(Object.assign({}, G.floors[G.floor], { squawk: squawkBody(p) }));
-  G.squawking = p;
-  if (!reduced()) restartAnim($("mon"), "squawk");
   sfx.squawk();
   if (!quiet) say("m", squawk(p), false, asked(p));
-  clearTimeout(squawkTimer);
-  squawkTimer = setTimeout(unsquawk, SQUAWK_MS);
-}
-function unsquawk() {
-  clearTimeout(squawkTimer);
-  if (!G.squawking) return;
-  G.squawking = null;
-  $("mon").classList.remove("squawk");
-  if (onPolly()) $("mon").innerHTML = monsterArt(G.floors[G.floor]);
 }
 
 // The number pad, or for a comparison (Chompers) the < = > keys, filling the same space.

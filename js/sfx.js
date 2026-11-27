@@ -470,7 +470,7 @@ export function clack() {
     tone("sine", 392, 262, t + 0.2, 0.28, 0.1);
   });
 }
-// Polly-Gon's squawk (🦜 Squawk Back), as its body flashes the shape: two quick, raspy parrot
+// Polly-Gon's squawk, before it asks for a shape: two quick, raspy parrot
 // screeches, a wobbling saw tone through a nasal band, the second higher, and a flutter of wings.
 export function squawk() {
   play(function (t) {

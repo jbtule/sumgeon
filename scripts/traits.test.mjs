@@ -7,7 +7,7 @@ import { choose, pool } from "../js/learn.js";
 
 const mon = (n) => MON.find((m) => m.n === n);
 for (const w of WINGS) for (const n of w.pool.concat([w.boss])) {
-  if (n === "Plusquito") assert.equal(traitOf(mon(n)), null, "Plusquito is the tutorial monster");
+  if (n === "Plusquito" || n === "Polly-Gon") assert.equal(traitOf(mon(n)), null, `${n} has no trait`);
   else assert.ok(traitOf(mon(n)), `${n} has a trait`);
 }
 for (const t of Object.values(TRAITS)) assert.ok(t.text.split(" ").length <= 10 && t.icon && t.name);

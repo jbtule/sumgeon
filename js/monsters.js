@@ -133,14 +133,12 @@ export const NEW_MON=[
 // the Mines' depth-1 floors: a parrot built from shapes a kid can count. A flat-topped hexagon
 // body (all six sides showing: the head, wings and tail tuck behind it), a circle head with a
 // triangle crest and beak, triangle wings, a fan of long triangle tail feathers, and square feet.
-// Its trait (🦜 Squawk Back, traits.js): as it squawks, its body flashes the shape it asks for
-// (m.squawk, from shapes.js squawkBody: { body, lines }), then turns back.
 {
   const hex = (cx, cy, r) => [0, 60, 120, 180, 240, 300].map((a) => at(cx, cy, r, a).map(f1).join(' ')).join(' L');
   MON.push(
  {n:'Polly-Gon',op:'◇',sym:'⬡',stratum:'cellar, hall, mines, tower',c:'#3fcf62',hits:3,
   quip:'squawks once for every side and flaps away.',
-  d:(c,m)=>{const RED='#ff4f5e',BLUE='#3d8bff',tri=(p)=>`<path d="M${p} Z"/>`,sq=m&&m.squawk;
+  d:(c)=>{const RED='#ff4f5e',BLUE='#3d8bff',tri=(p)=>`<path d="M${p} Z"/>`;
    return solid(tri('92 138 L36 186 L54 202')+tri('108 138 L164 186 L146 202'),RED)+solid(tri('100 138 L90 208 L110 208'),GOLD)
    +solid(tri('74 104 L2 52 L26 128'),BLUE)+solid(tri('126 116 L196 140 L150 168'),BLUE)
    +solid(tri('60 100 L20 70 L32 114')+tri('136 122 L176 138 L150 154'),GOLD)
@@ -149,7 +147,7 @@ export const NEW_MON=[
    +`<path d="M75 190 v6 M83 190 v6 M117 190 v6 M125 190 v6" ${ds} stroke-width="2.5"/>`
    +solid(tri('84 26 L74 2 L96 18')+tri('104 18 L118 0 L114 24'),GOLD)+solid(tri('92 18 L96 -6 L106 16'),BLUE)
    +solid(`<circle cx="100" cy="46" r="34"/>`,RED)
-   +solid(sq?sq.body:`<path d="M${hex(100,120,50)} Z"/>`,c)+(sq?sq.lines:'')
+   +solid(`<path d="M${hex(100,120,50)} Z"/>`,c)
    +`<ellipse cx="80" cy="56" rx="7" ry="4" fill="#ffb3c8" opacity=".85"/><ellipse cx="120" cy="56" rx="7" ry="4" fill="#ffb3c8" opacity=".85"/>`
    +eye(86,40,11)+eye(114,40,11)
    +solid(tri('89 52 L111 52 L100 72'),GOLD)}});

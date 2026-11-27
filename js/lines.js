@@ -146,8 +146,7 @@ export var TRAIT_LINE = {
   "Arrays": "Count the rows! Every row is the same.",
   "Halves": "Fractions! Find the one that's the same size.",
   "Tick Tock": "What time is it? Read the clock!",
-  "What's Next": "What comes next? Count the pattern!",
-  "Squawk Back": "Listen for the squawk! Its body shows the shape."
+  "What's Next": "What comes next? Count the pattern!"
 };
 // A mega boss's second trait (traits.js mega), said after its name the first times you meet it.
 export var TRAIT2_LINE = {
@@ -157,7 +156,7 @@ export var TRAIT2_LINE = {
   "Sigma Rex": "Watch out! It flips your times facts. Same answer!"
 };
 export function trait2Line(m) { return (m && m.trait2 && TRAIT2_LINE[m.base || m.n]) || null; }
-// Polly-Gon's squawk as its body flashes the problem's shape (shapes.js squawkLine): "Squawk! Polly
+// Polly-Gon's squawk before each problem (shapes.js squawkLine): "Squawk! Polly
 // want a triangle!", in its monster sprite.
 export function squawk(p) { return squawkLine(p); }
 export function luckyLine(d) { return "Answers with " + aDigit(d) + " hit double!"; }
