@@ -456,13 +456,14 @@ Replaces the between-floor choice. Clearing a floor still heals 1 heart.
 
 **Saved per player:** `wallet` (cents), `items` (the inventory's counts and the 3 quick-use slots), `wardrobe` (what's found and what each hero wears). Each goes in `OWN_KEYS`.
 
-### 6.4 Endless Descent (maybe later, §12)
-- Unlocked after you clear any Wing once.
-- Monsters cycle through every unlocked Wing with HP scaling about +8% per floor. A boss appears every 7th floor.
+### 6.4 Endless Descent (planned: after a stratum's Legend, for that stratum)
+_Revised with the user on 2026-11-27: back on the main list. It opens for a stratum once its **Legend boss is beaten** (§14.2), and it's that stratum's own: its monsters, its facts and its wall, not a mix of every stratum. A reward for mastering a stratum, and somewhere to keep playing it._
+- Unlocked per stratum by beating its Legend; reached from that stratum's layer on the depth map.
+- That stratum's monsters, with HP scaling about +8% per floor. A boss appears every 7th floor.
 - The score is **total damage dealt**, so harder problems are worth more. It's shown alongside the deepest floor.
-- Keep a local high score table per band, with optional initials (no names required).
+- Keep a local high score per stratum (per player), with no names.
 
-### 6.5 Daily Dungeon (maybe later, §12)
+### 6.5 Daily Dungeon (maybe, §12: kept as a maybe, 2026-11-27)
 - A seeded run that is the same for everyone on the same date: 5 floors, fixed monsters, fixed modifiers such as "Crits from streak 2".
 - One attempt per day for score and unlimited practice tries. It works offline because the seed is just the date.
 
@@ -744,8 +745,9 @@ Each milestone should be playable and shippable on its own. Revised 2026-11-25 f
    - *Offline play, done (2026-11-26):* a service worker (`sw.js`) precaches each version's shell, the fonts are self-hosted, and every voice sprite is saved in the background, the ones needed first; Settings → Game says how far it's got (CLAUDE.md "Offline"). *Still to do:* confirm it on the iPhone's Home Screen app (airplane mode after "Offline: ready").
 
 
-**Maybe later (enhancements, not planned):** decided with the user on 2026-11-26. The dungeon is already deep (strata of chapters every 5 depths, with mega and Legend bosses), so these wait until there's a reason for them:
-- **Endless Descent** (§6.4): a high-score mode cycling through every open stratum.
+**Planned:** **Endless Descent** (§6.4), revised with the user on 2026-11-27: after a stratum's Legend is beaten, an endless run of that stratum only, for a high score.
+
+**Maybe later (enhancements, not planned):** decided with the user on 2026-11-26, and kept a maybe on 2026-11-27:
 - **Daily Dungeon** (§6.5): the same seeded run for everyone on a date.
 ---
 
