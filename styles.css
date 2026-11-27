@@ -643,33 +643,62 @@ button.ach-row{cursor:pointer}
 .new-pill{font:400 11px/1 Bungee,sans-serif;font-style:normal;padding:2px 6px;border-radius:8px;background:var(--coral);color:var(--dark);vertical-align:2px}
 .ach-bar{display:block;height:8px;margin:4px 0 1px;border-radius:5px;background:var(--line);overflow:hidden}
 .ach-bar i{display:block;height:100%;background:var(--gold);border-radius:5px}
-/* An achievement's card: "New achievement!", the title, what it took and the reward. The stratum
-   ones are big: the stratum's wall behind, the boss and the captain in the reward. */
-.ach-card{display:grid;justify-items:center;text-align:center;gap:6px;padding:14px 10px 16px;border-radius:18px;background:var(--dark);border:2px solid var(--line)}
-.ach-card.huge{border:3px solid #ffd23f;box-shadow:0 0 0 2px #0c171c,0 0 26px #ffc93c88;
-  background:radial-gradient(ellipse 70% 60% at 50% 60%,#ffd84d44,#0c171c00 70%),linear-gradient(#0c171c88,#0c171cc0),var(--wall-cellar)}
-.ach-card.huge[data-stratum="hall"]{background:radial-gradient(ellipse 70% 60% at 50% 60%,#ffd84d44,#0c171c00 70%),linear-gradient(#0c171c88,#0c171cc0),var(--wall-hall)}
-.ach-card.huge[data-stratum="mines"]{background:radial-gradient(ellipse 70% 60% at 50% 60%,#ffd84d44,#0c171c00 70%),linear-gradient(#0c171c88,#0c171cc0),var(--wall-mines)}
-.ach-card.huge[data-stratum="tower"]{background:radial-gradient(ellipse 70% 60% at 50% 60%,#ffd84d44,#0c171c00 70%),linear-gradient(#0c171c88,#0c171cc0),var(--wall-tower)}
-.ach-card.grand{background:radial-gradient(ellipse 80% 70% at 50% 55%,#ffd84d66,#0c171c00 70%),linear-gradient(160deg,#3a2a5a,#12242b)}
-.ach-kicker{margin:0;font:400 15px Bungee,sans-serif;letter-spacing:.5px;color:var(--coral);text-shadow:0 2px 0 var(--dark)}
-.ach-icon{font-size:48px;line-height:1;filter:drop-shadow(0 3px 0 #0008);animation:freed .9s ease-out}
-.ach-title{margin:0;font:400 clamp(24px,7.5vw,38px)/1.1 Bungee,sans-serif;color:var(--gold);text-shadow:0 3px 0 var(--dark),0 0 18px #ffc93c88;animation:dslam .5s cubic-bezier(.2,1.4,.4,1)}
-.ach-detail{margin:0;font-weight:800;color:var(--ink)}
-.ach-stage{display:flex;align-items:flex-end;justify-content:center;flex-wrap:wrap;gap:6px 10px;margin:4px 0}
+/* An achievement's card (app.js achievementCards), drawn like its share picture (sharecard.js):
+   a wall darkened behind (the stratum's, or the one being played; the grand ones purple to
+   slate), a warm gold glow, a gold frame with a dark outline set in from the edge, the title in
+   gold Bungee with a dark drop, what it took in chalk, and who's involved standing on a soft
+   shadow. "New achievement!", the reward won ("You got …") and the count stay. On phones it
+   fills the screen above the buttons, like the share picture's portrait. */
+.ach-card{--ach-wall:var(--wall-plain);position:relative;isolation:isolate;display:grid;justify-items:center;align-content:center;text-align:center;gap:6px;
+  padding:22px 18px 20px;border-radius:24px;border:2px solid #0c171c;box-shadow:0 6px 24px #0008;
+  background:radial-gradient(ellipse 80% 48% at 50% 42%,#ffd84d4d,#ffd84d00 100%),linear-gradient(#0c171c9e,#0c171c9e),var(--ach-wall)}
+.ach-card[data-stratum="cellar"]{--ach-wall:var(--wall-cellar)}
+.ach-card[data-stratum="hall"]{--ach-wall:var(--wall-hall)}
+.ach-card[data-stratum="mines"]{--ach-wall:var(--wall-mines)}
+.ach-card[data-stratum="tower"]{--ach-wall:var(--wall-tower)}
+.ach-card.grand{background:radial-gradient(ellipse 80% 48% at 50% 42%,#ffd84d5c,#ffd84d00 100%),linear-gradient(150deg,#3a2a5a,#12242b)}
+/* The gold frame, set in from the card's edge as on the share picture, outlined dark both sides. */
+.ach-card::before{content:"";position:absolute;inset:7px;z-index:-1;border-radius:18px;border:3px solid var(--gold);pointer-events:none;
+  box-shadow:0 0 0 2px #0c171c,inset 0 0 0 2px #0c171c,0 0 18px #ffc93c55}
+.ach-card .ach-kicker{margin:0;font:400 15px Bungee,sans-serif;letter-spacing:.5px;color:var(--coral);text-shadow:0 2px 0 #0c171c}
+.ach-icon{font-size:52px;line-height:1;filter:drop-shadow(0 3px 0 #0008);animation:freed .9s ease-out}
+.ach-title{margin:0;font:400 clamp(24px,7.5vw,38px)/1.1 Bungee,sans-serif;color:var(--gold);text-shadow:0 3px 0 #0c171c;animation:dslam .5s cubic-bezier(.2,1.4,.4,1)}
+.ach-card .ach-detail{margin:0;max-width:30ch;font:800 17px/1.3 Nunito,sans-serif;color:#f3efe4;text-wrap:balance}
+.ach-stage{display:grid;justify-items:center;gap:8px;margin:6px 0 2px}
+/* Who's involved, standing on a soft shadow (one ellipse under the row). */
+.ach-figs{display:flex;align-items:flex-end;justify-content:center;flex-wrap:wrap;gap:6px 12px;padding:0 14px 9px;
+  background:radial-gradient(closest-side,#00000070,#0000) 50% 100%/100% 24px no-repeat}
+.ach-prize{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:6px 12px}
 .ach-boss{width:min(130px,34vw)}
-.ach-stage.four .ach-boss{width:min(64px,17vw)}
-.ach-stage.four{max-width:330px}
-.ach-boss svg,.ach-cap svg{width:100%;height:auto;overflow:visible;filter:drop-shadow(0 0 14px #ffd84d99)}
+.ach-stage.four .ach-figs{max-width:330px}
+.ach-stage.four .ach-boss{width:min(96px,17vw)}
+.ach-boss svg,.ach-cap svg{display:block;width:100%;height:auto;overflow:visible;filter:drop-shadow(0 3px 0 #0006)}
+.ach-card.huge .ach-boss svg{filter:drop-shadow(0 0 14px #ffd84d88)}
 .ach-cap{width:min(110px,30vw)}
-.ach-items{display:flex;gap:8px}
+.ach-items{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;max-width:100%}
 .ach-items .ico{font-size:52px;line-height:1;filter:drop-shadow(0 4px 0 #0008)}
 .ach-items .pie svg{width:56px;height:auto}
 .ach-items .tot{font:400 34px Bungee,sans-serif;color:var(--gold)}
 .ach-coins svg{max-width:min(220px,60vw);height:auto;filter:drop-shadow(0 4px 0 #0008)}
-.ach-got{margin:0;font-weight:800;color:var(--ink)}
+.ach-card .ach-got{margin:0;font-weight:800;color:#f3efe4}
 .ach-got span{font:400 14px Bungee,sans-serif;color:var(--gold);margin-right:4px}
-.ach-count{margin:0;width:100%;text-align:center;font-weight:800;color:var(--muted)}
+.ach-card .ach-date{margin:2px 0 0;font:700 16px Nunito,sans-serif;color:#f3efe4;opacity:.9}
+.ach-card .ach-count{margin:0;width:100%;text-align:center;font-weight:800;color:#c9d3d4}
+@media (max-width: 759px){
+  .card.page.ach{gap:12px}
+  .card.page.ach .ach-card{flex:1 0 auto}
+}
+/* Short phones (an iPhone SE): a little tighter, so a stratum's card fits above its buttons. */
+@media (max-width: 759px) and (max-height: 700px){
+  .ach-card{gap:4px;padding:18px 14px 16px}
+  .ach-icon{font-size:42px}
+  .ach-card .ach-detail{font-size:15px}
+  .ach-boss{width:min(112px,30vw)}
+  .ach-cap{width:min(96px,27vw)}
+  .ach-items .ico{font-size:44px}
+}
+/* iPad and desktop: a portrait card, like the share picture. */
+@media (min-width: 760px){.ach-card{min-height:min(600px,calc(100dvh - 200px))}}
 /* A secret track on its way ("12 of 25"), and 📤 Share on an earned card opened from the sheet
    (for grown-ups: beside Back, smaller). */
 .ach-row.secret.started{opacity:.85}
@@ -684,7 +713,8 @@ button.ach-row{cursor:pointer}
 .pause-btns{display:grid;gap:8px;width:100%}
 .pause-btns .small{min-height:48px}
 .pause-btns .danger[data-sure="1"]{background:#ff8a7f;color:var(--dark)}
-/* The pause card's buttons in two columns (📖, ⚙ / 🎒, the purse), Exit across the bottom. */
+/* The pause card's buttons in two columns (📖, 🏆 / 🎒, 👕 / ⚙, the purse; ⚙ across without
+   one), Exit across the bottom. */
 .pause-btns{grid-template-columns:1fr 1fr}
 .pause-btns .danger{grid-column:1/-1}
 .pause-btns .small{padding:4px 10px;line-height:1.15}
