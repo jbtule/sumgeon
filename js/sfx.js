@@ -492,6 +492,28 @@ export function squawk() {
     [0.32, 0.38, 0.44].forEach(function (d) { noise(t + d, 0.04, 0.1, "bandpass", 900); });
   });
 }
+// Pluffy squeezed (the plus plushie on the start scene): a squeaky toy's squee-eek, a reedy
+// tone that bends up as it's squeezed and down as it lets go, with a puff of air.
+export function squeak() {
+  play(function (t) {
+    [[0, 1100, 1900, 1500, 0.13], [0.15, 1500, 1250, 950, 0.16]].forEach(function (s) {
+      var at = t + s[0], o = ctx.createOscillator(), lfo = ctx.createOscillator(), dep = ctx.createGain(), f = ctx.createBiquadFilter(), g = ctx.createGain();
+      o.type = "square";
+      o.frequency.setValueAtTime(s[1], at);
+      o.frequency.linearRampToValueAtTime(s[2], at + s[4] * 0.45);
+      o.frequency.linearRampToValueAtTime(s[3], at + s[4]);
+      lfo.frequency.value = 32; dep.gain.value = 45; lfo.connect(dep).connect(o.frequency);
+      f.type = "lowpass"; f.frequency.value = 3200; f.Q.value = 4;
+      g.gain.setValueAtTime(0, at);
+      g.gain.linearRampToValueAtTime(0.09, at + 0.015);
+      g.gain.setValueAtTime(0.09, at + s[4] * 0.7);
+      g.gain.exponentialRampToValueAtTime(0.0001, at + s[4]);
+      o.connect(f).connect(g).connect(out);
+      o.start(at); lfo.start(at); o.stop(at + s[4] + 0.05); lfo.stop(at + s[4] + 0.05);
+    });
+    noise(t + 0.13, 0.06, 0.05, "bandpass", 1800);
+  });
+}
 // The Shield blocking a miss: Sir Fourtress's metal clang.
 export function clang() { play(MOVE[4]); }
 // An item used: a quick rising shimmer.
