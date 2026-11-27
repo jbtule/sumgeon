@@ -174,7 +174,7 @@ const SURPRISE = [
   { id: "surprise:zero", icon: "🎯", title: "Exactly Zero", detail: "A finishing hit that left the monster at exactly 0 HP", sayDetail: "Your last hit left exactly zero!", reward: { items: { totem: 1 } } },
   { id: "surprise:palindrome", icon: "🪞", title: "Palindrome", detail: "An answer that reads the same backward, like 121 or 44", sayDetail: "Your answer reads the same backward!", reward: { items: { shield: 1 } } },
   { id: "surprise:triple", icon: "💯", title: "Triple Digits", detail: "A single hit of 100 or more", sayDetail: "One hit of a hundred or more!", reward: { items: { totem: 1 } } },
-  { id: "surprise:double", icon: "🪞🖐️", title: "Double High Five", detail: "Two of the same hero in one answer, like 55", sayDetail: "Two of the same hero in one answer!", reward: { items: { magnet: 1 } } },
+  { id: "surprise:double", icon: "👀", title: "Seeing Double", detail: "Two of the same hero in one answer, like 55 or 77", sayDetail: "Two of the same hero in one answer!", reward: { items: { magnet: 1 } } },
   { id: "surprise:allhands", icon: "🎆", title: "All Hands", detail: "An answer of 3 or more digits, every digit a hero on your team", sayDetail: "Every digit in your answer was a hero!", reward: { items: { magnet: 1 } } },
   { id: "surprise:seven", icon: "7️⃣", title: "Lucky Seven", detail: "Freed Sevenstein with a 7 in the winning hit", sayDetail: "You freed Sevenstein with a seven!", figure: { hero: 7 }, reward: { items: { shield: 1 } } },
   { id: "surprise:iceboss", icon: "🧊", title: "Ice Cold Boss", detail: "Beat a boss without losing a heart on its floor", sayDetail: "You beat a boss without losing a heart!", reward: { items: { shield: 1 } } },
