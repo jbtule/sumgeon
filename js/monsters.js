@@ -211,9 +211,9 @@ MON.push(
    +solid(`<circle cx="24" cy="100" r="12"/><circle cx="176" cy="100" r="12"/>`,c)
    +`<rect x="88" y="88" width="26" height="24" rx="5" fill="${GOLD}" stroke="${DK}" stroke-width="3.5"/>`
    +`${eye(93,50,8)}${eye(111,50,8)}<path d="M96 66 Q102 71 108 66" ${ds} stroke-width="3"/>`});
-// Margot-Rythm (the Mines, "algorithm"): an old desktop computer. Its screen shows the stacked
-// algorithm for 27 + 15, the carried 1 glowing gold like a cursor. Digits are strokes in unit
-// coordinates (x, y pairs from 0 to 1), placed in a box by glyph().
+// Margot-Rythm (the Mines, "algorithm"): an old desktop computer, its screen scrolling with code
+// (it used to show 27 + 15 and a carried 1, which kids read as a problem to answer). GLYPH and
+// glyph() draw digits as strokes in unit coordinates (x, y pairs from 0 to 1), placed in a box.
 const GLYPH = { 1: "M.15 .22 L.55 0 L.55 1", 2: "M0 .26 Q0 0 .5 0 Q1 0 1 .3 Q1 .52 0 1 L1 1", 4: "M.72 1 L.72 0 L0 .66 L1 .66",
   5: "M.95 0 L.12 0 L.05 .44 Q.5 .3 .85 .5 Q1.05 .75 .8 .94 Q.4 1.08 0 .86", 7: "M0 0 L1 0 L.35 1", "+": "M0 .5 L1 .5 M.5 0 L.5 1" };
 const glyph = (k, x, y, w, h) => { let i = 0; return GLYPH[k].replace(/-?\d*\.?\d+/g, (v) => f1(i++ % 2 ? y + h * v : x + w * v)); };
@@ -236,9 +236,10 @@ MON.push(
    +`<rect x="36" y="8" width="128" height="100" rx="16" fill="${SCR}" stroke="${DK}" stroke-width="4"/>`
    +`<rect x="132" y="112" width="28" height="5" rx="2" fill="${DK}"/><circle cx="42" cy="115" r="4" fill="${PH}" stroke="${DK}" stroke-width="1.5"/>`
    +[[80,3],[120,-3]].map(([x,dx])=>`<path d="M${x-6} 19 H${x-11} V43 H${x-6} M${x+6} 19 H${x+11} V43 H${x+6}" fill="none" stroke="${PH}" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><rect x="${x+dx-4.5}" y="31" width="9" height="9" rx="1" fill="${PH}"/>`).join('')
-   +`<circle cx="105" cy="50" r="8.5" fill="${GOLD}" opacity=".3"/>`
-   +`<g fill="none" stroke="${PH}" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round">${dig(2,96,59)}${dig(7,115,59)}${dig('+',72,84,11,11)}${dig(1,96,81)}${dig(5,115,81)}<path d="M68 102 H132"/></g>`
-   +`<path d="${glyph(1,101,44,8,12)}" fill="none" stroke="${GOLD}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></g>`}});
+   // Its screen scrolls with code: lines of glowing dashes and a cursor, never digits a kid could
+   // read as the problem (it used to show 27 + 15 with a carried 1, which read as a sum to answer).
+   +`<g stroke="${PH}" stroke-width="4.5" stroke-linecap="round" opacity=".85"><path d="M52 58 H86 M96 58 H112 M122 58 H146 M62 70 H100 M110 70 H132 M62 82 H78 M88 82 H124 M134 82 H146 M52 94 H74"/></g>`
+   +`<rect x="82" y="89" width="9" height="11" rx="1.5" fill="${PH}"/></g>`}});
 // The Crystal Mines' boss gets its real art: the approved Centipede replaces the stand-in above
 // (the Golem's shape), keeping its game data, and leaves NEW_MON, since it's in the game now.
 {

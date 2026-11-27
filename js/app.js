@@ -480,20 +480,22 @@ function fixLine(p) {
 // Adding up to four numbers (Triceraplus in the Mines) stacks them all, the + by the last.
 // How many columns a stacked problem has: the widest number or the answer.
 const stackWidth = (p) => Math.max(...(p.nums || [p.x, p.y]).map((n) => String(n).length), String(p.ans).length);
-// The answer row under the line: one cell per column, filled from the right as digits are typed
-// (right to left, ones first), with a blinking cursor in the next column to fill.
+// The answer row under the line: one cell per column. It's typed left to right like every other
+// answer (2nd and 3rd grade add by place value, biggest place first; ones-first column work is 4th
+// grade's algorithm), and the digits sit right-aligned, as on a calculator, so ones stay under ones.
+// Empty, a blinking cursor waits in the ones column.
 function stackCells(p, typed) {
   const w = stackWidth(p), t = String(typed || "");
   return Array.from({ length: w }, (_, i) => {
     const fromRight = w - 1 - i, d = fromRight < t.length ? t[t.length - 1 - fromRight] : "";
-    const cur = !d && fromRight === t.length;
+    const cur = !t && fromRight === 0;
     return `<span class="scell${d ? " full" : ""}${cur ? " cur" : ""}">${d ? esc(d) : ""}</span>`;
   }).join("");
 }
 function stackHTML(p) {
   const nums = p.nums || [p.x, p.y], w = stackWidth(p);
   const rows = nums.map((n, i) => `<span class="sop">${i === nums.length - 1 ? (p.op === "-" ? "−" : "+") : ""}</span><span class="snum">${n}</span>`).join("");
-  return `<span class="stacked${nums.length > 2 ? " rows" + nums.length : ""}" style="--w:${w}" role="img" aria-label="${esc(p.q)}">${rows}<span class="sbar"></span><span class="sop"></span><span class="snum sans"><span class="blank scells" id="blank" aria-label="Answer, typed from the right">${stackCells(p, "")}</span></span></span>`;
+  return `<span class="stacked${nums.length > 2 ? " rows" + nums.length : ""}" style="--w:${w}" role="img" aria-label="${esc(p.q)}">${rows}<span class="sbar"></span><span class="sop"></span><span class="snum sans"><span class="blank scells" id="blank" aria-label="Answer">${stackCells(p, "")}</span></span></span>`;
 }
 // A shape problem (Polly-Gon): what to draw (the voice says it too; the body flashes it), or the
 // shape to count over its line, with the hint drawn on it once it's open.
@@ -3473,12 +3475,11 @@ function press(k) {
   const cmp = !!(G.cur && G.cur.sym), sym = "<=>".includes(k);
   if (k !== "del" && sym !== cmp) return; // digits for numbers, < = > for comparisons
   sfx.tick();
-  // Stacked in columns (G.cur.stacked): typed right to left, ones first, as it's worked on paper.
-  // Each digit goes in the next column to the left; delete takes back the last one typed.
-  const rtl = G.cur && G.cur.stacked;
-  if (k === "del") G.input = rtl ? G.input.slice(1) : G.input.slice(0, -1);
+  // Stacked in columns (G.cur.stacked): typed left to right like any answer, at most one digit a column.
+  const stacked = G.cur && G.cur.stacked;
+  if (k === "del") G.input = G.input.slice(0, -1);
   else if (sym) { G.input = k; chompTurn(mouthOf(k)); }
-  else if (rtl) { if (G.input.length < stackWidth(G.cur)) G.input = k + G.input; }
+  else if (stacked) { if (G.input.length < stackWidth(G.cur)) G.input = (G.input === "0" ? "" : G.input) + k; }
   else if (G.input.length < 4) G.input = (G.input === "0" ? "" : G.input) + k;
   ansUI();
 }
