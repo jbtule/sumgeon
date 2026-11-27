@@ -42,7 +42,9 @@ import { newKey, keysFor, isKey, linkFor, keyFromLink } from "./seal.js";
 import { syncPlayer, remoteVersion, SYNC_URL } from "./sync.js";
 import { SYNCED_KEYS, canon, pack, unpack } from "./merge.js";
 import { linkQR } from "./linkqr.js";
-import { award as awardAchievements, catalog as achCatalog, freshAchievements, unseen as unseenAchievements, rewardOf, achievementOf, cardLines, ACHIEVEMENT_IDS } from "./achievements.js";
+import { award as awardAchievements, catalog as achCatalog, freshAchievements, unseen as unseenAchievements, rewardOf, achievementOf, cardLines, ACHIEVEMENT_IDS,
+  isComeback, notePracticeDay, holidaysOn, hitSurprises, noteEvent, keepDays, dayNumber } from "./achievements.js";
+import { renderCard, shareCard } from "./sharecard.js";
 import { achievementLine } from "./lines.js";
 
 const $ = (id) => document.getElementById(id);
@@ -168,6 +170,11 @@ function loadPlayer() {
   // Achievements already met (a player who qualified before they were built, or progress a sync
   // brought) are awarded now, quietly; their cards play before the next descent.
   ach = freshAchievements(store.player(PID).get("achievements", null));
+  // Practice days (DESIGN.md §14.4) from before they were counted: each fact's last-seen day is a
+  // day that was played (a union, so doing it every time adds nothing twice).
+  const had = ach.days.length;
+  ach.days = keepDays(ach.days, Object.values(recs).map((f) => (f && f.t > 0 ? dayNumber(f.t) : 0)));
+  if (ach.days.length !== had) saveAch();
   checkAchievements();
   // A captain picked before heroes could change stays on the team.
   if (team.captain != null && !team.rescued.includes(team.captain)) { team.rescued.push(team.captain); saveTeam(); }
@@ -191,21 +198,33 @@ function saveItems() { store.player(PID).set("items", inv); }
 function saveWardrobe() { store.player(PID).set("wardrobe", wardrobe); }
 function saveShop() { store.player(PID).set("shop", shop); }
 function saveAch() { store.player(PID).set("achievements", ach); }
+// What achievements.js works them out from.
+const achState = () => ({ facts: recs, wings: progress, moments: MS, wallet, ach });
 // Achievements newly met (achievements.js award), recorded quietly with their rewards (coins into
 // the wallet, items into the inventory, a special piece into the wardrobe), never interrupting a
 // fight: their cards play before the next descent (achievementCards). Checked as the player loads,
-// after each answer and lock, and at a run's end.
+// after each answer and lock, after a chest's coins, and at a run's end.
 function checkAchievements() {
-  const got = awardAchievements({ facts: recs, wings: progress }, ach.earned, Date.now());
-  if (!got.length) return got;
-  for (const a of got) {
-    const r = rewardOf(a.id);
+  const got = awardAchievements(achState(), ach.earned, Date.now());
+  payAchievements(got.map((a) => a.id));
+  return got;
+}
+function payAchievements(ids) {
+  if (!ids.length) return;
+  for (const id of ids) {
+    const r = rewardOf(id);
     wallet += r.cents;
     for (const [k, n] of Object.entries(r.items)) gain(inv, k, n);
     if (r.piece) addPiece(wardrobe, r.piece);
   }
   saveAch(); saveWallet(); saveItems(); saveWardrobe();
-  return got;
+  if (G.running) slotsUI(); // the first item found shows the slots
+}
+// Surprises seen in play (DESIGN.md §14.5: a hit, a payment, a floor cleared a certain way),
+// recorded as they happen, just as quietly; ?achievements test runs record nothing.
+function surprise(...ids) {
+  if (LEGEND_TEST) return; // ?legend's practice run saves nothing
+  payAchievements(ids.filter((id) => noteEvent(ach.earned, id, Date.now())));
 }
 // ?wallet=<cents> sets the wallet, for testing the shop.
 const WALLET_AT = new URLSearchParams(location.search).has("wallet") ? Math.max(0, Math.floor(Number(new URLSearchParams(location.search).get("wallet"))) || 0) : null;
@@ -1082,6 +1101,11 @@ function learnFrom(ok) {
   // Fluent: right, unhinted and quick, with a second more for each extra digit to tap.
   const limit = fluentTime(b.fluentMs, G.cur.sym || G.cur.ans);
   const before = stepsNow().open, fluent = ok && !G.hinted && ms < limit, f = flowOf(bk);
+  // The achievements' counts (DESIGN.md §14.4): a comeback (a missed fact, right on its own), and
+  // today as a practice day; and a holiday's surprise (§14.5).
+  if (isComeback(recs[key], ok, G.hinted)) { ach.comebacks++; saveAch(); }
+  if (notePracticeDay(ach, Date.now())) saveAch();
+  surprise(...holidaysOn(new Date()));
   recs[key] = recordAnswer(recs[key], { ok, ms, hinted: G.hinted, now: Date.now(), fluentMs: limit });
   // Skipping ahead: SKIP_PROBES fluent of the last SKIP_WINDOW probes, and everything below the
   // probe's tier is known. Two slips in that window pause probing for a few problems.
@@ -1160,6 +1184,10 @@ function submit() {
       if (G.charged) sfx.zap(); // a lightning problem beaten: the lightning thrown back
       burst(crit);
       G.hp -= dmg;
+      // Surprises in the hit (achievements.js hitSurprises): exactly 0 HP left, a palindrome, a
+      // hit of 100 or more, two of one hero, every digit a hero. Recorded quietly.
+      G.lastTyped = typed;
+      surprise(...hitSurprises({ ans: G.cur.sym || G.cur.draw || G.cur.slots || G.cur.spell ? null : G.cur.ans, typed, dmg, hpLeft: G.hp, team: [...new Set([team.captain, ...team.rescued])].filter((d) => d != null) }));
       pop((boost ? "Hero! " : bonus.power ? "Power! " : crit ? "Crit! " : "") + "−" + dmg, crit || bonus.power || !!boost);
       restartAnim($("mon"), "hit");
       if (crit && !mo) restartAnim($("arena"), "shake");
@@ -1266,6 +1294,13 @@ function earnStars() {
 // floor): chestDone is set when it's been opened, or left shut.
 function cleared(chestDone) {
   const m = G.floors[G.floor];
+  // Surprises in how the floor was won (DESIGN.md §14.5): on the last heart, a boss without a
+  // heart lost on its floor, Sevenstein freed with a 7 in the winning hit.
+  if (!chestDone) {
+    if (G.hearts === 1) surprise("surprise:lastheart");
+    if (m.boss && !G.floorLost) surprise("surprise:iceboss");
+    if (m.cursed === 7 && crackCurse(team, 7).freed && String(G.lastTyped || "").includes("7")) surprise("surprise:seven");
+  }
   if (!chestDone && (chestAfter(m) || (CHEST_ALWAYS !== null && m.cursed == null))) return openChest(m, () => cleared(true));
   if (G.floor === G.floors.length - 1) return end(true);
   const stars = earnStars();
@@ -1562,6 +1597,7 @@ function takeLoot(C) {
   }
   const c = moneyFor(wing().id, C.boss, Math.random, C.big), f = fewest(c);
   wallet += c; saveWallet();
+  checkAchievements(); // a whole dollar in the purse (Piggy Bank)
   sfx.coins(f.q + f.d + f.n + f.p);
   say("p", moneyLine(c));
   C.lootMsg = `<b class="loot-amt">+${c}¢</b>Into your purse!`;
@@ -1727,7 +1763,7 @@ function shopCard(view) {
       if (t.kind === "item") { gain(inv, t.id); saveItems(); } else { addPiece(wardrobe, t.id); saveWardrobe(); }
       S.paid = r;
       sfx.chestOpen();
-      if (r.exact) say("p", SHOP.exact, true); else say("p", changeLine(r.change), true);
+      if (r.exact) { say("p", SHOP.exact, true); surprise("surprise:exact"); } else say("p", changeLine(r.change), true);
       say("p", SHOP.thanks);
       if (t.kind === "item") say("p", SHOP.inItems); else if (hasCaptain()) say("p", SHOP.putOn);
       shopCard("bought");
@@ -2538,20 +2574,51 @@ function rewardArt(r) {
   const f = r.cents ? fewest(r.cents) : null;
   return piece + (items ? `<div class="ach-items">${items}</div>` : "") + (f ? `<div class="ach-coins">${coinsSvg({ q: f.q, d: f.d, n: f.n, p: f.p })}</div>` : "");
 }
+// The stratum ones and the grand ones get the big card; the rest (mastery, the tracks, the
+// surprises) the small one.
+const AHEAD = ["champion", "legend", "grand"];
+const isBig = (a) => AHEAD.includes(a.kind);
+// Who's involved, as the game's SVG art, for the card and the share card: a stratum's boss (mega
+// for a Champion, golden for a Legend; all four for the grand ones), a surprise's hero or monster
+// (Sevenstein, Trollar), or else the captain.
+function figuresOf(a) {
+  if (isBig(a)) {
+    const form = a.kind === "legend" || a.id === "grand:legend" ? "legend" : "mega";
+    return (a.wing ? [STRATUM_BOSS(a.wing)] : WINGS.map((w) => STRATUM_BOSS(w.id))).map((m) => svg(bossForm(m, form) || m));
+  }
+  const f = a.figure;
+  if (f && f.hero != null) return [onTeam(f.hero) ? heroArt(f.hero) : heroSvg(HEROES[f.hero])];
+  if (f && f.monster) { const m = MON.find((x) => x.n === f.monster); return m ? [svg(m)] : []; }
+  return hasCaptain() ? [heroArt(team.captain)] : [];
+}
+// Share: the PNG is drawn as soon as an earned card opens from the sheet, because iOS only opens
+// the share sheet straight from a tap (no waiting on drawing in between). For grown-ups, so the
+// button isn't said aloud.
+let shareFor = null, shareBlob = null;
+function prepareShare(a) {
+  shareFor = a.id; shareBlob = null;
+  const btn = $("achShare");
+  renderCard({ icon: a.icon, title: a.title, detail: a.detail, secret: a.secret }, earnedAt(a.id) || Date.now(), figuresOf(a), a.wing || (a.kind === "grand" ? null : wing().id)).then((b) => {
+    if (shareFor !== a.id || !btn.isConnected) return; // moved on meanwhile
+    shareBlob = b; btn.hidden = false;
+  }).catch(() => {}); // no canvas: just no Share button
+  btn.onclick = () => { if (shareBlob && shareFor === a.id) shareCard(shareBlob, a.title); };
+}
 // One achievement's card. from: { mode (the descent waiting: "enter" or "deeper"), done } or
 // { sheet: true }.
 function achievementCards(ids, i, from) {
   G.onMenu = false; // no update reload while the cards are up
-  const id = ids[i], a = achCatalog({ facts: recs, wings: progress }).find((x) => x.id === id);
+  const id = ids[i], a = achCatalog(achState()).find((x) => x.id === id);
   if (!a) return from.sheet ? trophyPage() : from.done();
   if (!from.test) markSeen(id);
-  const r = a.reward, big = a.kind !== "mastery", last = i >= ids.length - 1;
+  const r = a.reward, big = isBig(a), last = i >= ids.length - 1;
   const next = from.sheet ? "Back" : !last ? "Next" : from.mode === "deeper" ? "Go deeper" : "Enter the dungeon";
-  // The big card: the stratum's wall (the grand ones in gold), its boss (mega for a Champion,
-  // golden for a Legend; all four for the grand ones) and the captain in the reward.
-  const form = a.kind === "legend" || a.id === "grand:legend" ? "legend" : "mega";
-  const bosses = a.wing ? [STRATUM_BOSS(a.wing)] : big ? WINGS.map((w) => STRATUM_BOSS(w.id)) : [];
-  const stage = big ? `<div class="ach-stage${bosses.length > 1 ? " four" : ""}">${bosses.map((m) => `<div class="ach-boss">${svg(bossForm(m, form) || m)}</div>`).join("")}${rewardArt(r)}</div>` : `<div class="ach-stage small">${rewardArt(r)}</div>`;
+  // The big card: the stratum's wall (the grand ones in gold), its boss and the captain in the
+  // reward. The small card: who's involved (Sevenstein, Trollar, the hero of Every Quip), if
+  // anyone besides the captain, and the reward.
+  const figs = figuresOf(a);
+  const stage = big ? `<div class="ach-stage${figs.length > 1 ? " four" : ""}">${figs.map((f) => `<div class="ach-boss">${f}</div>`).join("")}${rewardArt(r)}</div>`
+    : `<div class="ach-stage small">${a.figure ? figs.map((f) => `<div class="ach-cap ach-fig">${f}</div>`).join("") : ""}${rewardArt(r)}</div>`;
   show(`<div class="ach-card${big ? " huge" : ""}${a.wing ? "" : big ? " grand" : ""}"${a.wing ? ` data-stratum="${a.wing}"` : ""}>
     <p class="ach-kicker">${a.secret ? "Secret achievement!" : "New achievement!"}</p>
     <div class="ach-icon" aria-hidden="true">${a.icon}</div>
@@ -2559,30 +2626,49 @@ function achievementCards(ids, i, from) {
     <p class="ach-detail">${esc(a.detail)}</p>
     ${stage}
     <p class="ach-got"><span>You got</span> ${esc(rewardWords(r))}</p>${!from.sheet && ids.length > 1 ? `<p class="ach-count">${i + 1} of ${ids.length}</p>` : ""}</div>
-    <div class="btns"><button class="big" id="achNext">${next}</button></div>`, "page ach");
+    <div class="btns">${from.sheet ? `<button class="big alt ach-share" id="achShare" type="button" hidden>📤 Share</button>` : ""}<button class="big" id="achNext">${next}</button></div>`, "page ach");
   if (big) sfx.legend(); else sfx.chestOpen();
   cardLines(a).forEach((_, k) => say("p", achievementLine(a, k), k === 0));
+  if (from.sheet) prepareShare(a);
   $("achNext").onclick = () => {
+    shareFor = shareBlob = null;
     if (from.sheet) return trophyPage();
     if (!last) return achievementCards(ids, i + 1, from);
     from.done();
   };
 }
 // The 🏆 sheet: the stratum ones with their progress, then the secret ones (??? until earned).
-// Earned ones not yet shown on a card are marked new; tapping an earned one plays its card.
+// Earned ones not yet shown on a card are marked new; tapping an earned one plays its card. A
+// track's next tier shows its count once started ("12 of 25"), and its name too once a tier of
+// that track is earned (the track is no secret then). The tiers past a track's next one aren't
+// listed, so the sheet doesn't fill with ???s.
 function trophyPage() {
   G.onMenu = false; // an update waits until the start screen
-  const list = achCatalog({ facts: recs, wings: progress });
+  const list = achCatalog(achState());
   const date = (t) => new Date(t).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  // Each track's next tier: the first not earned.
+  const nextTier = {};
+  for (const a of list) if (a.kind === "track" && !earnedAt(a.id) && !(a.track in nextTier)) nextTier[a.track] = a;
+  const bar = (a) => `<span class="ach-bar" aria-hidden="true"><i style="width:${Math.round(a.share * 100)}%"></i></span>`;
   const row = (a) => {
     const t = earnedAt(a.id);
-    if (t) return `<button type="button" class="ach-row earned${isNewAch(a.id) ? " new" : ""}${a.kind !== "mastery" ? " top" : ""}" data-ach="${a.id}">
+    if (t) return `<button type="button" class="ach-row earned${isNewAch(a.id) ? " new" : ""}${isBig(a) ? " top" : ""}" data-ach="${a.id}">
       <span class="ach-ico" aria-hidden="true">${a.icon}</span><span class="ach-txt"><b>${esc(a.title)}${isNewAch(a.id) ? ' <i class="new-pill">New!</i>' : ""}</b><small>${esc(a.detail)}</small><small class="ach-when">Earned ${date(t)} · ${esc(rewardWords(a.reward))}</small></span></button>`;
+    // A track lists its earned tiers and its next one; the tiers past that aren't listed yet.
+    if (a.kind === "track" && nextTier[a.track] !== a) return "";
+    if (a.kind === "track" && a.started) {
+      const known = a.tier > 0 && earnedAt(`${a.track}:${list.find((x) => x.track === a.track && x.tier === a.tier - 1).goal}`);
+      if (known) return `<div class="ach-row ahead"><span class="ach-ico" aria-hidden="true">${a.icon}</span><span class="ach-txt"><b>${esc(a.title)}</b><small>${esc(a.detail)}</small>
+        ${bar(a)}<small class="ach-prog">${esc(a.progress)}</small></span></div>`;
+      return `<div class="ach-row secret started"><span class="ach-ico" aria-hidden="true">❓</span><span class="ach-txt"><b>???</b><small>A secret achievement, on its way</small>
+        ${bar(a)}<small class="ach-prog">${a.have} of ${a.goal}</small></span></div>`;
+    }
     if (a.secret) return `<div class="ach-row secret"><span class="ach-ico" aria-hidden="true">❓</span><span class="ach-txt"><b>???</b><small>A secret achievement</small></span></div>`;
     return `<div class="ach-row ahead"><span class="ach-ico" aria-hidden="true">${a.icon}</span><span class="ach-txt"><b>${esc(a.title)}</b><small>${esc(a.detail)}</small>
-      <span class="ach-bar" aria-hidden="true"><i style="width:${Math.round(a.share * 100)}%"></i></span><small class="ach-prog">${esc(a.progress)}</small><small class="ach-when">Reward: ${esc(rewardWords(a.reward))}</small></span></div>`;
+      ${bar(a)}<small class="ach-prog">${esc(a.progress)}</small><small class="ach-when">Reward: ${esc(rewardWords(a.reward))}</small></span></div>`;
   };
-  const strata = list.filter((a) => a.kind !== "mastery"), secret = list.filter((a) => a.kind === "mastery");
+  // The secrets: the tracks first (they count up), then mastery, then the surprises.
+  const strata = list.filter(isBig), secret = ["track", "mastery", "surprise"].flatMap((k) => list.filter((a) => a.kind === k));
   const got = list.filter((a) => earnedAt(a.id)).length;
   show(`<div class="cardhead"><h2>🏆 Achievements</h2></div>
   <p class="ach-sum">${got} of ${list.length} earned</p>

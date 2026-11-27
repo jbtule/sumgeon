@@ -37,7 +37,9 @@
 //   achievements earned ones only grow, each keeping its earliest time; seen (shown on a card)
 //                only grows. Their rewards (achievements.js rewardOf) are credited to the wallet
 //                and the items by the achievements earned, not by the device that awarded them
-//                (below), so an achievement two devices both awarded pays once
+//                (below), so an achievement two devices both awarded pays once. The surprises seen
+//                in play are in earned too. The practice days are a set (a union, cut to the
+//                earliest DAYS_KEPT); the comebacks a tally per device
 //   dungeon      the dungeon version (DUNGEON_VERSION): a record from before a bump gives way
 //                to one after it, for what the bump resets (DUNGEON_KEYS and heroes; facts too
 //                across LEARNING_RESETS), as upgradeDungeon resets them on a device
@@ -62,13 +64,14 @@
 // the device id breaking ties, never the device's clock, which may be wrong. A fact's "latest"
 // is its last-seen time, since that is the practice itself; ties go to the larger copy.
 import { DUNGEON_VERSION, DUNGEON_KEYS, LEARNING_RESETS } from "./store.js";
-import { rewardsOf, freshAchievements } from "./achievements.js";
+import { rewardsOf, freshAchievements, keepDays } from "./achievements.js";
 
 // The record's format. Every device merges and saves records back, and an older app would drop
 // what it doesn't know, so a change here needs a new version (older apps then leave the record
 // alone until they update: NewerRecord in sync.js) and its shape in SHAPE in the test.
 // 2 (2026-11-27): achievements (ach), and their rewards in the wallet and items (REWARDS).
-export const RECORD_VERSION = 2;
+// 3 (2026-11-27): the achievements' practice days (ach.d) and comebacks (ach.c).
+export const RECORD_VERSION = 3;
 // The keys a record carries (store.js OWN_KEYS minus the device's own). The test checks every
 // saved key is here or in LOCAL_KEYS.
 export const SYNCED_KEYS = ["settings", "best", "facts", "heroes", "wings", "bestiary", "dungeon", "spells", "told", "moments", "wallet", "items", "wardrobe", "shop", "achievements"];
@@ -325,7 +328,7 @@ export function toRecord(data, base, me) {
   const heard = {};
   for (const k of keys(m.heard, bm.heard)) heard[k] = sortU([...arr(obj(m.heard)[k]), ...arr(obj(bm.heard)[k])]);
   const sp = obj(d.spells), bsp = obj(b.spells);
-  const ach = achRecord(d.achievements, b.ach), paid = rewardsOf(Object.keys(ach.e));
+  const ach = achRecord(d.achievements, b.ach, me), paid = rewardsOf(Object.keys(ach.e));
   const items = {};
   const have = obj(obj(d.items).have);
   for (const k of keys(have, b.items, paid.items)) { const l = ledger(have[k], withRewards(obj(b.items)[k], num(paid.items[k])), me); if (Object.keys(l).length) items[k] = l; }
@@ -347,16 +350,22 @@ export function toRecord(data, base, me) {
     ach
   };
 }
-// Achievements in a record: { e: { id: earliest time }, s: [ids seen] }.
-function achRecord(saved, base) {
+// Achievements in a record: { e: { id: earliest time }, s: [ids seen], d: [practice days],
+// c: { device: comebacks } } (d and c only when there are any).
+function achRecord(saved, base, me) {
   const a = freshAchievements(saved), b = obj(base), e = {};
   for (const k of keys(a.earned, b.e)) { const t = earliest(a.earned[k], obj(b.e)[k]); if (t) e[k] = t; }
-  return { e, s: sortU([...a.seen, ...arr(b.s)].filter((k) => e[k])) };
+  return achExtras({ e, s: sortU([...a.seen, ...arr(b.s)].filter((k) => e[k])) }, keepDays(a.days, arr(b.d)), tally(a.comebacks, b.c, me));
 }
 function mergeAch(a, b) {
   const e = {};
   for (const k of keys(obj(a).e, obj(b).e)) { const t = earliest(obj(obj(a).e)[k], obj(obj(b).e)[k]); if (t) e[k] = t; }
-  return { e, s: sortU([...arr(obj(a).s), ...arr(obj(b).s)].filter((k) => e[k])) };
+  return achExtras({ e, s: sortU([...arr(obj(a).s), ...arr(obj(b).s)].filter((k) => e[k])) }, keepDays(arr(obj(a).d), arr(obj(b).d)), maxEach(obj(a).c, obj(b).c));
+}
+function achExtras(out, d, c) {
+  if (d.length) out.d = d;
+  if (Object.keys(c).length) out.c = c;
+  return out;
 }
 
 // A device's first sync of a player (just linked, or linked by merging a player it had): the
@@ -504,7 +513,7 @@ export function fromRecord(rec, data) {
     items: { have, slots: reg["items.slots"] ? arr(reg["items.slots"].v) : arr(obj(d.items).slots) },
     wardrobe: { owned: ordered(obj(d.wardrobe).owned, arr(r.owned)), wear: Object.fromEntries(Object.entries(wear).filter(([, v]) => v)) },
     shop: { ...obj(d.shop), stock: reg["shop.stock"] ? arr(reg["shop.stock"].v) : arr(obj(d.shop).stock) },
-    achievements: { earned: { ...obj(obj(r.ach).e) }, seen: ordered(obj(d.achievements).seen, arr(obj(r.ach).s)) }
+    achievements: { earned: { ...obj(obj(r.ach).e) }, seen: ordered(obj(d.achievements).seen, arr(obj(r.ach).s)), days: keepDays(arr(obj(r.ach).d)), comebacks: sum(obj(r.ach).c) }
   };
   if (r.best) out.best = r.best;
   // A part neither this device nor the record has stays left out, as it was (a player who hasn't
@@ -516,7 +525,7 @@ export function fromRecord(rec, data) {
   if (!has("items") && !Object.keys(have).length) delete out.items;
   if (!has("wardrobe") && !arr(r.owned).length) delete out.wardrobe;
   if (!has("shop")) delete out.shop;
-  if (d.achievements == null && !Object.keys(obj(obj(r.ach).e)).length) delete out.achievements;
+  if (d.achievements == null && !Object.keys(obj(obj(r.ach).e)).length && !arr(obj(r.ach).d).length && !sum(obj(r.ach).c)) delete out.achievements;
   if (d.spells == null && !Object.keys(obj(rs.reversed)).length && !sum(rs.cast)) delete out.spells;
   return out;
 }
