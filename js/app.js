@@ -32,6 +32,7 @@ import { byLevel, offlineLine } from "./offline.js";
 import { freshState as freshMoments, freshRun, decide as decideMoment, joined, heardOf, nameLine } from "./moments.js";
 import { playMoment } from "./slowmo.js";
 import { playDescent, descending, skipDescent, surfaceHTML } from "./descent.js";
+import { plushSvg, PLUSH, PLUSH_HEART } from "./plushie.js";
 import { chestAfter, lockKey, lockOf, contents, moneyFor, fewest, setBills, ITEMS, itemOf, SLOTS, freshItems, countOf, gain, putInSlot, clearSlot, useSlot, eatPie, arm, blockMiss, totemMult, magnetSpent, freshWardrobe, addPiece, wearOf, putOn, ownedFor, unowned } from "./loot.js";
 import { kPrices, priceOf, freshShop, restock, forSale, TOKENS, valueOf, empty as emptyCounter, total as counterTotal, left as purseLeft, purseFor, putDown, takeBack, enough, pay, canAfford } from "./shop.js";
 import { CLOTHES, SPOTS, clothesById, pieceSvg } from "./clothes.js";
@@ -2230,7 +2231,7 @@ function menu() {
   const kept = !G.running && hasCaptain() ? savedRun() : null;
   G.askKeep = !!kept;
   const keepNote = kept ? `${esc(WINGS.find((x) => x.id === kept.s.wing).name)} · ${kept.s.depth > 1 ? `Depth ${kept.s.depth} · ` : ""}${kept.floors[kept.s.floor + (kept.s.stage === "floor" ? 1 : 0)].boss ? "Boss floor" : `Floor ${kept.s.floor + (kept.s.stage === "floor" ? 2 : 1)} / ${kept.floors.length}`}` : "";
-  show(`${head.replace('<div class="scene-gap" aria-hidden="true"></div>', '<div class="scene-gap"><button type="button" class="stall-tap" id="stallTap" tabindex="-1" aria-label="Trollar\'s shop" hidden></button></div>')}
+  show(`${head.replace('<div class="scene-gap" aria-hidden="true"></div>', '<div class="scene-gap"><button type="button" class="stall-tap" id="stallTap" tabindex="-1" aria-label="Trollar\'s shop" hidden></button><button type="button" class="plush-tap" id="plushTap" tabindex="-1" aria-label="${PLUSH.name}" hidden></button></div>')}
   ${captainHTML()}
   ${lootRowHTML()}
   <div class="grp"><span>Pick a stratum</span><div class="wings strata"><div class="surface" aria-hidden="true"></div>${wingsHTML()}</div></div>
@@ -2257,6 +2258,7 @@ function menu() {
   if ($("openPurse")) $("openPurse").onclick = () => purseCard(false);
   $("openItems").onclick = () => itemsCard(false);
   $("stallTap").onclick = () => { G.shopping = null; shopCard(); };
+  $("plushTap").onclick = squeezePlush;
   if ($("openShop")) $("openShop").onclick = $("stallTap").onclick;
   $("go").onclick = () => {
     if (!hasCaptain()) { $("warn").textContent = freePick(team, fresh()) ? "Pick your hero first." : "Pick who leads first."; $("captain").scrollIntoView({ block: "center", behavior: "smooth" }); say("p", PHRASE.heroFirst, true); return; }
@@ -2350,21 +2352,42 @@ function drawScene() {
     card.style.setProperty("--sheet", sheet + "px");
     sceneHz = card.getBoundingClientRect().top + $("ov").scrollTop + sheet - 16;
   }
-  sc.innerHTML = surfaceHTML({ W, H, hz: sceneHz || H * 0.4, heroes: sceneHeroes(), stall: shopOK() ? STALL : "" });
+  sc.innerHTML = surfaceHTML({ W, H, hz: sceneHz || H * 0.4, heroes: sceneHeroes(), stall: shopOK() ? STALL : "", plush: PLUSH_SVG });
   // Trollar's stall opens the shop: the scene is under the card, so a see-through button in the
   // card's window (the scene-gap) sits over it. Only on the start screen proper (#stallTap is
   // there), never mid-run.
-  const tap = $("stallTap"), box = sc.querySelector(".d-stall");
-  if (tap && gap && box) {
-    const g = gap.getBoundingClientRect(), s = box.getBoundingClientRect();
-    const top = Math.max(0, s.top - g.top), bottom = Math.min(g.height, s.bottom - g.top);
-    Object.assign(tap.style, { left: Math.round(s.left - g.left) + "px", top: Math.round(top) + "px", width: Math.round(s.width) + "px", height: Math.max(0, Math.round(bottom - top)) + "px" });
-    tap.hidden = bottom - top < 24;
-  }
+  overScene($("stallTap"), gap, sc.querySelector(".d-stall"));
+  // Pluffy squeaks when tapped (squeezePlush): its tap target, the same way.
+  overScene($("plushTap"), gap, sc.querySelector(".d-plush"), 6);
+}
+// A see-through button in the card's window, put over a part of the scene (hidden when too
+// little of it shows through the window to tap). pad: extra px around it, for a small one.
+function overScene(tap, gap, box, pad = 0) {
+  if (!tap || !gap || !box) return;
+  const g = gap.getBoundingClientRect(), s = box.getBoundingClientRect();
+  const top = Math.max(0, s.top - pad - g.top), bottom = Math.min(g.height, s.bottom + pad - g.top);
+  Object.assign(tap.style, { left: Math.round(s.left - pad - g.left) + "px", top: Math.round(top) + "px", width: Math.round(s.width + 2 * pad) + "px", height: Math.max(0, Math.round(bottom - top)) + "px" });
+  tap.hidden = bottom - top < 24;
+}
+// Pluffy, the plus plushie (plushie.js), sits by the captain on the start scene. A tap squeezes
+// it: a squeak (sfx.squeak, with the sound effects), a squish and a heart popping up. No voice
+// and nothing saved: a toy to poke at while picking a stratum.
+const PLUSH_SVG = plushSvg({ label: false });
+function squeezePlush() {
+  const toy = document.querySelector("#scene .d-plush");
+  sfx.squeak();
+  if (!toy) return;
+  toy.classList.remove("squeak"); void toy.offsetWidth; toy.classList.add("squeak");
+  const heart = document.createElement("i");
+  heart.className = "plush-heart";
+  heart.style.setProperty("--x", Math.round(Math.random() * 40 - 20) + "px");
+  heart.innerHTML = PLUSH_HEART;
+  toy.appendChild(heart);
+  setTimeout(() => heart.remove(), 1000);
 }
 const STALL = stallSvg();
 const sceneOn = () => !$("scene").hidden;
-const sceneNow = () => (sceneOn() ? { hz: sceneHz, heroes: sceneHeroes(), stall: shopOK() ? STALL : "" } : null);
+const sceneNow = () => (sceneOn() ? { hz: sceneHz, heroes: sceneHeroes(), stall: shopOK() ? STALL : "", plush: PLUSH_SVG } : null);
 function hideScene() { $("scene").hidden = true; $("scene").innerHTML = ""; document.body.classList.remove("on-scene"); }
 let sceneFrame = 0;
 const redrawScene = () => { if (!sceneOn() || descending()) return; cancelAnimationFrame(sceneFrame); sceneFrame = requestAnimationFrame(drawScene); };

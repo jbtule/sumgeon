@@ -9,11 +9,12 @@
 // small sizes too.
 // Clothing (clothes.js, not in the game yet): every piece on its own, then all ten heroes in one
 // outfit, picked with three selects (head, face, neck) or stepped through sample outfits, big and
-// at the small sizes.
+// at the small sizes. Pluffy, the plus plushie (plushie.js): on each wall and at the small sizes.
 import { MON, NEW_MON, RETIRED, svg, bossForm } from "../../js/monsters.js";
 import { HEROES, heroSvg, dressed } from "../../js/heroes.js";
 import { CLOTHES, SPOTS, pieceSvg } from "../../js/clothes.js";
 import { TRAITS } from "../../js/traits.js";
+import { plushSvg } from "../../js/plushie.js";
 import { monsterName, monsterCleared, monsterWon } from "../../js/lines.js";
 
 const $ = (id) => document.getElementById(id);
@@ -199,5 +200,10 @@ for (const s of SPOTS) SEL[s].onchange = dressUI;
 $("wearNext").onclick = () => { sample = (sample + 1) % SAMPLES.length; setWear(SAMPLES[sample]); };
 $("wearNone").onclick = () => setWear(null);
 setWear(SAMPLES[0]);
+
+/* ---------- Pluffy, the plushie (plushie.js) ---------- */
+const plush = plushSvg();
+$("plushGrid").innerHTML = ALL_WALLS.map((w) => `<div data-stratum="${w}" style="background:var(--wall-${w})"><span class="p-big">${plush}</span>${SHORT[w]}</div>`).join("")
+  + `<div class="p-smalls">${[72, 40, 26].map((n) => `<i style="width:${n}px;height:${n}px">${plush}</i>`).join("")}</div>`;
 
 render(); reportUI();

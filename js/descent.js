@@ -32,7 +32,10 @@ const STARS = [[6, 10, 2, 0], [14, 34, 1.5, 1.2], [22, 16, 2.5, 2.1], [31, 48, 1
   [70, 20, 2.5, 1.1], [78, 6, 1.5, 2.2], [86, 30, 2, .8], [93, 14, 1.5, 1.9], [10, 60, 1.5, 2.7], [90, 56, 1.5, 1.4], [27, 70, 1, .4], [74, 66, 1, 2]];
 // stall: Trollar's stall (chest.js stallSvg), right of the door, behind the team (.d-stall, so
 // the start screen can put its tap target over it).
-export function surfaceHTML({ W, H, hz, heroes = [], stall = "" }) {
+// plush: Pluffy (plushie.js plushSvg), sitting in the grass at the captain's feet, between
+// them and the door, in front (.d-plush, the start screen's tap target goes over it too); by the
+// door with nobody picked.
+export function surfaceHTML({ W, H, hz, heroes = [], stall = "", plush = "" }) {
   hz = Math.round(hz);
   const door = Math.round(Math.max(64, Math.min(200, hz * 0.5, H * 0.24, W * 0.36))), doorW = Math.round(door * 0.72);
   const bulge = Math.round(door * 0.22), hillW = Math.round(Math.min(W * 1.1, door * 5.6)), doorAt = hz - Math.round(bulge * 0.92);
@@ -49,6 +52,14 @@ export function surfaceHTML({ W, H, hz, heroes = [], stall = "" }) {
     const right = i % 2 === (stall ? 1 : 0), k = Math.floor(i / 2), out = doorW / 2 + tW * 0.5 + k * tW * 0.72 + (right || !cap ? 4 : capW * 0.78);
     figs += fig(h, right ? out : -out, hz - Math.round(bulge * 0.35) - k * 3, tW, 4 - k, i + 1);
   });
+  let toy = "";
+  if (plush) {
+    // A toy, so no bob: it sits still, leaning a little, and only squishes when squeezed.
+    const pw = Math.round(cap ? capW * 0.48 : door * 0.4);
+    const cx = cap ? -(doorW / 2 + capW * 0.42) + capW * 0.4 : -(doorW / 2 + pw * 0.75);
+    const feet = cap ? hz + Math.round(bulge * 0.15) + Math.round(pw * 0.03) : hz - Math.round(bulge * 0.3);
+    toy = `<span class="d-plush" style="left:${Math.round(W / 2 + cx - pw / 2)}px;top:${Math.round(feet - pw * 0.95)}px;width:${pw}px;height:${pw}px">${plush}</span>`;
+  }
   let shop = "";
   if (stall) {
     // Past the first hero on the right where there's room (iPad, desktop), so they stand by
@@ -62,7 +73,7 @@ export function surfaceHTML({ W, H, hz, heroes = [], stall = "" }) {
     <div class="d-grass" style="height:${H - hz}px"></div>
     <i class="d-hill" style="left:${Math.round((W - hillW) / 2)}px;top:${hz - bulge}px;width:${hillW}px;height:${bulge + 3}px"></i>
     <i class="d-door" style="left:${Math.round((W - doorW) / 2)}px;top:${doorAt - door}px;width:${doorW}px;height:${door}px;--dh:${door}px"></i>
-    ${shop}${figs}</div>`;
+    ${shop}${figs}${toy}</div>`;
 }
 
 // opts: { wing, depth, mode: "enter" | "deeper", reduced, title, sub, mega, scene: { hz, heroes } }. title is the big line
@@ -87,7 +98,7 @@ export function playDescent(opts, onReady) {
   let html = "", y = 0;
   // The surface is the start scene's (opts.scene: its horizon and heroes), so the fall starts
   // from the frame the start screen showed.
-  if (plan.surface) { const sc = opts.scene || {}; html += surfaceHTML({ W: el.clientWidth || innerWidth, H, hz: sc.hz || skyH, heroes: sc.heroes, stall: sc.stall }); y += H; }
+  if (plan.surface) { const sc = opts.scene || {}; html += surfaceHTML({ W: el.clientWidth || innerWidth, H, hz: sc.hz || skyH, heroes: sc.heroes, stall: sc.stall, plush: sc.plush }); y += H; }
   let markY = 0;
   plan.layers.forEach((n) => {
     const w = WINGS[n], last = n === plan.layers[plan.layers.length - 1], gold = (opts.golden || []).includes(w.id) ? " golden" : "";
