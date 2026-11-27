@@ -1925,8 +1925,11 @@ function resume() {
    for a whole Hero Moment. st.music is its own switch, apart from the sound effects. */
 let music = null, musicCtx = null, momentDuck = false;
 const MUSIC_FADE_IN = 3000, MUSIC_FADE_OUT = 1200, MUSIC_PAUSE_FADE = 500;
+// Music is off for everyone for now (the user, 2026-11-27): nothing plays, and its switch in
+// Settings is hidden. Set true to bring it back; each player's own Music setting still applies.
+const MUSIC_ON = false;
 function musicWanted() {
-  return !!(st && st.music !== false && G.running && !G.paused && !G.onMenu && !document.hidden && !descending());
+  return !!(MUSIC_ON && st && st.music !== false && G.running && !G.paused && !G.onMenu && !document.hidden && !descending());
 }
 function musicNow(fadeMs) {
   const ctx = sfx.audioContext(), want = musicWanted() && ctx && ctx.state !== "closed";
@@ -1955,7 +1958,7 @@ const musicLine = () => {
   const m = musicState();
   return `Music: ${!m.on ? "off" : m.playing ? `playing (${m.id}${m.ducked ? ", ducked" : ""})` : "on, not playing (only in a fight)"}`;
 };
-const musicState = () => ({ playing: !!music, id: music ? music.id : null, seed: music ? music.seed : null, ducked: isTalking() || momentDuck, on: !st || st.music !== false });
+const musicState = () => ({ playing: !!music, id: music ? music.id : null, seed: music ? music.seed : null, ducked: isTalking() || momentDuck, on: MUSIC_ON && (!st || st.music !== false) });
 
 /* ---------- leaving the app mid-run ----------
    The page hidden (another app, the Home Screen, the phone locked) mid-fight pauses it as ⏸ does,
@@ -2513,7 +2516,7 @@ function settings(paused, tab) {
   <div class="grp"><span>Sounds</span><div class="list">
     ${toggle("sfxOn", "Sound effects", "", st.sfx)}
     ${toggle("voiceOn", "Voice", "Reads monsters and answers aloud", st.voice)}
-    ${toggle("musicOn", "Music", "Quiet sounds of each stratum in a fight", st.music !== false)}
+    ${MUSIC_ON ? toggle("musicOn", "Music", "Quiet sounds of each stratum in a fight", st.music !== false) : ""}
   </div></div>
   <div class="grp"><span>Sound check</span><div class="soundcheck"><pre id="soundState"></pre><button class="small" type="button" id="soundTest">🔊 Test sound</button></div></div>`)}
   ${paused ? "" : panel("progress", progressHTML())}
@@ -2523,7 +2526,7 @@ function settings(paused, tab) {
   $("openHelp").onclick = () => { helpFrom = !!paused; helpPage(); };
   $("sfxOn").onchange = () => { st.sfx = $("sfxOn").checked; sfx.setSfx(st.sfx); saveSettings(); };
   $("voiceOn").onchange = () => { st.voice = $("voiceOn").checked; setVoice(st.voice); saveSettings(); };
-  $("musicOn").onchange = () => { st.music = $("musicOn").checked; saveSettings(); musicNow(0); };
+  if ($("musicOn")) $("musicOn").onchange = () => { st.music = $("musicOn").checked; saveSettings(); musicNow(0); };
   // Sound check (Game tab): what the sound effects' audio reports, as ?audio shows, for the Home
   // Screen app, which has no address bar. Test plays the floor-cleared fanfare.
   // The voice's sprites: how many of those this stratum needs are in, the bytes held, and the lines
