@@ -2476,8 +2476,10 @@ function bookPage() {
     const s = seen[m.n], t = traitOf(m), share = mastery(m, w, recs), gold = s && share >= 1;
     // A boss whose Legend is beaten shows golden (DESIGN.md §14.2).
     const legendary = m.boss && legendBeaten(w, progress), art = legendary ? bossForm(m, "legend") : m;
+    // A met monster with looks opens them big (lookView) on a tap. Bosses have none.
+    const opens = s && LOOKS[m.n] ? ` tabindex="0" role="button" data-looks="${esc(m.n)}" aria-label="${esc(m.n)}: see its looks"` : "";
     beasts += s
-      ? `<section class="beast${gold ? " gold" : ""}${legendary ? " legendary" : ""}"><div class="beast-art">${ring(share)}${svg(art)}</div>
+      ? `<section class="beast${gold ? " gold" : ""}${legendary ? " legendary" : ""}${opens ? " opens" : ""}"${opens}><div class="beast-art">${ring(share)}${svg(art)}</div>
           <b>${esc(m.n)}</b>${m.boss ? '<small class="boss-tag">Boss</small>' : ""}${legendary ? `<small class="legend-tag">🌟 ${esc(art.n)} beaten</small>` : ""}
           ${t ? `<span class="trait">${t.icon} ${esc(t.name)}</span><small>${esc(t.text)}</small>` : "<small>No tricks: a good first fight</small>"}
           <small>Beaten ${s.beaten || 0}× · Learned ${Math.round(share * 100)}%</small>${looksRow(m)}</section>`
@@ -2498,6 +2500,61 @@ function bookPage() {
   <div class="btns"><button class="big" id="bookBack">Back</button></div>`);
   // Back to the pause screen mid-run, or to the start screen.
   $("bookBack").onclick = () => G.paused ? pause() : menu();
+  for (const c of document.querySelectorAll("#card [data-looks]")) {
+    const open = () => lookView(MON.find((x) => x.n === c.dataset.looks), c);
+    c.onclick = open;
+    c.onkeydown = (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); open(); } };
+  }
+}
+// A monster's looks, big, one at a time (a tap on its card in the book): a strip that swipes with
+// scroll-snap (iOS Safari's own paging), dots under it, and ← and → for a mouse or keyboard (and
+// the arrow keys). Each look: its art, its name and "Found", or a silhouette and "???" until it's
+// met. The voice says a found look's name as it comes into view (its recorded name line). A tap on
+// the art, ✕ or Escape closes it. It sits over the book's card, so the book keeps its place.
+function lookView(m, from) {
+  const all = [0, 1, 2, 3, 4].map((i) => lookOf(m, i)), found = (l) => !!seen[l.n], n = all.length;
+  const page = (l, i) => found(l)
+    ? `<div class="lv-page" role="group" aria-roledescription="look" aria-label="${i + 1} of ${n}: ${esc(l.n)}"><button type="button" class="lv-art" aria-label="Close">${svg(l)}</button><b>${esc(l.n)}</b><small class="lv-found">Found</small></div>`
+    : `<div class="lv-page" role="group" aria-roledescription="look" aria-label="${i + 1} of ${n}: not found yet"><button type="button" class="lv-art silhouette" aria-label="Close">${svg(l).replace(/aria-label="[^"]*"/, 'aria-label="A look not found yet"')}</button><b>???</b><small>Not found yet</small></div>`;
+  const v = document.createElement("div");
+  v.className = "lookview"; v.setAttribute("role", "dialog"); v.setAttribute("aria-modal", "true"); v.setAttribute("aria-label", `${m.n}'s looks`);
+  v.innerHTML = `<div class="lv-box">
+    <div class="lv-head"><h3>${esc(m.n)}</h3><small>${all.filter(found).length} of ${n} looks found</small><button type="button" class="icon-btn lv-close" aria-label="Close">✕</button></div>
+    <div class="lv-strip" role="region" aria-label="${esc(m.n)}'s looks" tabindex="0">${all.map(page).join("")}</div>
+    <div class="lv-nav"><button type="button" class="icon-btn lv-prev" aria-label="Previous look">←</button>
+      <div class="lv-dots">${all.map((l, i) => `<button type="button" class="lv-dot${found(l) ? " on" : ""}" aria-label="Look ${i + 1}${found(l) ? ": " + esc(l.n) : ""}"></button>`).join("")}</div>
+      <button type="button" class="icon-btn lv-next" aria-label="Next look">→</button></div></div>`;
+  $("card").appendChild(v);
+  const strip = v.querySelector(".lv-strip"), dots = [...v.querySelectorAll(".lv-dot")], prev = v.querySelector(".lv-prev"), next = v.querySelector(".lv-next");
+  const current = () => Math.max(0, Math.min(n - 1, Math.round(strip.scrollLeft / (strip.clientWidth || 1))));
+  // The look in view: its dot, the arrows, and its name said (only a found one).
+  let at = -1, t = 0;
+  const showing = () => {
+    const i = current();
+    if (i === at) return;
+    at = i;
+    dots.forEach((d, j) => d.setAttribute("aria-current", j === i ? "true" : "false"));
+    prev.disabled = i === 0; next.disabled = i === n - 1;
+    if (found(all[i])) say("m", monsterName(all[i]), true);
+  };
+  const go = (i) => strip.scrollTo({ left: Math.max(0, Math.min(n - 1, i)) * strip.clientWidth, behavior: reduced() ? "auto" : "smooth" });
+  // On scrollend where there is one (the swipe settled), else a moment after scrolling stops.
+  strip.addEventListener("scroll", () => { clearTimeout(t); t = setTimeout(showing, 150); }, { passive: true });
+  strip.addEventListener("scrollend", () => { clearTimeout(t); showing(); });
+  prev.onclick = () => go(current() - 1);
+  next.onclick = () => go(current() + 1);
+  dots.forEach((d, i) => { d.onclick = () => go(i); });
+  const keys = (e) => {
+    if (!v.isConnected) return document.removeEventListener("keydown", keys, true);
+    if (e.key === "ArrowLeft" || e.key === "ArrowRight") { e.preventDefault(); e.stopImmediatePropagation(); go(current() + (e.key === "ArrowLeft" ? -1 : 1)); }
+    else if (e.key === "Escape") { e.preventDefault(); e.stopImmediatePropagation(); close(); }
+  };
+  const close = () => { document.removeEventListener("keydown", keys, true); v.remove(); if (from && from.isConnected) from.focus({ preventScroll: true }); };
+  document.addEventListener("keydown", keys, true);
+  v.querySelector(".lv-close").onclick = close;
+  for (const b of v.querySelectorAll(".lv-art")) b.onclick = close;
+  showing();
+  v.querySelector(".lv-close").focus({ preventScroll: true });
 }
 // A hero's quips heard in Hero Moments (moments.js), "Quips: 1 of 3", gold when all are.
 function quipsHeard(d) {
