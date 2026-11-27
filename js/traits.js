@@ -91,7 +91,8 @@ export function traitOf(m) {
 //   The Megapede, 🐛 Curl Up: at half HP it curls into a ring, and hits under 20 do half damage.
 //   Mega Sigma Rex, 🥋 Flip: flips times facts (3 × 8 is thrown to show 8 × 3), as Judo Judy flips
 //     sums.
-export const mega = (m) => !!m && m.form === "mega" && !!m.trait2;
+// The Legend (DESIGN.md §14.2) fights with the same second trait.
+export const mega = (m) => !!m && (m.form === "mega" || m.form === "legend") && !!m.trait2;
 
 // Flip (Judo Judy): an addition of two numbers with the smaller first (3 + 8) is thrown, so it
 // shows the bigger first (8 + 3). The turnaround has the same answer and the same fact record
