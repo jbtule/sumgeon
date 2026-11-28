@@ -9,7 +9,9 @@
 // - 2nd: picture graphs and bar graphs of up to four categories, scale 1: put together and
 //   compare.
 // - 3rd: scaled picture graphs (each picture = 2 or 5) and scaled bar graphs (by 2s, 5s): one- and
-//   two-step "how many more, how many fewer"; line plots of lengths in halves and fourths.
+//   two-step "how many more, how many fewer". Its line plots of lengths in halves and fourths are
+//   left out for now (decided 2026-11-27: the school's 3rd grade guide doesn't ask for them, as
+//   with Rulerpillar's half inches); the keys and drawing still take them (L2, L4), for 4th grade.
 // - 4th: frequency tables, line plots, bar and picture graphs, with mode and range.
 // - 5th: line plots with the median; line graphs (a value, and the change between two points).
 //
@@ -96,7 +98,6 @@ export const CHART_LEVELS = [
   { id: "bar2", name: "Bar graphs", grade: "2nd", stratum: "mines" },
   { id: "spic3", name: "Scaled picture graphs", grade: "3rd", stratum: "tower" },
   { id: "sbar3", name: "Scaled bar graphs", grade: "3rd", stratum: "tower" },
-  { id: "plot3", name: "Line plots in ½ and ¼", grade: "3rd", stratum: "tower" },
   { id: "freq4", name: "Frequency tables", grade: "4th", stratum: "forge" },
   { id: "plot4", name: "Line plots: mode, range", grade: "4th", stratum: "forge" },
   { id: "graph4", name: "Graphs by 10s", grade: "4th", stratum: "forge" },
@@ -140,7 +141,7 @@ function setOf(f) {
     if (f.scale > 1) return f.form === "P" ? "spic3" : "sbar3";
     return f.form === "B" ? "bar2" : f.cats.length > 3 ? "pic2" : "pic1";
   }
-  if (f.form === "L") return f.den > 1 ? "plot3" : f.q.k === "me" ? "med5" : "plot4";
+  if (f.form === "L") return f.q.k === "me" ? "med5" : "plot4";
   return f.form === "F" ? "freq4" : "line5";
 }
 const qText = (q) => [q.k, q.a, q.b, q.v, q.d, q.d2].filter((x) => x !== undefined).join(".");
@@ -225,15 +226,6 @@ export function chartFacts() {
   // 3rd grade: each picture = 2 (halves for the odd ones) or 5; bars by 2s or 5s.
   cats(6, (i) => (i < 3 ? catData("P", 2, 3 + (i % 2), 2, 18, 1, 99, rnd) : catData("P", 5, 3, 5, 40, 5, 99, rnd)), () => ["n", "n", "m", "f", "t"]);
   cats(6, (i) => (i < 3 ? catData("B", 2, 4, 2, 18, 2, 99, rnd) : catData("B", 5, 4, 5, 45, 5, 999, rnd)), () => ["n", "m", "f", "t"]);
-  // 3rd grade line plots: lengths in halves (1 to 4 inches) or fourths (1 to 3 inches).
-  for (let i = 0; i < 6; i++) {
-    const den = i < 3 ? 2 : 4, from = den, to = den === 2 ? 8 : 12, obj = LENGTHS[i % 3];
-    const vals = plotVals(from + (den === 4 ? 1 : 0), to - (den === 4 ? 1 : 0), int(9, 13, rnd), 5, false, rnd);
-    const at = pickN([...new Set(vals)].filter((v) => vals.filter((x) => x === v).length >= 2), 2, rnd);
-    const gts = [...new Set(vals)].filter((v) => { const n = vals.filter((x) => x > v).length; return n >= 2 && n <= 9; });
-    for (const v of at) add({ form: "L", den, obj, from, to, vals, q: { k: "at", v } });
-    for (const v of pickN(gts, Math.min(2, gts.length), rnd)) add({ form: "L", den, obj, from, to, vals, q: { k: "gt", v } });
-  }
   // 4th grade: frequency tables (things in each place), line plots of counts, graphs by 10s.
   for (let i = 0; i < 6; i++) {
     const obj = Object.keys(PLACES)[i % 4];
