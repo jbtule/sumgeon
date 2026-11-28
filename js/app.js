@@ -369,15 +369,28 @@ function setMsg(t, c = "") { const m = $("msg"); m.textContent = t; m.className 
 // answer of two or more columns, written across too, so her floor is all one way (the kids found
 // switching confusing). Not a □ problem (typed into its □) or one with slots.
 const onMargot = () => { const m = G.floors && G.floors[G.floor]; return !!m && (m.base || m.n) === "Margot-Rythm" && G.hp > 0; };
+// Ones first (right to left): only a stacked problem, in columns, as it's worked on paper (on every
+// floor; Margot-Rythm's are almost all stacked). Answers written across are typed left to right.
 function onesFirst(p) {
-  if (!p) return false;
-  if (p.stacked) return true;
-  return onMargot() && (p.op === "+" || p.op === "-") && !p.sym && !p.slots && !p.fact && !p.blank && !p.missing && stackWidth(p) > 1 && !$("blank");
+  return !!(p && p.stacked);
+}
+// The typed digits under the line swap places, each sliding (in an arc, the outer ones over the
+// top) to its mirror column, glowing, then done(). Reduced motion: a short glow, no slide.
+const SWAP_MS = 900;
+function flipCells(done) {
+  const cells = [...document.querySelectorAll("#blank .scell")].filter((c) => c.textContent);
+  if (cells.length < 2 || reduced()) { cells.forEach((c) => c.classList.add("flipglow")); setTimeout(done, reduced() ? 500 : 0); return; }
+  const xs = cells.map((c) => c.getBoundingClientRect().left), n = cells.length;
+  cells.forEach((c, i) => {
+    const dx = xs[n - 1 - i] - xs[i], up = (i < n / 2 ? -1 : 1) * 0.55;
+    c.classList.add("flipglow");
+    c.animate([{ transform: "translate(0,0)" }, { transform: `translate(${dx / 2}px,${up}em) scale(1.15)` }, { transform: `translate(${dx}px,0)` }],
+      { duration: SWAP_MS - 150, easing: "ease-in-out", fill: "forwards", delay: 120 });
+  });
+  setTimeout(done, SWAP_MS + 120);
 }
 function ansUI() {
-  // Across, ones first (Margot-Rythm's floor): the answer box gets the same cells as a stacked answer.
-  if (onesFirst(G.cur) && !G.cur.stacked) { $("ans").innerHTML = `<span class="scells">${stackCells(G.cur, G.input)}</span>`; $("ans").classList.add("ones"); }
-  else { $("ans").textContent = G.input; $("ans").classList.remove("ones"); }
+  $("ans").textContent = G.input;
   // A whole time in two slots (Tick-Tockus): the one being typed glows, the one to come waits,
   // and Hit! says which: "Hour ✓", then "Minutes!".
   const go = $("pad").dataset.mode === "num" ? $("pad").querySelector('[data-k="go"]') : null;
@@ -1169,18 +1182,22 @@ function learnFrom(ok) {
 function submit() {
   if (G.next) return nextAfterMiss();
   if (G.busy || G.input === "") return;
+  // Ones first, typed the other way round (fast, tens first: 42 comes out 24): the answer's right,
+  // only flipped. First the digits visibly swap places under the line ("Ones first! Let's flip
+  // it."), then it's answered: it counts as a hinted answer (it hits, but builds no streak and isn't
+  // fast), not a miss.
+  if (!G.flipping && onesFirst(G.cur) && G.input.length > 1 && G.input !== String(G.cur.ans) && [...G.input].reverse().join("") === String(G.cur.ans)) {
+    G.flipping = true; G.busy = true; G.hinted = true;
+    setMsg("Ones first! Let's flip it.", "good");
+    say("p", PHRASE.onesFirst, true);
+    const done = () => { G.input = String(G.cur.ans); ansUI(); G.busy = false; submit(); G.flipping = false; };
+    flipCells(done);
+    return;
+  }
   G.tries++;
   // True or false swings to the truth as it's answered, right or wrong; fix it, answered right,
   // takes the number and levels.
   if (G.cur.op === "✓") { G.tfDone = true; probUI(); }
-  // Ones first, typed the other way round (fast, tens first: 42 comes out 24): the answer's right,
-  // only flipped. It's put the right way round and noted, and counts as a hinted answer (it hits,
-  // but builds no streak and isn't fast), not a miss.
-  if (onesFirst(G.cur) && G.input.length > 1 && G.input !== String(G.cur.ans) && [...G.input].reverse().join("") === String(G.cur.ans)) {
-    G.input = String(G.cur.ans); G.hinted = true; ansUI();
-    setMsg("Ones first! I flipped it for you.", "good");
-    say("p", PHRASE.onesFirst, true);
-  }
   // A comparison's answer is its symbol (<, = or >); everything else is a number.
   // A drawn shape was judged as it was cast (castShape).
   const right = G.cur.draw ? G.drawn === "right" : G.cur.slots ? G.slot.vals.every((v, i) => v !== "" && Number(v) === G.cur.slots[i]) : G.cur.sym ? G.input === G.cur.sym : Number(G.input) === G.cur.ans;
