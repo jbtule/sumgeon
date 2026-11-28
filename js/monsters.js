@@ -267,40 +267,28 @@ MON.push(
    +X.map((x)=>`<circle cx="${x-14}" cy="${B-47}" r="3.5" fill="#fff" opacity=".7"/>`).join('')}});
 
 // Graphzilla (reading charts, js/charts.js; on the prototype page, not in the game yet): a friendly
-// kaiju who is a bar chart. Its back plates are the bars, in the colors of the chart's things, and
-// they take the problem's data (m.plates, [{ v, c }], up to four; charts.js platesOf), as
-// Tick-Tockus's clock shows the time asked. Its tail curls up into the y axis, with tick spikes
-// and an arrow for a tip, and its flat back is the x axis. It holds a pointer, for reading charts.
+// kaiju standing upright, its back plates a bar chart rising behind it, in the colors of the chart's
+// things. The plates take the problem's data (m.plates, [{ v, c }], up to four; charts.js platesOf),
+// as Tick-Tockus's clock shows the time asked. A round body, a striped belly, a short tail, round feet.
 const GZ_PLATES = [{ v: 3, c: GOLD }, { v: 5, c: CORAL }, { v: 2, c: '#45d6e6' }, { v: 4, c: '#9a7bff' }];
 function graphzilla(c, plates) {
   const ps = (plates && plates.length ? plates : GZ_PLATES).slice(0, 4), most = Math.max(1, ...ps.map((p) => p.v));
-  const x0 = 38, span = 88, slot = span / ps.length, w = Math.min(24, slot - 4), BACK = 112;
-  const bars = ps.map((p, i) => { const h = 16 + 62 * Math.max(0, p.v) / most; return solid(`<rect x="${f1(x0 + slot * i + (slot - w) / 2)}" y="${f1(BACK - h)}" width="${f1(w)}" height="${f1(h + 14)}" rx="5"/>`, p.c); }).join('');
-  const BELLY = '#c8f0dc', CLAW = CREAM;
-  return `<path d="M24 48 H128 M24 76 H128" stroke="${CREAM}" stroke-width="2" stroke-dasharray="4 5" opacity=".3"/>`
-  // The tail: up the left as the y axis, ticks and an arrow tip.
-  +line(`<path d="M62 162 Q16 172 14 136 V34"/>`,c,14)+solid(`<path d="M14 12 L26 32 L2 32 Z"/>`,c)
-  +line(`<path d="M24 48 H31 M24 76 H31 M24 104 H31"/>`,CREAM,3)
-  +bars
-  // The body, its flat back the x axis, and a striped belly.
-  +solid(`<path d="M34 146 Q32 106 70 106 H138 Q172 106 172 142 Q174 182 126 182 H76 Q36 182 34 146 Z"/>`,c)
-  +`<path d="M36 110 H138" stroke="${CREAM}" stroke-width="3" stroke-linecap="round" opacity=".55"/>`
-  +solid(`<ellipse cx="124" cy="150" rx="32" ry="24"/>`,BELLY)
-  +`<path d="M98 142 H150 M100 154 H148 M106 166 H142" ${thin(2.5)} opacity=".3"/>`
-  // Legs and feet with claws.
-  +foot(74,192,18)+foot(130,192,18)
-  +solid(`<rect x="58" y="164" width="32" height="26" rx="11"/><rect x="114" y="164" width="32" height="26" rx="11"/>`,c)
-  +`<path d="M62 190 l3 -6 l3 6 M70 190 l3 -6 l3 6 M78 190 l3 -6 l3 6 M118 190 l3 -6 l3 6 M126 190 l3 -6 l3 6 M134 190 l3 -6 l3 6" fill="${CLAW}" stroke="${DK}" stroke-width="2" stroke-linejoin="round"/>`
-  // The arm, and the pointer it holds.
-  +line(`<path d="M172 136 L200 104"/>`,'#c98a4a',4)+solid(`<circle cx="201" cy="102" r="5"/>`,GOLD)
-  +solid(`<ellipse cx="166" cy="138" rx="13" ry="9" transform="rotate(-35 166 138)"/>`,c)
-  // The head: a round kaiju head with a snout to the right, two little horns.
-  +solid(`<path d="M146 50 L150 34 L158 48 Z M166 46 L174 30 L178 46 Z"/>`,GOLD)
-  +solid(`<path d="M128 84 Q124 46 160 44 Q196 42 202 74 Q206 104 170 108 Q132 112 128 84 Z"/>`,c)
-  +`<circle cx="196" cy="72" r="2.5" fill="${DK}"/><circle cx="201" cy="78" r="2.5" fill="${DK}"/>`
-  +`<ellipse cx="141" cy="88" rx="6" ry="3.5" fill="#ff7a6e" opacity=".7"/>`
-  +eye(150,68,10)+eye(175,66,10)
-  +`<path d="M152 92 Q170 104 190 90" ${ds}/><path d="M160 95 l3 7 l4 -5 M178 97 l3 6 l3 -7" fill="${CREAM}" stroke="${DK}" stroke-width="2" stroke-linejoin="round"/>`;
+  const x0 = 40, span = 120, slot = span / ps.length, w = Math.min(24, slot - 4), BASE = 110;
+  const bars = ps.map((p, i) => { const h = 40 + 58 * Math.max(0, p.v) / most; return solid(`<rect x="${f1(x0 + slot * i + (slot - w) / 2)}" y="${f1(BASE - h)}" width="${f1(w)}" height="${f1(h + 14)}" rx="5"/>`, p.c); }).join('');
+  const BELLY = '#c8f0dc';
+  return bars
+  // A short tail, then the body and its striped belly.
+  +solid(`<path d="M150 170 Q186 176 190 160 Q172 168 150 156 Z"/>`,c)
+  +solid(`<path d="M56 170 Q50 92 100 86 Q150 92 144 170 Q144 196 100 196 Q56 196 56 170 Z"/>`,c)
+  +solid(`<ellipse cx="100" cy="166" rx="28" ry="25"/>`,BELLY)
+  +`<path d="M82 156 H118 M78 168 H122 M84 180 H116" ${thin(2.5)} opacity=".25"/>`
+  // Round feet and little arms.
+  +solid(`<ellipse cx="74" cy="198" rx="20" ry="9"/><ellipse cx="126" cy="198" rx="20" ry="9"/>`,c)
+  +solid(`<ellipse cx="54" cy="160" rx="9" ry="15" transform="rotate(25 54 160)"/><ellipse cx="146" cy="160" rx="9" ry="15" transform="rotate(-25 146 160)"/>`,c)
+  // The face: round eyes, cheeks, a smile.
+  +eye(86,114,10)+eye(114,114,10)
+  +`<ellipse cx="74" cy="130" rx="7" ry="4" fill="#ff7a6e" opacity=".6"/><ellipse cx="126" cy="130" rx="7" ry="4" fill="#ff7a6e" opacity=".6"/>`
+  +`<path d="M90 130 Q100 138 110 130" ${ds}/>`;
 }
 NEW_MON.push(
  {n:'Graphzilla',op:'▥',sym:'📊',stratum:"every stratum, its grade's charts",c:'#2fa37a',hits:3,
@@ -364,9 +352,8 @@ export const ANCHOR = {
   "Margot-Rythm": { eyes: [[82, 41, 10], [118, 41, 10]], mouth: [100, 129], top: [100, 1], neck: [100, 148], ground: 193 },
   // Polly-Gon (NEW_MON): its mouth is the beak, its top the head under the crest.
   "Polly-Gon": { eyes: [[86, 40, 11], [114, 40, 11]], mouth: [100, 62], top: [100, 12], neck: [100, 80], ground: 196 },
-  // Graphzilla (NEW_MON): its head is at the top right, its top between the horns; its neck is
-  // under the head, on the body.
-  Graphzilla: { eyes: [[150, 68, 10], [175, 66, 10]], mouth: [172, 98], top: [164, 46], neck: [148, 112], ground: 198 }
+  // Graphzilla (NEW_MON): upright, its head the top of its round body; no neck, so it's under the smile.
+  Graphzilla: { eyes: [[86, 114, 10], [114, 114, 10]], mouth: [100, 132], top: [100, 88], neck: [100, 144], ground: 205 },
 };
 const st = `stroke="${DK}" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"`;
 // Each accessory: (anchor, color) → SVG drawn over the monster.
