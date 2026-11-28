@@ -1084,7 +1084,7 @@ _Built 2026-11-27. Fluent facts are counted from the fact records (learned and q
 _Built 2026-11-27. The ones seen in play are recorded as they happen (no event map: straight into earned); Piggy Bank and Every Quip are worked out from the state. Palindromes count from two digits (44), since a kindergartner's answers rarely reach three. Double High Five is any team hero's digit twice in the answer, not only 5s. Lucky Seven is the finishing hit of the win that frees the cursed 7. Rewards are items._
 - 🎯 **Exactly Zero**: the finishing hit leaves the monster at exactly 0 HP.
 - 🪞 **Palindrome**: an answer that reads the same backward, like 121.
-- 💯 **Triple Digits**: a single hit of 100 or more.
+- 💯 **Triple Digits**: a single hit of 100 or more, before any bonus (a crit, a power hit, a Hero Moment, a trait or the totem): the answer itself.
 - 👀 **Seeing Double**: two of the same hero at once, like 55 or 77 (it was Double High Five, which only fit 55; same id).
 - 🎆 **All Hands**: an answer of three or more digits where every digit is a rescued hero.
 - 7️⃣ **Lucky Seven**: break Sevenstein's curse with an answer containing a 7.

@@ -1346,7 +1346,7 @@ function submit() {
       // Surprises in the hit (achievements.js hitSurprises): exactly 0 HP left, a palindrome, a
       // hit of 100 or more, two of one hero, every digit a hero. Recorded quietly.
       G.lastTyped = typed;
-      surprise(...hitSurprises({ ans: G.cur.sym || G.cur.draw || G.cur.slots || G.cur.spell ? null : G.cur.ans, typed, dmg, hpLeft: G.hp, team: [...new Set([team.captain, ...team.rescued])].filter((d) => d != null) }));
+      surprise(...hitSurprises({ ans: G.cur.sym || G.cur.draw || G.cur.slots || G.cur.spell ? null : G.cur.ans, typed, dmg, base: Math.round(G.cur.ans * (G.cur.reversed ? 0.5 : 1)) || 0, hpLeft: G.hp, team: [...new Set([team.captain, ...team.rescued])].filter((d) => d != null) }));
       pop((boost ? "Hero! " : bonus.power ? "Power! " : crit ? "Crit! " : "") + "−" + dmg, crit || bonus.power || !!boost);
       restartAnim($("mon"), "hit");
       if (crit && !mo) restartAnim($("arena"), "shake");

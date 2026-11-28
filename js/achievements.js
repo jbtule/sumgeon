@@ -226,14 +226,16 @@ export function holidaysOn(d) {
 //   ans:    the answer, when it's a number typed on the pad (null for a symbol, a drawing, a time)
 //   typed:  the digits that fly at the monster (heroes on the team fly as their hero)
 //   dmg:    the hit's damage; hpLeft: the monster's HP after it (app.js doesn't clamp it at 0)
+//   base:   the hit before any bonus (crits, power hits, Hero Moments, traits, the totem): Triple
+//           Digits counts that, so it's about the math, not a boosted hit
 //   team:   the team's digits (the captain and the rescued heroes)
 // Palindromes count from two digits (11, 44, 121): a kindergartner's answers are mostly two digits
 // at most, and 44 reads the same both ways just as 121 does.
-export function hitSurprises({ ans, typed, dmg, hpLeft, team }) {
+export function hitSurprises({ ans, typed, dmg, base, hpLeft, team }) {
   const out = [], digits = /^\d+$/.test(String(typed ?? "")) ? String(typed) : "", on = new Set(team || []);
   if (hpLeft === 0) out.push("surprise:zero");
   if (Number.isInteger(ans) && ans >= 10 && String(ans) === [...String(ans)].reverse().join("")) out.push("surprise:palindrome");
-  if (dmg >= 100) out.push("surprise:triple");
+  if ((base ?? dmg) >= 100) out.push("surprise:triple");
   const count = {};
   for (const c of digits) count[c] = (count[c] || 0) + 1;
   if (Object.keys(count).some((c) => count[c] >= 2 && on.has(Number(c)))) out.push("surprise:double");

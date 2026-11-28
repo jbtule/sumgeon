@@ -151,6 +151,9 @@ assert.deepEqual(hit({ ans: 121, typed: "121" }), ["surprise:palindrome"]);
 assert.deepEqual(hit({ ans: 7, typed: "7" }), [], "one digit isn't a palindrome");
 assert.deepEqual(hit({ ans: null, typed: "44" }), [], "a comparison or a time isn't typed as a number");
 assert.deepEqual(hit({ dmg: 100 }), ["surprise:triple"]);
+// Triple Digits ignores bonuses: a crit or a Hero Moment on 60 hitting for 2000 doesn't count, 120 does.
+assert.deepEqual(hit({ dmg: 2000, base: 60 }), []);
+assert.deepEqual(hit({ dmg: 120, base: 120 }), ["surprise:triple"]);
 assert.deepEqual(hit({ ans: 55, typed: "55", team: [5] }), ["surprise:palindrome", "surprise:double"]);
 assert.deepEqual(hit({ ans: 505, typed: "505", team: [5] }), ["surprise:palindrome", "surprise:double"], "505: two 5s, but 0 isn't on the team");
 assert.deepEqual(hit({ ans: 505, typed: "505", team: [5, 0] }), ["surprise:palindrome", "surprise:double", "surprise:allhands"]);
