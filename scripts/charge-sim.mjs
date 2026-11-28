@@ -5,7 +5,7 @@
 // (×N) or find the monster braced (÷N), with the floor's typical hit taken as the floor starts,
 // as app.js does. Target: almost never from kindergarten to 3rd grade; mostly in the Forge.
 // Run: node scripts/charge-sim.mjs [stratum] [runs] (CHARGE_AT=<n> tries another threshold)
-import { BANDS, choose, factOf, record, probeKey, tierOf, skipTo, SKIP_PROBES, SKIP_WINDOW, MAX_LEAP, fluentTime, monsterHP, RECENT, drawHit, openLevels, reachOf, chaptersOf, reviewFacts, placeReviews, floorTypical, levelTypical } from "../js/learn.js";
+import { BANDS, choose, factOf, record, probeKey, tierOf, skipTo, SKIP_PROBES, SKIP_WINDOW, MAX_LEAP, fluentTime, fluentFor, monsterHP, RECENT, drawHit, openLevels, reachOf, chaptersOf, reviewFacts, placeReviews, floorTypical, levelTypical } from "../js/learn.js";
 import { WINGS, depthHP, depthScale, runFloors, bandOf, PATHS, stepsOpen, stepMonsters, bossStage, BOSS_HP, MEGA_EVERY } from "../js/wings.js";
 import { asks } from "../js/traits.js";
 import { chargeFor, chargedHit, CHARGE_AT } from "../js/charge.js";
@@ -29,14 +29,14 @@ function trial(wing, seed, { slip = 0.05, think = [1.2, 2.6], tap = [0.5, 0.9] }
       for (let guard = 0; hp > 0 && guard < 80; guard++) {
         const op = m.op === "mix" || bk !== wing.band ? null : m.op;
         const probe = f.on && f.cool <= 0 ? probeKey(bk, recs, rnd, recent, avoid, f.leap, kinds, reachOf(path, ch, bk)) : null;
-        const o = lv(), key = probe || choose(bk, recs, { now, rnd, recent, op, asks: kinds, avoidAns: avoid, depth, open: o.levels, review: o.review, reviews });
+        const o = lv(), key = probe || choose(bk, recs, { now, rnd, recent, op, asks: kinds, avoidAns: avoid, depth, open: o.levels, review: o.review, steps: o.steps, reviews });
         const fact = factOf(key, rnd), c = chargeFor(levelTypical(bk, key, m), typical, AT);
         out.n++;
         if (c && c.up) { out.up++; out.ups[c.up] = (out.ups[c.up] || 0) + 1; }
         if (c && c.down) { out.down++; out.downs[c.down] = (out.downs[c.down] || 0) + 1; }
         if (c) { const w = (m.base || m.n) + " " + (c.up ? "×" + c.up : "÷" + c.down) + " " + key.replace(/\d+/g, "n"); out.where[w] = (out.where[w] || 0) + 1; }
         const ms = 1000 * (think[0] + rnd() * (think[1] - think[0]) + String(fact.ans).length * (tap[0] + rnd() * (tap[1] - tap[0])) + 0.3);
-        const ok = rnd() > slip, limit = fluentTime(B, fact.sym || fact.ans), fluent = ok && ms < limit;
+        const ok = rnd() > slip, limit = fluentFor(bk, key, fact.sym || fact.ans), fluent = ok && ms < limit;
         recs[key] = record(recs[key], { ok, ms, hinted: false, now, fluentMs: limit });
         if (probe) {
           f.hist = [fluent].concat(f.hist).slice(0, SKIP_WINDOW);

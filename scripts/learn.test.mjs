@@ -266,3 +266,47 @@ import { patternFacts } from "../js/patterns.js";
   assert.ok(got.size >= 8, `a thin review varies (${got.size} different in 12)`);
   assert.ok(REVIEW_MIN >= 4);
 }
+
+// New facts from every open step in turn (freshKey), not only the first open level: the Forge's
+// × 10s (one step) held back multiplying by one digit and two-digit × two-digit (the next two)
+// for runs, all three Timesaur's. Inside a step, its levels still come in order.
+{
+  const { freshKey, FIRST_STEP, fluentMsOf, fluentFor, fluentTime } = await import("../js/learn.js");
+  const forge = PATHS.forge, Lv = (name) => BANDS.fourth.levels.findIndex((l) => l.name === name);
+  assert.equal(forge[5].name, "Two-digit × two-digit");
+  const o = openLevels(forge, [0, 1, 2, 3, 4, 5], "fourth"); // the review, place value … two-digit × two-digit
+  assert.deepEqual(o.steps, [[Lv("Compare to a million"), Lv("Round to any place")], [Lv("Add and subtract to a million")], [Lv("× 10, 100 and 1000")], [Lv("Multiply by one digit")], [Lv("Two-digit × two-digit")]], "each open step's levels, the review left out");
+  // Timesaur (×) with × 10s, × one digit and two-digit × two-digit open, nothing seen: each gets new facts.
+  let s = 7; const rnd = () => ((s = (s * 1103515245 + 12345) % 2147483648) / 2147483648);
+  const got = {}, timesaur = MON.find((m) => m.n === "Timesaur");
+  for (let i = 0; i < 3000; i++) {
+    const k = choose("fourth", {}, { now: 0, rnd, op: "×", asks: asks(timesaur), open: o.levels, review: o.review, steps: o.steps });
+    const L = pool("fourth").find((f) => f.key === k).level;
+    got[L] = (got[L] || 0) + 1;
+  }
+  for (const n of ["× 10, 100 and 1000", "Multiply by one digit", "Two-digit × two-digit"]) assert.ok(got[Lv(n)] > 300, `${n} gets new facts (${got[Lv(n)]})`);
+  // The earliest step with new facts gets FIRST_STEP, the rest share the others; levels in order.
+  const fresh = [{ key: "a1", level: 0 }, { key: "a2", level: 1 }, { key: "b", level: 2 }, { key: "c", level: 3 }];
+  const tally = { a1: 0, a2: 0, b: 0, c: 0 };
+  for (let i = 0; i < 4000; i++) tally[freshKey(fresh, [[0, 1], [2], [3]], rnd)]++;
+  assert.equal(tally.a2, 0, "a step's second level waits for its first");
+  assert.ok(Math.abs(tally.a1 / 4000 - FIRST_STEP) < 0.04 && Math.abs(tally.b - tally.c) < 300, JSON.stringify(tally));
+  // Without steps, the old rule: the first level with new ones.
+  for (let i = 0; i < 50; i++) assert.equal(freshKey(fresh, null, rnd), "a1");
+  // A step with nothing new left is passed over: the next one is the earliest.
+  for (let i = 0; i < 50; i++) assert.ok(["b", "c"].includes(freshKey(fresh.slice(2), [[0, 1], [2], [3]], rnd)));
+
+  // A level's own fluent time (long written work), else its band's; the digits still add a second each.
+  const k = (name) => pool("fourth").find((f) => f.level === Lv(name)).key;
+  assert.equal(fluentMsOf("fourth", k("Compare to a million")), BANDS.fourth.fluentMs);
+  assert.ok(fluentMsOf("fourth", k("Add and subtract to a million")) >= 15000);
+  assert.ok(fluentMsOf("fourth", k("Two-digit × two-digit")) > fluentMsOf("fourth", k("Multiply by one digit")));
+  assert.equal(fluentFor("fourth", k("Two-digit × two-digit"), 621), fluentTime(fluentMsOf("fourth", k("Two-digit × two-digit")), 621));
+  assert.equal(fluentMsOf("kinder", "+2,3"), BANDS.kinder.fluentMs, "a band with no level times");
+  const three = pool("second").find((f) => BANDS.second.levels[f.level].name === "Add within 1000, regrouping");
+  assert.ok(fluentMsOf("second", three.key) > BANDS.second.fluentMs, "the Mines' three-digit work");
+  // Placement and box jumps (and so the ★ all-fast star) go by it: 18 s on a 5-digit sum is fluent.
+  const sum = pool("fourth").find((f) => f.level === Lv("Add and subtract to a million") && f.ans >= 10000);
+  assert.equal(record(null, { ok: true, ms: 18000, hinted: false, now: 1, fluentMs: fluentFor("fourth", sum.key, sum.ans) }).b, 3, "placed at 18 s");
+  console.log("✓ learn: new facts from every open step; a level's own fluent time");
+}

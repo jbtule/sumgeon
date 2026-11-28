@@ -3,7 +3,7 @@
 // { b: box 0–4, n: seen, c: right, ms: average answer time, t: last seen }) and the stratum's
 // progress (wings.js); app.js draws it. No DOM: runs in Node for scripts/progress.test.mjs.
 import { fourthLine } from "./fourth.js";
-import { BANDS, pool, keyOf, factOf, learned, topBox, stepFacts, fluentTime, TIER_KNOWN, chaptersOf } from "./learn.js";
+import { BANDS, pool, keyOf, factOf, learned, topBox, stepFacts, fluentFor, TIER_KNOWN, chaptersOf } from "./learn.js";
 import { WINGS, PATHS, stepsOpen, chapterOf, megasOf, MEGA_EVERY, OPEN_AT, learnedShare, legendShare, legendDue, legendBeaten, deepest } from "./wings.js";
 import { spokenFact } from "./problems.js";
 import { coinOf } from "./coins.js";
@@ -19,11 +19,11 @@ function bandIndex() {
 }
 // Every key any band asks (older saved keys that no band asks any more are left out).
 export const known = (key) => bandIndex().has(key);
-// How long a fluent answer to this fact may take (learn.js fluentTime: the band's time, plus a
+// How long a fluent answer to this fact may take (learn.js fluentFor: its level's or band's time, plus a
 // second for each extra digit to tap).
 export function fluentLimit(key) {
   const k = bandIndex().get(key);
-  return k ? fluentTime(BANDS[k.band].fluentMs, k.ans) : 4000;
+  return k ? fluentFor(k.band, key, k.ans) : 4000;
 }
 // A fact's state from its record: "new" (not seen), "learning" (box 0–2), "learned" (box 3) or
 // "mastered" (box 4); fluent: learned and answered, on average, inside its fluent time.
@@ -117,6 +117,12 @@ export function stepRows(wing, progress, recs, chapter) {
       keys: fs.map((f) => f.key)
     };
   });
+}
+// The words for a step's state: "Learned ✓"; an open step "Up now" once it's been asked, and "Up
+// next" until then (open, but no problem from it yet: a step can wait a little for its turn); "Not
+// started" for one not open yet.
+export function stepLabel(r) {
+  return r.state === "learned" ? "Learned ✓" : r.state === "now" ? (r.seen ? "Up now" : "Up next") : "Not started";
 }
 // Above each path: the chapter they're on and the next mega boss's depth; how close the next
 // stratum is; and the Legend.

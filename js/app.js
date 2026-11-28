@@ -3,7 +3,7 @@
 import { MON, svg, LOOKS, lookOf, allLooks, CHOMP_SHUT, bossForm, jerseyFrac } from "./monsters.js";
 import { chompPose, morePose, mouthOf, SNAP, FLIP_MS, SNAP_MS, EAT_MS } from "./chomp.js";
 import { spokenProblem, spokenFact } from "./problems.js";
-import { BANDS, choose, factOf, record as recordAnswer, helpFor, monsterHP, probeKey, tierOf, skipTo, SKIP_PROBES, SKIP_WINDOW, MAX_LEAP, fluentTime, spellKey, RECENT, pool, drawHit, openLevels, reachOf, chaptersOf, pathBands, reviewFacts, placeReviews, examKey, examFacts, examRound, hpOf, endlessKey, floorTypical, typicalHit, levelTypical } from "./learn.js";
+import { BANDS, choose, factOf, record as recordAnswer, helpFor, monsterHP, probeKey, tierOf, skipTo, SKIP_PROBES, SKIP_WINDOW, MAX_LEAP, fluentTime, fluentFor, spellKey, RECENT, pool, drawHit, openLevels, reachOf, chaptersOf, pathBands, reviewFacts, placeReviews, examKey, examFacts, examRound, hpOf, endlessKey, floorTypical, typicalHit, levelTypical } from "./learn.js";
 import { chargeFor, chargedHit, chargeBadge, chargePop } from "./charge.js";
 import { countSvg, readShape, judgeShape, cleanFor, isDrawKey, SHAPE_LINE, SHAPE_CODE, article } from "./shapes.js";
 import { hintFor, STRATEGIES } from "./hints.js";
@@ -41,7 +41,7 @@ import { chestAfter, lockKey, lockOf, contents, moneyFor, fewest, setBills, ITEM
 import { kPrices, priceOf, MANY, manyOK, howMany, mostFor, sumText, moneyText as moneyAmt, timesOK, payMany, freshShop, restock, forSale, TOKENS, valueOf, empty as emptyCounter, total as counterTotal, left as purseLeft, purseFor, putDown, takeBack, enough, canAfford } from "./shop.js";
 import { CLOTHES, SPOTS, clothesById, pieceSvg } from "./clothes.js";
 import { LOOT, askLine, itemName, itemWhat, itemUse, moneyLine, purseLine, ALWAYS, runSprites, SHOP, clothingName, priceLine, changeLine, manyLine, affordLine, plushName, plushFavLine } from "./lines.js";
-import { stepRows, stratumSummary, strataOrder, gridOf, gridsFor, kindsFor, needsWork, factLabel, factDetail, factState, STATE_WORDS, secs } from "./progress.js";
+import { stepRows, stratumSummary, strataOrder, gridOf, gridsFor, kindsFor, needsWork, factLabel, factDetail, factState, STATE_WORDS, secs, stepLabel } from "./progress.js";
 import { chestSvg, purseSvg, walletSvg, walletMini, stallSvg, priceTag, billSvg, pieSvg } from "./chest.js";
 import { newKey, keysFor, isKey, linkFor, keyFromLink } from "./seal.js";
 import { syncPlayer, remoteVersion, SYNC_URL } from "./sync.js";
@@ -973,7 +973,7 @@ function newProblem() {
   const lean = { digit: team.captain, digitShare: captainLean() ? CAPTAIN_BIAS : 0, avoidDigitShare: firstFight() ? CAPTAIN_HOLD : 0 };
   const key = forced || (exam && exam.key) || spell || probe
     || (endless && endlessKey(PATHS[wing().id], bk, recs, Object.assign({ now: Date.now(), recent: G.recent, retry: due ? due.key : null, asks: kinds, like: prefers(m), avoidAns }, lean)))
-    || choose(bk, recs, Object.assign({ now: Date.now(), recent: G.recent, retry: due ? due.key : null, op, asks: kinds, like: prefers(m), depth: G.depth, avoidAns, open: lv.levels, review: lv.review, reviews }, lean));
+    || choose(bk, recs, Object.assign({ now: Date.now(), recent: G.recent, retry: due ? due.key : null, op, asks: kinds, like: prefers(m), depth: G.depth, avoidAns, open: lv.levels, review: lv.review, steps: lv.steps, reviews }, lean));
   // Fourth down (Quarterjack): every 4th problem on the floor, counted as a charge is; a right
   // answer on it is a touchdown (traits.js hitBy, from the problem's down).
   const down = fourthDown(m, G.onFloor);
@@ -1318,7 +1318,7 @@ function learnFrom(ok) {
   if (G.cur.spell) return null;
   const bk = curBand(), b = BANDS[bk], key = G.cur.key, ms = performance.now() - G.t0;
   // Fluent: right, unhinted and quick, with a second more for each extra digit to tap.
-  const limit = fluentTime(b.fluentMs, G.cur.sym || G.cur.ans);
+  const limit = fluentFor(bk, key, G.cur.sym || G.cur.ans);
   const before = stepsNow().open, fluent = ok && !G.hinted && ms < limit, f = flowOf(bk);
   // The achievements' counts (DESIGN.md §14.4): a comeback (a missed fact, right on its own), and
   // today as a practice day; and a holiday's surprise (§14.5).
@@ -1791,7 +1791,7 @@ function chestSubmit(C) {
   const p = C.p, ok = p.sym ? C.input === p.sym : Number(C.input) === p.ans;
   C.busy = true;
   // Recorded like any answer (learn.js record), with no damage.
-  const ms = performance.now() - C.t0, limit = fluentTime(BANDS[st.band].fluentMs, p.sym || p.ans);
+  const ms = performance.now() - C.t0, limit = fluentFor(st.band, C.key, p.sym || p.ans);
   recs[C.key] = recordAnswer(recs[C.key], { ok, ms, hinted: false, now: Date.now(), fluentMs: limit });
   store.player(PID).set("facts", recs);
   checkAchievements();
@@ -2796,7 +2796,7 @@ function settings(paused, tab) {
   const tabs = [
     ...(paused ? [] : [{ id: "players", icon: "👥", label: "Players" }]),
     { id: "game", icon: "🎨", label: "Game" },
-    ...(paused ? [] : [{ id: "progress", icon: "📈", label: "Progress" }]),
+    { id: "progress", icon: "📈", label: "Progress" },
     { id: "about", icon: "ℹ️", label: "About" },
   ];
   const on = tabs.some((t) => t.id === tab) ? tab : tabs[0].id;
@@ -2812,7 +2812,7 @@ function settings(paused, tab) {
     ${MUSIC_ON ? toggle("musicOn", "Music", "Quiet sounds of each stratum in a fight", st.music !== false) : ""}
   </div></div>
   <div class="grp"><span>Sound check</span><div class="soundcheck"><pre id="soundState"></pre><button class="small" type="button" id="soundTest">🔊 Test sound</button></div></div>`)}
-  ${paused ? "" : panel("progress", progressHTML())}
+  ${panel("progress", progressHTML())}
   ${panel("about", aboutHTML())}
   <div class="btns"><button class="big" id="done">Done</button></div>`);
   wireTabs();
@@ -2837,7 +2837,8 @@ function settings(paused, tab) {
   soundState(); const soundTimer = setInterval(() => { if (!$("soundState")) clearInterval(soundTimer); else soundState(); }, 800);
   $("soundTest").onclick = () => { sfx.restart(sfx.victory); setTimeout(soundState, 300); };
   wireSwatches();
-  if (!paused) { wirePlayers(); wireProgress(); showLink(null); }
+  wireProgress(); // read-only, so it's there mid-run too (the facts are saved as they're answered)
+  if (!paused) { wirePlayers(); showLink(null); }
   $("done").onclick = () => { if (linkView) showLink(null); (paused ? pause : menu)(); };
 }
 // Tabs (the WAI-ARIA tabs pattern): a tap, or ←/→/Home/End on the tab row, picks a tab and shows
@@ -2907,7 +2908,7 @@ function progressHTML() {
       const head = r.chapter !== lastCh ? `<li class="pg-ch">Chapter ${r.chapter}${r.chapter > s.chapter ? " (not open yet)" : ""}</li>` : "";
       lastCh = r.chapter;
       const tags = [r.priority ? '<span class="pg-star" title="Priority standard"><span aria-hidden="true">★</span><span class="sr">priority</span></span>' : "", r.ongoing ? '<span class="pg-tag">ongoing</span>' : "", r.review ? '<span class="pg-tag">review</span>' : ""].join("");
-      const state = { learned: "Learned ✓", now: r.seen ? "In progress" : "Up now", later: "Not started" }[r.state];
+      const state = stepLabel(r);
       return `${head}<li class="pg-step st-${r.state}"><div class="pg-step-top"><b>${esc(r.name)}</b>${tags}<span class="pg-state">${state}</span></div>
         ${pgBar(r.share, r.total ? r.mastered / r.total : 0)}<small>${r.learned} of ${r.total} learned${r.mastered ? ` · ${r.mastered} mastered` : ""}${r.seen && r.state !== "learned" ? ` · ${r.seen} seen` : ""}</small></li>`;
     }).join("");

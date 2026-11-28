@@ -80,7 +80,7 @@ const cellar = PATHS.cellar;
 {
   const tower = PATHS.tower, o = openSteps(tower, {}, 1);
   assert.deepEqual(openLevels(tower, o.open, "third").levels, [0, 1, 2], "all of × first");
-  assert.deepEqual(openLevels(tower, o.open, "addT"), { levels: [0, 1], review: [0, 1] }, "adding within 1000 is the Tower's review");
+  assert.deepEqual(openLevels(tower, o.open, "addT"), { levels: [0, 1], review: [0, 1], steps: [] }, "adding within 1000 is the Tower's review (never new: no steps to take new facts from)");
   assert.equal(reachOf(tower, 1, "third"), 5, "chapter 1 reaches division");
   // Probes go no further than the chapter: a fluent player skips ahead to division, not to fractions.
   const r = Object.fromEntries(pool("third").filter((f) => f.level <= 4).map((f) => [f.key, learnedRec]));

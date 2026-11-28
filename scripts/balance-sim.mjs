@@ -8,20 +8,45 @@
 // priority steps (which, with the boss beaten, opens the next one), when each chapter's first step
 // joins, and how many steps are open at most. Target: a fluent player well inside the second
 // chapter; a learner never skips, and never has more than three new steps.
-// Run: node scripts/balance-sim.mjs [stratum]
-import { BANDS, choose, factOf, record, probeKey, tierOf, skipTo, SKIP_PROBES, SKIP_WINDOW, MAX_LEAP, fluentTime, monsterHP, RECENT, drawHit, openLevels, reachOf, chaptersOf, reviewFacts, placeReviews, stepShare, JOIN_AT } from "../js/learn.js";
+// Long written work (a 5-digit sum in columns, 27 × 23, 936 ÷ 3) takes longer than a fact from
+// memory, so each answer adds the work it takes (workS), scaled to the player's speed; --flat
+// leaves it out (the model before 2026-11-28). It also prints, for each stratum, how late the
+// path's steps start (the runs from a step joining to its first problem) and the share of the
+// priority steps learned by run 10.
+// Run: node scripts/balance-sim.mjs [stratum] [--flat]
+import { BANDS, choose, factOf, record, probeKey, tierOf, skipTo, SKIP_PROBES, SKIP_WINDOW, MAX_LEAP, fluentTime, fluentFor, monsterHP, RECENT, drawHit, openLevels, reachOf, chaptersOf, reviewFacts, placeReviews, stepShare, stepFacts, JOIN_AT } from "../js/learn.js";
 import { WINGS, depthHP, depthScale, runFloors, bandOf, learnedShare, OPEN_AT, PATHS, stepsOpen, stepMonsters, bossStage, BOSS_HP, MEGA_EVERY } from "../js/wings.js";
 import { asks } from "../js/traits.js";
 
 const MAX_RUNS = 40;
+const FLAT = process.argv.includes("--flat");
+// Seconds of written work for a fluent player beyond recalling and tapping: two a column past two
+// for + and −, 2.5 a digit for a one-digit × a bigger number, 14 for two-digit × two-digit, three
+// a digit of the dividend for a quotient past 10, three for a two-step expression.
+const digitsOf = (n) => String(Math.abs(Math.round(n))).length;
+export function workS(f) {
+  if (FLAT || !f) return 0;
+  if ((f.op === "+" || f.op === "-") && typeof f.x === "number" && typeof f.y === "number") return 2 * Math.max(0, digitsOf(Math.max(f.x, f.y)) - 2);
+  if (f.op === "×" && typeof f.x === "number" && typeof f.y === "number") {
+    const round = (n) => n < 10 || n % 10 === 0;
+    if (f.x >= 10 && f.y >= 10 && !round(f.x) && !round(f.y)) return 14;
+    const big = Math.max(f.x, f.y), small = Math.min(f.x, f.y);
+    return small < 10 && !round(big) ? 2.5 * digitsOf(big) : 0;
+  }
+  if ((f.op === "÷" || f.op === "R") && (f.quo ?? f.ans) >= 10) return 3 * digitsOf(f.x);
+  if (f.op === "E") return 3;
+  return 0;
+}
 function trial(wing, seed, { slip = 0.05, think = [1.2, 2.6], tap = [0.5, 0.9], missing = 1.0 } = {}) {
   let s = seed; const rnd = () => ((s = (s * 1103515245 + 12345) % 2147483648) / 2147483648);
   const recs = {}, flows = {}, flowOf = (bk) => flows[bk] || (flows[bk] = { fluent: 0, cool: 0, hist: [], on: false, leap: 1 });
   const path = PATHS[wing.id], prog = { [wing.id]: { boss: 0, best: 0, megas: 0, steps: 0 } }, p = prog[wing.id];
-  const chapterAt = {}, out = { run: 99, chapters: chapterAt, maxNew: 0 };
+  const chapterAt = {}, out = { run: 99, chapters: chapterAt, maxNew: 0, joinAt: {}, seenAt: {}, at10: 0, at15: 0 };
+  const speed = (think[0] + think[1]) / 2 / 1.9;
   let now = 0, recent = [], avoid = [], run = 0;
   const keep = () => { const o = stepsOpen(wing, prog, recs); if (o.joined > p.steps) out.maxNew = Math.max(out.maxNew, o.window.length); p.steps = Math.max(p.steps, o.joined);
-    for (const i of o.open) { const c = path[i].chapter; if (!(c in chapterAt)) chapterAt[c] = run; } return o; };
+    for (const i of o.open) { const c = path[i].chapter; if (!(c in chapterAt)) chapterAt[c] = run; if (!(i in out.joinAt)) out.joinAt[i] = run; } return o; };
+  const seenNow = () => path.forEach((st, i) => { if (!(i in out.seenAt) && !st.review && stepFacts(st).some((f) => recs[f.key] && recs[f.key].n)) out.seenAt[i] = run; });
   while (run < MAX_RUNS) {
     run++;
     let streak = 0;
@@ -34,10 +59,10 @@ function trial(wing, seed, { slip = 0.05, think = [1.2, 2.6], tap = [0.5, 0.9], 
       for (let guard = 0; hp > 0 && guard < 80; guard++) {
         const op = m.op === "mix" || bk !== wing.band ? null : m.op;
         const probe = f.on && f.cool <= 0 ? probeKey(bk, recs, rnd, recent, avoid, f.leap, kinds, reachOf(path, ch, bk)) : null;
-        const o = lv(), key = probe || choose(bk, recs, { now, rnd, recent, op, asks: kinds, avoidAns: avoid, depth, open: o.levels, review: o.review, reviews });
+        const o = lv(), key = probe || choose(bk, recs, { now, rnd, recent, op, asks: kinds, avoidAns: avoid, depth, open: o.levels, review: o.review, steps: o.steps, reviews });
         const fact = factOf(key, rnd), digits = String(fact.ans).length, hid = m.blank || fact.blank;
-        const ms = 1000 * (think[0] + rnd() * (think[1] - think[0]) + (hid ? missing : 0) + digits * (tap[0] + rnd() * (tap[1] - tap[0])) + 0.3);
-        const ok = rnd() > slip, limit = fluentTime(B, fact.sym || fact.ans), fluent = ok && ms < limit;
+        const ms = 1000 * (think[0] + rnd() * (think[1] - think[0]) + (hid ? missing : 0) + speed * workS(fact) + digits * (tap[0] + rnd() * (tap[1] - tap[0])) + 0.3);
+        const ok = rnd() > slip, limit = fluentFor(bk, key, fact.sym || fact.ans), fluent = ok && ms < limit;
         recs[key] = record(recs[key], { ok, ms, hinted: false, now, fluentMs: limit });
         if (probe) {
           f.hist = [fluent].concat(f.hist).slice(0, SKIP_WINDOW);
@@ -56,7 +81,9 @@ function trial(wing, seed, { slip = 0.05, think = [1.2, 2.6], tap = [0.5, 0.9], 
     // The run's won: the boss beaten, a mega boss every 5 depths opening the next chapter.
     p.boss++; p.best = 6;
     if (depth % MEGA_EVERY === 0) p.megas = Math.max(p.megas, depth / MEGA_EVERY);
-    keep();
+    keep(); seenNow();
+    if (run === 10) out.at10 = learnedShare(wing, recs);
+    if (run === 15) out.at15 = learnedShare(wing, recs);
     if (out.run === 99 && learnedShare(wing, recs) >= OPEN_AT) out.run = run;
   }
   return out;
@@ -67,7 +94,7 @@ const PLAYERS = {
   "fluent on some (2–5 s, 12% wrong)": { think: [2, 5], slip: 0.12 },
   "learner (3–9 s, 20% wrong)": { think: [3, 9], slip: 0.2 }
 };
-const only = process.argv[2];
+const only = process.argv.slice(2).find((a) => !a.startsWith("--"));
 const med = (xs) => { const s = xs.slice().sort((a, b) => a - b); return s[s.length >> 1]; };
 for (const wing of WINGS.filter((w) => !only || w.id === only)) {
   const path = PATHS[wing.id];
@@ -76,6 +103,13 @@ for (const wing of WINGS.filter((w) => !only || w.id === only)) {
     const n = name.startsWith("learner") || name.startsWith("fluent on") ? 20 : 40;
     const runs = Array.from({ length: n }, (_, i) => trial(wing, i * 7919 + 1, o)), r = runs.map((x) => x.run).sort((a, b) => a - b);
     const ch = [...Array(chaptersOf(path))].map((_, c) => { const at = runs.map((x) => x.chapters[c + 1] ?? 99); return `ch${c + 1} run ${med(at) === 99 ? "never" : med(at)}`; }).join(", ");
+    // How late steps start: for each step that joined, the runs until its first problem (a step
+    // learned without being asked, by skipping ahead, counts as started when it's placed).
+    const lags = runs.flatMap((x) => Object.keys(x.joinAt).filter((i) => !path[i].review).map((i) => (x.seenAt[i] ?? 41) - x.joinAt[i]));
+    const late = lags.filter((l) => l >= 2).length, at10 = med(runs.map((x) => x.at10)), at15 = med(runs.map((x) => x.at15));
+    console.log(`  ${name}: priority learned at run 10 ${Math.round(at10 * 100)}%, run 15 ${Math.round(at15 * 100)}%; steps started 2+ runs after joining ${Math.round(100 * late / lags.length)}% (worst ${Math.max(...lags) > 40 ? "never" : Math.max(...lags)})`);
+    // --steps: each step's median run joining and run first asked.
+    if (process.argv.includes("--steps")) console.log(path.map((st, i) => st.review ? null : `    ${st.name}: joins run ${med(runs.map((x) => x.joinAt[i] ?? 99))}, first asked run ${med(runs.map((x) => x.seenAt[i] ?? 99))}`).filter(Boolean).join("\n").replace(/run 99/g, "never"));
     console.log(`  ${name}: 60% priority in median ${r[n >> 1] === 99 ? "never" : r[n >> 1]} runs, range ${r[0]}–${r[n - 1] === 99 ? "never" : r[n - 1]} (99 = not within ${MAX_RUNS}); chapters joined: ${ch}; new steps when one joins, at most ${Math.max(...runs.map((x) => x.maxNew))}`);
   }
 }
