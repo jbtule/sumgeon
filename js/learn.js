@@ -342,20 +342,51 @@ export function stepShare(step, recs) {
   const fs = stepFacts(step);
   return fs.length ? fs.filter((f) => learned(recs[f.key])).length / fs.length : 1;
 }
+// A step can't hold its place in the window for ever. Its problems come from its monsters, and a
+// stratum has many, so a step whose only monster is rare (comparing, asked only by Chompers in the
+// Hall) could sit in the window run after run, hardly asked, while the steps behind it waited.
+// After each run, every step that was new at its start, is still new, and met none of its
+// monsters in it has waited a run (waitRun, saved per stratum as wings[id].waits: { step name:
+// runs }, which only grows). A new step that has waited STUCK_RUNS runs and still has fewer than
+// STUCK_SEEN of its facts seen (it has hardly had a chance) stops counting toward WINDOW: the next
+// step joins, and the stuck one stays open and keeps going (its monsters still come up more,
+// wings.js runFloors). A step that has been practised, however slowly it's learned, doesn't stick:
+// its monster has been coming, so a learner still works on about WINDOW steps at a time. (Once a
+// stuck step's facts have been seen it counts again; the step that joined stays, wings[id].steps.)
+export const STUCK_RUNS = 3, STUCK_SEEN = 0.25;
+// The share of a step's facts seen at least once.
+export function stepSeen(step, recs) {
+  const fs = stepFacts(step);
+  return fs.length ? fs.filter((f) => recs[f.key] && recs[f.key].n).length / fs.length : 1;
+}
 // The steps open to a player: { open: [step indexes], window: [the new steps, oldest first],
-// joined: how many of the path's new steps have joined so far }.
+// stuck: [new steps that waited too long, open but no longer counted in the window], joined: how
+// many of the path's new steps have joined so far }.
 // Ongoing and review steps are open from the start. The rest join in order, WINDOW at first; a
 // step stops being new once it's JOIN_AT learned, and then the next one joins, so there are never
-// more than WINDOW new ones (a step already learned, skipped ahead or placed, joins and is done at
-// once). None past `chapter`. `had` (saved): the most that ever joined, so a step stays open after
-// a miss takes a fact back out of learned.
-export function openSteps(path, recs, chapter = 1, had = 0) {
+// more than WINDOW new ones besides stuck ones (a step already learned, skipped ahead or placed,
+// joins and is done at once). None past `chapter`. `had` (saved): the most that ever joined, so a
+// step stays open after a miss takes a fact back out of learned. `waits` (saved): the runs each
+// step has waited (waitRun).
+export function openSteps(path, recs, chapter = 1, had = 0, waits = {}) {
   const open = [], joined = [], fresh = (i) => stepShare(path[i], recs) < JOIN_AT;
+  const stuck = (i) => fresh(i) && ((waits || {})[path[i].name] || 0) >= STUCK_RUNS && stepSeen(path[i], recs) < STUCK_SEEN, counts = (i) => fresh(i) && !stuck(i);
   path.forEach((s, i) => { if ((s.ongoing || s.review) && s.chapter <= chapter) open.push(i); });
   const main = path.map((_, i) => i).filter((i) => !path[i].ongoing && !path[i].review);
   let k = 0;
-  while (k < main.length && path[main[k]].chapter <= chapter && (k < had || joined.filter(fresh).length < WINDOW)) { joined.push(main[k]); open.push(main[k]); k++; }
-  return { open: open.sort((a, b) => a - b), window: joined.filter(fresh), joined: k };
+  while (k < main.length && path[main[k]].chapter <= chapter && (k < had || joined.filter(counts).length < WINDOW)) { joined.push(main[k]); open.push(main[k]); k++; }
+  return { open: open.sort((a, b) => a - b), window: joined.filter(counts), stuck: joined.filter(stuck), joined: k };
+}
+// At a run's start: the names of the steps in its window.
+export const waitFrom = (path, window) => window.map((i) => path[i].name);
+// At its end: each of those steps still new whose monsters weren't among the run's floors (met:
+// the monsters fought, by name) has waited one more run. Changes and returns `waits`.
+export function waitRun(path, from, met, recs, waits = {}) {
+  for (const name of from || []) {
+    const s = path.find((x) => x.name === name);
+    if (s && stepShare(s, recs) < JOIN_AT && !s.monsters.some((n) => met.includes(n))) waits[name] = (waits[name] || 0) + 1;
+  }
+  return waits;
 }
 // How many chapters a path has.
 export const chaptersOf = (path) => Math.max(...path.map((s) => s.chapter));
