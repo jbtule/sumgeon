@@ -75,9 +75,11 @@ export var PHRASE = {
   flashHow: "Look quick! How many dots?",
   // A new fact's 💡 pulses after a while with nothing typed (app.js hintNudge); the first 3 times.
   hintNudge: "Stuck? Tap the light bulb!",
+  // The scratch pad (app.js): the first time it's opened, on a 4th grade paper-work problem.
+  scratchHow: "Use the chalkboard to work it out!",
   // An answer typed ones first (a stacked problem, or anything on Margot-Rythm's floor), the first 3 times.
   onesFirst: "Start with the ones!",
-  // Marking regrouping on stacked problems with three-digit numbers or bigger (twodigit.js markable), the first time each.
+  // Marking regrouping on stacked problems with two-digit numbers or bigger (twodigit.js markable), the first time each.
   carryHow: "Tap above a column to carry a one!",
   regroupHow: "Tap a digit to regroup it!",
   // A tap on a 0 that has nothing to give yet (regrouping goes one place at a time), the first 2 times.
@@ -583,7 +585,7 @@ function index() {
   // Phrases by when they're said: the start screen and a run's end, explanations, and the fight.
   [PHRASE.enter, PHRASE.pickGrade, PHRASE.pickHero, PHRASE.keepGoing, PHRASE.heroFirst, PHRASE.deeper, PHRASE.exitSure, PHRASE.unlocked, PHRASE.win, PHRASE.legend]
     .concat(WINGS.map(wingCleared), WINGS.map(wingOpened), WINGS.map(wingEnter)).forEach(function (t) { phrases[t] = "phrases-start"; });
-  [PHRASE.hitHow, PHRASE.cmpHow, PHRASE.cmpSame, PHRASE.spellHow, PHRASE.paused, PHRASE.tfHow, PHRASE.longerHow, PHRASE.yesNoHow, PHRASE.moreFewerHow, PHRASE.drawHow, PHRASE.flashHow, PHRASE.hintNudge, PHRASE.diceHow, PHRASE.onesFirst, PHRASE.carryHow, PHRASE.regroupHow, PHRASE.regroupEmpty, PHRASE.chargeHow, PHRASE.guarded]
+  [PHRASE.hitHow, PHRASE.cmpHow, PHRASE.cmpSame, PHRASE.spellHow, PHRASE.paused, PHRASE.tfHow, PHRASE.longerHow, PHRASE.yesNoHow, PHRASE.moreFewerHow, PHRASE.drawHow, PHRASE.flashHow, PHRASE.hintNudge, PHRASE.scratchHow, PHRASE.diceHow, PHRASE.onesFirst, PHRASE.carryHow, PHRASE.regroupHow, PHRASE.regroupEmpty, PHRASE.chargeHow, PHRASE.guarded]
     .concat(Object.values(TRAIT_LINE), Object.values(TRAIT2_LINE), HEROES.map(function (h) { return luckyLine(h.d); }), REVERSIBLE.map(reversedLine), [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map(howToWriteLine))
     .forEach(function (t) { phrases[t] = "phrases-explain"; });
   // Problems: every line a band can say, found from its facts the way the game asks them (both

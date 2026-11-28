@@ -210,6 +210,32 @@ h1 b{color:var(--coral);font-weight:400}
 .hint-btn.nudge{animation:nudge 1.6s ease-in-out infinite;border-color:#ffc93c}
 @keyframes nudge{0%,100%{transform:none;box-shadow:0 0 0 0 rgba(255,201,60,0)}50%{transform:scale(1.12);box-shadow:0 0 14px 4px rgba(255,201,60,.55)}}
 @media(prefers-reduced-motion:reduce){.hint-btn.nudge{animation:none;box-shadow:0 0 12px 3px rgba(255,201,60,.6)}}
+/* The scratch pad (app.js): ✏️ by the problem on 4th grade's paper-work problems turns the
+   monster's box into a chalkboard (placed over that box in each layout, below). Everything in it
+   is absolutely placed, so it adds nothing to the grid's sizing: opening it never moves a thing. */
+.scratch-btn{font-size:19px}
+.scratch-btn[hidden]{display:none}
+.scratch-btn[aria-pressed="true"]{border-color:var(--gold);box-shadow:0 0 10px 2px #ffc93c66}
+.scratch{position:relative;min-width:0;min-height:0;overflow:hidden;z-index:4;border-radius:18px;border:3px solid #5a4330;
+  background:radial-gradient(ellipse 80% 70% at 45% 40%,#ffffff0d 0,#0000 70%),radial-gradient(ellipse at 50% 50%,#1f3b3f 0,#12242b 80%);
+  box-shadow:inset 0 0 0 2px #0c171c,inset 0 0 40px #05090bcc;animation:scratchin .18s ease-out}
+.scratch[hidden]{display:none}
+.scratch canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none;cursor:crosshair}
+.scratch-tag{position:absolute;left:12px;top:9px;font:400 12px/1 Bungee,sans-serif;letter-spacing:.06em;color:#f3efe455;pointer-events:none}
+.scratch-tools{position:absolute;right:8px;top:8px;display:flex;gap:6px}
+.scratch-tools button{min-width:36px;height:36px;padding:0 12px;border-radius:10px;border:2px solid #f3efe44d;background:#0c171cb3;color:var(--ink);font:800 14px/1 Nunito,sans-serif;cursor:pointer}
+.scratch-tools .scratch-close{padding:0;font-size:16px}
+.scratch-tools button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+@keyframes scratchin{from{opacity:0;transform:scale(.98)}}
+@media(prefers-reduced-motion:reduce){.scratch{animation:none}}
+/* A chest lock's scratch pad: ✏️ beside the lock, and the board over the card's title and chest
+   (its height set from the pad's top in app.js chestScratch), with the problem copied at its top. */
+.chest-card{position:relative}
+.chest-scratch-btn{position:absolute;left:100%;top:50%;margin-left:8px;width:40px;height:40px;transform:translateY(-10%)}
+.chest-scratch{position:absolute;left:0;right:0;top:0;height:60%;border-radius:16px}
+.scratch-q{position:absolute;left:12px;top:10px;right:100px;font:400 clamp(18px,5.4vw,24px)/1.15 Bungee,sans-serif;color:var(--ink);white-space:nowrap;pointer-events:none}
+.scratch-q .blank{animation:none}
+.chest-scratch .scratch-tag{display:none}
 .level{margin:2px 0 0;color:var(--muted);font-weight:800;font-size:14px}
 .chip span small{font-weight:700;opacity:.8;margin-left:6px}
 /* Digit heroes (DESIGN.md §6.6) */
@@ -1096,6 +1122,8 @@ label.switch-row:focus-within{outline-offset:-3px}
   /* Messages float as a pill at the bottom of the monster's area instead of taking a row. */
   .msg{grid-area:stage;align-self:end;justify-self:center;z-index:2;min-height:0;margin-bottom:2px;padding:2px 12px;border-radius:999px;font-size:14px;line-height:1.4;background:#0c171cb0}
   .msg:empty{display:none}
+  /* The scratch pad covers the monster's box: its name and HP, and the monster. */
+  #scratch{grid-column:1/-1;grid-row:1/3}
   .pad{grid-area:pad;gap:6px}
   .pad{--key:clamp(40px,6.4dvh,54px);--gap:6px}
   .pad button{min-height:var(--key);font-size:22px;box-shadow:0 3px 0 var(--dark)}
@@ -1164,6 +1192,9 @@ label.switch-row:focus-within{outline-offset:-3px}
   /* Messages float as a pill under the monster, as on phones. */
   .msg{grid-area:stage;align-self:end;justify-self:center;z-index:2;min-height:0;margin-bottom:20px;padding:4px 14px;border-radius:999px;background:#0c171cb0}
   .msg:empty{display:none}
+  /* The scratch pad covers the whole monster's box, a big board. */
+  #scratch{grid-column:1;grid-row:1/-1;border-radius:22px}
+  .probrow.scratchy{position:relative;z-index:5}
   .hint,.pad,.you{margin-inline:16px;z-index:1}
   /* The hint first, then the problem and answer as one line: 3 + 1 = [ ]. The hint is taken out
      of the layout (positioned in the room above the problem), so however tall it is, opening it
@@ -1604,4 +1635,20 @@ body.on-scene>.top,body.on-scene>.who,body.on-scene>.game,body.on-scene>.badges{
   .probrow.badged{display:grid;grid-auto-flow:column;grid-template-rows:auto auto;align-items:center}
   .probrow.badged > .icon-btn{grid-row:span 1}
   .probrow.badged > :not(.icon-btn){grid-row:1 / span 2}
+}
+/* The scratch pad's ✏️ makes three buttons: 🔊 and 💡 stack with ✏️ beside them, and with the
+   Super Charge badge too all three stack, smaller, so the line keeps its width (on an iPad the
+   row ran left into the monster's box, under the board). */
+@media all{
+  .probrow.scratchy{display:grid;grid-auto-flow:column;grid-template-rows:auto auto;align-items:center}
+  .probrow.scratchy > .icon-btn{grid-row:span 1}
+  .probrow.scratchy > :not(.icon-btn){grid-row:1 / span 2}
+  .probrow.scratchy.badged{grid-template-rows:auto auto auto;row-gap:4px}
+  .probrow.scratchy.badged > :not(.icon-btn){grid-row:1 / span 3}
+}
+/* On a phone the three stacked are smaller; an iPad has the room. */
+@media (max-width: 759px){
+  .probrow.scratchy.badged > .icon-btn{width:30px;height:30px}
+  .probrow.scratchy.badged > .icon-btn svg{width:16px;height:16px}
+  .probrow.scratchy.badged > .hint-btn,.probrow.scratchy.badged > .scratch-btn{font-size:16px}
 }

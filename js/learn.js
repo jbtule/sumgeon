@@ -22,7 +22,7 @@ import { shapeFacts, shapeFactOf, SHAPE_STRANDS, isDrawKey } from "./shapes.js";
 import { flashFacts, flashFactOf, FLASH_LEVELS } from "./flash.js";
 import { chartFacts, chartFactOf, CHART_LEVELS } from "./charts.js";
 import { lengthGameFacts, lengthGameFactOf, LENGTH_LEVELS } from "./length.js";
-import { asks as asksOf } from "./traits.js";
+import { asks as asksOf, regroups } from "./traits.js";
 import { bigCompareFacts, roundFacts4, addSub4, times10s, timesOne, timesTwo, divideOne, remFacts, remFactOf, exprFacts, exprFact, factorFacts, factorFactOf,
   equivFacts4, fracCompare4, fracOpFacts, fracTimesFacts, fracOpFact, decimalFacts, decFact, decCompareFacts, unitFacts, unitFact, rect4Facts,
   primeFacts, primeFactOf, moneyFacts, moneyFact } from "./fourth.js";
@@ -267,6 +267,26 @@ export function keyOf(f) {
   if (f.key && !"+-×÷".includes(f.key[0])) return f.key;
   if (f.op === "+" || f.op === "×") return f.op + Math.min(f.x, f.y) + "," + Math.max(f.x, f.y);
   return f.op + f.x + "," + f.y;
+}
+// The scratch pad (app.js): the kinds of problem worked on paper in class get a ✏️ by the problem
+// that turns the monster's box (or a chest's lock card) into a chalkboard. This one function
+// decides, so it's easy to tune:
+// - 4th grade's paper-work sets (fourth.js): adding and subtracting to a million, × one digit,
+//   two-digit × two-digit, dividing by one digit, remainders, and multi-step problems;
+// - any + or − of two numbers of 10 or more that regroups in some place (traits.js regroups, the
+//   same test as Margot-Rythm's Carry the One), in any band: the Hall's two-digit adding with
+//   regrouping, the Mines' two- and three-digit work, the Tower's within 1000;
+// - sums of several numbers of 10 or more (Triceraplus in the Mines), stacked or not.
+// Never a one-digit fact, nor a + or − that doesn't regroup. p: a problem, or a fact's key.
+export const SCRATCH_SETS = ["addsub4", "x1", "x2", "div1", "rem", "expr"];
+let scratchCache = null;
+export function scratchable(p) {
+  if (typeof p === "string") p = p ? factOf(p) : null;
+  if (!p) return false;
+  if (!scratchCache) scratchCache = new Set(BANDS.fourth.facts().filter((f) => SCRATCH_SETS.includes(f.set)).map(keyOf));
+  if (p.key && scratchCache.has(p.key)) return true;
+  if (p.op === "Σ") return Array.isArray(p.nums) && p.nums.length > 1 && p.nums.every((n) => n >= 10);
+  return (p.op === "+" || p.op === "-") && Math.min(p.x, p.y) >= 10 && regroups(p);
 }
 // A problem for a key, turned around half the time for + and ×.
 export function factOf(key, rnd) {

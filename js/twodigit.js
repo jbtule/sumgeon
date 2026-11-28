@@ -152,13 +152,13 @@ export function stackOf(p, always, rnd) { return stackable(p) && (always || Math
 /* ---------- marking regrouping on a stacked problem ----------
    On paper a 4th grader marks the standard algorithm's regrouping: a carried 1 above a column, or
    a digit crossed out with one less above it and a 1 in front of the digit to its right. On a
-   stacked problem with a number of MARK_AT or more (100: the Mines' and the Tower's three-digit +
-   and −, 2nd and 3rd grade's "algorithms based on place value", and 4th grade's big numbers) the
-   child can tap those marks in: a scratch mark only, never graded, and it changes no answer,
-   damage, timing, record or hint (the hints stay the place-value strategies). Two-digit problems
-   have none, and numbers added up (Triceraplus) only when every one is that big. Widening or
-   narrowing it is this one constant. */
-export const MARK_AT = 100;
+   stacked problem with a number of MARK_AT or more (10: any two-digit + or −, as 1st and 2nd
+   grade write them in columns, the Mines' and the Tower's three-digit work, 2nd and 3rd grade's
+   "algorithms based on place value", and 4th grade's big numbers) the child can tap those marks
+   in: a scratch mark only, never graded, and it changes no answer, damage, timing, record or hint
+   (the hints stay the place-value strategies). Numbers added up (Triceraplus) only when every one
+   is that big. Widening or narrowing it is this one constant. */
+export const MARK_AT = 10;
 export function markable(p) {
   if (!p || !p.stacked) return false;
   if (p.op === "Σ") return Array.isArray(p.nums) && p.nums.every((n) => n >= MARK_AT);
