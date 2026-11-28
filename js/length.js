@@ -11,8 +11,9 @@
 //   centimeters, a tape in feet, yards or meters, from 0 and (inches and centimeters) not from 0;
 //   more or fewer of a smaller unit; estimating with one unit shown; how much longer; adding and
 //   subtracting lengths as a bar, the number line as the hint.
-// - 3rd (3.GM.B.7; to the half and quarter inch, as the Common Core's 3.MD.B.4 has it): an inch
-//   ruler with halves and fourths, typed as two slots, the inches then the part ("3 □/4").
+// - 3rd: nothing for now. The half and quarter inch (the Common Core's 3.MD.B.4; the school's 3rd
+//   grade guide doesn't ask for them) were tried here and taken out (decided 2026-11-27); they
+//   could come back with the 4th grade stratum.
 // Every answer is a typed whole number (or two), or one of two keys. Facts are fixed samples
 // (lengthFacts), each with its own key.
 import { spoken } from "./problems.js";
@@ -36,9 +37,7 @@ export const LENGTH_LEVELS = [
   { id: "which", name: "More or fewer units?", grade: "2nd", stratum: "mines" },
   { id: "estimate", name: "About how long?", grade: "2nd", stratum: "mines" },
   { id: "diff", name: "How much longer?", grade: "2nd", stratum: "mines" },
-  { id: "addsub", name: "Add and subtract lengths", grade: "2nd", stratum: "mines" },
-  { id: "halves", name: "To the half inch", grade: "3rd", stratum: "tower" },
-  { id: "quarters", name: "To the quarter inch", grade: "3rd", stratum: "tower" }
+  { id: "addsub", name: "Add and subtract lengths", grade: "2nd", stratum: "mines" }
 ];
 
 /* ---------- units and things ---------- */
@@ -48,13 +47,12 @@ export const UNITS = {
   in: { one: "inch", many: "inches", ab: "in", tool: "ruler", max: 10, sub: 2 },
   cm: { one: "centimeter", many: "centimeters", ab: "cm", tool: "ruler", max: 15, sub: 2 },
   ft: { one: "foot", many: "feet", ab: "ft", tool: "tape", max: 10, sub: 2 },
-  yd: { one: "yard", many: "yards", ab: "yd", tool: "tape", max: 5, sub: 3 },
   m: { one: "meter", many: "meters", ab: "m", tool: "tape", max: 6, sub: 2 },
   cube: { one: "cube", many: "cubes" },
   clip: { one: "paper clip", many: "paper clips" }
 };
 // How big each unit is, in inches, for "more or fewer?".
-const SIZE = { cm: 0.3937, in: 1, ft: 12, m: 39.37, yd: 36 };
+const SIZE = { cm: 0.3937, in: 1, ft: 12, m: 39.37 };
 export const unitWord = (u, n) => (n === 1 ? UNITS[u].one : UNITS[u].many);
 // The things measured. Small ones for rulers and cubes; big ones for feet, yards and meters.
 export const SMALL = ["pencil", "crayon", "toothbrush", "ribbon", "snake", "marker"];
@@ -171,7 +169,7 @@ export function thing(name, x0, x1, y, h = 20) {
 }
 // Its name in small words under its left end, when two or more are shown: the drawing and the
 // voice tell a pre-reader which is which; a grown-up can read it.
-const nameTag = (name, x0, y) => lab(x0 + 2, y + 24, name, { anchor: "start", size: 11, fill: MUTED, cls: "objlab" });
+const nameTag = (name, x0, y) => lab(x0 + 5, y + 24, name, { anchor: "start", size: 11, fill: MUTED, cls: "objlab" });
 // A connecting cube (alternating colors, with a nub) or a paper clip, from x to x + u.
 const CUBES = ["#ff5a4e", "#4f8bff", "#ffc93c", "#4fcf72"];
 function unitPiece(kind, x, u, y, i) {
@@ -246,16 +244,15 @@ export function lengthSvg(p, opt = {}) {
     if (h && p.kind === "units") xs.forEach((x, i) => { const l = countLabels(xs.length, wk)[i]; if (l != null) s += lab(x + u / 2, 98, l, { size: 15, fill: l === "?" ? GOLD : TEAL, cls: "hop" }); });
     if (wk && p.kind === "gaps" && p.flaw !== "ok") s += flawRing(p, u, xs);
     H = 104;
-  } else if (p.kind === "ruler" || p.kind === "frac" || p.kind === "which") {
-    const U = UNITS[p.unit], units = p.kind === "frac" ? 6 : U.max, sub = p.kind === "frac" ? p.den : U.sub, u = W / units;
+  } else if (p.kind === "ruler" || p.kind === "which") {
+    const U = UNITS[p.unit], units = U.max, sub = U.sub, u = W / units;
     const a = X0 + p.start * u, b = X0 + (p.start + p.len) * u, y = 62;
-    s += thing(p.name, a, b, y, p.unit === "ft" || p.unit === "yd" || p.unit === "m" ? 22 : 20) + guide(a, y + 10, 86) + guide(b, y + 10, 86);
+    s += thing(p.name, a, b, y, p.unit === "ft" || p.unit === "m" ? 22 : 20) + guide(a, y + 10, 86) + guide(b, y + 10, 86);
     s += ruler(p.unit, units, sub, 86);
     if (h && p.kind === "ruler") {
       const n = p.len, xs = Array.from({ length: n + 1 }, (_, k) => a + k * u);
       s += hops(xs, 46, countLabels(n, wk), { size: n > 10 ? 10 : 12 });
     }
-    if (h && p.kind === "frac") s += fracHops(p, u, wk);
     if (p.kind === "which") s += chips(p, h);
     H = 144 + (p.kind === "which" ? 30 : 0);
   } else if (p.kind === "estimate") {
@@ -316,18 +313,6 @@ function chips(p, hint) {
   const one = (x, w, unit, color) => `<rect x="${f1(x)}" y="152" width="${f1(Math.max(w, 3))}" height="12" rx="2" fill="${color}" stroke="${DK}" stroke-width="2"/>` + lab(x + Math.max(w, 3) + 5, 163, `1 ${UNITS[unit].ab}`, { anchor: "start", size: 12, fill: color, cls: "unitlab" });
   return one(X0, a, p.unit, "#e8c48a") + one(X0 + a + 52, b, p.to, hint ? GOLD : TEAL);
 }
-// Halves and fourths: hops by halves from 0 (counted partway, as "½, 1, 1½"); fourths, only the
-// hops past the last whole inch, counted (the first 1 when there are more, the last "?"; worked, all).
-const halfText = (k) => (k % 2 ? (k > 1 ? `${(k - 1) / 2}½` : "½") : `${k / 2}`);
-function fracHops(p, u, worked) {
-  if (p.den === 2) {
-    const n = p.whole * 2 + p.num, xs = Array.from({ length: n + 1 }, (_, k) => X0 + (k * u) / 2);
-    return hops(xs, 46, countLabels(n, worked, halfText), { size: 10 });
-  }
-  const x0 = X0 + p.whole * u, xs = Array.from({ length: p.num + 1 }, (_, k) => x0 + (k * u) / 4);
-  const labels = xs.slice(1).map((_, i) => (worked || i < (p.num > 1 ? 1 : 0) ? String(i + 1) : i === p.num - 1 ? "?" : null));
-  return `<rect x="${f1(x0)}" y="86" width="${f1(u)}" height="${RULER_H}" fill="${GOLD}" opacity=".3"/>` + hops(xs, 46, labels, { size: 10 });
-}
 // Adding and subtracting lengths: a bar of two pieces end to end (each labeled), or a whole with a
 // piece cut off; the hint is the number line, jumping on (or back) to "?".
 function barSvg(p, hint, worked) {
@@ -384,11 +369,9 @@ export function spokenLength(p) {
     case "addsub": return p.sign === "+"
       ? `One ribbon is ${unitSaid(p.unit, p.a)}. Another is ${unitSaid(p.unit, p.b)}. End to end, how long are they?`
       : `A rope is ${unitSaid(p.unit, p.a)} long. ${cap(unitSaid(p.unit, p.b))} is cut off. How long is the rest?`;
-    case "frac": return `How long is the ${p.name}, to the nearest ${p.den === 2 ? "half" : "quarter"} inch?`;
   }
   return "";
 }
-const fracSaid = (p) => `${say(p.whole)} and ${p.den === 2 ? "a half" : p.num === 1 ? "one quarter" : "three quarters"} inches`;
 // After a miss: the answer, said whole.
 export function spokenLengthAnswer(p) {
   const [a, b] = p.things || [];
@@ -403,7 +386,6 @@ export function spokenLengthAnswer(p) {
     case "estimate": return `About ${unitSaid(p.unit, p.len)}.`;
     case "diff": return `${cap(unitSaid(p.unit, p.ans))} longer.`;
     case "addsub": return `${cap(unitSaid(p.unit, p.ans))}.`;
-    case "frac": return `${cap(fracSaid(p))}.`;
   }
   return "";
 }
@@ -435,9 +417,6 @@ export function lengthHint(p, worked) {
       return { say: worked ? `${hi} − ${lo} = ${n}. ${n} ${ab} longer.` : `Count on from ${lo} to ${hi}${counted(n) ? `: ${count(n)}, …` : ""}, or ${hi} − ${lo} = ?` };
     }
     case "addsub": return { say: p.sign === "+" ? `${p.a} + ${p.b} = ${worked ? p.ans : "?"}${worked ? ` ${ab}` : ""}` : `${p.a} − ${p.b} = ${worked ? p.ans : "?"}${worked ? ` ${ab}` : ""}` };
-    case "frac":
-      if (p.den === 2) return { say: worked ? `Count by halves: ${count(p.whole * 2 + 1, halfText)} inches.` : `Count by halves: ${count(p.whole * 2 + 1, halfText)}, … ?` };
-      return { say: worked ? `${p.whole} ${p.whole === 1 ? "inch" : "inches"} and ${p.num} fourth${p.num > 1 ? "s" : ""} more: ${p.whole} ${p.num}/4 inches.` : `Find the last whole inch. Each inch has 4 parts. Count the parts past it: ${p.num > 1 ? "1, … " : ""}?/4` };
   }
   return { say: "" };
 }
@@ -468,7 +447,6 @@ export function lengthLine(p) {
     case "estimate": return ["About ", null, ` ${ab}`];
     case "diff": return [null, ` ${ab} longer`];
     case "addsub": return [p.sign === "+" ? "In all: " : "Left: ", null, ` ${ab}`];
-    case "frac": return [null, " ", null, ` in`];
     default: return [null, ` ${ab}`];
   }
 }
@@ -480,13 +458,12 @@ export function lengthLine(p) {
 // - "ℓi:pencil7,crayon4,5": the pencil and the crayon, each against a string 5 long.
 // - "ℓu:cube,pencil7", "ℓu:clip,toothbrush5": how many cubes (paper clips) long?
 // - "ℓg:clip,pencil5,gap1": laid right? ok, gap (after the 2nd), overlap1, start.
-// - "ℓin:pencil7", "ℓcm:toothbrush12", "ℓft:rope6", "ℓyd:rug3", "ℓm:rope4": on a ruler or tape from 0;
+// - "ℓin:pencil7", "ℓcm:toothbrush12", "ℓft:rope6", "ℓm:rope4": on a ruler or tape from 0;
 //   "ℓin:pencil2-7": from 2 to 7.
 // - "ℓw:in>cm:pencil4": 4 inches long; in centimeters, more or fewer?
 // - "ℓe:in:pencil6": about how many inches? (one inch shown)
 // - "ℓd:in:pencil9,crayon5": how much longer?
 // - "ℓ+:cm:8,5", "ℓ−:in:12,5": add and subtract lengths.
-// - "ℓf:pencil3,1/2", "ℓf:pencil2,3/4": to the half and quarter inch.
 const fact = (set, kind, o, key) => ({ op: "ℓ", set, kind, ...o, key: "ℓ" + key });
 let cache = null;
 export function lengthFacts() {
@@ -537,7 +514,6 @@ export function lengthFacts() {
   ruled("inches", "in", [1, 2, 3, 4, 5, 6, 7, 8, 9, 10], SMALL);
   ruled("cm", "cm", [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15], SMALL.slice(1).concat(SMALL[0]));
   ruled("big", "ft", [2, 3, 4, 5, 6, 7, 8, 9], BIG);
-  ruled("big", "yd", [1, 2, 3, 4], BIG.slice(1));
   ruled("big", "m", [1, 2, 3, 4, 5], BIG.slice(2).concat(BIG));
   // Not from 0: 12 inches, 12 centimeters; never the length the same as where it starts.
   for (let i = 0; i < 24; i++) {
@@ -549,7 +525,7 @@ export function lengthFacts() {
     out.push(fact("from", "ruler", { unit, name, start: st, len: n, ans: n }, key));
   }
   // More or fewer: each pair of units both ways, with a length that fits the first's ruler.
-  [["in", "cm"], ["cm", "in"], ["ft", "in"], ["yd", "ft"], ["ft", "yd"], ["m", "ft"], ["ft", "m"], ["m", "cm"]].forEach(([u, to], i) => {
+  [["in", "cm"], ["cm", "in"], ["ft", "in"], ["m", "ft"], ["ft", "m"], ["m", "cm"]].forEach(([u, to], i) => {
     for (let k = 0; k < 2; k++) {
       const n = Math.min(UNITS[u].max - 1, 2 + i % 3 + k * 2), names = UNITS[u].tool === "tape" ? BIG : SMALL, name = names[(i + k) % names.length];
       out.push(fact("which", "which", { unit: u, to, name, start: 0, len: n, ans: SIZE[to] < SIZE[u] ? "M" : "F" }, `w:${u}>${to}:${name}${n}`));
@@ -573,10 +549,17 @@ export function lengthFacts() {
     if (plus) { do { a = 3 + r(12); b = 2 + r(8); } while (a + b > 20 || a === b); out.push(fact("addsub", "addsub", { unit, sign: "+", a, b, ans: a + b }, `+:${unit}:${a},${b}`)); }
     else { do { a = 6 + r(15); b = 2 + r(a - 3); } while (a > 20 || a - b === b || a - b < 2); out.push(fact("addsub", "addsub", { unit, sign: "−", a, b, ans: a - b }, `−:${unit}:${a},${b}`)); }
   }
-  // Halves (1½ to 5½, each twice) and quarters (1¼ to 5¾).
-  for (let i = 0; i < 10; i++) { const whole = 1 + (i % 5), name = SMALL[i % 6]; out.push(fact("halves", "frac", { unit: "in", name, start: 0, den: 2, whole, num: 1, len: whole + 0.5, ans: [whole, 1] }, `f:${name}${whole},1/2`)); }
-  for (let i = 0; i < 10; i++) { const whole = 1 + (i % 5), num = i < 5 ? 1 : 3, name = SMALL[(i + 3) % 6]; out.push(fact("quarters", "frac", { unit: "in", name, start: 0, den: 4, whole, num, len: whole + num / 4, ans: [whole, num] }, `f:${name}${whole},${num}/4`)); }
   return (cache = out);
+}
+// The damage, for the game (decided 2026-11-27): a count or a reading hits for itself; the
+// two-key kinds hit for the longest thing's length, as Chompers hits for the bigger number (the
+// string's problem, the longer of the two; more or fewer, the length given; laid right, how many
+// fit under it).
+export function lengthHit(p) {
+  if (p.things) return Math.max(...p.things.map((t) => t.len));
+  if (p.kind === "which") return p.len;
+  if (p.kind === "gaps") return p.count;
+  return [].concat(p.ans)[0];
 }
 export const lengthFactOf = (key) => lengthFacts().find((f) => f.key === key) || null;
 // A problem for the prototype page: a fact of the level, at random.

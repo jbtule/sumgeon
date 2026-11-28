@@ -128,12 +128,10 @@ const TYPES = {
   length: {
     // Measuring length (js/length.js), with Rulerpillar: the thing drawn against what measures it.
     // Longer or shorter, yes or no, more or fewer: two big keys (as true or false); the rest typed.
-    // To the half or quarter inch: two slots, the inches, then the part ("3 □/4 in").
     icon: "📏", label: "Length", mon: "Rulerpillar", levels: LENGTH_LEVELS,
     problem: (lv, rnd) => lengthProblem(lv.id, rnd),
     picture: (p, st) => lengthSvg(p, { hint: !!st.hint, worked: !!(st.hint && st.worked) }),
     line: (p, slot) => {
-      if (p.kind === "frac") return `${slot(0)} <span class="frac"><span>${slot(1)}</span><span>${p.den}</span></span> <small>in</small>`;
       const words = !!keysOf(p) || p.kind === "units";
       let i = 0;
       return lengthLine(p).map((x) => (x === null ? slot(i++) : words ? esc(x) : `<small>${esc(x.trim())}</small>`)).join(words ? "" : " ");
@@ -145,9 +143,8 @@ const TYPES = {
     right: (p, typed) => lengthRight(p, typed),
     shown: (p, i) => (keysOf(p) ? keyWord(p.ans) : p.kind === "estimate" && S.done === "right" ? S.typed[0] : [].concat(p.ans)[i]),
     typedShown: (v) => keyWord(v),
-    nextLabel: "Inches ✓", lastLabel: "Hit!", nextSay: "Now the part of an inch!",
     hint: lengthHint, spoken: spokenLength, missed: spokenLengthAnswer,
-    answer: (p) => (p.kind === "order" ? `${p.ans === "Y" ? "" : "not "}the ${p.most}` : p.kind === "gaps" ? `${p.ans === "Y" ? "" : "not "}measured right` : keysOf(p) ? keyWord(p.ans).toLowerCase() : p.kind === "frac" ? `${p.whole} ${p.num}/${p.den} in` : p.kind === "estimate" ? `about ${p.ans} ${UNITS[p.unit].ab}`
+    answer: (p) => (p.kind === "order" ? `${p.ans === "Y" ? "" : "not "}the ${p.most}` : p.kind === "gaps" ? `${p.ans === "Y" ? "" : "not "}measured right` : keysOf(p) ? keyWord(p.ans).toLowerCase() : p.kind === "estimate" ? `about ${p.ans} ${UNITS[p.unit].ab}`
       : p.kind === "units" ? `${p.ans} ${UNITS[p.unit].many}` : `${p.ans} ${UNITS[p.unit].ab}`)
   }
 };

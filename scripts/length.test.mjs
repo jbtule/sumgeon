@@ -2,7 +2,7 @@
 // measure true (each thing's ends on the ruler's ticks, units end to end), hints that never give
 // the answer before answering, and the words.
 import assert from "node:assert/strict";
-import { LENGTH_LEVELS, lengthFacts, lengthFactOf, lengthProblem, lengthSvg, lengthHint, lengthLine, lengthRight, spokenLength, spokenLengthAnswer, keysOf, counted, UNITS, X0, W, STICKS, SMALL, BIG, thing } from "../js/length.js";
+import { LENGTH_LEVELS, lengthFacts, lengthFactOf, lengthProblem, lengthSvg, lengthHint, lengthLine, lengthRight, spokenLength, spokenLengthAnswer, keysOf, lengthHit, counted, UNITS, X0, W, STICKS, SMALL, BIG, thing } from "../js/length.js";
 
 const facts = lengthFacts();
 const num = (s) => Number(s);
@@ -15,7 +15,7 @@ const near = (a, b) => Math.abs(a - b) < 0.02;
 assert.equal(new Set(facts.map((f) => f.key)).size, facts.length, "keys are unique");
 for (const lv of LENGTH_LEVELS) assert.ok(facts.some((f) => f.set === lv.id), `${lv.id} has facts`);
 assert.deepEqual(Object.fromEntries(LENGTH_LEVELS.map((lv) => [lv.id, facts.filter((f) => f.set === lv.id).length])),
-  { compare: 20, order: 16, indirect: 12, cubes: 10, clips: 8, gaps: 16, inches: 10, cm: 14, big: 17, from: 24, which: 16, estimate: 13, diff: 16, addsub: 16, halves: 10, quarters: 10 });
+  { compare: 20, order: 16, indirect: 12, cubes: 10, clips: 8, gaps: 16, inches: 10, cm: 14, big: 13, from: 24, which: 12, estimate: 13, diff: 16, addsub: 16 });
 for (const f of facts) {
   assert.ok(f.key.startsWith("ℓ") && f.op === "ℓ", f.key);
   assert.equal(lengthFactOf(f.key), f);
@@ -91,7 +91,7 @@ for (const f of facts) {
       assert.ok(u > 0);
     }
   }
-  if (f.kind === "ruler" || f.kind === "frac" || f.kind === "which" || f.kind === "diff") {
+  if (f.kind === "ruler" || f.kind === "which" || f.kind === "diff") {
     // The ruler: a tick at every whole unit, evenly, from X0 to X0 + W; the thing from its start's
     // tick to its end's.
     const t = ticks(plain), units = t.length - 1, u = W / units;
@@ -123,21 +123,9 @@ for (const f of facts) {
       assert.ok(!new RegExp(`(^|[^\\d])${f.len}([^\\d/]|$)`).test(before.replace(new RegExp(`\\b(${shown.join("|")})\\b`, "g"), "")), `${f.key}: ${before}`);
       assert.ok(new RegExp(`\\b${f.len} ${UNITS[f.unit].ab}\\b`).test(after), `${f.key}: ${after}`);
     }
-    if (f.kind === "frac") {
-      assert.deepEqual(f.ans, [f.whole, f.num]);
-      assert.ok(f.whole >= 1 && f.num > 0 && f.num < f.den);
-      // Every 1/den has a tick (the small ones), each whole a labeled tick.
-      const all = [...plain.matchAll(/<line x1="([\d.]+)" y1="\d+" x2="[\d.]+" y2="\d+" stroke="#0c171c" stroke-width="(?:2.6|1.6)"/g)].length;
-      assert.equal(all, 6 * f.den + 1, `${f.key}: a tick every 1/${f.den}`);
-      const hl = hopLabels(hint);
-      assert.equal(hl[hl.length - 1], "?");
-      if (f.den === 2) assert.ok(!hl.includes(`${f.whole}½`) && !before.includes(`${f.whole}½`), `${f.key}: ${before}`);
-      else assert.ok(!hl.includes(String(f.num)) && !before.includes(`${f.num}/4`) && !new RegExp(`\\b${f.whole}\\b`).test(before.replace(/4 parts|past it: 1, …|[\d?]*\/4/g, "")), `${f.key}: ${before}`);
-      assert.ok(lengthRight(f, [String(f.whole), String(f.num)]) && !lengthRight(f, [String(f.whole), ""]) && !lengthRight(f, [String(f.whole + 1), String(f.num)]));
-    }
     if (f.kind === "which") {
       assert.equal(f.ans, UNITS[f.to] && ["M", "F"].includes(f.ans) ? f.ans : null);
-      const SIZE = { cm: 1, in: 2.54, ft: 30.48, yd: 91.44, m: 100 };
+      const SIZE = { cm: 1, in: 2.54, ft: 30.48, m: 100 };
       assert.equal(f.ans, SIZE[f.to] < SIZE[f.unit] ? "M" : "F", f.key);
       assert.ok(!/^(More|Fewer)\b/.test(before));
     }
@@ -169,6 +157,18 @@ for (const f of facts) {
   }
 }
 
+// Decided 2026-11-27: no yards, no half or quarter inch (they could come back with 4th grade).
+assert.ok(!UNITS.yd && !facts.some((f) => f.unit === "yd" || f.to === "yd" || f.kind === "frac"));
+assert.deepEqual(new Set(LENGTH_LEVELS.map((lv) => lv.grade)), new Set(["K", "1st", "2nd"]));
+// Damage: a count hits for itself; the two-key kinds for the longest thing's length.
+for (const f of facts) {
+  const d = lengthHit(f);
+  assert.ok(Number.isInteger(d) && d > 0, `${f.key}: hits for ${d}`);
+  if (f.things) assert.equal(d, Math.max(...f.things.map((t) => t.len)));
+  else if (!keysOf(f)) assert.equal(d, f.ans);
+}
+assert.equal(lengthHit(lengthFactOf("ℓc:crayon5,snake10")), 10);
+
 // What the voice says.
 assert.equal(spokenLength(lengthFactOf("ℓc:pencil8,toothbrush6")), "Is the pencil longer or shorter than the toothbrush?");
 assert.equal(spokenLengthAnswer(lengthFactOf("ℓc:pencil8,toothbrush6")), "The pencil is longer than the toothbrush.");
@@ -176,9 +176,6 @@ const inch = facts.find((f) => f.key === "ℓin:toothbrush1-6");
 assert.equal(spokenLength(inch), "How many inches long is the toothbrush?");
 assert.equal(spokenLengthAnswer(inch), "The toothbrush is five inches long.");
 assert.equal(lengthHint(inch, false).say, "It starts at 1, not 0. Count the jumps from 1, or 6 − 1 = ?");
-const q = facts.find((f) => f.set === "quarters" && f.num === 3);
-assert.match(spokenLengthAnswer(q), /^[A-Z][a-z]+ and three quarters inches\.$/);
-assert.equal(spokenLength(q), `How long is the ${q.name}, to the nearest quarter inch?`);
 assert.equal(spokenLengthAnswer(facts.find((f) => f.kind === "units" && f.len === 1) || { kind: "units", name: "pencil", unit: "cube", len: 1 }), "The pencil is one cube long.");
 // Every level's words are short enough to hear (a pre-reader can't read them).
 for (const f of facts) assert.ok(spokenLength(f).split(" ").length <= 18, spokenLength(f));
