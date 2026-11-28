@@ -6,9 +6,11 @@
 // pad (or < = >). Right: it opens. Wrong: the lock jams, the fact goes to the retry queue, and a
 // second lock is tried; a second miss leaves it shut. A missed lock costs nothing.
 // Inside, one thing: money about half the time, an item about a third, otherwise a piece of
-// clothing the player doesn't have yet (money once they have every piece).
+// clothing the player doesn't have yet (money once they have every piece). Now and then (PLUSH_SHARE)
+// a plushie the player doesn't have yet instead (plushie.js), a rare prize.
 import { pool, factOf, learned, notRecent } from "./learn.js";
 import { CLOTHES, clothesById, findable, SPOTS } from "./clothes.js";
+import { PLUSHIES, isPlush, FIRST } from "./plushie.js";
 
 export const CHEST_SHARE = 1 / 3, LOCKS = 2;
 // m: the floor's monster. A boss always has one; the rescue floor (a cursed hero) never does.
@@ -45,8 +47,15 @@ export const MONEY_SHARE = 0.5, ITEM_SHARE = 1 / 3, CLOTHING_READY = true;
 // app.js moneyOK): then a chest holds an item or clothing, never coins.
 // big: a mega boss's big chest (DESIGN.md §4.3): more coins (moneyFor big) or two items, half and
 // half; two items before the player has met money.
-export function contents(rnd, owned, money = true, big = false) {
+// plush: the plushies owned (wardrobe.plush); given, a roll in the top PLUSH_SHARE is a plushie not
+// owned yet, one at random (so none repeats until all are found), taking clothing's place.
+export const PLUSH_SHARE = 0.06;
+export function contents(rnd, owned, money = true, big = false, plush) {
   const r = rnd || Math.random, roll = r();
+  if (!big && plush && roll >= 1 - PLUSH_SHARE) {
+    const left = plushLeft(plush);
+    if (left.length) return { kind: "plush", plush: left[Math.floor(r() * left.length)].id };
+  }
   if (big) {
     if (money && roll < 0.5) return { kind: "money", big: true };
     const a = ITEMS[Math.floor(r() * ITEMS.length)].id, rest = ITEMS.filter((i) => i.id !== a);
@@ -64,11 +73,14 @@ export function contents(rnd, owned, money = true, big = false) {
 }
 
 /* ---------- the clothing bag and the wardrobe (DESIGN.md §6.3) ----------
-   Saved per player as wardrobe: { owned: [piece ids], wear: { [digit]: { head, face, neck } } }.
+   Saved per player as wardrobe: { owned: [piece ids], wear: { [digit]: { head, face, neck } },
+   plush: [plushie ids] }. Everyone has Pluffy (it sat on the start scene before the others came).
    A piece comes from a chest or Trollar's shop, never twice. The captain is dressed in the
    wardrobe, one piece per spot; a hero keeps what they wear after they stop being captain. */
 // The findable pieces not owned yet (never the special ones).
 export const unowned = (owned) => findable().filter((p) => !(owned || []).includes(p.id));
+// The plushies not owned yet.
+export const plushLeft = (plush) => PLUSHIES.filter((p) => !(plush || []).includes(p.id));
 export function freshWardrobe(saved) {
   const s = saved && typeof saved === "object" ? saved : {};
   const owned = [...new Set(Array.isArray(s.owned) ? s.owned.filter((id) => clothesById[id]) : [])], wear = {};
@@ -77,8 +89,12 @@ export function freshWardrobe(saved) {
     if (w) SPOTS.forEach((sp) => { const p = clothesById[w[sp]]; if (p && p.spot === sp && owned.includes(p.id)) o[sp] = p.id; });
     if (Object.keys(o).length) wear[d] = o;
   }
-  return { owned, wear };
+  const plush = [...new Set([FIRST].concat(Array.isArray(s.plush) ? s.plush.filter(isPlush) : []))];
+  return { owned, wear, plush };
 }
+export const hasPlush = (w, id) => w.plush.includes(id);
+// A new plushie into the collection; false when it was already there (or isn't one).
+export function addPlush(w, id) { if (!isPlush(id) || hasPlush(w, id)) return false; w.plush.push(id); return true; }
 export const owns = (w, id) => w.owned.includes(id);
 // A new piece into the bag; false when it was already there (or isn't a piece).
 export function addPiece(w, id) { if (!clothesById[id] || owns(w, id)) return false; w.owned.push(id); return true; }

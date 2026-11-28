@@ -39,10 +39,11 @@ test("every saved key is synced or kept on the device on purpose", () => {
 const SHAPE = {
   1: ["best", "bestiary", "dungeon", "facts", "items", "moments", "owned", "reg", "spells", "told", "v", "wallet", "wings"],
   2: ["ach", "best", "bestiary", "dungeon", "facts", "items", "moments", "owned", "reg", "spells", "told", "v", "wallet", "wings"],
-  3: ["ach", "best", "bestiary", "dungeon", "facts", "items", "moments", "owned", "reg", "spells", "told", "v", "wallet", "wings"]
+  3: ["ach", "best", "bestiary", "dungeon", "facts", "items", "moments", "owned", "reg", "spells", "told", "v", "wallet", "wings"],
+  4: ["ach", "best", "bestiary", "dungeon", "facts", "items", "moments", "owned", "plush", "reg", "spells", "told", "v", "wallet", "wings"]
 };
 // Inside the record's achievements, by version (3 added the practice days and comebacks).
-const ACH_SHAPE = { 2: ["e", "s"], 3: ["c", "d", "e", "s"] };
+const ACH_SHAPE = { 2: ["e", "s"], 3: ["c", "d", "e", "s"], 4: ["c", "d", "e", "s"] };
 test("the record's shape matches its version", () => {
   const rec = busyRecord();
   assert.equal(rec.v, RECORD_VERSION);
@@ -161,6 +162,15 @@ test("moments, told, spells and the wardrobe", () => {
   // The learned handwriting stays on its device.
   assert.equal(Object.keys(b.data.spells.templates).length, 0);
   assert.equal(Object.keys(a.data.spells.templates).length, 1);
+  // Plushies owned only grow: one found on each device, both have both, and Pluffy stays.
+  a.data.wardrobe.plush = ["pluffy", "mootaur"];
+  b.data.wardrobe.plush = ["pluffy", "chompy"];
+  server = sync(a, server); server = sync(b, server); server = sync(a, server);
+  for (const d of [a, b]) assert.deepEqual([...d.data.wardrobe.plush].sort(), ["chompy", "mootaur", "pluffy"]);
+  // Losing one on a device (an old save) never takes it away.
+  b.data.wardrobe.plush = ["pluffy"];
+  server = sync(b, server); server = sync(a, server);
+  for (const d of [a, b]) assert.deepEqual([...d.data.wardrobe.plush].sort(), ["chompy", "mootaur", "pluffy"]);
   // Taking everything off syncs too.
   b.data.wardrobe.wear = {};
   server = sync(b, server); server = sync(a, server);

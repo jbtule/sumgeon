@@ -32,9 +32,9 @@ const STARS = [[6, 10, 2, 0], [14, 34, 1.5, 1.2], [22, 16, 2.5, 2.1], [31, 48, 1
   [70, 20, 2.5, 1.1], [78, 6, 1.5, 2.2], [86, 30, 2, .8], [93, 14, 1.5, 1.9], [10, 60, 1.5, 2.7], [90, 56, 1.5, 1.4], [27, 70, 1, .4], [74, 66, 1, 2]];
 // stall: Trollar's stall (chest.js stallSvg), right of the door, behind the team (.d-stall, so
 // the start screen can put its tap target over it).
-// plush: Pluffy (plushie.js plushSvg), sitting in the grass at the captain's feet, between
-// them and the door, in front (.d-plush, the start screen's tap target goes over it too); by the
-// door with nobody picked.
+// Plushies (plushie.js): a hero with { plush: svg, plushId } has their favorite plushie sitting in
+// the grass at their feet, on the side toward the door, scaled to the hero (.d-plush, in front;
+// the start screen puts a tap target over each). plush: one by the door with nobody picked.
 export function surfaceHTML({ W, H, hz, heroes = [], stall = "", plush = "" }) {
   hz = Math.round(hz);
   const door = Math.round(Math.max(64, Math.min(200, hz * 0.5, H * 0.24, W * 0.36))), doorW = Math.round(door * 0.72);
@@ -44,7 +44,19 @@ export function surfaceHTML({ W, H, hz, heroes = [], stall = "", plush = "" }) {
   const capW = Math.round(door * 0.92), side = (W - doorW) / 2 - 6;
   const perSide = Math.ceil(rest.length / 2) || 1, room = side - (cap ? capW * 0.9 : 0);
   const tW = Math.round(Math.max(26, Math.min(door * 0.62, (room / perSide) * 1.35)));
-  const fig = (h, cx, feet, w, z, i) => `<span class="d-hero ${h.role}" style="left:${Math.round(W / 2 + cx - w / 2)}px;top:${Math.round(feet - w * 1.02)}px;width:${w}px;z-index:${z};--d:${((i * 0.37) % 2.4).toFixed(2)}s">${h.svg}</span>`;
+  let toys = "";
+  // A toy, so no bob: it sits still, leaning a little, and only squishes when squeezed. About half
+  // the hero's width, at their feet on the door's side (cx is the hero's middle from the door's).
+  const toy = (svg, id, cx, feet, pw) => `<span class="d-plush"${id ? ` data-plush="${id}"` : ""} style="left:${Math.round(W / 2 + cx - pw / 2)}px;top:${Math.round(feet - pw * 0.95)}px;width:${pw}px;height:${pw}px">${svg}</span>`;
+  const fig = (h, cx, feet, w, z, i) => {
+    if (h.plush) {
+      // The captain has room between them and the door; the team stands close, so theirs sits
+      // right at their own feet, a little in front, rather than on a neighbour.
+      const cap = h.role === "cap", pw = Math.round(w * (cap ? 0.48 : 0.46));
+      toys += toy(h.plush, h.plushId, cx + (cx < 0 ? 1 : -1) * w * (cap ? 0.4 : 0.2), feet + Math.round(pw * (cap ? 0.03 : 0.14)), pw);
+    }
+    return `<span class="d-hero ${h.role}" style="left:${Math.round(W / 2 + cx - w / 2)}px;top:${Math.round(feet - w * 1.02)}px;width:${w}px;z-index:${z};--d:${((i * 0.37) % 2.4).toFixed(2)}s">${h.svg}</span>`;
+  };
   let figs = "";
   if (cap) figs += fig(cap, -(doorW / 2 + capW * 0.42), hz + Math.round(bulge * 0.15), capW, 5, 0);
   rest.forEach((h, i) => {
@@ -52,14 +64,7 @@ export function surfaceHTML({ W, H, hz, heroes = [], stall = "", plush = "" }) {
     const right = i % 2 === (stall ? 1 : 0), k = Math.floor(i / 2), out = doorW / 2 + tW * 0.5 + k * tW * 0.72 + (right || !cap ? 4 : capW * 0.78);
     figs += fig(h, right ? out : -out, hz - Math.round(bulge * 0.35) - k * 3, tW, 4 - k, i + 1);
   });
-  let toy = "";
-  if (plush) {
-    // A toy, so no bob: it sits still, leaning a little, and only squishes when squeezed.
-    const pw = Math.round(cap ? capW * 0.48 : door * 0.4);
-    const cx = cap ? -(doorW / 2 + capW * 0.42) + capW * 0.4 : -(doorW / 2 + pw * 0.75);
-    const feet = cap ? hz + Math.round(bulge * 0.15) + Math.round(pw * 0.03) : hz - Math.round(bulge * 0.3);
-    toy = `<span class="d-plush" style="left:${Math.round(W / 2 + cx - pw / 2)}px;top:${Math.round(feet - pw * 0.95)}px;width:${pw}px;height:${pw}px">${plush}</span>`;
-  }
+  if (plush && !heroes.length) { const pw = Math.round(door * 0.4); toys += toy(plush, "", -(doorW / 2 + pw * 0.75), hz - Math.round(bulge * 0.3), pw); }
   let shop = "";
   if (stall) {
     // Past the first hero on the right where there's room (iPad, desktop), so they stand by
@@ -73,7 +78,7 @@ export function surfaceHTML({ W, H, hz, heroes = [], stall = "", plush = "" }) {
     <div class="d-grass" style="height:${H - hz}px"></div>
     <i class="d-hill" style="left:${Math.round((W - hillW) / 2)}px;top:${hz - bulge}px;width:${hillW}px;height:${bulge + 3}px"></i>
     <i class="d-door" style="left:${Math.round((W - doorW) / 2)}px;top:${doorAt - door}px;width:${doorW}px;height:${door}px;--dh:${door}px"></i>
-    ${shop}${figs}${toy}</div>`;
+    ${shop}${figs}${toys}</div>`;
 }
 
 // opts: { wing, depth, mode: "enter" | "deeper", reduced, title, sub, mega, scene: { hz, heroes } }. title is the big line
