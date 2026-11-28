@@ -170,14 +170,19 @@ export var TRAIT_LINE = {
   "Arrays": "Count the rows! Every row is the same.",
   "Halves": "Fractions! Find the one that's the same size.",
   "Tick Tock": "What time is it? Read the clock!",
-  "What's Next": "What comes next? Count the pattern!"
+  "What's Next": "What comes next? Count the pattern!",
+  "Four of a Kind": "Multiples of four hit double!",
+  "On the Dot": "Answers that end in zero hit double!",
+  "Leftovers": "Leftovers! The remainder hits too.",
+  "Heavy Metal": "A thousand or more hits double!"
 };
 // A mega boss's second trait (traits.js mega), said after its name the first times you meet it.
 export var TRAIT2_LINE = {
   "Make-Ten Golem": "Halfway down, this boss puts on armor!",
   "Judo Judy": "Big throws! Every fourth problem, a miss costs two hearts.",
   "The Centipede": "Halfway down, it curls up! Answers under twenty do half damage.",
-  "Sigma Rex": "Watch out! It flips your times facts. Same answer!"
+  "Sigma Rex": "Watch out! It flips your times facts. Same answer!",
+  "The Denominator": "Overload! Every fourth problem, a miss costs two hearts."
 };
 export function trait2Line(m) { return (m && m.trait2 && TRAIT2_LINE[m.base || m.n]) || null; }
 // Polly-Gon's squawk before each problem (shapes.js squawkLine): "Squawk! Polly

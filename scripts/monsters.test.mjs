@@ -6,9 +6,9 @@ import { TRAITS, traitOf } from "../js/traits.js";
 import { spokenLines, monsterName, monsterCleared, monsterWon } from "../js/lines.js";
 
 assert.equal(new Set(MON.map((m) => m.n)).size, MON.length, "every monster has its own name");
-assert.deepEqual(MON.filter((m) => m.boss).map((m) => m.n).sort(), ["Judo Judy", "Make-Ten Golem", "Sigma Rex", "The Centipede"], "one boss per Wing");
+assert.deepEqual(MON.filter((m) => m.boss).map((m) => m.n).sort(), ["Judo Judy", "Make-Ten Golem", "Sigma Rex", "The Centipede", "The Denominator"], "one boss per Wing");
 for (const m of MON) {
-  assert.ok(["+", "-", "×", "÷", "¢", "○", "=", "Σ", "▦", "/", "⌚", "…", "◇", "mix"].includes(m.op), m.n);
+  assert.ok(["+", "-", "×", "÷", "¢", "○", "=", "Σ", "▦", "/", "⌚", "…", "◇", "R", "mix"].includes(m.op), m.n);
   assert.ok(m.hits >= 3 && m.quip && m.c, m.n);
   const s = svg(m);
   assert.ok(s.startsWith("<svg") && s.endsWith("</svg>"), m.n);
@@ -42,7 +42,7 @@ assert.ok(!/\b(she|her|hers|he|him|his)\b/i.test(judy.quip), "Judo Judy's lines 
 // The six new monsters in the game (M5 step 3): in MON with a symbol, a stratum for the gallery,
 // anchors and four looks each; batch 1's two (time and patterns), and Polly-Gon (shapes). NEW_MON
 // is empty until the next ones are drawn.
-const SIX = ["Pipsqueak", "Doublet", "Triceraplus", "Margot-Rythm", "Squaresquatch", "Halfling", "Tick-Tockus", "Slimelipsis", "Polly-Gon"];
+const SIX = ["Pipsqueak", "Doublet", "Triceraplus", "Margot-Rythm", "Squaresquatch", "Halfling", "Tick-Tockus", "Slimelipsis", "Polly-Gon", "Quarterjack", "Dotty", "Boomainder"];
 assert.deepEqual(NEW_MON.map((m) => m.n), []);
 for (const n of SIX) {
   const m = MON.find((x) => x.n === n);
@@ -114,7 +114,7 @@ for (const m of RETIRED) {
     }
     assert.ok(!/\b(she|her|hers|he|him|his)\b/i.test(f.quip), `${f.n}'s beaten line uses no he or she`);
   }
-  assert.equal(new Set(forms.map((f) => f.n)).size, 8);
+  assert.equal(new Set(forms.map((f) => f.n)).size, 10);
   assert.equal(bossForm(MON.find((m) => m.n === "Plusquito"), "mega"), null, "only bosses have forms");
 }
 console.log("✓ monsters");

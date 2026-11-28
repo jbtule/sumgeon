@@ -77,7 +77,7 @@ const ITEMS = { newGrid: NEW_MON.map(monItem), oldGrid: MON.map(monItem), heroGr
 // One row per boss: the boss, powering up 1 and 2, its mega form and its Legend form, side by
 // side on its stratum's wall (or the wall picked above; "All four" keeps its own), big and at
 // 72 px and 26 px.
-const BOSS_ORDER = ["Make-Ten Golem", "Judo Judy", "The Centipede", "Sigma Rex"];
+const BOSS_ORDER = ["Make-Ten Golem", "Judo Judy", "The Centipede", "Sigma Rex", "The Denominator"];
 const BOSSES = MON.filter((m) => m.boss).sort((a, b) => BOSS_ORDER.indexOf(a.n) - BOSS_ORDER.indexOf(b.n));
 const FORM_TAG = { boss: ["g-boss", "Boss"], power1: ["g-power", "Powering up 1"], power2: ["g-power", "Powering up 2"], mega: ["g-mega", "Mega"], legend: ["g-legend", "Legend"] };
 // A boss powering up keeps its name (and lines), so its key and tag carry the stage.

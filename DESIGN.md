@@ -444,7 +444,7 @@ What changed: the order follows the guide's units; four priority standards the r
 
 **The boss: The Denominator.** A great iron robot that is a fraction: its head is the numerator (a riveted box with a dark visor band), the fraction bar its wide steel shoulders and arms ending in fists, and its body the denominator box, on piston legs. 🔨 *Heavy Metal*: answers of 1000 or more hit double (the Golem's 10 and the Centipede's 100, a place further). It mixes the Forge's problems, as every boss does.
 - **Mega form: The Megaminator** (every 5th depth, powering up on the two before): chrome armor plates, glowing eyes, steam vents, a crown; second trait ⚡ *Overload*: every 4th problem is charged, a miss costs 2 hearts (Minustaur's rule).
-- **Legend form: The Golden Denominator**, after mastery (every priority fact at box 4), with the mega trait too.
+- **Legend form: the Golden Denominator** (named like the other Legends, "Golden …"), after mastery (every priority fact at box 4), with the mega trait too.
 
 **Place in the chain and the grade picker.**
 - The Forge comes `after` the Tower: it opens when the Tower's boss is beaten and 60% of its priority steps are learned, as every stratum does.

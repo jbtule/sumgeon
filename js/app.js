@@ -852,7 +852,7 @@ function newProblem() {
   G.charged = charged(m, G.onFloor++);
   $("charge").hidden = !G.charged;
   // Mega Judy's big throw (⚡ Black Belt) is charged the same way.
-  if (G.charged) { sfx.charge(); if (mega(m)) say("p", PHRASE.bigThrow, false, () => G.charged && !G.busy); else say("p", PHRASE.charged, false, () => G.charged && !G.busy); }
+  if (G.charged) { sfx.charge(); if (mega(m) && (m.base || m.n) === "Judo Judy") say("p", PHRASE.bigThrow, false, () => G.charged && !G.busy); else say("p", PHRASE.charged, false, () => G.charged && !G.busy); }
   G.cur = factOf(key);
   // A shape to draw hits for its strand's typical answer (learn.js drawHit). Without a touch screen
   // (a missed one coming back, or ?fact=), a counting problem about it instead.
@@ -1328,7 +1328,7 @@ function miss(why) {
   // The whole fact, said out loud: "three plus four is seven".
   const said = G.cur.fact || G.cur;
   say("q", spokenFact(said));
-  if (cost > 1 && mega(G.floors[G.floor])) say("p", PHRASE.bigThrowMiss);
+  if (cost > 1 && mega(G.floors[G.floor]) && (G.floors[G.floor].base || G.floors[G.floor].n) === "Judo Judy") say("p", PHRASE.bigThrowMiss);
   else if (cost > 1) say("p", PHRASE.chargedMiss);
   if (G.hearts > 0) saveRun("next"); else clearRun(); // a lost run can't be picked up again
   if (blocked) setTimeout(() => { G.next = true; openWorked(); }, 600);
