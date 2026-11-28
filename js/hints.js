@@ -13,6 +13,7 @@ import { dollarSvg, dollarHint, dollarFactOf } from "./dollars.js";
 import { countSvg, countHint, drawHintSvg, drawHint, shapeFactOf } from "./shapes.js";
 import { flashSvg, flashHint, flashFactOf } from "./flash.js";
 import { fourthHint, isFourthHint } from "./hints4.js";
+import { chartSvg, chartHint, chartFactOf } from "./charts.js";
 
 // Hints (DESIGN.md §5.3): the models classrooms use now, with the classroom's words, and a line
 // for grown-ups who learned it another way. No DOM: returns { model, say, grownups } where model
@@ -785,9 +786,23 @@ function flashHintFor(f, worked) {
   return { model: fitted(flashSvg(f, { hint: true }), 90, "the dots, in groups"), say: flashHint(f, worked).say, grownups: FLASH_WHY[f.kind] };
 }
 
+// Reading charts (Graphzilla, js/charts.js): drawn on the chart itself. In a fight on the
+// problem's own chart (app.js); here for the Oops card and the grown-ups' page.
+const CHART_WHY = {
+  read: "Reading a chart: count along a row of tallies (by 5s for each bundle) or pictures, or follow the top of a bar across to the numbers. A scaled graph counts by its scale: each picture is 2, half a picture is 1.",
+  more: "How many more or fewer: line the two rows (or bars) up from the same start. The extra past the shorter one is the difference.",
+  all: "In all: read each row or bar, then add them. Kids count one row, then count on.",
+  plot: "Line plots and tables (4th grade): the mode is the value with the most (the tallest stack of Xs), the range is the biggest minus the smallest."
+};
+function chartHintFor(f, worked) {
+  const k = f.ask.k, why = "mo ra at to".includes(k) ? CHART_WHY.plot : k === "m" || k === "f" ? CHART_WHY.more : k === "t" || k === "a" ? CHART_WHY.all : CHART_WHY.read;
+  return { model: fitted(chartSvg(f, { hint: true, worked }), 150, "the chart, with the hint on it"), say: chartHint(f, worked).say, grownups: why };
+}
+
 export function hintFor(f, worked) {
   // 4th grade (hints4.js): its own models, the area model, partial quotients and the rest.
   if (isFourthHint(f)) return fourthHint(f, worked);
+  if (f.op === "▥") return chartHintFor(f, worked);
   if (f.op === "⁙") return flashHintFor(f, worked);
   if (f.op === "◇") return shapeHintFor(f, worked);
   if (f.op === "✓" || f.op === "✎") return tfHintFor(f, worked);
@@ -1045,6 +1060,10 @@ export const STRATEGIES = [
   { title: "Equal fractions", grade: "3rd", f: fractionFact(1, 2, 4) },
   { title: "Compare fractions: same size pieces", grade: "3rd", f: fracCompareFact("3/8", "5/8") },
   { title: "Compare fractions: same number of pieces", grade: "3rd", f: fracCompareFact("2/3", "2/6") },
+  { title: "Tally charts", grade: "1st", f: chartFactOf("▥T1:torch5,potion7,key3:n.potion") },
+  { title: "How many more on a chart", grade: "1st–2nd", f: chartFactOf("▥T1:torch5,potion7,key3:m.potion.key") },
+  { title: "Bar graphs", grade: "2nd–3rd", f: chartFactOf("▥B5:torch10,potion25:f.torch.potion") },
+  { title: "Line plots: the mode", grade: "4th", f: chartFactOf("▥F:potion:1x2,3x4,4x1:mo") },
   { title: "Rounding", grade: "3rd", f: roundFact(47, 10) },
   { title: "Area", grade: "3rd", f: rectFact("a", 4, 3) },
   { title: "Perimeter", grade: "3rd", f: rectFact("p", 4, 3) }

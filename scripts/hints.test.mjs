@@ -2,6 +2,7 @@
 // gives the answer away in words.
 import assert from "node:assert/strict";
 import { hintFor } from "../js/hints.js";
+import { chartSvg } from "../js/charts.js";
 import { BANDS, pool, factOf } from "../js/learn.js";
 import { missingOf, canHide } from "../js/missing.js";
 
@@ -79,6 +80,15 @@ for (const band of Object.keys(BANDS)) {
       else if (f.op === "$") assert.ok(after.say.includes(`${f.slots ? f.slots[0] : f.ans} dollars`) && (!f.slots || after.say.includes(`${f.slots[1]} cents`)), `${p.key}: ${after.say}`);
       else if (f.op === "↔") assert.ok(after.say.includes(f.kind === "parts" ? `${f.d} equal parts` : ` ${f.n}/${f.d}`), `${p.key}: ${after.say}`);
       else assert.ok(new RegExp(`\\b${f.ans}\\b`).test(after.say), `${p.key}: ${after.say}`);
+      continue;
+    }
+    // Reading charts (Graphzilla, batch 3): counted partway before ("Count the extra: 1, 2, …?"),
+    // never the answer unless the problem shows it (a picture's worth); the answer after.
+    // (charts.test.mjs checks the drawing's labels too.)
+    if (f.op === "▥") {
+      const shown = new Set([...(f.q.match(/\d+/g) || []).map(Number), ...(f.form === "P" && f.scale > 1 ? [f.scale] : [])]);
+      assert.ok(shown.has(f.ans) || !new RegExp(`(^|[^\\d])${f.ans}([^\\d]|$)`).test(before.say), `${p.key}: ${before.say}`);
+      assert.ok(new RegExp(`\\b${f.ans}\\b`).test(after.say), `${p.key}: ${after.say}`);
       continue;
     }
     // Prime or composite (4th grade): never the word before answering, and the right one after.
@@ -208,6 +218,9 @@ for (const band of Object.keys(BANDS)) {
     // A side to find: the side, and the area or perimeter, are on the rectangle.
     if (f.op === "▭" && (f.kind === "s" || f.kind === "q")) [f.h, f.area, f.per].forEach((n) => n != null && known.add(n));
     if (f.op === "∠" && f.kind === "read") [0, 30, 60, 90, 120, 150, 180].forEach((n) => known.add(n));
+    // A chart's own numbers (a bar graph's axis, a line plot's line, a table's counts) are on it:
+    // reading them is what's asked (charts.test.mjs checks what the hint adds).
+    if (f.op === "▥") numbersIn(chartSvg(f).replace(/<[^>]*>/g, " ")).forEach((n) => known.add(n));
     // and so are their digits and tens (73 is 7 tens and 3 ones).
     for (const n of [...known]) if (n >= 10) for (const part of [n % 10, Math.floor(n / 10) % 10, n - (n % 10), Math.floor(n / 10)]) known.add(part);
     // 10 is every + and − strategy's landmark (make 10, 11 is 10 and 1, back to 10), so it may show.
@@ -258,12 +271,15 @@ const opening = { "Ten-frame": /^Put together/, "Draw and cross out": /^Take awa
   // Shapes (Polly-Gon).
   "Drawing shapes": /^A triangle has 3 sides and 3 corners\.$/, "Counting sides": /^Count each side, going round: 1, 2, 3, 4, 5, 6\. A hexagon has 6 sides\.$/,
   "Faces of a cube": /^You can see 3 faces\. 3 more hide on the back\. 3 \+ 3 = 6$/, "Equal shares": /^Count the parts: 1, 2, 3, 4\. 4 equal parts\.$/,
-  "Rows and columns of squares": /^4 \+ 4 \+ 4 = 12$/, "Unit fractions": /^Count the equal parts: 1, 2, 3, 4\. Each part is 1\/4\.$/ };
+  "Rows and columns of squares": /^4 \+ 4 \+ 4 = 12$/, "Unit fractions": /^Count the equal parts: 1, 2, 3, 4\. Each part is 1\/4\.$/,
+  // Reading charts (Graphzilla).
+  "Tally charts": /5, 6, 7\. 7 potions\.$/, "How many more on a chart": /^7 − 3 = 4\. 4 more potions\.$/, "Bar graphs": /^25 − 10 = 15\. 15 fewer torches\.$/,
+  "Line plots: the mode": /The mode is 3\.$/ };
 assert.equal(STRATEGIES.length, Object.keys(opening).length);
 for (const s of STRATEGIES) {
   const h = hintFor(s.f, true);
   assert.match(h.say, opening[s.title], s.title);
-  assert.ok(h.grownups && (TALKS.includes(s.f.op) || s.f.op === "⁙" || BATCH2.includes(s.f.op) || s.f.op === "◇" || "…".includes(s.f.op) && h.say.endsWith("= " + s.f.ans) || h.say.endsWith(s.f.sym ? s.f.l + " " + s.f.sym + " " + s.f.r : "= " + s.f.ans)), s.title);
+  assert.ok(h.grownups && (TALKS.includes(s.f.op) || s.f.op === "⁙" || s.f.op === "▥" || BATCH2.includes(s.f.op) || s.f.op === "◇" || "…".includes(s.f.op) && h.say.endsWith("= " + s.f.ans) || h.say.endsWith(s.f.sym ? s.f.l + " " + s.f.sym + " " + s.f.r : "= " + s.f.ans)), s.title);
 }
 console.log("✓ hint strategies");
 

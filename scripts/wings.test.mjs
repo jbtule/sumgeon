@@ -8,17 +8,19 @@ const [cellar, hall, mines, tower, forge] = ["cellar", "hall", "mines", "tower",
 assert.deepEqual(WINGS.map((w) => w.id), ["cellar", "hall", "mines", "tower", "forge"]);
 assert.deepEqual(WINGS.map((w) => BANDS[w.band].grade), [0, 1, 2, 3, 4]);
 assert.deepEqual(WINGS.map((w) => w.after || null), [null, "cellar", "hall", "mines", "tower"], "each opens only the next");
-assert.deepEqual(forge.pool.concat([forge.boss]), ["Timesaur", "Divvy", "Boomainder", "Quarterjack", "Dotty", "Chompers", "Haberhasher", "Margot-Rythm", "Slimelipsis", "Polly-Gon", "Squaresquatch", "Tick-Tockus", "Trollar", "The Denominator"], "the Forge's three, and returning monsters visiting");
+assert.deepEqual(forge.pool.concat([forge.boss]), ["Timesaur", "Divvy", "Boomainder", "Quarterjack", "Dotty", "Chompers", "Haberhasher", "Margot-Rythm", "Slimelipsis", "Polly-Gon", "Squaresquatch", "Tick-Tockus", "Trollar", "Graphzilla", "The Denominator"], "the Forge's three, and returning monsters visiting");
+assert.deepEqual([hall, mines, tower, forge].map((w) => bandOf(w, { n: "Graphzilla" })), ["chartsH", "chartsM", "chartsT", "chartsF"], "Graphzilla reads its grade's charts in each stratum");
+assert.equal(bandOf(cellar, { n: "Graphzilla" }), "kinder", "no charts in the Cellar (K's data is sorting, left out)");
 assert.equal(bandOf(forge, { n: "Slimelipsis" }), "patF", "Slimelipsis brings patterns from a rule");
 assert.equal(mines.name, "The Crystal Mines");
 // Each stratum's monsters, and what they ask there.
 const M = (w) => w.pool.concat([w.boss]);
 assert.deepEqual(M(cellar), ["Plusquito", "Minustaur", "Pipsqueak", "Chompers", "Trollar", "Slimelipsis", "Polly-Gon", "Make-Ten Golem"]);
-assert.deepEqual(M(hall), ["Plusquito", "Minustaur", "Quizard", "Chompers", "Equal Twins", "Doublet", "Triceraplus", "Haberhasher", "Tick-Tockus", "Slimelipsis", "Polly-Gon", "Trollar", "Judo Judy"], "the Hall gets Plusquito and Minustaur (within 20, crossing 10), Haberhasher visiting (tens) and Trollar (coin values)");
+assert.deepEqual(M(hall), ["Plusquito", "Minustaur", "Quizard", "Chompers", "Equal Twins", "Doublet", "Triceraplus", "Haberhasher", "Tick-Tockus", "Slimelipsis", "Polly-Gon", "Trollar", "Graphzilla", "Judo Judy"], "the Hall gets Plusquito and Minustaur (within 20, crossing 10), Haberhasher visiting (tens) and Trollar (coin values)");
 assert.equal(bandOf(hall, { n: "Trollar" }), "coinsH", "Trollar says what each coin is worth in the Hall");
 assert.deepEqual(pool("coinsH").map((f) => f.key).sort(), pool("coinsK").filter((f) => f.level === 1).map((f) => f.key).sort(), "the Cellar's each coin, the same keys");
-assert.deepEqual(M(mines), ["Haberhasher", "Margot-Rythm", "Trollar", "Squaresquatch", "Slimelipsis", "Tick-Tockus", "Chompers", "Triceraplus", "Polly-Gon", "The Centipede"], "the Mines' own monsters, with Chompers and Triceraplus visiting");
-assert.deepEqual(M(tower), ["Timesaur", "Divvy", "Starbot", "Halfling", "Tick-Tockus", "Margot-Rythm", "Polly-Gon", "Chompers", "Sigma Rex"], "Margot-Rythm and Chompers visit the Tower");
+assert.deepEqual(M(mines), ["Haberhasher", "Margot-Rythm", "Trollar", "Squaresquatch", "Slimelipsis", "Tick-Tockus", "Chompers", "Triceraplus", "Polly-Gon", "Graphzilla", "The Centipede"], "the Mines' own monsters, with Chompers and Triceraplus visiting");
+assert.deepEqual(M(tower), ["Timesaur", "Divvy", "Starbot", "Halfling", "Tick-Tockus", "Margot-Rythm", "Polly-Gon", "Chompers", "Graphzilla", "Sigma Rex"], "Margot-Rythm, Chompers and Graphzilla visit the Tower");
 // Three-digit numbers: Chompers compares them in the Mines and Triceraplus adds up to four
 // two-digit numbers there; Margot-Rythm brings 3rd grade's adding and subtracting to the Tower.
 assert.deepEqual([bandOf(mines, named0("Chompers")), bandOf(mines, named0("Triceraplus")), bandOf(tower, named0("Margot-Rythm")), bandOf(mines, named0("Margot-Rythm"))], ["cmpM", "sumsM", "addT", "second"]);

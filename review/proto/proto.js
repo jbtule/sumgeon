@@ -378,7 +378,7 @@ function next(speak) {
   if (tm) { const h = Number(tm[1]), m = Number(tm[2]); p = { level: lv.id, h, m, ask: m && q.get("ask") !== "hour" ? "minutes" : "hour", ans: m && q.get("ask") !== "hour" ? m : h }; }
   if (!S && p.draw && q.get("shape")) p.shape = q.get("shape");
   if (!S && view.type === "chart" && q.get("chart")) p = chartFactOf(q.get("chart"));
-  else if (!S && view.type === "chart" && q.get("q")) for (let i = 0; i < 200 && p.q.k !== q.get("q"); i++) p = t.problem(lv, rnd);
+  else if (!S && view.type === "chart" && q.get("q")) for (let i = 0; i < 200 && p.ask.k !== q.get("q"); i++) p = t.problem(lv, rnd);
   // ?frac=5/8 puts the number line's dot there first.
   const fr = !S && view.type === "numberline" && p.kind === "where" && /^(\d+)\/(\d+)$/.exec(q.get("frac") || "");
   if (fr) { p.n = Number(fr[1]); p.d = Number(fr[2]); p.ans = p.n; }

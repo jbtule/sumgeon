@@ -208,7 +208,7 @@ export function kindOf(key) {
   if (op === "¢" || op === "$") return "coins";
   if (op === "/" || op === "↔") return "fractions";
   if (op === "○" && key.includes("/")) return "fractions";
-  return { "□": "missing", "M": "more", "○": "compare", "=": "balance", "✓": "truefalse", "✎": "truefalse", "Σ": "sums", "▦": "arrays", "⌚": "time", "…": "patterns", "◐": "oddeven", "#": "placevalue", "◇": "shapes", "⁙": "dots", "≈": "rounding", "▭": "area", "R": "remainders", "E": "steps", "F": "steps", "ƒ": "fracops", "d": "decimals", "∠": "angles", "u": "units", "P": "primes", "D": "coins" }[op] || "other";
+  return { "▥": "charts", "□": "missing", "M": "more", "○": "compare", "=": "balance", "✓": "truefalse", "✎": "truefalse", "Σ": "sums", "▦": "arrays", "⌚": "time", "…": "patterns", "◐": "oddeven", "#": "placevalue", "◇": "shapes", "⁙": "dots", "≈": "rounding", "▭": "area", "R": "remainders", "E": "steps", "F": "steps", "ƒ": "fracops", "d": "decimals", "∠": "angles", "u": "units", "P": "primes", "D": "coins" }[op] || "other";
 }
 export const KIND_NAMES = {
   dots: "Dot flash", more: "Which is more", missing: "Missing numbers", teens: "Teen facts (13 + 4)", compare: "Comparing", balance: "Balancing (equal sign)",
@@ -216,7 +216,7 @@ export const KIND_NAMES = {
   coins: "Coins and money", time: "Telling time", patterns: "Counting patterns", oddeven: "Odd and even", arrays: "Arrays", shapes: "Shapes",
   tens: "× tens", big: "÷ past 12", rounding: "Rounding", fractions: "Fractions", area: "Area and perimeter",
   million: "+ and − to a million", mul4: "Multi-digit ×", div4: "Multi-digit ÷", remainders: "Remainders", steps: "Multi-step and factors", fracops: "Adding and multiplying fractions",
-  decimals: "Decimals", primes: "Prime or composite", angles: "Angles and shapes", units: "Measurement", other: "Other"
+  decimals: "Decimals", primes: "Prime or composite", angles: "Angles and shapes", units: "Measurement", charts: "Reading charts", other: "Other"
 };
 // The other kinds the open strata ask, in the order they first come up: { id, name, keys, total,
 // seen, learned, mastered } (learned counts box 3 and 4).

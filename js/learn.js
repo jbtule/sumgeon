@@ -20,6 +20,7 @@ import { pvFacts, pvFactOf, PV_GAME_LEVELS } from "./placevalue.js";
 import { dollarFacts, dollarFactOf, DOLLAR_GAME_LEVELS } from "./dollars.js";
 import { shapeFacts, shapeFactOf, SHAPE_STRANDS, isDrawKey } from "./shapes.js";
 import { flashFacts, flashFactOf, FLASH_LEVELS } from "./flash.js";
+import { chartFacts, chartFactOf, CHART_LEVELS } from "./charts.js";
 import { asks as asksOf } from "./traits.js";
 import { bigCompareFacts, roundFacts4, addSub4, times10s, timesOne, timesTwo, divideOne, remFacts, remFactOf, exprFacts, exprFact, factorFacts, factorFactOf,
   equivFacts4, fracCompare4, fracOpFacts, fracTimesFacts, fracOpFact, decimalFacts, decFact, decCompareFacts, unitFacts, unitFact, rect4Facts,
@@ -214,7 +215,15 @@ export const BANDS = {
   shapesK: { label: "Shapes", strand: true, hearts: 7, fluentMs: 6000, facts: shapeFacts, levels: shapeLevels("shapesK") },
   shapesH: { label: "Shapes: halves and fourths", strand: true, hearts: 7, fluentMs: 6000, facts: shapeFacts, levels: shapeLevels("shapesH") },
   shapesM: { label: "Shapes: equal shares", strand: true, hearts: 5, fluentMs: 7000, facts: shapeFacts, levels: shapeLevels("shapesM") },
-  shapesT: { label: "Shapes: quadrilaterals", strand: true, hearts: 5, fluentMs: 6000, strict: true, facts: shapeFacts, levels: shapeLevels("shapesT") }
+  shapesT: { label: "Shapes: quadrilaterals", strand: true, hearts: 5, fluentMs: 6000, strict: true, facts: shapeFacts, levels: shapeLevels("shapesT") },
+  // Reading charts (Graphzilla, js/charts.js, batch 3), a strand in each stratum of its grade: tally
+  // charts and picture charts in the Hall (1st grade), picture graphs and bar graphs in the Mines
+  // (2nd), scaled ones in the Tower (3rd), frequency tables, line plots and graphs by 10s in the
+  // Forge (4th). Reading a chart and counting along it takes longer than a fact from memory.
+  chartsH: { label: "Charts: tally and picture", strand: true, hearts: 7, fluentMs: 7000, facts: chartFacts, levels: levelsOf(CHART_LEVELS, "hall") },
+  chartsM: { label: "Charts: bar graphs", strand: true, hearts: 5, fluentMs: 7000, facts: chartFacts, levels: levelsOf(CHART_LEVELS, "mines") },
+  chartsT: { label: "Charts: scaled graphs", strand: true, hearts: 5, fluentMs: 8000, facts: chartFacts, levels: levelsOf(CHART_LEVELS, "tower") },
+  chartsF: { label: "Charts: line plots", strand: true, hearts: 5, fluentMs: 9000, facts: chartFacts, levels: levelsOf(CHART_LEVELS, "forge") }
 };
 // A shape strand's levels (shapes.js SHAPE_STRANDS), each holding its keys.
 function shapeLevels(strand) { return SHAPE_STRANDS[strand].map((l) => ({ name: l.name, has: (f) => l.keys.includes(f.key) })); }
@@ -252,7 +261,7 @@ export function keyOf(f) {
 }
 // A problem for a key, turned around half the time for + and ×.
 export function factOf(key, rnd) {
-  const own = { "¢": coinFactOf, "○": balanceFactOf, "=": balanceFactOf, "□": hiddenFactOf, "M": moreFactOf, "/": fractionFactOf, "≈": roundFactOf, "▭": rectFactOf, "Σ": threeFactOf, "▦": arrayFactOf, "⌚": clockFactOf, "…": patternFactOf, "◐": oddEvenFactOf, "✓": tfFactOf, "✎": tfFactOf, "↔": lineFactOf, "#": pvFactOf, "$": dollarFactOf, "◇": shapeFactOf, "⁙": flashFactOf,
+  const own = { "¢": coinFactOf, "○": balanceFactOf, "=": balanceFactOf, "□": hiddenFactOf, "M": moreFactOf, "/": fractionFactOf, "≈": roundFactOf, "▭": rectFactOf, "Σ": threeFactOf, "▦": arrayFactOf, "⌚": clockFactOf, "…": patternFactOf, "◐": oddEvenFactOf, "✓": tfFactOf, "✎": tfFactOf, "↔": lineFactOf, "#": pvFactOf, "$": dollarFactOf, "◇": shapeFactOf, "⁙": flashFactOf, "▥": chartFactOf,
     "R": remFactOf, "E": exprFact, "F": factorFactOf, "ƒ": fracOpFact, "d": decFact, "u": unitFact, "∠": angleFact, "P": primeFactOf, "D": moneyFact }[key[0]];
   if (own) return own(key, rnd);
   const op = key[0], [a, b] = key.slice(1).split(",").map(Number);

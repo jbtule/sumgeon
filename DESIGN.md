@@ -101,7 +101,7 @@ The dungeon is a map of **Wings**, shown in the game as **strata**. Each Wing ha
 ### 4.1 The grade strata (plan, 2026-11-25)
 One stratum per grade, in a **straight chain**: each opens only the next. The levels inside each follow the school's teaching order. The audience stops at 5th grade, but one **stretch stratum** of 6th-grade math, Pirate Cavern, sits under the Pyramid so a 5th grader who finishes it can keep going, and the game ends there. Its content follows the school's 6th-grade guide.
 
-**Left out of fights** (they don't fit a quick typed answer): naming shapes from a list (shapes are drawn and counted instead: Polly-Gon, below), angles and symmetry, the coordinate plane, inequalities, days and seasons (the K calendar), sorting, word problems, and measurement conversions (for now). Graphs and line plots were left out too, until Graphzilla (§4.5, a prototype); word problems and the K calendar are left out for good (decided 2026-11-27: recording every prompt isn't practical). Writing numerals is practiced by spell casting.
+**Left out of fights** (they don't fit a quick typed answer): naming shapes from a list (shapes are drawn and counted instead: Polly-Gon, below), angles and symmetry, the coordinate plane, inequalities, days and seasons (the K calendar), sorting, word problems, and measurement conversions (for now). Graphs and line plots were left out too, until Graphzilla (§4.5, in the game since batch 3); word problems and the K calendar are left out for good (decided 2026-11-27: recording every prompt isn't practical). Writing numerals is practiced by spell casting.
 
 | Stratum | Grade | Levels (in order) | Monsters | Boss |
 |---|---|---|---|---|
@@ -222,7 +222,7 @@ _Decided with the user: each stratum follows its grade's teaching order, opened 
 - **Kindergarten:** the units are "ongoing", so the order below follows what builds on what.
 - **3rd grade:** the guide lists topics without lesson numbers. Its multiplication-before-division order is confirmed by the class (2026-11-26: no division yet this year, after the × facts).
 
-Left out everywhere, as before: graphs and data, measuring length (a prototype since 2026-11-27, §4.6), word problems, and the K calendar unit (days of the week, seasons, birthdays). None of them is a quick typed number.
+Left out everywhere, as before: measuring length (a prototype since 2026-11-27, §4.6), word problems, and the K calendar unit (days of the week, seasons, birthdays). None of them is a quick typed number.
 
 **The problem today.** A stratum has one ladder of levels (its band, which opens the next stratum at 60%) and strands beside it (coins, time, patterns, arrays, comparing…). Every strand is open from the first day, so a 2nd grader can meet arrays and odd and even (the year's last two lessons) before two-digit adding.
 
@@ -469,8 +469,8 @@ What changed: the order follows the guide's units; four priority standards the r
 - **Reading and writing numbers in word form**: reading, not math typed on a pad.
 - **Multiplicative comparison** ("3 times as many"): word problems; the facts themselves are the multiplication levels.
 
-### 4.5 Reading charts: Graphzilla (prototype, 2026-11-27)
-Graphs and data were the one strand of every grade's standards with nothing in the game. Graphzilla fills it: **one monster for charts in every grade**, as Tick-Tockus is for time and Trollar for money, with charts of dungeon things. A prototype on the review page (`review/proto/`, 📊), not in the game yet; `js/charts.js`, tested by `scripts/charts.test.mjs`.
+### 4.5 Reading charts: Graphzilla (prototype 2026-11-27; in the game, batch 3, 2026-11-28)
+Graphs and data were the one strand of every grade's standards with nothing in the game. Graphzilla fills it: **one monster for charts in every grade**, as Tick-Tockus is for time and Trollar for money, with charts of dungeon things. Prototyped on the review page (`review/proto/`, 📊) and in the game since batch 3 (below); `js/charts.js`, tested by `scripts/charts.test.mjs`.
 
 **Decisions (the user, 2026-11-27):**
 - Word problems and the K calendar (days, months, seasons) are **left out for good**: every prompt would have to be recorded, and there are too many of them.
@@ -502,8 +502,13 @@ Graphs and data were the one strand of every grade's standards with nothing in t
   - Line plots: the column at the value outlined, or the part longer than the value shaded, its Xs counted partway; the mode, each stack outlined ("find the tallest stack"); the range, both ends ringed with an arrow between, "?"; the median, Xs crossed off one from each end, halfway, then worked to the last one, ringed.
   - Frequency tables: the column to read outlined; the range's smallest and biggest rows ringed; in all, the first numbers to add.
   - Worked: the whole count, and the answer in words ("9 − 3 = 6. 6 more shields.").
-- **Graphzilla** (`NEW_MON` in `monsters.js`, in the gallery): its drawing takes the problem, as Tick-Tockus's clock does: its back plates are the chart's bars (up to four, `platesOf`), in the things' colors. The chart itself is drawn big in the monster's box (a plate is too small to read a value from); Graphzilla stands in the nameplate with the data on its back. It reads at 26 px as a green kaiju with colored plates. Its anchors are set for looks later.
-- **Where it goes, once approved:** a strand per stratum (`chartsH`, `chartsM`, `chartsT`, then the Forge's and the Pyramid's), Graphzilla visiting each stratum's pool; data isn't one of the guides' priority standards, so it doesn't count toward a stratum's 60%.
+- **Graphzilla** (`MON` in `monsters.js`): its drawing takes the problem, as Tick-Tockus's clock does: its back plates are the chart's bars (up to four, `platesOf`; `m.plates`, set by app.js for each chart problem), in the things' colors. The chart itself is drawn over the problem's line (a plate is too small to read a value from), its hint drawn on it; Graphzilla stands in the monster's box with the data on its back. It reads at 26 px as a green kaiju with colored plates.
+- **Built (batch 3, 2026-11-28):**
+  - **A strand per stratum** of its grade: `chartsH` (the Hall: tally charts, picture charts), `chartsM` (the Mines: picture graphs, bar graphs), `chartsT` (the Tower: scaled picture and bar graphs), `chartsF` (the Forge: frequency tables, line plots of counts, graphs by 10s); 212 facts. 5th grade's two levels (the median, line graphs) wait for the Parenthesis Pyramid and are on the review page only.
+  - **Not a priority anywhere** (decided): none of the school's guides for 1st to 4th grade makes data a priority standard, so Graphzilla visits each stratum's pool and its step doesn't count toward the 60% or the Legend. It's one step, "Reading charts", in each stratum's **last chapter** (Hall 3, Mines 3, Tower 3, Forge 5), where the guides put data beside measurement and shapes. The step is **ongoing**: it opens with its chapter beside the window of new steps, so the steps a player has already joined (saved as a count) stay the same steps: no saved progress moves.
+  - **Trait:** 📊 Chart Stomp, "Asks what its chart shows": like Tick Tock, the trait is what it asks; no damage rule. The hit is the answer.
+  - **Looks** (chart puns, kept off its head so no plate is hidden): Tiny Tally (smaller), Professor Plot (glasses, bow tie), Bar-oness Graphzilla (lashes, blush, medal; said "Baroness"), Snoozilla (sleepy lids, scarf).
+  - **In a fight:** the chart over its line ("More potions than keys: □"), read aloud as it appears; the 💡 hint drawn on the chart with only its words opening; the Oops card shows the worked chart. Listen check group "Charts"; Settings → Progress lists them as "Reading charts".
 
 ### 4.6 Measuring length (prototype, 2026-11-27)
 
