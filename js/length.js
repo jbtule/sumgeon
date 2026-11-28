@@ -57,7 +57,7 @@ export const UNITS = {
 const SIZE = { cm: 0.3937, in: 1, ft: 12, m: 39.37, yd: 36 };
 export const unitWord = (u, n) => (n === 1 ? UNITS[u].one : UNITS[u].many);
 // The things measured. Small ones for rulers and cubes; big ones for feet, yards and meters.
-export const SMALL = ["pencil", "crayon", "straw", "ribbon", "snake", "marker"];
+export const SMALL = ["pencil", "crayon", "toothbrush", "ribbon", "snake", "marker"];
 export const BIG = ["rope", "bench", "rug", "snake"];
 // Thin sticks with a tip: drawn as unlike as can be, but never shown two together.
 export const STICKS = ["pencil", "crayon", "marker"];
@@ -76,8 +76,9 @@ const sheen = (x, y, w, h, r = 4) => `<rect x="${f1(x)}" y="${f1(y)}" width="${f
 // test reads them from data-x0 and data-x1), so it measures true. Each has a silhouette and color
 // of its own, so nobody takes the crayon for the pencil at a phone's size: the pencil yellow and
 // faceted, with a pink eraser, a metal band and a sharpened cone; the crayon one bright red, a
-// paper wrapper with zigzag edges, a stepped tip; the marker fat, white with a green cap and clip;
-// the straw thin and striped, with its bendy ridges; the ribbon wavy, forked at both ends; the
+// paper wrapper with zigzag edges, a stepped tip; the marker uncapped, its blue cap posted on the
+// back, a big blue label and a blue felt tip; the toothbrush pink, its bristles standing up; the
+// ribbon wavy, forked at both ends; the
 // snake a face with a forked tongue; the rope twisted; the rug fringed; the bench on legs.
 export function thing(name, x0, x1, y, h = 20) {
   const w = x1 - x0, t = y - h / 2, o = `stroke="${DK}" stroke-width="3" stroke-linejoin="round"`;
@@ -107,22 +108,30 @@ export function thing(name, x0, x1, y, h = 20) {
       + (wr1 - wr0 > 30 ? `<ellipse cx="${f1((wr0 + wr1) / 2)}" cy="${f1(y)}" rx="${f1(Math.min(14, (wr1 - wr0) * 0.25))}" ry="${f1(hh * 0.22)}" fill="#fff" opacity=".9"/>` : "")
       + `<rect x="${f1(x0 + 3)}" y="${f1(tt + 2)}" width="${f1(Math.max(0, wr0 - x0 - 5))}" height="${f1(hh * 0.22)}" rx="2" fill="#fff" opacity=".4"/>`;
   } else if (name === "marker") {
-    // Fat: a third taller than the rest.
-    const hh = h * 1.35, tt = y - hh / 2, cap = Math.min(w * 0.32, 30), clip = Math.min(w * 0.22, 22);
-    s = `<rect x="${f1(x0 + 1.5)}" y="${f1(tt)}" width="${f1(w - cap)}" height="${f1(hh)}" rx="7" fill="${INK}" ${o}/>`
-      + `<rect x="${f1(x0 + 1.5)}" y="${f1(tt + 3)}" width="${f1(Math.min(7, w * 0.08))}" height="${f1(hh - 6)}" rx="3" fill="#1f9e57" ${o}/>`
-      + `<path d="M${f1(x0 + w * 0.25)} ${f1(y)} H${f1(x1 - cap - 6)}" stroke="#b9c5c8" stroke-width="3" stroke-linecap="round"/>`
-      + `<rect x="${f1(x1 - cap)}" y="${f1(tt - 1.5)}" width="${f1(cap - 1.5)}" height="${f1(hh + 3)}" rx="10" fill="#2fbf6c" ${o}/>`
-      // The cap's clip, lying along the top.
-      + `<rect x="${f1(x1 - cap - clip + 6)}" y="${f1(tt - 4)}" width="${f1(clip)}" height="6" rx="3" fill="#1f9e57" ${o}/>`
-      + sheen(x0 + 4, tt + 2, w - cap - 8, hh - 6, 3);
-  } else if (name === "straw") {
-    // Thin, striped, with the bendy part's ridges near one end.
-    const hh = h * 0.5, tt = y - hh / 2, bend = x1 - Math.min(26, w * 0.28);
-    const stripes = Array.from({ length: Math.max(0, Math.floor((w - 4) / 9)) }, (_, i) => `<path d="M${f1(x0 + 4 + i * 9)} ${f1(tt + hh)} l5 ${f1(-hh)}" stroke="${CORAL}" stroke-width="3"/>`).join("");
-    s = `<rect x="${f1(x0 + 1.5)}" y="${f1(tt)}" width="${f1(w - 3)}" height="${f1(hh)}" rx="2" fill="${INK}"/>${stripes}`
-      + `<path d="${[0, 3.5, 7, 10.5].map((d) => `M${f1(bend + d)} ${f1(tt - 1)} V${f1(tt + hh + 1)}`).join(" ")}" stroke="${DK}" stroke-width="1.6"/>`
-      + `<rect x="${f1(x0 + 1.5)}" y="${f1(tt)}" width="${f1(w - 3)}" height="${f1(hh)}" rx="2" fill="none" ${o}/>`;
+    // A kids' marker, uncapped: its cap posted on the back end, a body with a big blue label, a
+    // grey cone and a blue felt tip (the ink's color) at the front.
+    const INKC = "#2f6bff", DARKC = "#1c47b8", hh = h * 1.2, tt = y - hh / 2, capL = Math.min(w * 0.24, 26), cone = Math.min(w * 0.14, 12), tip = Math.min(w * 0.11, 10);
+    const b0 = x0 + capL - 3, b1 = x1 - cone - tip, lab0 = b0 + (b1 - b0) * 0.22, lab1 = b0 + (b1 - b0) * 0.82;
+    s = `<rect x="${f1(b0)}" y="${f1(tt)}" width="${f1(b1 - b0)}" height="${f1(hh)}" rx="4" fill="${INK}" ${o}/>`
+      + `<rect x="${f1(lab0)}" y="${f1(tt + 1.5)}" width="${f1(lab1 - lab0)}" height="${f1(hh - 3)}" fill="${INKC}"/>`
+      + `<path d="M${f1(lab0)} ${f1(tt)} V${f1(tt + hh)} M${f1(lab1)} ${f1(tt)} V${f1(tt + hh)}" stroke="${DK}" stroke-width="2"/>`
+      + (lab1 - lab0 > 24 ? `<path d="M${f1(lab0 + 6)} ${f1(y)} H${f1(lab1 - 6)}" stroke="#fff" stroke-width="3" stroke-linecap="round" opacity=".55"/>` : "")
+      + `<rect x="${f1(b0)}" y="${f1(tt)}" width="${f1(b1 - b0)}" height="${f1(hh)}" rx="4" fill="none" ${o}/>`
+      + `<path d="M${f1(x1 - tip - 2)} ${f1(y - 5)} L${f1(x1 - 4)} ${f1(y - 2)} Q${f1(x1 - 1.5)} ${f1(y)} ${f1(x1 - 4)} ${f1(y + 2)} L${f1(x1 - tip - 2)} ${f1(y + 5)} Z" fill="${INKC}" ${o} stroke-width="2.4"/>`
+      + `<path d="${P([[b1, tt + 2], [x1 - tip, y - 5], [x1 - tip, y + 5], [b1, tt + hh - 2]])}" fill="#c9d3d6" ${o}/>`
+      // The cap, posted on the back, a little fatter, with its clip.
+      + `<rect x="${f1(x0 + 1.5)}" y="${f1(tt - 2)}" width="${f1(capL)}" height="${f1(hh + 4)}" rx="6" fill="${INKC}" ${o}/>`
+      + `<rect x="${f1(x0 + capL * 0.25)}" y="${f1(tt - 5)}" width="${f1(capL * 0.75)}" height="5" rx="2.5" fill="${DARKC}" ${o} stroke-width="2"/>`
+      + sheen(x0 + 3, tt, capL - 4, hh, 3);
+  } else if (name === "toothbrush") {
+    // A toothbrush: a pink handle, a thin neck, and the head at the front with its white and
+    // blue bristles standing up (above it, never past its end, so it measures true).
+    const head = Math.min(w * 0.36, 40), neck = Math.min(w * 0.1, 10), h0 = x1 - head, hy = y + 2, hd = h * 0.42;
+    const tufts = Math.max(3, Math.floor((head - 4) / 4.4));
+    s = `<path d="M${f1(x0 + 1.5)} ${f1(hy)} Q${f1(x0 + 1.5)} ${f1(hy - h * 0.34)} ${f1(x0 + 8)} ${f1(hy - h * 0.34)} L${f1(h0 - neck)} ${f1(hy - h * 0.22)} L${f1(h0)} ${f1(hy - hd / 2)} L${f1(h0)} ${f1(hy + hd / 2)} L${f1(h0 - neck)} ${f1(hy + h * 0.22)} L${f1(x0 + 8)} ${f1(hy + h * 0.34)} Q${f1(x0 + 1.5)} ${f1(hy + h * 0.34)} ${f1(x0 + 1.5)} ${f1(hy)} Z" fill="#ff5fa2" ${o}/>`
+      + `<rect x="${f1(x0 + Math.min(10, w * 0.1))}" y="${f1(hy - h * 0.12)}" width="${f1(Math.max(0, (h0 - neck - x0) * 0.45))}" height="${f1(h * 0.24)}" rx="${f1(h * 0.12)}" fill="#fff" opacity=".55"/>`
+      + Array.from({ length: tufts }, (_, k) => { const tx = h0 + 3 + (k * (head - 7)) / (tufts - 1 || 1); return `<rect x="${f1(tx - 2.4)}" y="${f1(hy - hd / 2 - h * 0.72)}" width="4.8" height="${f1(h * 0.76)}" rx="1.5" fill="${k % 3 === 1 ? "#5fb8ff" : "#fff"}" stroke="${DK}" stroke-width="1.4"/>`; }).join("")
+      + `<rect x="${f1(h0)}" y="${f1(hy - hd / 2)}" width="${f1(head - 1.5)}" height="${f1(hd)}" rx="${f1(hd / 2)}" fill="#ff5fa2" ${o}/>`;
   } else if (name === "ribbon") {
     // Wavy, both ends cut in a fork.
     const bt = h * 0.6, n = Math.min(8, w * 0.15), a = 3.2, per = 46;
@@ -469,9 +478,9 @@ export function lengthLine(p) {
 // - "ℓc:pencil7,crayon4": is the pencil (7) longer or shorter than the crayon (4)? (K)
 // - "ℓo+1:ribbon6,pencil4,crayon3": is the second one drawn the longest ("-": the shortest)?
 // - "ℓi:pencil7,crayon4,5": the pencil and the crayon, each against a string 5 long.
-// - "ℓu:cube,pencil7", "ℓu:clip,straw5": how many cubes (paper clips) long?
+// - "ℓu:cube,pencil7", "ℓu:clip,toothbrush5": how many cubes (paper clips) long?
 // - "ℓg:clip,pencil5,gap1": laid right? ok, gap (after the 2nd), overlap1, start.
-// - "ℓin:pencil7", "ℓcm:straw12", "ℓft:rope6", "ℓyd:rug3", "ℓm:rope4": on a ruler or tape from 0;
+// - "ℓin:pencil7", "ℓcm:toothbrush12", "ℓft:rope6", "ℓyd:rug3", "ℓm:rope4": on a ruler or tape from 0;
 //   "ℓin:pencil2-7": from 2 to 7.
 // - "ℓw:in>cm:pencil4": 4 inches long; in centimeters, more or fewer?
 // - "ℓe:in:pencil6": about how many inches? (one inch shown)

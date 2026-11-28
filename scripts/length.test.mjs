@@ -22,7 +22,7 @@ for (const f of facts) {
   let seed = 1;
   assert.equal(lengthProblem(f.set, () => ((seed = (seed * 9301 + 49297) % 233280) / 233280)).set, f.set);
 }
-assert.deepEqual(lengthFactOf("ℓc:pencil8,straw6").ans, "L");
+assert.deepEqual(lengthFactOf("ℓc:pencil8,toothbrush6").ans, "L");
 // Two shown together are never two of the sticks (pencil, crayon, marker), and each has its name
 // under it; one shown alone has none.
 for (const f of facts.filter((f) => f.things)) {
@@ -170,11 +170,11 @@ for (const f of facts) {
 }
 
 // What the voice says.
-assert.equal(spokenLength(lengthFactOf("ℓc:pencil8,straw6")), "Is the pencil longer or shorter than the straw?");
-assert.equal(spokenLengthAnswer(lengthFactOf("ℓc:pencil8,straw6")), "The pencil is longer than the straw.");
-const inch = facts.find((f) => f.key === "ℓin:straw1-6");
-assert.equal(spokenLength(inch), "How many inches long is the straw?");
-assert.equal(spokenLengthAnswer(inch), "The straw is five inches long.");
+assert.equal(spokenLength(lengthFactOf("ℓc:pencil8,toothbrush6")), "Is the pencil longer or shorter than the toothbrush?");
+assert.equal(spokenLengthAnswer(lengthFactOf("ℓc:pencil8,toothbrush6")), "The pencil is longer than the toothbrush.");
+const inch = facts.find((f) => f.key === "ℓin:toothbrush1-6");
+assert.equal(spokenLength(inch), "How many inches long is the toothbrush?");
+assert.equal(spokenLengthAnswer(inch), "The toothbrush is five inches long.");
 assert.equal(lengthHint(inch, false).say, "It starts at 1, not 0. Count the jumps from 1, or 6 − 1 = ?");
 const q = facts.find((f) => f.set === "quarters" && f.num === 3);
 assert.match(spokenLengthAnswer(q), /^[A-Z][a-z]+ and three quarters inches\.$/);
