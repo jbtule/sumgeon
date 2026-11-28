@@ -341,7 +341,7 @@ Measuring length was left out (§4.1, §4.3) as "not a quick typed number". Draw
 
 | Grade | Level | The problem | Answer | Key |
 |---|---|---|---|---|
-| K | Longer or shorter? | two things lined up at one end | Longer / Shorter | `ℓc:pencil8,crayon6` |
+| K | Longer or shorter? | two things lined up at one end | Longer / Shorter | `ℓc:pencil8,straw6` |
 | 1st | The longest? The shortest? | three, lined up: "Is the straw the shortest?" | Yes / No | `ℓo-1:pencil6,straw3,snake10` (asks about the 2nd drawn) |
 | 1st | Compare with a string | two things apart, the same string against each | Longer / Shorter | `ℓi:ribbon9,marker3,5` |
 | 1st | How many cubes long? / paper clips | the thing, its units end to end under it | typed | `ℓu:cube,marker5`, `ℓu:clip,straw5` |
@@ -355,7 +355,9 @@ Measuring length was left out (§4.1, §4.3) as "not a quick typed number". Draw
 | 2nd | Add and subtract lengths | a bar of two pieces ("In all"), or a rope with a piece cut off ("Left") | typed | `ℓ+:cm:11,7`, `ℓ−:in:20,2` |
 | 3rd | To the half inch; the quarter inch | an inch ruler with halves and fourths | two slots, the inches then the part, "3 □/4 in" | `ℓf:straw3,1/2`, `ℓf:straw1,3/4` |
 
-**Hints** (drawn on the picture; `scripts/length.test.mjs` checks none gives the answer before answering): compare and order, a dashed line at the lined-up ends and one at the other end ("Does the pencil go past the crayon?"); the string's end marked on both; units, numbered about halfway, the last "?"; rulers, hops from the start counted about halfway, the last "?" (not from 0: "It starts at 1, not 0. Count the jumps from 1, or 6 − 1 = ?"); how much longer, hops from the shorter end, "or 9 − 5 = ?"; estimating, two copies of the unit laid along it, "1, 2, …"; adding and subtracting, the number line jumping to "?"; halves, counting by halves ("½, 1, 1½, …"); fourths, the parts past the last whole inch, the first one "1/4", the last "?/4". Worked, every count and the answer.
+**The things** (2026-11-27, from the user: "I can't tell which is the crayon"): each has a silhouette and color of its own at a phone's size: the pencil yellow and faceted with a pink eraser, a metal band and a sharpened cone; the crayon bright red with a zigzag paper wrapper and a stepped tip; the marker fat, white, with a green cap and clip; the straw thin and striped with bendy ridges; the ribbon wavy and forked; the snake with a face and forked tongue; the rope twisted; the rug fringed. Two or three shown together never include two of the sticks (pencil, crayon, marker), and each has its name in small words under it (secondary: the drawing and the voice are for the pre-reader).
+
+**Hints** (drawn on the picture; `scripts/length.test.mjs` checks none gives the answer before answering): compare and order, a dashed line at the lined-up ends and one at the other end ("Does the pencil go past the straw?"); the string's end marked on both; units, numbered about halfway, the last "?"; rulers, hops from the start counted about halfway, the last "?" (not from 0: "It starts at 1, not 0. Count the jumps from 1, or 6 − 1 = ?"); how much longer, hops from the shorter end, "or 9 − 5 = ?"; estimating, two copies of the unit laid along it, "1, 2, …"; adding and subtracting, the number line jumping to "?"; halves, counting by halves ("½, 1, 1½, …"); fourths, the parts past the last whole inch, the first one "1/4", the last "?/4". Worked, every count and the answer.
 
 **Voice:** every problem is read as it appears ("How many inches long is the snake?", "Is the straw the shortest?", "Are the cubes laid the right way to measure?") and every answer said ("The straw is five inches long.", "No. There's a gap.", "Three and three quarters inches.").
 

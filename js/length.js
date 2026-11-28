@@ -59,6 +59,12 @@ export const unitWord = (u, n) => (n === 1 ? UNITS[u].one : UNITS[u].many);
 // The things measured. Small ones for rulers and cubes; big ones for feet, yards and meters.
 export const SMALL = ["pencil", "crayon", "straw", "ribbon", "snake", "marker"];
 export const BIG = ["rope", "bench", "rug", "snake"];
+// Thin sticks with a tip: drawn as unlike as can be, but never shown two together.
+export const STICKS = ["pencil", "crayon", "marker"];
+const OTHERS = SMALL.filter((n) => !STICKS.includes(n));
+export const PAIRS = SMALL.flatMap((a) => SMALL.filter((b) => b !== a && !(STICKS.includes(a) && STICKS.includes(b))).map((b) => [a, b]));
+// Three together: one stick at most.
+export const TRIPLES = [...STICKS.flatMap((st) => OTHERS.flatMap((a, i) => OTHERS.slice(i + 1).map((b) => [st, a, b]))), OTHERS];
 
 /* ---------- the drawing ---------- */
 // Everything is drawn 360 wide (the number line's width); the ruler or row of units runs from
@@ -67,52 +73,96 @@ export const X0 = 20, W = 320;
 const lab = (x, y, t, o = {}) => `<text x="${f1(x)}" y="${f1(y)}" text-anchor="${o.anchor || "middle"}" font-family="${o.font || "Nunito, sans-serif"}" font-weight="900" font-size="${o.size || 13}" fill="${o.fill || INK}" class="${o.cls || "lab"}">${t}</text>`;
 const sheen = (x, y, w, h, r = 4) => `<rect x="${f1(x)}" y="${f1(y)}" width="${f1(w)}" height="${f1(h / 2)}" rx="${r}" fill="#fff" opacity=".22"/>`;
 // A thing lying from x0 to x1, its middle at y, h tall. Its two ends are exactly x0 and x1 (the
-// test reads them from data-x0 and data-x1), so it measures true.
+// test reads them from data-x0 and data-x1), so it measures true. Each has a silhouette and color
+// of its own, so nobody takes the crayon for the pencil at a phone's size: the pencil yellow and
+// faceted, with a pink eraser, a metal band and a sharpened cone; the crayon one bright red, a
+// paper wrapper with zigzag edges, a stepped tip; the marker fat, white with a green cap and clip;
+// the straw thin and striped, with its bendy ridges; the ribbon wavy, forked at both ends; the
+// snake a face with a forked tongue; the rope twisted; the rug fringed; the bench on legs.
 export function thing(name, x0, x1, y, h = 20) {
   const w = x1 - x0, t = y - h / 2, o = `stroke="${DK}" stroke-width="3" stroke-linejoin="round"`;
+  const P = (pts) => pts.map(([a, b], i) => `${i ? "L" : "M"}${f1(a)} ${f1(b)}`).join(" ") + " Z";
   let s = "";
   if (name === "pencil") {
-    const tip = Math.min(18, w * 0.3), er = Math.min(12, w * 0.15);
-    s = `<rect x="${f1(x0 + 1.5)}" y="${f1(t)}" width="${f1(er)}" height="${h}" rx="4" fill="#ff9ab5" ${o}/>`
-      + `<rect x="${f1(x0 + er)}" y="${f1(t)}" width="${f1(w - er - tip)}" height="${h}" fill="#ffd23c" ${o}/>`
-      + `<path d="M${f1(x1 - tip)} ${f1(t)} L${f1(x1 - 1.5)} ${f1(y)} L${f1(x1 - tip)} ${f1(t + h)} Z" fill="#f2c58a" ${o}/>`
-      + `<path d="M${f1(x1 - tip * 0.38)} ${f1(y - h * 0.19)} L${f1(x1 - 1.5)} ${f1(y)} L${f1(x1 - tip * 0.38)} ${f1(y + h * 0.19)} Z" fill="${DK}"/>`
-      + `<path d="M${f1(x0 + er)} ${f1(y)} H${f1(x1 - tip)}" stroke="#e0a800" stroke-width="2"/>` + sheen(x0 + er, t + 2, w - er - tip, h - 4, 0);
+    const er = Math.min(10, w * 0.14), band = Math.min(7, w * 0.1), cone = Math.min(17, w * 0.28), b0 = x0 + er, b1 = b0 + band, c0 = x1 - cone;
+    s = `<rect x="${f1(x0 + 1.5)}" y="${f1(t + 1)}" width="${f1(er + 3)}" height="${h - 2}" rx="5" fill="#ff8fb1" ${o}/>`
+      + `<rect x="${f1(b1)}" y="${f1(t)}" width="${f1(c0 - b1)}" height="${h}" fill="#ffd23c" ${o}/>`
+      // The hexagon's facets: a light top face and a dark bottom one.
+      + `<rect x="${f1(b1 + 1.5)}" y="${f1(t + 1.5)}" width="${f1(Math.max(0, c0 - b1 - 3))}" height="${f1(h * 0.27)}" fill="#ffe98a"/>`
+      + `<rect x="${f1(b1 + 1.5)}" y="${f1(t + h * 0.7)}" width="${f1(Math.max(0, c0 - b1 - 3))}" height="${f1(h * 0.3 - 1.5)}" fill="#e3a900"/>`
+      + `<rect x="${f1(b0)}" y="${f1(t - 0.5)}" width="${f1(band + 1.5)}" height="${h + 1}" fill="#c9d3d6" ${o}/>`
+      + `<path d="M${f1(b0 + band * 0.4)} ${f1(t + 2)} V${f1(t + h - 2)} M${f1(b0 + band * 0.75)} ${f1(t + 2)} V${f1(t + h - 2)}" stroke="#7d8b90" stroke-width="1.3"/>`
+      + `<path d="${P([[c0, t], [x1 - 1.5, y], [c0, t + h]])}" fill="#f2c58a" ${o}/>`
+      + `<path d="${P([[x1 - cone * 0.36, y - h * 0.18], [x1 - 1.5, y], [x1 - cone * 0.36, y + h * 0.18]])}" fill="${DK}"/>`;
   } else if (name === "crayon") {
-    const tip = Math.min(14, w * 0.25);
-    s = `<rect x="${f1(x0 + 1.5)}" y="${f1(t)}" width="${f1(w - tip)}" height="${h}" rx="5" fill="#6aa8ff" ${o}/>`
-      + `<path d="M${f1(x1 - tip)} ${f1(t + 3)} L${f1(x1 - 1.5)} ${f1(y)} L${f1(x1 - tip)} ${f1(t + h - 3)} Z" fill="#6aa8ff" ${o}/>`
-      + `<rect x="${f1(x0 + w * 0.25)}" y="${f1(t)}" width="${f1(w * 0.4)}" height="${h}" fill="#2d6fd6" ${o}/>` + sheen(x0 + 3, t + 2, w - tip - 4, h - 4);
+    // A little chunkier than the pencil, one bright red all over.
+    const hh = h * 1.15, tt = y - hh / 2, tip = Math.min(16, w * 0.26), body1 = x1 - tip, wr0 = x0 + Math.min(16, w * 0.2), wr1 = body1 - Math.min(6, w * 0.06);
+    const zig = (x, dir) => Array.from({ length: 5 }, (_, k) => [x + (k % 2 ? 3 * dir : 0), tt - 1 + (k * (hh + 2)) / 4]);
+    const bands = [wr0 + 5, wr1 - 5].filter(() => wr1 - wr0 > 20).map((x) => `M${f1(x)} ${f1(tt + 2)} q3 ${f1(hh * 0.25)} 0 ${f1(hh * 0.5)} q-3 ${f1(hh * 0.25)} 0 ${f1(hh * 0.5 - 4)}`).join(" ");
+    s = `<path d="${P([[body1, tt + 2], [body1 + tip * 0.35, tt + 4], [x1 - 1.5, y - 2], [x1 - 1.5, y + 2], [body1 + tip * 0.35, tt + hh - 4], [body1, tt + hh - 2]])}" fill="#ff3b30" ${o}/>`
+      + `<rect x="${f1(x0 + 1.5)}" y="${f1(tt)}" width="${f1(body1 - x0)}" height="${f1(hh)}" rx="3" fill="#ff3b30" ${o}/>`
+      // The paper wrapper, zigzag-edged at both ends, with black wavy bands and a white label.
+      + `<path d="${P([...zig(wr0, -1), ...zig(wr1, 1).reverse()])}" fill="#d0101c" ${o}/>`
+      + (bands ? `<path d="${bands}" fill="none" stroke="${DK}" stroke-width="2"/>` : "")
+      + (wr1 - wr0 > 30 ? `<ellipse cx="${f1((wr0 + wr1) / 2)}" cy="${f1(y)}" rx="${f1(Math.min(14, (wr1 - wr0) * 0.25))}" ry="${f1(hh * 0.22)}" fill="#fff" opacity=".9"/>` : "")
+      + `<rect x="${f1(x0 + 3)}" y="${f1(tt + 2)}" width="${f1(Math.max(0, wr0 - x0 - 5))}" height="${f1(hh * 0.22)}" rx="2" fill="#fff" opacity=".4"/>`;
   } else if (name === "marker") {
-    const cap = Math.min(w * 0.3, 26);
-    s = `<rect x="${f1(x0 + 1.5)}" y="${f1(t)}" width="${f1(w - 3)}" height="${h}" rx="6" fill="${INK}" ${o}/>`
-      + `<rect x="${f1(x1 - cap)}" y="${f1(t - 1)}" width="${f1(cap - 1.5)}" height="${h + 2}" rx="6" fill="#4fcf72" ${o}/>` + sheen(x0 + 3, t + 2, w - 6, h - 4);
+    // Fat: a third taller than the rest.
+    const hh = h * 1.35, tt = y - hh / 2, cap = Math.min(w * 0.32, 30), clip = Math.min(w * 0.22, 22);
+    s = `<rect x="${f1(x0 + 1.5)}" y="${f1(tt)}" width="${f1(w - cap)}" height="${f1(hh)}" rx="7" fill="${INK}" ${o}/>`
+      + `<rect x="${f1(x0 + 1.5)}" y="${f1(tt + 3)}" width="${f1(Math.min(7, w * 0.08))}" height="${f1(hh - 6)}" rx="3" fill="#1f9e57" ${o}/>`
+      + `<path d="M${f1(x0 + w * 0.25)} ${f1(y)} H${f1(x1 - cap - 6)}" stroke="#b9c5c8" stroke-width="3" stroke-linecap="round"/>`
+      + `<rect x="${f1(x1 - cap)}" y="${f1(tt - 1.5)}" width="${f1(cap - 1.5)}" height="${f1(hh + 3)}" rx="10" fill="#2fbf6c" ${o}/>`
+      // The cap's clip, lying along the top.
+      + `<rect x="${f1(x1 - cap - clip + 6)}" y="${f1(tt - 4)}" width="${f1(clip)}" height="6" rx="3" fill="#1f9e57" ${o}/>`
+      + sheen(x0 + 4, tt + 2, w - cap - 8, hh - 6, 3);
   } else if (name === "straw") {
-    const stripes = Array.from({ length: Math.floor(w / 12) }, (_, i) => `<path d="M${f1(x0 + 6 + i * 12)} ${f1(t + h * 0.15)} l6 ${f1(h * 0.7)}" stroke="${CORAL}" stroke-width="4"/>`).join("");
-    s = `<rect x="${f1(x0 + 1.5)}" y="${f1(t + h * 0.15)}" width="${f1(w - 3)}" height="${f1(h * 0.7)}" rx="3" fill="${INK}" ${o}/>${stripes}<rect x="${f1(x0 + 1.5)}" y="${f1(t + h * 0.15)}" width="${f1(w - 3)}" height="${f1(h * 0.7)}" rx="3" fill="none" ${o}/>`;
+    // Thin, striped, with the bendy part's ridges near one end.
+    const hh = h * 0.5, tt = y - hh / 2, bend = x1 - Math.min(26, w * 0.28);
+    const stripes = Array.from({ length: Math.max(0, Math.floor((w - 4) / 9)) }, (_, i) => `<path d="M${f1(x0 + 4 + i * 9)} ${f1(tt + hh)} l5 ${f1(-hh)}" stroke="${CORAL}" stroke-width="3"/>`).join("");
+    s = `<rect x="${f1(x0 + 1.5)}" y="${f1(tt)}" width="${f1(w - 3)}" height="${f1(hh)}" rx="2" fill="${INK}"/>${stripes}`
+      + `<path d="${[0, 3.5, 7, 10.5].map((d) => `M${f1(bend + d)} ${f1(tt - 1)} V${f1(tt + hh + 1)}`).join(" ")}" stroke="${DK}" stroke-width="1.6"/>`
+      + `<rect x="${f1(x0 + 1.5)}" y="${f1(tt)}" width="${f1(w - 3)}" height="${f1(hh)}" rx="2" fill="none" ${o}/>`;
   } else if (name === "ribbon") {
-    const n = Math.min(8, w * 0.15);
-    s = `<path d="M${f1(x0 + 1.5)} ${f1(t + 2)} H${f1(x1 - 1.5)} L${f1(x1 - n)} ${f1(y)} L${f1(x1 - 1.5)} ${f1(t + h - 2)} H${f1(x0 + 1.5)} L${f1(x0 + n)} ${f1(y)} Z" fill="#c879ff" ${o}/>` + sheen(x0 + n, t + 4, w - 2 * n, h - 8, 0);
+    // Wavy, both ends cut in a fork.
+    const bt = h * 0.6, n = Math.min(8, w * 0.15), a = 3.2, per = 46;
+    const wave = (x) => y + a * Math.sin(((x - x0) / per) * 2 * Math.PI);
+    const xs = []; for (let x = x0 + 1.5; x < x1 - 1.5; x += 4) xs.push(x); xs.push(x1 - 1.5);
+    const top = xs.map((x) => [x, wave(x) - bt / 2]), bot = xs.map((x) => [x, wave(x) + bt / 2]).reverse();
+    s = `<path d="${P([...top, [x1 - 1.5 - n, wave(x1)], ...bot, [x0 + 1.5 + n, wave(x0)]])}" fill="#b45cff" ${o}/>`
+      + `<path d="${xs.filter((x) => x > x0 + n + 2 && x < x1 - n - 2).map((x, i) => `${i ? "L" : "M"}${f1(x)} ${f1(wave(x) - bt * 0.22)}`).join(" ")}" fill="none" stroke="#fff" stroke-width="2.4" opacity=".4" stroke-linecap="round"/>`;
   } else if (name === "snake") {
-    const head = Math.min(h * 1.1, w * 0.35);
-    s = `<path d="M${f1(x0 + 1.5)} ${f1(y)} Q${f1(x0 + 8)} ${f1(t + 3)} ${f1(x0 + 16)} ${f1(t + 4)} H${f1(x1 - head)} V${f1(t + h - 4)} H${f1(x0 + 16)} Q${f1(x0 + 8)} ${f1(t + h - 3)} ${f1(x0 + 1.5)} ${f1(y)} Z" fill="#4fcf72" ${o}/>`
-      + `<ellipse cx="${f1(x1 - head / 2 - 1.5)}" cy="${f1(y)}" rx="${f1(head / 2)}" ry="${f1(h / 2)}" fill="#4fcf72" ${o}/>`
-      + `<circle cx="${f1(x1 - head * 0.38)}" cy="${f1(y - h * 0.15)}" r="${f1(h * 0.16)}" fill="#fff" stroke="${DK}" stroke-width="2"/><circle cx="${f1(x1 - head * 0.33)}" cy="${f1(y - h * 0.15)}" r="${f1(h * 0.07)}" fill="${DK}"/>`
-      + Array.from({ length: Math.max(0, Math.floor((w - head - 20) / 16)) }, (_, i) => `<circle cx="${f1(x0 + 24 + i * 16)}" cy="${f1(y)}" r="2.5" fill="#2f9a50"/>`).join("");
+    const head = Math.min(h * 1.15, w * 0.35), hx = x1 - head / 2 - 1.5, bt = h * 0.7;
+    s = `<path d="M${f1(x0 + 1.5)} ${f1(y + 2)} Q${f1(x0 + 14)} ${f1(y - bt / 2)} ${f1(x0 + 24)} ${f1(y - bt / 2)} H${f1(hx)} V${f1(y + bt / 2)} H${f1(x0 + 24)} Q${f1(x0 + 14)} ${f1(y + bt / 2)} ${f1(x0 + 1.5)} ${f1(y + 2)} Z" fill="#4fcf72" ${o}/>`
+      + Array.from({ length: Math.max(0, Math.floor((hx - head / 2 - x0 - 22) / 14)) }, (_, i) => { const cx = x0 + 26 + i * 14; return `<path d="${P([[cx - 4, y], [cx, y - bt * 0.3], [cx + 4, y], [cx, y + bt * 0.3]])}" fill="#23854a"/>`; }).join("")
+      // The forked tongue hangs from the front of the mouth (never past the nose, so it measures true).
+      + `<path d="M${f1(x1 - head * 0.3)} ${f1(y + h * 0.35)} v7 l-3 4 M${f1(x1 - head * 0.3)} ${f1(y + h * 0.35 + 7)} l3 4" fill="none" stroke="${CORAL}" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>`
+      + `<ellipse cx="${f1(hx)}" cy="${f1(y)}" rx="${f1(head / 2)}" ry="${f1(h / 2)}" fill="#4fcf72" ${o}/>`
+      + `<circle cx="${f1(hx + head * 0.05)}" cy="${f1(y - h * 0.17)}" r="${f1(h * 0.19)}" fill="#fff" stroke="${DK}" stroke-width="2"/><circle cx="${f1(hx + head * 0.11)}" cy="${f1(y - h * 0.17)}" r="${f1(h * 0.09)}" fill="${DK}"/>`
+      + `<path d="M${f1(hx - head * 0.05)} ${f1(y + h * 0.2)} Q${f1(hx + head * 0.2)} ${f1(y + h * 0.32)} ${f1(x1 - head * 0.12)} ${f1(y + h * 0.12)}" fill="none" stroke="${DK}" stroke-width="2" stroke-linecap="round"/>`;
   } else if (name === "rope") {
-    s = `<rect x="${f1(x0 + 1.5)}" y="${f1(t + h * 0.2)}" width="${f1(w - 3)}" height="${f1(h * 0.6)}" rx="${f1(h * 0.3)}" fill="#d9a35f" ${o}/>`
-      + Array.from({ length: Math.floor((w - 8) / 9) }, (_, i) => `<path d="M${f1(x0 + 6 + i * 9)} ${f1(t + h * 0.24)} l5 ${f1(h * 0.52)}" stroke="#9c6a2c" stroke-width="2"/>`).join("");
+    // Twisted: slanted strands, light and dark in turn.
+    const hh = h * 0.7, tt = y - hh / 2, n = Math.max(1, Math.floor((w - 8) / 7));
+    s = `<rect x="${f1(x0 + 1.5)}" y="${f1(tt)}" width="${f1(w - 3)}" height="${f1(hh)}" rx="${f1(hh / 2)}" fill="#d9a35f" ${o}/>`
+      + Array.from({ length: n }, (_, i) => `<path d="M${f1(x0 + 5 + i * 7)} ${f1(tt + hh - 2)} Q${f1(x0 + 8 + i * 7)} ${f1(y)} ${f1(x0 + 11 + i * 7)} ${f1(tt + 2)}" fill="none" stroke="${i % 2 ? "#f3cf96" : "#8f5d24"}" stroke-width="2.6" stroke-linecap="round"/>`).join("")
+      + `<rect x="${f1(x0 + 1.5)}" y="${f1(tt)}" width="${f1(w - 3)}" height="${f1(hh)}" rx="${f1(hh / 2)}" fill="none" ${o}/>`;
   } else if (name === "bench") {
     s = `<path d="M${f1(x0 + w * 0.12)} ${f1(t + 8)} v${f1(h - 6)} M${f1(x1 - w * 0.12)} ${f1(t + 8)} v${f1(h - 6)}" stroke="${DK}" stroke-width="7" stroke-linecap="round"/><path d="M${f1(x0 + w * 0.12)} ${f1(t + 8)} v${f1(h - 6)} M${f1(x1 - w * 0.12)} ${f1(t + 8)} v${f1(h - 6)}" stroke="#9c6a2c" stroke-width="3" stroke-linecap="round"/>`
       + `<rect x="${f1(x0 + 1.5)}" y="${f1(t)}" width="${f1(w - 3)}" height="10" rx="3" fill="#c98a4a" ${o}/>` + sheen(x0 + 3, t + 1, w - 6, 8, 2);
   } else {
-    // rug: a red rug with gold stripes and fringe at its ends.
-    s = `<rect x="${f1(x0 + 1.5)}" y="${f1(t)}" width="${f1(w - 3)}" height="${h}" rx="2" fill="#e04a5f" ${o}/>`
-      + `<path d="M${f1(x0 + 8)} ${f1(t + 4)} V${f1(t + h - 4)} M${f1(x1 - 8)} ${f1(t + 4)} V${f1(t + h - 4)}" stroke="${GOLD}" stroke-width="3"/>`
-      + `<rect x="${f1(x0 + 14)}" y="${f1(y - 3)}" width="${f1(Math.max(0, w - 28))}" height="6" fill="${GOLD}" opacity=".8"/>`;
+    // rug: red, a gold border, and fringe at both ends (part of its length).
+    const fr = 6, r0 = x0 + fr, r1 = x1 - fr;
+    const fringe = (xa) => Array.from({ length: 5 }, (_, k) => `M${f1(xa)} ${f1(t + 3 + (k * (h - 6)) / 4)} h${fr}`).join(" ");
+    s = `<path d="${fringe(x0 + 0.5)} ${fringe(r1 - 0.5)}" stroke="#f3d9a0" stroke-width="2" stroke-linecap="round"/>`
+      + `<rect x="${f1(r0)}" y="${f1(t)}" width="${f1(r1 - r0)}" height="${h}" rx="2" fill="#e04a5f" ${o}/>`
+      + `<rect x="${f1(r0 + 4)}" y="${f1(t + 4)}" width="${f1(Math.max(0, r1 - r0 - 8))}" height="${h - 8}" fill="none" stroke="${GOLD}" stroke-width="2"/>`
+      + `<path d="${Array.from({ length: Math.max(0, Math.floor((r1 - r0 - 16) / 14)) }, (_, i) => { const cx = r0 + 15 + i * 14; return `M${f1(cx - 4)} ${f1(y)} L${f1(cx)} ${f1(y - 4)} L${f1(cx + 4)} ${f1(y)} L${f1(cx)} ${f1(y + 4)} Z`; }).join(" ")}" fill="${GOLD}"/>`;
   }
   return `<g class="obj" data-name="${name}" data-x0="${f1(x0)}" data-x1="${f1(x1)}">${s}</g>`;
 }
+// Its name in small words under its left end, when two or more are shown: the drawing and the
+// voice tell a pre-reader which is which; a grown-up can read it.
+const nameTag = (name, x0, y) => lab(x0 + 2, y + 24, name, { anchor: "start", size: 11, fill: MUTED, cls: "objlab" });
 // A connecting cube (alternating colors, with a nub) or a paper clip, from x to x + u.
 const CUBES = ["#ff5a4e", "#4f8bff", "#ffc93c", "#4fcf72"];
 function unitPiece(kind, x, u, y, i) {
@@ -164,20 +214,20 @@ export function lengthSvg(p, opt = {}) {
   let s = "", H = 120;
   if (p.kind === "compare" || p.kind === "order") {
     // Lined up at the left, one under the other, 26 a unit.
-    const u = 26, rows = p.things, gap = 38;
-    H = 22 + rows.length * gap;
+    const u = 26, rows = p.things, gap = 48;
+    H = 24 + (rows.length - 1) * gap + 30;
     if (h) s += guide(X0, 6, H - 6, TEAL);
-    rows.forEach((t, i) => { s += thing(t.name, X0, X0 + t.len * u, 26 + i * gap); });
+    rows.forEach((t, i) => { s += thing(t.name, X0, X0 + t.len * u, 24 + i * gap) + nameTag(t.name, X0, 24 + i * gap); });
     // The hint: the other end of the one asked about (compare: the second, the one it's held to).
     if (h) { const ref = p.kind === "compare" ? rows[1] : rows[p.ask]; s += guide(X0 + ref.len * u, 6, H - 6, GOLD); }
-    if (wk && p.kind === "compare") s += ringEnd(X0 + rows[0].len * u, 26, rows[0].len > rows[1].len);
+    if (wk && p.kind === "compare") s += ringEnd(X0 + rows[0].len * u, 24, rows[0].len > rows[1].len);
   } else if (p.kind === "indirect") {
     // The two things apart (one up and left, one down and right), each with the same string under
     // it, lined up at its left end.
     const u = 24, [a, b] = p.things, ax = X0, bx = X0 + 60, sl = p.string * u;
-    s += thing(a.name, ax, ax + a.len * u, 24) + stringAt(ax, ax + sl, 46) + thing(b.name, bx, bx + b.len * u, 84) + stringAt(bx, bx + sl, 106);
-    if (h) s += guide(ax + sl, 10, 56, GOLD) + guide(bx + sl, 70, 116, GOLD);
-    H = 124;
+    s += thing(a.name, ax, ax + a.len * u, 26) + nameTag(a.name, ax, 26) + stringAt(ax, ax + sl, 60) + thing(b.name, bx, bx + b.len * u, 98) + nameTag(b.name, bx, 98) + stringAt(bx, bx + sl, 132);
+    if (h) s += guide(ax + sl, 10, 68, GOLD) + guide(bx + sl, 82, 140, GOLD);
+    H = 146;
   } else if (p.kind === "units" || p.kind === "gaps") {
     // The thing, and the cubes or clips under it, from its left end (or, gaps, laid wrong).
     const u = p.unit === "cube" ? 28 : 32, x1 = X0 + p.len * u;
@@ -210,14 +260,14 @@ export function lengthSvg(p, opt = {}) {
     }
     H = 112;
   } else if (p.kind === "diff") {
-    const U = UNITS[p.unit], u = W / U.max, [a, b] = p.things, y1 = 50, y2 = 82;
-    s += thing(a.name, X0, X0 + a.len * u, y1) + thing(b.name, X0, X0 + b.len * u, y2);
-    s += guide(X0 + a.len * u, y1 + 10, 106) + guide(X0 + b.len * u, y2 + 10, 106) + ruler(p.unit, U.max, U.sub, 106);
+    const U = UNITS[p.unit], u = W / U.max, [a, b] = p.things, y1 = 48, y2 = 88, ry = 120;
+    s += thing(a.name, X0, X0 + a.len * u, y1) + nameTag(a.name, X0, y1) + thing(b.name, X0, X0 + b.len * u, y2) + nameTag(b.name, X0, y2);
+    s += guide(X0 + a.len * u, y1 + 10, ry) + guide(X0 + b.len * u, y2 + 10, ry) + ruler(p.unit, U.max, U.sub, ry);
     if (h) {
       const lo = Math.min(a.len, b.len), n = Math.abs(a.len - b.len), xs = Array.from({ length: n + 1 }, (_, k) => X0 + (lo + k) * u);
       s += hops(xs, 30, countLabels(n, wk));
     }
-    H = 164;
+    H = 178;
   } else if (p.kind === "addsub") {
     s += barSvg(p, h, wk);
     H = h ? 150 : 84;
@@ -436,7 +486,9 @@ export function lengthFacts() {
   // A fixed shuffle, so the samples are the same everywhere.
   let seed = 7;
   const r = (n) => { seed = (seed * 9301 + 49297) % 233280; return Math.floor((seed / 233280) * n); };
-  const two = (i) => [SMALL[i % 6], SMALL[(i + 1 + ((i >> 1) % 5)) % 6]];
+  // Two shown together are never two of the sticks (pencil, crayon, marker), so they can't be
+  // taken for each other: a stick and something else, or two of the rest.
+  const two = (i) => PAIRS[(i * 5) % PAIRS.length];
   // K: 20 pairs, 3 to 11 long, at least 2 apart, half longer.
   for (let i = 0; i < 20; i++) {
     const [x, y] = two(i);
@@ -446,7 +498,7 @@ export function lengthFacts() {
   }
   // 1st, the longest or shortest of three, all lengths at least 2 apart: 16, half yes.
   for (let i = 0; i < 16; i++) {
-    const names = [SMALL[i % 6], SMALL[(i + 2) % 6], SMALL[(i + 4) % 6]], most = i % 4 < 2 ? "longest" : "shortest";
+    const tri = TRIPLES[i % TRIPLES.length], names = [0, 1, 2].map((k) => tri[(k + i) % 3]), most = i % 4 < 2 ? "longest" : "shortest";
     let lens;
     do { lens = [2 + r(10), 2 + r(10), 2 + r(10)]; } while (Math.min(Math.abs(lens[0] - lens[1]), Math.abs(lens[1] - lens[2]), Math.abs(lens[0] - lens[2])) < 2);
     const best = lens.indexOf(most === "longest" ? Math.max(...lens) : Math.min(...lens)), ask = i % 2 === 0 ? best : (best + 1 + r(2)) % 3;

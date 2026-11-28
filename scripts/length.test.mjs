@@ -2,7 +2,7 @@
 // measure true (each thing's ends on the ruler's ticks, units end to end), hints that never give
 // the answer before answering, and the words.
 import assert from "node:assert/strict";
-import { LENGTH_LEVELS, lengthFacts, lengthFactOf, lengthProblem, lengthSvg, lengthHint, lengthLine, lengthRight, spokenLength, spokenLengthAnswer, keysOf, counted, UNITS, X0, W } from "../js/length.js";
+import { LENGTH_LEVELS, lengthFacts, lengthFactOf, lengthProblem, lengthSvg, lengthHint, lengthLine, lengthRight, spokenLength, spokenLengthAnswer, keysOf, counted, UNITS, X0, W, STICKS, SMALL, BIG, thing } from "../js/length.js";
 
 const facts = lengthFacts();
 const num = (s) => Number(s);
@@ -22,7 +22,16 @@ for (const f of facts) {
   let seed = 1;
   assert.equal(lengthProblem(f.set, () => ((seed = (seed * 9301 + 49297) % 233280) / 233280)).set, f.set);
 }
-assert.deepEqual(lengthFactOf("ℓc:pencil8,crayon6").ans, "L");
+assert.deepEqual(lengthFactOf("ℓc:pencil8,straw6").ans, "L");
+// Two shown together are never two of the sticks (pencil, crayon, marker), and each has its name
+// under it; one shown alone has none.
+for (const f of facts.filter((f) => f.things)) {
+  assert.ok(f.things.filter((t) => STICKS.includes(t.name)).length <= 1, `${f.key}: one stick at most`);
+  assert.deepEqual([...lengthSvg(f).matchAll(/class="objlab">([^<]*)</g)].map((m) => m[1]), f.things.map((t) => t.name), `${f.key}: named`);
+}
+for (const f of facts.filter((f) => !f.things)) assert.ok(!lengthSvg(f).includes('class="objlab"'), `${f.key}: no name for one alone`);
+// Every thing draws at the smallest size it's shown (a 1-inch ruler's 32) with real numbers.
+for (const n of [...SMALL, ...BIG]) for (const w of [32, 80, 300]) assert.ok(!/NaN|undefined|Infinity/.test(thing(n, X0, X0 + w, 40)), `${n} at ${w}`);
 assert.equal(lengthFactOf("ℓnope"), null);
 
 for (const f of facts) {
@@ -161,8 +170,8 @@ for (const f of facts) {
 }
 
 // What the voice says.
-assert.equal(spokenLength(lengthFactOf("ℓc:pencil8,crayon6")), "Is the pencil longer or shorter than the crayon?");
-assert.equal(spokenLengthAnswer(lengthFactOf("ℓc:pencil8,crayon6")), "The pencil is longer than the crayon.");
+assert.equal(spokenLength(lengthFactOf("ℓc:pencil8,straw6")), "Is the pencil longer or shorter than the straw?");
+assert.equal(spokenLengthAnswer(lengthFactOf("ℓc:pencil8,straw6")), "The pencil is longer than the straw.");
 const inch = facts.find((f) => f.key === "ℓin:straw1-6");
 assert.equal(spokenLength(inch), "How many inches long is the straw?");
 assert.equal(spokenLengthAnswer(inch), "The straw is five inches long.");
