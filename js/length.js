@@ -231,7 +231,10 @@ export function lengthSvg(p, opt = {}) {
     const u = 26, rows = p.things, gap = 48;
     H = 24 + (rows.length - 1) * gap + 30;
     if (h) s += guide(X0, 6, H - 6, TEAL);
-    rows.forEach((t, i) => { s += thing(t.name, X0, X0 + t.len * u, 24 + i * gap) + nameTag(t.name, X0, 24 + i * gap); });
+    // The one asked about ("Is the pencil the longest?"): a gold outline round its row and its name in
+    // gold, so a pre-reader sees which (it says nothing about the answer: any row can be asked).
+    if (p.kind === "order") { const t = rows[p.ask], y = 24 + p.ask * gap; s += `<rect x="${X0 - 10}" y="${y - 18}" width="${t.len * u + 20}" height="44" rx="12" fill="none" stroke="${GOLD}" stroke-width="3" class="asked"/>`; }
+    rows.forEach((t, i) => { s += thing(t.name, X0, X0 + t.len * u, 24 + i * gap) + (p.kind === "order" && i === p.ask ? lab(X0 + 5, 24 + i * gap + 24, t.name, { anchor: "start", size: 11, fill: GOLD, cls: "objlab" }) : nameTag(t.name, X0, 24 + i * gap)); });
     // The hint: the other end of the one asked about (compare: the second, the one it's held to).
     if (h) { const ref = p.kind === "compare" ? rows[1] : rows[p.ask]; s += guide(X0 + ref.len * u, 6, H - 6, GOLD); }
     if (wk && p.kind === "compare") s += ringEnd(X0 + rows[0].len * u, 24, rows[0].len > rows[1].len);
@@ -452,7 +455,7 @@ export function lengthLine(p) {
   const ab = UNITS[p.unit] && UNITS[p.unit].ab;
   switch (p.kind) {
     case "compare": case "indirect": return [`The ${p.things[0].name} is `, null];
-    case "order": return [`The ${p.most}? `, null];
+    case "order": return [`The ${p.things[p.ask].name}, the ${p.most}? `, null];
     case "gaps": return ["Measured right? ", null];
     case "units": return [null, ` ${UNITS[p.unit].many}`];
     case "which": return ["In " + UNITS[p.to].many + ": ", null];

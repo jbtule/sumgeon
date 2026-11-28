@@ -36,7 +36,7 @@ export const TRAITS = {
   "Graphzilla": { icon: "📊", name: "Chart Stomp", text: "Read the kaiju's chart!" },
   // Measuring length. Like Chompers' Big Bite, its rule is the hit: a Longer, Yes or More hits
   // for the longest thing's length (length.js lengthHit), a measurement for itself.
-  "Rulerpillar": { icon: "📏", name: "Inch by Inch", text: "How long? The longest is your hit" },
+  "Rulerpillar": { icon: "📏", name: "Inch by Inch", text: "The longest length is your hit!" },
   // The Fraction Forge's (4th grade, DESIGN.md §4.4).
   "Quarterjack": { icon: "🏈", name: "Fourth Down", text: "4th down: a touchdown hits double" },
   "Dotty": { icon: "🔍", name: "On the Dot", text: "Answers ending in 0 hit double" },
