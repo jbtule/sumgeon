@@ -528,6 +528,10 @@ h1 b{color:var(--coral);font-weight:400}
 .prob .stacked .sans .blank{min-width:calc(var(--w) * .82em);text-align:right;padding:0 .08em;border-radius:10px}
 /* Typed right to left (ones first): a cell per column, and a blinking cursor in the next one. */
 .prob .stacked .scells{display:inline-flex;justify-content:flex-end}
+.prob .stacked .scols{display:inline-flex;justify-content:flex-end}
+/* The answer's cells sit in the dashed box: pull it out by its border and padding so its columns
+   line up with the numbers' above. */
+.prob .stacked .sans .blank{margin-right:calc(-3px - .08em);font-size:1em}
 .prob .stacked .scell{display:inline-block;width:.82em;text-align:center;position:relative;min-height:1em}
 .prob .stacked .scell.cur::after{content:"";position:absolute;left:.12em;right:.12em;bottom:.04em;height:.09em;border-radius:.05em;background:var(--gold,#ffc93c);animation:scaret 1s steps(1) infinite}
 @keyframes scaret{50%{opacity:0}}

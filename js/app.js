@@ -524,7 +524,11 @@ function stackCells(p, typed) {
 }
 function stackHTML(p) {
   const nums = p.nums || [p.x, p.y], w = stackWidth(p);
-  const rows = nums.map((n, i) => `<span class="sop">${i === nums.length - 1 ? (p.op === "-" ? "−" : "+") : ""}</span><span class="snum">${n}</span>`).join("");
+  // Each digit in a cell of its own, one column wide (the answer's cells are the same width), so
+  // ones line up under ones whatever the font: Bungee's digits aren't all the same width, and
+  // long numbers drifted out of their columns.
+  const cols = (n) => `<span class="scols">${[...String(n)].map((d) => `<span class="scell">${d}</span>`).join("")}</span>`;
+  const rows = nums.map((n, i) => `<span class="sop">${i === nums.length - 1 ? (p.op === "-" ? "−" : "+") : ""}</span><span class="snum">${cols(n)}</span>`).join("");
   return `<span class="stacked${nums.length > 2 ? " rows" + nums.length : ""}" style="--w:${w}" role="img" aria-label="${esc(p.q)}">${rows}<span class="sbar"></span><span class="sop"></span><span class="snum sans"><span class="blank scells" id="blank" aria-label="Answer, typed from the ones">${stackCells(p, "")}</span></span></span>`;
 }
 // A shape problem (Polly-Gon): what to draw (the voice says it too; the body flashes it), or the
