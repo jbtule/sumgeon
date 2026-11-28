@@ -40,7 +40,24 @@ for (const f of [...of("tally"), ...of("pic1")]) {
   assert.ok(f.cats.reduce((s, c) => s + c[1], 0) <= 20, "1st grade: within 20");
   assert.ok(["n", "m", "f", "a"].includes(f.ask.k));
 }
-for (const f of [...of("pic2"), ...of("bar2")]) assert.ok(f.cats.length === 4 && f.scale === 1 && f.cats.every((c) => c[1] <= 9), "2nd grade: four things, scale 1");
+for (const f of [...of("pic2"), ...of("bar2")]) {
+  assert.ok(f.cats.length === 4 && f.scale === 1 && f.cats.every((c) => c[1] <= 9), "2nd grade: four things, scale 1");
+  // Put together and compare (2.MD.D.10): never "in all", and "how many" only read off a bar
+  // graph's scale (on a picture graph it's only counting pictures).
+  assert.ok(["n", "x", "t", "m", "f"].includes(f.ask.k), `${f.key}: 2nd grade asks put together and compare`);
+  assert.ok(f.ask.k !== "n" || f.form === "B", `${f.key}: "how many" only on a bar graph`);
+  // The tallest is one bar: no tie, and "how many" never asks it too.
+  const top = Math.max(...f.cats.map((c) => c[1]));
+  assert.equal(f.cats.filter((c) => c[1] === top).length, 1, `${f.key}: one tallest`);
+  if (f.ask.k === "x") assert.equal(f.ans, top);
+  if (f.ask.k === "n") assert.ok(f.ans !== top, `${f.key}: "how many" asks another bar than the tallest`);
+}
+// Each data set asks its comparisons on different pairs.
+for (const set of new Set([...of("pic2"), ...of("bar2")].map((f) => f.key.split(":").slice(0, 2).join(":")))) {
+  const pairs = facts.filter((f) => f.key.startsWith(set + ":") && f.ask.b).map((f) => [f.ask.a, f.ask.b].sort().join());
+  assert.equal(new Set(pairs).size, pairs.length, `${set}: a pair asked once`);
+}
+assert.ok(of("pic2").filter((f) => ["m", "f", "x"].includes(f.ask.k)).length >= of("pic2").length / 2, "picture graphs: mostly comparisons");
 for (const f of [...of("spic3"), ...of("sbar3")]) {
   assert.ok([2, 5].includes(f.scale), "3rd grade: scaled by 2s or 5s");
   // Bars end on a line of the axis; pictures are whole or half.
@@ -57,7 +74,7 @@ for (const f of facts.filter((f) => f.ask.k === "mo")) {
 for (const f of of("med5")) { assert.equal(f.vals.length % 2, 1, "an odd count, so the median is one of them"); assert.equal(f.ans, [...f.vals].sort((a, b) => a - b)[(f.vals.length - 1) / 2]); }
 for (const f of of("line5")) assert.ok(f.vals.length === 6 && f.vals.every((v) => v % f.scale === 0), "5th grade line graphs");
 // Every question kind comes up.
-for (const k of ["n", "m", "f", "t", "a", "at", "mo", "ra", "me", "to", "v", "c"]) assert.ok(facts.some((f) => f.ask.k === k), k);
+for (const k of ["n", "m", "f", "t", "a", "x", "at", "mo", "ra", "me", "to", "v", "c"]) assert.ok(facts.some((f) => f.ask.k === k), k);
 
 // The drawings: clean, inside the chart, every word a label, and nothing given away.
 for (const f of facts) {
@@ -111,6 +128,9 @@ assert.equal(spokenChart(chartFactOf("▥T1:torch5,potion7,key3:m.potion.key")),
 assert.equal(spokenChart(chartFactOf("▥P2:torch5,potion7,key3:n.key")), "Each picture is two. Torches, potions, keys. How many keys?");
 assert.equal(spokenChart(chartFactOf("▥L2:bone:2-8:2,3,3,5:at.5")), "Bone lengths, in inches. How many bones are two and a half inches long?");
 assert.equal(spokenChart(chartFactOf("▥F:potion:1x2,3x4,4x1:mo")), "Potions on each shelf. What is the mode?");
+assert.equal(spokenChart(chartFactOf("▥B1:bat1,slime9,torch5,gem6:x")), "Bats, slimes, torches, gems. How many in the tallest bar?");
+assert.equal(spokenChart(chartFactOf("▥P1:key7,gem2,bone3,potion1:x")), "Keys, gems, bones, potions. How many in the longest row?");
+assert.equal(spokenChartAnswer(chartFactOf("▥B1:bat1,slime9,torch5,gem6:x")), "The most is nine slimes.");
 assert.equal(spokenChart(chartFactOf("▥G5:gem:10,15,25,20,30,35:c.2.5")), "Gems found each day. How many more gems on day five than day two?");
 assert.deepEqual([chartFactOf("▥T1:torch5,potion7,key3:m.potion.key").ans, chartFactOf("▥B5:torch10,potion25:f.torch.potion").ans, chartFactOf("▥L4:key:4-12:5,6,6,9,10:gt.6").ans, chartFactOf("▥F:gem:1x2,3x4,4x1:ra").ans, chartFactOf("▥G5:gem:10,15,25,20,30,35:c.4.2").ans], [4, 15, 2, 3, 5]);
 assert.deepEqual([lenLabel(5, 2), lenLabel(7, 4), lenLabel(8, 4), lenWords(4, 4), lenWords(9, 4)], ["2½", "1¾", "2", "one inch", "two and one fourth inches"]);
