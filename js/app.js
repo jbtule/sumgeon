@@ -3,7 +3,7 @@
 import { MON, svg, LOOKS, lookOf, allLooks, CHOMP_SHUT, bossForm } from "./monsters.js";
 import { chompPose, morePose, mouthOf, SNAP, FLIP_MS, SNAP_MS, EAT_MS } from "./chomp.js";
 import { spokenProblem, spokenFact } from "./problems.js";
-import { BANDS, choose, factOf, record as recordAnswer, helpFor, monsterHP, probeKey, tierOf, skipTo, SKIP_PROBES, SKIP_WINDOW, MAX_LEAP, fluentTime, spellKey, RECENT, pool, drawHit, openLevels, reachOf, chaptersOf, pathBands, reviewFacts, placeReviews, examKey, examFacts, examRound, hpOf } from "./learn.js";
+import { BANDS, choose, factOf, record as recordAnswer, helpFor, monsterHP, probeKey, tierOf, skipTo, SKIP_PROBES, SKIP_WINDOW, MAX_LEAP, fluentTime, spellKey, RECENT, pool, drawHit, openLevels, reachOf, chaptersOf, pathBands, reviewFacts, placeReviews, examKey, examFacts, examRound, hpOf, endlessKey } from "./learn.js";
 import { countSvg, readShape, judgeShape, cleanFor, isDrawKey, SHAPE_LINE, SHAPE_CODE, article } from "./shapes.js";
 import { hintFor, STRATEGIES } from "./hints.js";
 import { openStore, displayName, DUNGEON_VERSION, DUNGEON_KEYS, LEARNING_RESETS } from "./store.js";
@@ -554,7 +554,12 @@ const levelsFor = (bk, w = wing()) => openLevels(PATHS[w.id], stepsNow(w).open, 
 // mastered, the next run there ends with its boss's golden form, at any depth, until it's beaten.
 // ?legend treats the stratum as mastered, for testing (with ?floor=6 to start at the boss).
 const LEGEND_TEST = new URLSearchParams(location.search).has("legend");
-const legendNow = (w = wing()) => legendDue(w, progress, recs, LEGEND_TEST);
+// Endless (DESIGN.md §6.4): a stratum whose Legend is beaten keeps going, asking the facts already
+// learned there (learn.js endlessKey). ?endless treats the stratum played as Legend-beaten, for
+// testing (nothing saved).
+const ENDLESS_TEST = new URLSearchParams(location.search).has("endless");
+const endlessOn = (w = wing()) => legendBeaten(w, progress) || (ENDLESS_TEST && w.id === wing().id);
+const legendNow = (w = wing()) => !(ENDLESS_TEST && w.id === wing().id) && legendDue(w, progress, recs, LEGEND_TEST);
 const onLegend = () => { const m = G.floors && G.floors[G.floor]; return !!m && m.form === "legend"; };
 // The band the problem on screen is from: the Legend's exam mixes every band and strand of the
 // path (G.examBand), every other fight asks the monster's own (strandOf).
@@ -792,16 +797,20 @@ function newProblem() {
   const spell = spellTurn ? spellKey(bk, recs, { recent: G.recent, spells: G.spells, avoidAns, op, asks: kinds, open: lv.levels, review: lv.review }) : null;
   // The last few spells, across runs while the game is open, so the same one isn't cast fight after fight.
   if (spell) G.spells = [spell].concat(G.spells || []).slice(0, SPELL_MEMORY);
-  const probe = !exam && !due && !spell && f.on && f.cool <= 0 ? probeKey(bk, recs, null, G.recent, avoidAns, f.leap, kinds, reachOf(PATHS[wing().id], chapterNow(), bk)) : null;
+  // Endless: no probing or skipping ahead, and the facts come from what's been learned here.
+  const endless = !exam && endlessOn();
+  const probe = !exam && !endless && !due && !spell && f.on && f.cool <= 0 ? probeKey(bk, recs, null, G.recent, avoidAns, f.leap, kinds, reachOf(PATHS[wing().id], chapterNow(), bk)) : null;
   // ?fact=<key> (URL-encoded, "%E2%8C%9At3%3A30" for ⌚t3:30) makes the first problem that fact, for testing.
   const forced = FACT_AT && !G.solved && !G.tries ? FACT_AT : null;
   // An earlier grade's facts (the path's review steps) are mixed in as reviews for the monsters
   // asking the stratum's own band, once seen.
   const reviews = bk === wing().band ? reviewFacts(PATHS[wing().id], bk) : null;
-  const key = forced || (exam && exam.key) || spell || probe || choose(bk, recs, { now: Date.now(), recent: G.recent, retry: due ? due.key : null, op, asks: kinds, like: prefers(m), depth: G.depth, avoidAns, open: lv.levels, review: lv.review, reviews,
-    // The captain's digit: held back in the first fight, then about a third of problems lean to it
-    // until the captain's first moment has happened (captainLean).
-    digit: team.captain, digitShare: captainLean() ? CAPTAIN_BIAS : 0, avoidDigitShare: firstFight() ? CAPTAIN_HOLD : 0 });
+  // The captain's digit: held back in the first fight, then about a third of problems lean to it
+  // until the captain's first moment has happened (captainLean).
+  const lean = { digit: team.captain, digitShare: captainLean() ? CAPTAIN_BIAS : 0, avoidDigitShare: firstFight() ? CAPTAIN_HOLD : 0 };
+  const key = forced || (exam && exam.key) || spell || probe
+    || (endless && endlessKey(PATHS[wing().id], bk, recs, Object.assign({ now: Date.now(), recent: G.recent, retry: due ? due.key : null, asks: kinds, like: prefers(m), avoidAns }, lean)))
+    || choose(bk, recs, Object.assign({ now: Date.now(), recent: G.recent, retry: due ? due.key : null, op, asks: kinds, like: prefers(m), depth: G.depth, avoidAns, open: lv.levels, review: lv.review, reviews }, lean));
   // Charge (Minustaur): every 4th problem on the floor, a miss costs 2 hearts.
   G.charged = charged(m, G.onFloor++);
   $("charge").hidden = !G.charged;
@@ -2222,6 +2231,8 @@ function wireGrades(after) {
 // "Chapter 1 of 2: Within 10, Coins", the path's new steps open now (DESIGN.md §4.3), from the
 // player's own fact records.
 function levelLine() {
+  // Endless (a stratum whose Legend is beaten): chapters don't mean much any more.
+  if (endlessOn()) return "∞ Endless: mastered facts";
   const w = wing(), path = PATHS[w.id], s = stepsNow(w), now = (s.window.length ? s.window : s.open.slice(-1)).map((i) => path[i].name);
   return `Chapter ${chapterNow(w)} of ${chaptersOf(path)}: ${now.join(", ")}`;
 }
@@ -2259,13 +2270,14 @@ function wingsHTML() {
     else { const t = toOpen(w, progress, recs); note = `🔒 Beat ${t.prev.boss}${t.boss ? " ✓" : ""} and learn ${Math.round(t.need * 100)}% of ${t.prev.name.replace(/^The /, "the ")} (now ${Math.round(t.share * 100)}%)`; }
     const d = deepest(w, progress);
     // A stratum whose Legend is beaten (DESIGN.md §14.2) gets a gold edge; one whose Legend awaits says so.
-    if (isOpen && legendBeaten(w, progress)) note = "🌟 Legend beaten · " + note;
+    // Its runs are Endless now (DESIGN.md §6.4): the facts already mastered there.
+    if (isOpen && endlessOn(w)) note = "🌟 Legend beaten · " + note;
     else if (isOpen && legendNow(w)) note = "🌟 A legend awaits! · " + note;
     // How far along to the Legend: rounded down, so 100% only when it's ready.
     const pct = isOpen && !legendBeaten(w, progress) && !legendNow(w) ? Math.floor(legendProgress(w, recs) * 100) : null;
     const toLegend = pct == null ? "" : `<em class="to-legend">Legendary depths · ${pct}%</em>`;
     return `<label class="wing ${w.id}${here ? " here" : ""}${isOpen ? "" : " locked"}${isOpen && legendBeaten(w, progress) ? " golden" : ""}"><input type="radio" name="wing" value="${w.id}" ${here ? "checked" : ""} ${isOpen ? "" : "disabled"}>
-      <span><b>${w.name}</b><small>${b.label}</small><em>${note}</em>${here ? `<em class="level" id="levelLine">${levelLine()}</em>` : ""}
+      <span><b>${w.name}${isOpen && endlessOn(w) ? ' <i class="endless-mark" title="Endless" aria-label="Endless">∞</i>' : ""}</b><small>${b.label}</small><em>${note}</em>${here ? `<em class="level" id="levelLine">${levelLine()}</em>` : ""}
       ${isOpen ? depthTrack(w, d) : ""}${toLegend}</span></label>`;
   }).join("");
 }

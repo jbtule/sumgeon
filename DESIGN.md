@@ -456,12 +456,13 @@ Replaces the between-floor choice. Clearing a floor still heals 1 heart.
 
 **Saved per player:** `wallet` (cents), `items` (the inventory's counts and the 3 quick-use slots), `wardrobe` (what's found and what each hero wears). Each goes in `OWN_KEYS`.
 
-### 6.4 Endless (planned: a stratum after its Legend)
+### 6.4 Endless (built 2026-11-27: a stratum after its Legend)
 _Settled with the user on 2026-11-27: not a separate high-score mode. Once a stratum's Legend boss is beaten (§14.2), that stratum just keeps going: normal runs, floor by floor, with its bosses, mega bosses every 5 depths, chests and depths, asking the facts the player has already mastered there, so they stay sharp. No Endless Specter, no separate score._
 - **When:** a stratum whose Legend is beaten. Nothing new to unlock or enter: the same layer on the depth map, Go deeper as now.
 - **What it asks:** the stratum's path facts the player has mastered, mixed across every kind (as the Legend's exam mixes them), weighted to the ones that came due, were slowest or missed most; no new facts, no probing ahead. A miss still sends a fact back to learning, which brings it back as learning until it's mastered again.
 - **Why it's needed:** with every fact mastered, the learning engine has little to ask (reviews only come due after a day), so a mastered stratum otherwise runs thin.
 - Everything else is as any run: hearts, stars, depth scores, Hero Moments, achievements.
+- **Built** (2026-11-27): `endlessKey` in `learn.js` (the seen path facts of the monster's band or strand and kinds; half the problems for facts slipped back to learning; otherwise every kind in turn, weighted 0.2 + struggle², × 3 when due); app.js turns it on for a stratum whose Legend is beaten (`?endless` to try it), with no probing or skipping ahead. The depth map says "🌟 Legend beaten · mastered facts".
 
 ### 6.5 Daily Dungeon (maybe, §12: kept as a maybe, 2026-11-27)
 - A seeded run that is the same for everyone on the same date: 5 floors, fixed monsters, fixed modifiers such as "Crits from streak 2".
@@ -745,7 +746,7 @@ Each milestone should be playable and shippable on its own. Revised 2026-11-25 f
    - *Offline play, done (2026-11-26):* a service worker (`sw.js`) precaches each version's shell, the fonts are self-hosted, and every voice sprite is saved in the background, the ones needed first; Settings → Game says how far it's got (CLAUDE.md "Offline"). *Still to do:* confirm it on the iPhone's Home Screen app (airplane mode after "Offline: ready").
 
 
-**Planned:** **Endless** (§6.4), settled with the user on 2026-11-27: after a stratum's Legend is beaten, that stratum keeps going as normal runs, asking the facts already mastered there.
+**Built:** **Endless** (§6.4), settled with the user on 2026-11-27: after a stratum's Legend is beaten, that stratum keeps going as normal runs, asking the facts already mastered there.
 
 **Maybe later (enhancements, not planned):** decided with the user on 2026-11-26, and kept a maybe on 2026-11-27:
 - **Daily Dungeon** (§6.5): the same seeded run for everyone on a date.

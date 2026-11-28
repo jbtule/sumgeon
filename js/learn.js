@@ -338,12 +338,20 @@ export const topBox = (rec) => !!rec && rec.b >= BOX_MAX;
 // The exam's facts: every fact of the path's own steps (not the review steps, an earlier grade's),
 // each key once, with its band and step (an index into the path). Drawn shapes are left out: a
 // drawing needs a touch screen, and the exam's shapes are the counting ones.
-const examCache = new WeakMap();
+const examCache = new WeakMap(), pathCache = new WeakMap();
 export function examFacts(path) {
   if (examCache.has(path)) return examCache.get(path);
-  const seen = new Set(), out = [];
-  path.forEach((s, i) => { if (!s.review) for (const f of stepFacts(s)) if (!seen.has(f.key) && !isDrawKey(f.key)) { seen.add(f.key); out.push(Object.assign({ step: i }, f)); } });
+  const out = pathFacts(path).filter((f) => !isDrawKey(f.key));
   examCache.set(path, out);
+  return out;
+}
+// Every fact of the path's own steps (not the review steps), each key once, with its band and
+// step, drawn shapes included (Endless asks them on a touch screen, as any run does).
+export function pathFacts(path) {
+  if (pathCache.has(path)) return pathCache.get(path);
+  const seen = new Set(), out = [];
+  path.forEach((s, i) => { if (!s.review) for (const f of stepFacts(s)) if (!seen.has(f.key)) { seen.add(f.key); out.push(Object.assign({ step: i }, f)); } });
+  pathCache.set(path, out);
   return out;
 }
 // How long a fact took to learn, from its record: its misses count most (each one sent it back
@@ -382,6 +390,53 @@ export function examKey(path, recs, opts = {}) {
   const step = pickFrom(top, (i) => 1 + Math.max(...list.filter((f) => f.step === i).map(w)));
   const f = pickFrom(fresh(list.filter((x) => x.step === step)), w);
   return { key: f.key, band: f.band, step };
+}
+
+/* ---------- Endless (DESIGN.md §6.4) ----------
+   A stratum whose Legend is beaten keeps going as normal runs, asking the facts already learned
+   there so they stay sharp: the path's own facts the player has seen (a strand's for its
+   monster), every kind mixed, weighted as the Legend's exam is (struggle) and to the ones due.
+   No new facts and no probing or skipping ahead (app.js). A miss sends a fact to box 0 as
+   always: it comes back as a retry (app.js), then as learning here, until it's learned again. */
+// How much more often a fact that's come due is asked, and the share of problems for the facts
+// that slipped back to learning (box 0–2) while there are any.
+export const ENDLESS_DUE = 3, ENDLESS_LEARNING = 0.5;
+// The next fact's key in Endless, or null when the monster has no seen fact of its kind here
+// (app.js then falls back to choose). opts: { now, rnd, recent: [keys] (newest first), retry,
+// asks, like, avoidAns, digit, digitShare, avoidDigitShare }, as for choose.
+export function endlessKey(path, bandKey, recs, opts = {}) {
+  if (opts.retry) return opts.retry;
+  const rnd = opts.rnd || Math.random, now = opts.now || Date.now(), recent = opts.recent || [];
+  const seen = (f) => recs[f.key] && recs[f.key].n;
+  let list = pathFacts(path).filter((f) => f.band === bandKey && seen(f) && (!opts.asks || opts.asks(f.op, f.key)));
+  if (!list.length) return null;
+  list = notRecent(list, recent);
+  const varied = list.filter((f) => !(opts.avoidAns || []).includes(f.op + " " + f.ans));
+  if (varied.length) list = varied;
+  if (opts.like) { const liked = list.filter((f) => opts.like(f.key)); if (liked.length && rnd() < 0.7) list = liked; }
+  if (opts.digit != null && opts.digitShare && rnd() < opts.digitShare) { const mine = list.filter((f) => String(f.ans).includes(String(opts.digit))); if (mine.length) list = mine; }
+  if (opts.digit != null && opts.avoidDigitShare && rnd() < opts.avoidDigitShare) { const other = list.filter((f) => !String(f.ans).includes(String(opts.digit))); if (other.length) list = other; }
+  const pickFrom = (items, weight) => { let r = rnd() * items.reduce((t, x) => t + weight(x), 0); for (const x of items) { r -= weight(x); if (r < 0) return x; } return items[items.length - 1]; };
+  // The ones a miss sent back to learning: half the problems while there are any, box 0 most.
+  const learning = list.filter((f) => recs[f.key].b <= 2);
+  if (learning.length && rnd() < ENDLESS_LEARNING) return pickFrom(learning, (f) => 3 - recs[f.key].b).key;
+  // Every kind in turn: the step asked least among the recent problems (not the last one's step,
+  // nor its operation, when there's another), the one with the hardest facts more often; inside
+  // it, weight 0.2 + struggle², times ENDLESS_DUE for a fact that's come due.
+  const due = (r) => r.b >= 3 && now - r.t >= (DUE_MS[Math.min(r.b, BOX_MAX)] || 0);
+  const w = (f) => { const r = recs[f.key], s = struggle(r, BANDS[f.band].fluentMs); return (0.2 + s * s) * (due(r) ? ENDLESS_DUE : 1); };
+  const stepOf = new Map(pathFacts(path).map((f) => [f.key, f]));
+  const last = stepOf.get(recent[0]) || {}, times = (i) => recent.filter((k) => (stepOf.get(k) || {}).step === i).length;
+  const steps = [...new Set(list.map((f) => f.step))], least = Math.min(...steps.map(times));
+  let top = steps.filter((i) => times(i) === least);
+  if (top.length > 1) top = top.filter((i) => i !== last.step);
+  const other = top.filter((i) => list.some((f) => f.step === i && f.op !== last.op));
+  if (other.length) top = other;
+  const step = pickFrom(top, (i) => 1 + Math.max(...list.filter((f) => f.step === i).map(w)));
+  let inStep = list.filter((f) => f.step === step);
+  const otherOp = inStep.filter((f) => f.op !== last.op);
+  if (otherOp.length) inStep = otherOp;
+  return pickFrom(inStep, w).key;
 }
 
 // The Legend's HP floor: about one answer of every kind (the sum of each step's middle answer,
