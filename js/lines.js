@@ -96,7 +96,9 @@ export var PHRASE = {
   // A boss's Guard held a big hit back (app.js BOSS_GUARD), the first 2 times.
   guarded: "Guarded! A boss takes at least three hits.",
   // A monster taken from full HP to nothing in one hit, said first with an echo (app.js).
-  banish: "Insta-banish!",
+  // Spelled for the voice: Kokoro says "Insta-banish" in-STAH; "Inst a" is IN-stuh (espeak:
+  // ˈɪnst ə bˈænɪʃ). The pop shows "Insta-banish!" (app.js).
+  banish: "Inst a banish!",
   chargeHow: "Small numbers get a super charge to hit big monsters!",
   crackTwo: "Two more to go!",
   heart: "You found a heart!",
@@ -135,8 +137,6 @@ var SAY_AS = [[/\bTwodini\b/g, "Toodini"], [/\bJr\./g, "Junior"], [/\bMr\./g, "M
   [/\bPlusington\b/g, "Plussington"], [/\bChompette\b/g, "Chomp-ette"], [/\bNine-ja\b/g, "Nineja"],
   [/Six, seven, gone\./g, "Six... seven! Gone."], [/^Six, seven!$/g, "Six... seven!"],
   [/\bBon appe-eight!/g, "Bon appa-eight!"],
-  // Insta-banish: Kokoro says "in-STAH-banish"; "Inst a" is IN-stuh (espeak: ˈɪnst ə bˈænɪʃ).
-  [/\bInsta-banish\b/g, "Inst a banish"],
   // Margot-Rythm rhymes with "algorithm": MAR-go-rith-um, the t silent, and so is plain "Margot"
   // in its looks' names (Glitchy Margot).
   [/\bMargot-Rythm\b/g, "Margo-rithm"], [/\bMargot\b/g, "Margo"],
