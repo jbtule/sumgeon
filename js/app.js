@@ -1990,7 +1990,7 @@ function shopCard(view) {
   const toShop = () => { S.thing = null; shopCard("stock"); };
   // The purse, its coins and its total: shown while choosing how many (so the count can be
   // checked against it) and when there isn't enough.
-  const purseRow = () => `<div class="spurse"><span class="slabel">Your purse</span><div class="scoins">${tokensOf(S.purse).map((x) => `<span class="stoken">${tokenArt(x.k)}</span>`).join("") || "<small>Empty</small>"}</div><b class="stotal">${moneyAmt(wallet, billsOn())}</b></div>`;
+  const purseRow = () => `<div class="spurse"><span class="slabel">${purseSvg()}Your purse</span><div class="scoins">${tokensOf(S.purse).map((x) => `<span class="stoken">${tokenArt(x.k)}</span>`).join("") || "<small>Empty</small>"}</div><b class="stotal">${moneyAmt(wallet, billsOn())}</b></div>`;
   if (view === "many") {
     // How many: big 1 to MANY buttons, the item drawn that many times, and the total as math.
     // A count the purse can't pay for stays picked (the math shows why), with Pay off.
@@ -2035,7 +2035,7 @@ function shopCard(view) {
     const counter = tokensOf(S.counter).map((x) => `<button type="button" class="ctoken" data-k="${x.k}" aria-label="Take back ${x.k === "b" ? "the dollar" : "a " + coinOf(x.k).name}">${tokenArt(x.k)}</button>`).join("");
     show(`${head(ok ? "That's enough! Tap Buy!" : "Tap coins to pay me!")}${thing}
     <div class="counter${ok ? " ok" : ""}"><div class="ccoins">${counter || '<span class="chint">Tap your coins</span>'}</div><p class="ctotal">You put down <b>${moneyAmt(on, dollars)}</b></p></div>
-    <div class="spurse"><span class="slabel">Your purse</span><div class="stacks">${stacks}</div></div>
+    <div class="spurse"><span class="slabel">${purseSvg()}Your purse</span><div class="stacks">${stacks}</div></div>
     <div class="btns"><button class="big alt" id="shopBack">Back</button><button class="big buy" id="shopBuy" ${ok ? "" : "disabled"}>Buy</button></div>`, "page shop");
     $("card").querySelectorAll(".stack:not([disabled])").forEach((b) => b.onclick = () => {
       if (!putDown(S.purse, S.counter, b.dataset.k, due)) { if (enough(S.counter, due)) say("p", SHOP.enough, true); return; }
@@ -2066,7 +2066,7 @@ function shopCard(view) {
   const cloth = t.kind === "clothing" && hasCaptain();
   show(`${head("Thank you! Come again!")}${thing.replace('class="sthing', 'class="sthing got')}
   ${change}
-  <div class="spurse"><span class="slabel">Your purse</span><div class="scoins">${tokensOf(S.purse).map((x) => `<span class="stoken">${tokenArt(x.k)}</span>`).join("") || "<small>Empty</small>"}</div><b class="stotal">${moneyAmt(wallet, billsOn())}</b></div>
+  <div class="spurse"><span class="slabel">${purseSvg()}Your purse</span><div class="scoins">${tokensOf(S.purse).map((x) => `<span class="stoken">${tokenArt(x.k)}</span>`).join("") || "<small>Empty</small>"}</div><b class="stotal">${moneyAmt(wallet, billsOn())}</b></div>
   <p class="snote">${t.kind === "item" ? (r.n > 1 ? "They're in your 🎒 items." : "It's in your 🎒 items.") : t.kind === "plush" ? plushWhose(t.id) : cloth ? "Put it on?" : "It's in your 👕 wardrobe."}</p>
   <div class="btns">${cloth ? `<button class="big alt" id="shopBack">Not now</button><button class="big" id="shopWear">👕 Put it on</button>` : `<button class="big" id="shopBack">Back to the shop</button>`}</div>`, "page shop");
   $("shopBack").onclick = toShop;
