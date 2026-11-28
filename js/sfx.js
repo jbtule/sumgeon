@@ -180,18 +180,36 @@ export function appear(boss) {
 
 // A boss's roar, every so often during the fight: a low, wobbling growl over a rumble, with a
 // little snarl on top. Spooky, not frightening.
-export function roar() {
+// roar(true) is Graphzilla's, the only regular monster's roar: a light one, about a third as
+// loud and shorter, a friendly kaiju clearing its throat, with no snarl on top.
+export function roar(light) {
+  var k = light ? 0.35 : 1, len = light ? 0.8 : 1.1;
   play(function (t) {
     var o = ctx.createOscillator(), g = ctx.createGain(), f = ctx.createBiquadFilter(), lfo = ctx.createOscillator(), depth = ctx.createGain();
     o.type = "sawtooth";
-    o.frequency.setValueAtTime(95, t); o.frequency.linearRampToValueAtTime(70, t + 0.35); o.frequency.exponentialRampToValueAtTime(48, t + 1.1);
-    lfo.frequency.value = 11; depth.gain.value = 0.45; lfo.connect(depth).connect(g.gain); // the growl's wobble
-    f.type = "lowpass"; f.frequency.setValueAtTime(900, t); f.frequency.exponentialRampToValueAtTime(260, t + 1.1);
-    g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(0.5, t + 0.12); g.gain.exponentialRampToValueAtTime(0.0001, t + 1.2);
+    o.frequency.setValueAtTime(light ? 120 : 95, t); o.frequency.linearRampToValueAtTime(light ? 92 : 70, t + 0.35); o.frequency.exponentialRampToValueAtTime(light ? 66 : 48, t + len);
+    lfo.frequency.value = light ? 8 : 11; depth.gain.value = 0.45 * k; lfo.connect(depth).connect(g.gain); // the growl's wobble
+    f.type = "lowpass"; f.frequency.setValueAtTime(light ? 700 : 900, t); f.frequency.exponentialRampToValueAtTime(260, t + len);
+    g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(0.5 * k, t + 0.12); g.gain.exponentialRampToValueAtTime(0.0001, t + len + 0.1);
     o.connect(f).connect(g).connect(out);
-    o.start(t); lfo.start(t); o.stop(t + 1.25); lfo.stop(t + 1.25);
-    noise(t, 0.9, 0.22, "lowpass", 220);
-    noise(t + 0.05, 0.35, 0.1, "bandpass", 1400);
+    o.start(t); lfo.start(t); o.stop(t + len + 0.15); lfo.stop(t + len + 0.15);
+    noise(t, len - 0.2, 0.22 * k, "lowpass", 220);
+    if (!light) noise(t + 0.05, 0.35, 0.1, "bandpass", 1400);
+  });
+}
+// Graphzilla's stomp (the chart kaiju): a deep foot hitting the ground, a sinking sub thud with a
+// crunch of gravel. stomp(true) is its arrival, heavy: two footfalls, the second bigger, and a
+// rumble after; stomp() is one lighter step, as each chart problem lands.
+export function stomp(heavy) {
+  play(function (t) {
+    function step(at, k) {
+      tone("sine", 95, 28, at, 0.45, 0.8 * k);
+      tone("triangle", 60, 30, at, 0.25, 0.25 * k);
+      noise(at, 0.22, 0.4 * k, "lowpass", 300);
+      noise(at + 0.01, 0.09, 0.12 * k, "bandpass", 1100); // the gravel
+    }
+    if (heavy) { step(t, 0.7); step(t + 0.42, 1); noise(t + 0.45, 0.9, 0.2, "lowpass", 160); }
+    else step(t, 0.45);
   });
 }
 

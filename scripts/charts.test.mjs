@@ -133,7 +133,9 @@ for (const [id, b] of Object.entries(strandOf)) {
 }
 const inGame = new Set(Object.values(strandOf).flatMap((b) => pool(b).map((f) => f.key)));
 assert.ok(facts.filter((f) => f.set === "med5" || f.set === "line5").every((f) => !inGame.has(f.key)), "5th grade's charts wait for the Pyramid");
-assert.equal(LOOKS.Graphzilla.length, 4);
+assert.equal(LOOKS.Graphzilla.length, 5);
+assert.ok(LOOKS.Graphzilla.some(([n, kit]) => n === "Graph-o-Tron" && kit.includes("visor") && kit.includes("antenna")) && LOOKS.Graphzilla.some(([, kit]) => kit.includes("skyline")), "a robot look and a skyline look");
+assert.equal(MON.find((m) => m.n === "Graphzilla").quip, "stomps back down into the depths.");
 assert.ok(LOOKS.Graphzilla.every(([, kit]) => !kit.some((k) => ["crown", "tophat", "nightcap", "bandana", "bow"].includes(k))), "its looks keep off its head, so no plate is hidden");
 for (const f of facts.slice(0, 60)) {
   const p = platesOf(f);

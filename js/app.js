@@ -8,7 +8,7 @@ import { chargeFor, chargedHit, chargeBadge, chargePop, problemScale, oneHit } f
 import { countSvg, readShape, judgeShape, cleanFor, isDrawKey, SHAPE_LINE, SHAPE_CODE, article } from "./shapes.js";
 import { hintFor, STRATEGIES } from "./hints.js";
 import { openStore, displayName, DUNGEON_VERSION, DUNGEON_KEYS, LEARNING_RESETS } from "./store.js";
-import { PHRASE, monsterName, monsterCleared, monsterWon, heroJoins, heroCursed, heroRescue, heroAlmost, heroHelps, traitLine, BARK, wingCleared, wingOpened, wingEnter, depthLine, DEPTH_MAX_SPOKEN, reversedLine, howToWriteLine, quipLine, squawk, trait2Line, newMonsterLine, chargeLine } from "./lines.js";
+import { PHRASE, monsterName, monsterArrives, isKaiju, monsterCleared, monsterWon, heroJoins, heroCursed, heroRescue, heroAlmost, heroHelps, traitLine, BARK, wingCleared, wingOpened, wingEnter, depthLine, DEPTH_MAX_SPOKEN, reversedLine, howToWriteLine, quipLine, squawk, trait2Line, newMonsterLine, chargeLine } from "./lines.js";
 import { WINGS, wingOf, runFloors, bossAt, cursedMonster, openWings, toOpen, floorStars, wingStars, depthScale, depthHP, deepest, MAP_DEPTHS, GRADES, gradeLabel, gradeName, withGrade, bandOf, gradeBand, OLD_BANDS, PATHS, chapterOf, stepsOpen, bossStage, isMega, BOSS_HP, MEGA_EVERY, megasOf, stepMonsters, legendDue, openLegend, beatLegend, legendBeaten, legendProgress, LEGEND_HP } from "./wings.js";
 import { missingOf, pickBlank, filled, spokenMissing, MISSING_SHARE, canHide } from "./missing.js";
 import { rectSvg } from "./third.js";
@@ -841,9 +841,14 @@ function voicePlan() {
 // Bosses roar every so often while you're working on a problem: a growl, and they rear up and
 // shake while the room flickers. Never during an attack, a card, a hint or the pause.
 let roarTimer = null;
+// Graphzilla, the chart kaiju, is the one regular monster that roars: rarer (every 25–40 s) and
+// quieter (sfx.roar(true)), a little rear-up and no flicker, and never while the player is typing
+// or drawing, a hint is open, or a problem has only just appeared (KAIJU_QUIET_MS).
+const KAIJU_QUIET_MS = 4000;
 function roarSoon() {
   clearTimeout(roarTimer);
   const m = G.floors && G.floors[G.floor];
+  if (m && !m.boss && isKaiju(m)) return kaijuRoarSoon(m);
   if (!m || !m.boss) return;
   roarTimer = setTimeout(() => {
     if (!G.running) return; // the run is over: no more roars until the next boss
@@ -853,6 +858,36 @@ function roarSoon() {
     }
     roarSoon();
   }, 9000 + Math.random() * 6000);
+}
+function kaijuRoarSoon(m) {
+  roarTimer = setTimeout(() => {
+    if (!G.running) return;
+    const typing = G.input !== "" || strokes.length || (G.slot && G.slot.vals.some((v) => v));
+    if (!G.busy && !G.next && !G.paused && !document.hidden && $("ov").hidden && $("hint").hidden && !typing && G.hp > 0 && G.floors[G.floor] === m && performance.now() - G.t0 > KAIJU_QUIET_MS) {
+      sfx.roar(true);
+      if (!reduced()) { restartAnim($("mon"), "gzroar"); setTimeout(() => $("mon").classList.remove("gzroar"), 900); }
+    }
+    roarSoon();
+  }, 25000 + Math.random() * 15000);
+}
+// Chart Stomp (Graphzilla, the chart kaiju): it arrives with two heavy footfalls (sfx.stomp(true))
+// and a small shake of the room (the crit's shake), and as each chart problem lands, one lighter
+// step and its back plates, now the chart's bars, flash in their colors (styles.css .gzflash).
+// The first problem's step is the arrival's (KAIJU_STEP_MS). With reduced motion, sound only.
+const KAIJU_STEP_MS = 1200;
+function kaijuArrives() {
+  G.kaijuAt = performance.now();
+  sfx.stomp(true);
+  if (reduced()) return;
+  setTimeout(() => restartAnim($("arena"), "shake"), 420); // on the second, bigger footfall
+  restartAnim($("mon"), "gzstomp"); setTimeout(() => $("mon").classList.remove("gzstomp"), 900);
+}
+function kaijuStomp(restored) {
+  const m = G.floors && G.floors[G.floor];
+  if (restored || !m || !isKaiju(m) || !G.cur || G.cur.op !== "▥") return;
+  if (!(performance.now() - (G.kaijuAt || 0) < KAIJU_STEP_MS)) sfx.stomp();
+  if (reduced()) return;
+  restartAnim($("mon"), "gzflash"); setTimeout(() => $("mon").classList.remove("gzflash"), 1100);
 }
 function loadMonster(i, quiet) {
   const m = G.floors[i];
@@ -898,7 +933,7 @@ function loadMonster(i, quiet) {
   fitName(m);
   if (quiet) return;
   meet(seen, m, Date.now()); store.player(PID).set("bestiary", seen);
-  sfx.appear(m.boss);
+  if (isKaiju(m)) kaijuArrives(); else sfx.appear(m.boss);
   // "A legend awaits!" as the Legend arrives (DESIGN.md §14.2), "Mega boss ahead!" as a mega boss
   // does (§4.3), else "Boss floor!".
   if (m.form === "legend") say("p", PHRASE.legendAwaits);
@@ -906,7 +941,8 @@ function loadMonster(i, quiet) {
   else if (m.boss) say("p", PHRASE.boss);
   // A cursed hero (the rescue floor) is announced with the quips' light echo (CURSED_FX), then who
   // you're freeing; a trait says what it does, the first times you meet it.
-  say("m", monsterName(m), false, null, m.cursed != null ? CURSED_FX : undefined);
+  // Graphzilla arrives as the chart kaiju: "Graphzilla, the chart kaiju, rises from the data!"
+  say("m", monsterArrives(m), false, null, m.cursed != null ? CURSED_FX : undefined);
   if (m.cursed != null) say("p", heroRescue(HEROES[m.cursed]), false, null, CURSED_FX);
   if (t && once("trait:" + t.name, 2)) say("p", traitLine(m));
   // Powering up on the two depths before a mega boss; a mega boss's second trait, the first times.
@@ -1055,6 +1091,7 @@ function presentProblem(key, flipped, restored, elapsed) {
   probUI();
   clockArt();
   jerseyArt();
+  kaijuStomp(restored);
   if (onChompers() && G.chomp !== G.chompFace) chompTurn(G.chompFace);
   if (flipped && !restored) judoThrow(G.cur);
   if (G.flash) flashHide(G.cur);
@@ -2326,7 +2363,7 @@ function redrawFight() {
   // Not while the room waits empty after the descent (start's pause): the run's first monster
   // isn't loaded yet, and drawing one there showed it early, with no nameplate or problem.
   if (!m || $("arena").classList.contains("empty")) return;
-  ["hit", "lunge", "roar", "throw", "squawk"].forEach((c) => el.classList.remove(c));
+  ["hit", "lunge", "roar", "throw", "squawk", "gzroar", "gzstomp", "gzflash"].forEach((c) => el.classList.remove(c));
   if (G.hp > 0 && !el.querySelector("svg")) el.innerHTML = monsterArt(m);
   $("arena").classList.remove("hurt", "shake", "rumble");
   hpUI(); heartsUI(); streakUI(); slotsUI();

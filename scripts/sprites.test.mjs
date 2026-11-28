@@ -2,7 +2,7 @@
 // (lines.js ALWAYS and runSprites) holds every line a run in that stratum can say.
 import assert from "node:assert/strict";
 import { existsSync, statSync } from "node:fs";
-import { spokenLines, spriteFor, familyOf, estSeconds, runSprites, ALWAYS, SPRITE_MAX_S, monsterName, monsterCleared, monsterWon, askLine } from "../js/lines.js";
+import { spokenLines, spriteFor, familyOf, estSeconds, runSprites, ALWAYS, SPRITE_MAX_S, monsterName, monsterArrives, monsterCleared, monsterWon, askLine } from "../js/lines.js";
 import { WINGS, runFloors, bandOf } from "../js/wings.js";
 import { BANDS, pool, factOf } from "../js/learn.js";
 import { spokenFact } from "../js/problems.js";
@@ -61,7 +61,7 @@ for (const w of WINGS) {
   // Its monsters, in every look a floor can wear, on any depth.
   for (let depth = 1; depth <= 8; depth++) for (let i = 0; i < 20; i++) {
     for (const m of runFloors(w, { captain: 0, rescued: [1, 2, 3, 4, 5, 6, 7, 8, 9] }, seeded, depth).concat(runFloors(w, { captain: 0, rescued: [] }, seeded, depth))) {
-      for (const t of [monsterName(m)]) needs(all, "m:" + t, w.id);
+      for (const t of [monsterName(m), monsterArrives(m)]) needs(all, "m:" + t, w.id);
       for (const t of [monsterCleared(m), monsterWon(m)]) needs(all, "p:" + t, w.id);
     }
   }

@@ -399,14 +399,21 @@ function denominator(c, eyes = EMBER) {
 }
 MON.push({n:'The Denominator',op:'mix',sym:'▭/▭',stratum:'forge',c:'#8e9aa6',hits:6,boss:1,quip:'clanks to pieces, every piece the same size.',d:(c)=>denominator(c)});
 // Graphzilla (reading charts, js/charts.js; in the game since batch 3, its trait in traits.js): a
-// friendly kaiju standing upright, its back plates a bar chart rising behind it, in the colors of the chart's
+// friendly kaiju ("the chart kaiju": it stomps in, and its plates flash as each chart lands, in app.js) standing upright, its back plates a bar chart rising behind it, in the colors of the chart's
 // things. The plates take the problem's data (m.plates, [{ v, c }], up to four; charts.js platesOf),
 // as Tick-Tockus's clock shows the time asked. A round body, a striped belly, a short tail, round feet.
 const GZ_PLATES = [{ v: 3, c: GOLD }, { v: 5, c: CORAL }, { v: 2, c: '#45d6e6' }, { v: 4, c: '#9a7bff' }];
 function graphzilla(c, plates) {
   const ps = (plates && plates.length ? plates : GZ_PLATES).slice(0, 4), most = Math.max(1, ...ps.map((p) => p.v));
   const x0 = 40, span = 120, slot = span / ps.length, w = Math.min(24, slot - 4), BASE = 110;
-  const bars = ps.map((p, i) => { const h = 40 + 58 * Math.max(0, p.v) / most; return solid(`<rect x="${f1(x0 + slot * i + (slot - w) / 2)}" y="${f1(BASE - h)}" width="${f1(w)}" height="${f1(h + 14)}" rx="5"/>`, p.c); }).join('');
+  // Each plate with a glow in its own color behind it (.gzg) and a white flash over it (.gzw), both
+  // unseen until Chart Stomp flashes them (styles.css .mon.gzflash, one plate after another).
+  const bars = ps.map((p, i) => {
+    const h = 40 + 58 * Math.max(0, p.v) / most, x = f1(x0 + slot * i + (slot - w) / 2), y = f1(BASE - h), H = f1(h + 14);
+    return `<g style="--gzd:${i * 70}ms"><rect class="gzg" x="${f1(x - 7)}" y="${f1(y - 7)}" width="${f1(w + 14)}" height="${f1(H + 7)}" rx="12" fill="${p.c}" opacity="0"/>`
+      + solid(`<rect x="${x}" y="${y}" width="${f1(w)}" height="${H}" rx="5"/>`, p.c)
+      + `<rect class="gzw" x="${x}" y="${y}" width="${f1(w)}" height="${H}" rx="5" fill="#fff" opacity="0"/></g>`;
+  }).join('');
   const BELLY = '#c8f0dc';
   return bars
   // A short tail, then the body and its striped belly.
@@ -424,7 +431,7 @@ function graphzilla(c, plates) {
 }
 MON.push(
  {n:'Graphzilla',op:'▥',sym:'📊',stratum:'hall, mines, tower, forge',c:'#2fa37a',hits:3,
-  quip:'stomps off to draw a bigger chart.',
+  quip:'stomps back down into the depths.',
   d:(c,m)=>graphzilla(c,m&&m.plates)});
 
 /* ---------- Chompers' jaws ----------
@@ -520,6 +527,14 @@ const KIT = {
   bowtie: (a) => { const [x, y] = a.neck; return `<path d="M${x} ${y} l-14 -8 l0 16 z M${x} ${y} l14 -8 l0 16 z" fill="#ff5a4e" ${st}/><circle cx="${x}" cy="${y}" r="4" fill="#ff5a4e" ${st}/>`; },
   // A football player's eye black: a dark stripe under each eye.
   eyeblack: (a) => a.eyes.map(([x, y, r]) => `<path d="M${x - r * .9} ${y + r + 4} H${x + r * .9}" stroke="${DK}" stroke-width="5.5" stroke-linecap="round"/>`).join(""),
+  // A robot's: a visor across the eyes with a glowing slit for each, and an antenna with a coral
+  // bulb and its signal (Graph-o-Tron).
+  visor: (a) => { const r = Math.max(...a.eyes.map((e) => e[2])), x0 = Math.min(...a.eyes.map((e) => e[0])) - r - 9, x1 = Math.max(...a.eyes.map((e) => e[0])) + r + 9, y = a.eyes.reduce((t, e) => t + e[1], 0) / a.eyes.length; return `<rect x="${x0}" y="${y - r - 4}" width="${x1 - x0}" height="${2 * r + 8}" rx="9" fill="#9fb6c9" ${st}/><rect x="${x0 + 5}" y="${y - r + 1}" width="${x1 - x0 - 10}" height="${2 * r - 2}" rx="6" fill="${DK}"/>` + a.eyes.map(([x, ey, er]) => `<rect x="${x - er + 1}" y="${ey - 3}" width="${2 * er - 2}" height="6" rx="3" fill="#45d6e6"/>`).join(""); },
+  antenna: (a) => { const [x, y] = a.top; return `<path d="M${x} ${y + 4} V${y - 22}" stroke="${DK}" stroke-width="8" stroke-linecap="round"/><path d="M${x} ${y + 4} V${y - 22}" stroke="#9fb6c9" stroke-width="3.5" stroke-linecap="round"/><circle cx="${x}" cy="${y - 27}" r="6.5" fill="#ff5a4e" ${st}/><path d="M${x - 12} ${y - 35} q-5 8 0 16 M${x + 12} ${y - 35} q5 8 0 16" stroke="#45d6e6" stroke-width="2.5" fill="none" stroke-linecap="round"/>`; },
+  // A tiny city of bar-chart buildings at its feet, in the charts' colors, with lit windows
+  // (Skyline Stomper): drawn on the ground on both sides, clear of the feet.
+  skyline: (a) => { const g = a.ground + 2, B = [[-8, 13, 26, "#9a7bff"], [7, 12, 40, "#ffc93c"], [21, 13, 20, "#45d6e6"], [36, 12, 31, "#ff5a4e"], [150, 12, 22, "#ffc93c"], [164, 13, 34, "#45d6e6"], [179, 12, 16, "#ff5a4e"], [193, 13, 28, "#9a7bff"]];
+    return B.map(([x, w, h, c]) => { let win = ""; for (let wy = g - h + 6; wy < g - 6; wy += 9) win += `<rect x="${x + 3}" y="${wy}" width="2.6" height="3.6" fill="#fff6c8"/><rect x="${x + w - 5.6}" y="${wy}" width="2.6" height="3.6" fill="#fff6c8"/>`; return `<rect x="${x}" y="${g - h}" width="${w}" height="${h}" rx="1.5" fill="${c}" ${st}/>${win}`; }).join("") + `<path d="M-10 ${g} H212" stroke="${DK}" stroke-width="3.5"/>`; },
   medal: (a) => { const [x, y] = a.neck; return `<path d="M${x - 8} ${y - 12} L${x} ${y + 2} L${x + 8} ${y - 12}" stroke="#ff5a4e" stroke-width="5" fill="none"/><circle cx="${x}" cy="${y + 8}" r="8" fill="#ffc93c" ${st}/>`; }
 };
 // The looks: [name, accessories, he/she]. "mini" draws the monster smaller. Names are anything
@@ -556,7 +571,9 @@ export const LOOKS = {
   // its looks keep to the face and neck (no hats to hide a plate), and the names are chart puns.
   // Measuring length: an inchworm's looks, named for its units (no yards).
   Rulerpillar: [["Inchling", ["mini"]], ["Sir Measures-a-Lot", ["tophat", "monocle"], "he"], ["Centi-Belle", ["bow", "lashes"], "she"], ["Snoozepillar", ["nightcap", "lids"]]],
-  Graphzilla: [["Tiny Tally", ["mini"]], ["Professor Plot", ["glasses", "bowtie"], "he"], ["Bar-oness Graphzilla", ["lashes", "blush", "medal"], "she"], ["Snoozilla", ["lids", "scarf"]]]
+  // Five, as the chart kaiju: a robot (Graph-o-Tron, a visor and an antenna in a gap between the
+  // plates) and one stomping a tiny bar-chart city (Skyline Stomper).
+  Graphzilla: [["Tiny Tally", ["mini"]], ["Graph-o-Tron", ["visor", "antenna"]], ["Bar-oness Graphzilla", ["lashes", "blush", "medal"], "she"], ["Snoozilla", ["lids", "scarf"]], ["Skyline Stomper", ["skyline"]]]
 };
 // A monster in look i (0 is itself): the same monster, renamed, with its base name kept for its
 // trait and kind of math.
