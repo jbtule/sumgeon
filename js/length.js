@@ -8,7 +8,7 @@
 //   two things compared with a string (indirectly); how many cubes or paper clips long, laid end
 //   to end; and were they laid the right way (no gaps, no overlaps, from the end)? (Yes/No).
 // - 2nd (2.GM.B.4–7, 2.GM.C.8–9; the first two priority standards): a ruler in inches or
-//   centimeters, a tape in feet, yards or meters, from 0 and (inches and centimeters) not from 0;
+//   centimeters, a tape in feet or meters, from 0 and (inches and centimeters) not from 0;
 //   more or fewer of a smaller unit; estimating with one unit shown; how much longer; adding and
 //   subtracting lengths as a bar, the number line as the hint.
 // - 3rd: nothing for now. The half and quarter inch (the Common Core's 3.MD.B.4; the school's 3rd
@@ -32,7 +32,7 @@ export const LENGTH_LEVELS = [
   { id: "gaps", name: "Measured the right way?", grade: "1st", stratum: "hall" },
   { id: "inches", name: "Inches on a ruler", grade: "2nd", stratum: "mines" },
   { id: "cm", name: "Centimeters on a ruler", grade: "2nd", stratum: "mines" },
-  { id: "big", name: "Feet, yards and meters", grade: "2nd", stratum: "mines" },
+  { id: "big", name: "Feet and meters", grade: "2nd", stratum: "mines" },
   { id: "from", name: "Not from 0", grade: "2nd", stratum: "mines" },
   { id: "which", name: "More or fewer units?", grade: "2nd", stratum: "mines" },
   { id: "estimate", name: "About how long?", grade: "2nd", stratum: "mines" },
@@ -54,9 +54,9 @@ export const UNITS = {
 // How big each unit is, in inches, for "more or fewer?".
 const SIZE = { cm: 0.3937, in: 1, ft: 12, m: 39.37 };
 export const unitWord = (u, n) => (n === 1 ? UNITS[u].one : UNITS[u].many);
-// The things measured. Small ones for rulers and cubes; big ones for feet, yards and meters.
+// The things measured. Small ones for rulers and cubes; big ones for feet and meters.
 export const SMALL = ["pencil", "crayon", "toothbrush", "ribbon", "snake", "marker"];
-export const BIG = ["rope", "bench", "rug", "snake"];
+export const BIG = ["sword", "bench", "ladder", "snake"];
 // Thin sticks with a tip: drawn as unlike as can be, but never shown two together.
 export const STICKS = ["pencil", "crayon", "marker"];
 const OTHERS = SMALL.filter((n) => !STICKS.includes(n));
@@ -77,7 +77,7 @@ const sheen = (x, y, w, h, r = 4) => `<rect x="${f1(x)}" y="${f1(y)}" width="${f
 // paper wrapper with zigzag edges, a stepped tip; the marker uncapped, its blue cap posted on the
 // back, a big blue label and a blue felt tip; the toothbrush pink, its bristles standing up; the
 // ribbon wavy, forked at both ends; the
-// snake a face with a forked tongue; the rope twisted; the rug fringed; the bench on legs.
+// snake a face with a forked tongue; the sword with its crossguard; the ladder with its rungs; the bench on legs.
 export function thing(name, x0, x1, y, h = 20) {
   const w = x1 - x0, t = y - h / 2, o = `stroke="${DK}" stroke-width="3" stroke-linejoin="round"`;
   const P = (pts) => pts.map(([a, b], i) => `${i ? "L" : "M"}${f1(a)} ${f1(b)}`).join(" ") + " Z";
@@ -147,23 +147,28 @@ export function thing(name, x0, x1, y, h = 20) {
       + `<ellipse cx="${f1(hx)}" cy="${f1(y)}" rx="${f1(head / 2)}" ry="${f1(h / 2)}" fill="#4fcf72" ${o}/>`
       + `<circle cx="${f1(hx + head * 0.05)}" cy="${f1(y - h * 0.17)}" r="${f1(h * 0.19)}" fill="#fff" stroke="${DK}" stroke-width="2"/><circle cx="${f1(hx + head * 0.11)}" cy="${f1(y - h * 0.17)}" r="${f1(h * 0.09)}" fill="${DK}"/>`
       + `<path d="M${f1(hx - head * 0.05)} ${f1(y + h * 0.2)} Q${f1(hx + head * 0.2)} ${f1(y + h * 0.32)} ${f1(x1 - head * 0.12)} ${f1(y + h * 0.12)}" fill="none" stroke="${DK}" stroke-width="2" stroke-linecap="round"/>`;
-  } else if (name === "rope") {
-    // Twisted: slanted strands, light and dark in turn.
-    const hh = h * 0.7, tt = y - hh / 2, n = Math.max(1, Math.floor((w - 8) / 7));
-    s = `<rect x="${f1(x0 + 1.5)}" y="${f1(tt)}" width="${f1(w - 3)}" height="${f1(hh)}" rx="${f1(hh / 2)}" fill="#d9a35f" ${o}/>`
-      + Array.from({ length: n }, (_, i) => `<path d="M${f1(x0 + 5 + i * 7)} ${f1(tt + hh - 2)} Q${f1(x0 + 8 + i * 7)} ${f1(y)} ${f1(x0 + 11 + i * 7)} ${f1(tt + 2)}" fill="none" stroke="${i % 2 ? "#f3cf96" : "#8f5d24"}" stroke-width="2.6" stroke-linecap="round"/>`).join("")
-      + `<rect x="${f1(x0 + 1.5)}" y="${f1(tt)}" width="${f1(w - 3)}" height="${f1(hh)}" rx="${f1(hh / 2)}" fill="none" ${o}/>`;
-  } else if (name === "bench") {
+  } else if (name === "sword") {
+    // A sword lying flat: a round pommel at the back, a wrapped grip, a gold crossguard, and a
+    // silver blade to its point at the front.
+    const pr = Math.min(h * 0.3, w * 0.07), grip = Math.min(w * 0.16, 22), gx = x0 + 2 * pr + grip, tip = Math.min(16, w * 0.16), bh = h * 0.5;
+    s = `<path d="${P([[gx, y - bh / 2], [x1 - tip, y - bh / 2], [x1 - 1.5, y], [x1 - tip, y + bh / 2], [gx, y + bh / 2]])}" fill="#dfe8ec" ${o}/>`
+      + `<path d="M${f1(gx + 4)} ${f1(y)} H${f1(x1 - tip - 2)}" stroke="#9aaab0" stroke-width="2" stroke-linecap="round"/>`
+      + `<path d="M${f1(gx + 4)} ${f1(y - bh / 2 + 2.5)} H${f1(x1 - tip - 4)}" stroke="#fff" stroke-width="2" stroke-linecap="round" opacity=".7"/>`
+      + `<rect x="${f1(x0 + 2 * pr - 1)}" y="${f1(y - h * 0.2)}" width="${f1(grip + 2)}" height="${f1(h * 0.4)}" rx="2" fill="#8a4b22" ${o}/>`
+      + `<path d="${Array.from({ length: Math.max(1, Math.floor(grip / 5)) }, (_, k) => `M${f1(x0 + 2 * pr + 3 + k * 5)} ${f1(y - h * 0.18)} l3 ${f1(h * 0.36)}`).join(" ")}" stroke="#5c2f12" stroke-width="1.6"/>`
+      + `<rect x="${f1(gx - 3)}" y="${f1(y - h * 0.8)}" width="7" height="${f1(h * 1.6)}" rx="3" fill="${GOLD}" ${o}/>`
+      + `<circle cx="${f1(x0 + 1.5 + pr)}" cy="${f1(y)}" r="${f1(pr)}" fill="${GOLD}" ${o}/>`;
+  } else if (name === "ladder") {
+    // A ladder lying flat, seen from above: two wooden rails, end to end, and its rungs.
+    const hh = h * 1.4, ra = y - hh / 2, rb = y + hh / 2, n = Math.max(2, Math.round((w - 10) / 22));
+    const rungs = Array.from({ length: n }, (_, k) => x0 + 7 + (k * (w - 14)) / (n - 1));
+    s = rungs.map((x) => `<rect x="${f1(x - 2.5)}" y="${f1(ra)}" width="5" height="${f1(hh)}" rx="1.5" fill="#c98a4a" ${o} stroke-width="2"/>`).join("")
+      + [ra, rb].map((ry) => `<rect x="${f1(x0 + 1.5)}" y="${f1(ry - 3.5)}" width="${f1(w - 3)}" height="7" rx="3" fill="#a8672f" ${o}/>`).join("")
+      + `<path d="M${f1(x0 + 4)} ${f1(ra - 1.5)} H${f1(x1 - 4)} M${f1(x0 + 4)} ${f1(rb - 1.5)} H${f1(x1 - 4)}" stroke="#e2ad74" stroke-width="1.6" stroke-linecap="round"/>`;
+  } else {
+    // bench: a seat on two legs.
     s = `<path d="M${f1(x0 + w * 0.12)} ${f1(t + 8)} v${f1(h - 6)} M${f1(x1 - w * 0.12)} ${f1(t + 8)} v${f1(h - 6)}" stroke="${DK}" stroke-width="7" stroke-linecap="round"/><path d="M${f1(x0 + w * 0.12)} ${f1(t + 8)} v${f1(h - 6)} M${f1(x1 - w * 0.12)} ${f1(t + 8)} v${f1(h - 6)}" stroke="#9c6a2c" stroke-width="3" stroke-linecap="round"/>`
       + `<rect x="${f1(x0 + 1.5)}" y="${f1(t)}" width="${f1(w - 3)}" height="10" rx="3" fill="#c98a4a" ${o}/>` + sheen(x0 + 3, t + 1, w - 6, 8, 2);
-  } else {
-    // rug: red, a gold border, and fringe at both ends (part of its length).
-    const fr = 6, r0 = x0 + fr, r1 = x1 - fr;
-    const fringe = (xa) => Array.from({ length: 5 }, (_, k) => `M${f1(xa)} ${f1(t + 3 + (k * (h - 6)) / 4)} h${fr}`).join(" ");
-    s = `<path d="${fringe(x0 + 0.5)} ${fringe(r1 - 0.5)}" stroke="#f3d9a0" stroke-width="2" stroke-linecap="round"/>`
-      + `<rect x="${f1(r0)}" y="${f1(t)}" width="${f1(r1 - r0)}" height="${h}" rx="2" fill="#e04a5f" ${o}/>`
-      + `<rect x="${f1(r0 + 4)}" y="${f1(t + 4)}" width="${f1(Math.max(0, r1 - r0 - 8))}" height="${h - 8}" fill="none" stroke="${GOLD}" stroke-width="2"/>`
-      + `<path d="${Array.from({ length: Math.max(0, Math.floor((r1 - r0 - 16) / 14)) }, (_, i) => { const cx = r0 + 15 + i * 14; return `M${f1(cx - 4)} ${f1(y)} L${f1(cx)} ${f1(y - 4)} L${f1(cx + 4)} ${f1(y)} L${f1(cx)} ${f1(y + 4)} Z`; }).join(" ")}" fill="${GOLD}"/>`;
   }
   return `<g class="obj" data-name="${name}" data-x0="${f1(x0)}" data-x1="${f1(x1)}">${s}</g>`;
 }
@@ -368,7 +373,7 @@ export function spokenLength(p) {
     case "diff": return `How much longer is the ${a.len > b.len ? a.name : b.name} than the ${a.len > b.len ? b.name : a.name}?`;
     case "addsub": return p.sign === "+"
       ? `One ribbon is ${unitSaid(p.unit, p.a)}. Another is ${unitSaid(p.unit, p.b)}. End to end, how long are they?`
-      : `A rope is ${unitSaid(p.unit, p.a)} long. ${cap(unitSaid(p.unit, p.b))} is cut off. How long is the rest?`;
+      : `A ribbon is ${unitSaid(p.unit, p.a)} long. ${cap(unitSaid(p.unit, p.b))} is cut off. How long is the rest?`;
   }
   return "";
 }
@@ -458,7 +463,7 @@ export function lengthLine(p) {
 // - "ℓi:pencil7,crayon4,5": the pencil and the crayon, each against a string 5 long.
 // - "ℓu:cube,pencil7", "ℓu:clip,toothbrush5": how many cubes (paper clips) long?
 // - "ℓg:clip,pencil5,gap1": laid right? ok, gap (after the 2nd), overlap1, start.
-// - "ℓin:pencil7", "ℓcm:toothbrush12", "ℓft:rope6", "ℓm:rope4": on a ruler or tape from 0;
+// - "ℓin:pencil7", "ℓcm:toothbrush12", "ℓft:sword6", "ℓm:ladder4": on a ruler or tape from 0;
 //   "ℓin:pencil2-7": from 2 to 7.
 // - "ℓw:in>cm:pencil4": 4 inches long; in centimeters, more or fewer?
 // - "ℓe:in:pencil6": about how many inches? (one inch shown)
@@ -509,7 +514,7 @@ export function lengthFacts() {
       out.push(fact("gaps", "gaps", { unit, name, len, count, flaw, at, ans: flaw === "ok" ? "Y" : "N" }, `g:${unit},${name}${len},${flaw}${at != null ? at : ""}`));
     }
   });
-  // Rulers from 0: inches 1–10, centimeters 2–15; tapes: feet 2–9, yards 1–4, meters 1–5.
+  // Rulers from 0: inches 1–10, centimeters 2–15; tapes: feet 2–9, meters 1–5.
   const ruled = (set, unit, lens, names) => lens.forEach((n, i) => { const name = names[i % names.length]; out.push(fact(set, "ruler", { unit, name, start: 0, len: n, ans: n }, `${unit}:${name}${n}`)); });
   ruled("inches", "in", [1, 2, 3, 4, 5, 6, 7, 8, 9, 10], SMALL);
   ruled("cm", "cm", [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15], SMALL.slice(1).concat(SMALL[0]));
