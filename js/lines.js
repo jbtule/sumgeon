@@ -161,7 +161,7 @@ var SAY_AS = [[/\bTwodini\b/g, "Toodini"], [/\bJr\./g, "Junior"], [/\bMr\./g, "M
   // Graphzilla's look Bar-oness Graphzilla is a bar chart pun, written with its hyphen and said as
   // the plain word.
   [/\bBar-oness\b/g, "Baroness"]];
-function sayAs(t) { return SAY_AS.reduce(function (s, r) { return s.replace(r[0], r[1]); }, t); }
+export function sayAs(t) { return SAY_AS.reduce(function (s, r) { return s.replace(r[0], r[1]); }, t); }
 // A Hero Moment's quip (moments.js), as the voice says it.
 export function quipLine(q) { return sayAs(q); }
 export function monsterName(m) { return sayAs(m.n + "!"); }
@@ -398,8 +398,8 @@ export function affordLine(n) { return "You have enough coins for " + spoken(n) 
 // Change from Trollar: "Here's ten cents back!" (always under a dollar: shop.js pay).
 export function changeLine(c) { return "Here's " + cents(c) + " back!"; }
 // An achievement card's line k (achievements.js cardLines): "New achievement!", its title, what it
-// took and its reward.
-export function achievementLine(a, k) { return cardLines(a)[k]; }
+// took and its reward, as the voice says it (a hero's name through SAY_AS: "Quip Fan: Toodini!").
+export function achievementLine(a, k) { return sayAs(cardLines(a)[k]); }
 
 // [{ kind, text }], each once.
 // The groups the listen check (review/listen/) plays lines in.
@@ -555,7 +555,7 @@ export function spokenLines() {
   PLUSHIES.forEach(function (p) { add("p", plushName(p.id), "Plushies", "loot"); add("p", plushFavLine(p.id), "Plushies", "loot"); });
   // Achievement cards (achievements.js, DESIGN.md §14): "New achievement!", each one's title,
   // what it took and its reward, in their own sprite, "achievements".
-  achievementLines().forEach(function (t) { add("p", t, "Achievements", "achievements"); });
+  achievementLines().forEach(function (t) { add("p", sayAs(t), "Achievements", "achievements"); });
   var seen = {};
   return packSprites(out.filter(function (l) { var k = l.kind + ":" + l.text; if (seen[k]) return false; seen[k] = true; return true; }));
 }

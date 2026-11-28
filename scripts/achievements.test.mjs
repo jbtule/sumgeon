@@ -9,7 +9,7 @@ import { pool, BANDS } from "../js/learn.js";
 import { WINGS, PATHS, legendFacts } from "../js/wings.js";
 import { clothesById, CLOTHES } from "../js/clothes.js";
 import { ITEMS } from "../js/loot.js";
-import { spokenLines as allLines, spriteFor, ALWAYS } from "../js/lines.js";
+import { spokenLines as allLines, spriteFor, ALWAYS, sayAs, achievementLine } from "../js/lines.js";
 
 const top = (keys) => Object.fromEntries(keys.map((k) => [k, { b: 4, n: 6, c: 6, ms: 2000, t: 1 }]));
 const ids = new Set(ACHIEVEMENT_IDS);
@@ -173,8 +173,8 @@ assert.deepEqual(award({ wallet: 100 }, {}, 1).map((a) => a.id), ["surprise:pigg
 assert.equal(quipHero({ moments: { heard: { 7: QUIPS[7].slice(0, 2) } } }), null);
 const allSeven = { moments: { heard: { 7: QUIPS[7].slice() } } };
 assert.equal(quipHero(allSeven), 7);
-assert.deepEqual(award(allSeven, {}, 1).map((a) => a.id), ["surprise:quips"]);
-assert.deepEqual(catalog(allSeven).find((a) => a.id === "surprise:quips").figure, { hero: 7 });
+assert.deepEqual(award(allSeven, {}, 1).map((a) => a.id), ["surprise:quips", "surprise:quips@7"], "Quip Fan, and Sevenstein's");
+assert.deepEqual(catalog(allSeven).find((a) => a.id === "surprise:quips@7").figure, { hero: 7 });
 // The holidays, Sound Box's dates: Thanksgiving weekend (2026: Thursday Nov 26 to Sunday Nov 29),
 // winter break, summer.
 assert.deepEqual(holidaysOn(new Date(2026, 10, 25)), []);
@@ -204,7 +204,7 @@ const words = (t) => t.split(/\s+/).length;
 const recorded = new Map(allLines().map((l) => [l.text, l]));
 for (const t of spokenLines()) {
   assert.ok(words(t) <= 12, `too long to say to a kindergartner: ${t}`);
-  const l = recorded.get(t);
+  const l = recorded.get(sayAs(t)); // as the voice says it (a hero's name through SAY_AS)
   assert.ok(l && l.group === "Achievements" && spriteFor(l) === "achievements", `${t} isn't recorded with the achievements`);
 }
 assert.ok(ALWAYS.includes("achievements"));
@@ -240,6 +240,82 @@ console.log(`✓ achievements (${ACHIEVEMENT_IDS.length})`);
   const e1 = c1.find((a) => a.id === "surprise:allquips");
   assert.ok(!e1.met && e1.started && e1.have === 1 && /1 of 10/.test(e1.progress), JSON.stringify(e1));
   assert.ok(c10.find((a) => a.id === "surprise:allquips").met);
+  assert.equal(rewardOf("surprise:allquips").items.magnet, 1, "Every Quip unchanged");
+}
+
+// Quip Fan once for each hero (§14.5): "surprise:quips@2", earned when all that hero's quips are
+// heard, paying Quip Fan's reward again; the whole is earned with the first hero.
+{
+  const { QUIPS } = await import("../js/moments.js");
+  const { HEROES } = await import("../js/heroes.js");
+  const { HERO_SURPRISES, forHero, surpriseOf, placeOldQuips, paysFor, CARD_IDS } = await import("../js/achievements.js");
+  assert.deepEqual(HERO_SURPRISES, ["surprise:quips"]);
+  // Every hero has its copy: its name in the title, shown and said (through SAY_AS), and the reward.
+  for (const d of Object.keys(QUIPS).map(Number)) {
+    const id = forHero("surprise:quips", d), a = achievementOf(id), n = HEROES[d].n;
+    assert.ok(a && ids.has(id), id);
+    assert.deepEqual(surpriseOf(id), { id: "surprise:quips", hero: d });
+    assert.equal(a.title, `Quip Fan: ${n}`);
+    assert.deepEqual(rewardOf(id), rewardOf("surprise:quips"), "pays Quip Fan's reward again");
+    assert.deepEqual(rewardOf(id), { cents: 0, items: { magnet: 1 }, piece: null }, "items only");
+    assert.ok(CARD_IDS.includes(id));
+  }
+  assert.ok(!CARD_IDS.includes("surprise:quips"), "the whole has no card of its own");
+  const two = catalog({}).find((a) => a.id === "surprise:quips@2");
+  assert.deepEqual({ name: two.name, where: two.where, hero: two.hero, of: two.of, figure: two.figure, secret: two.secret },
+    { name: "Quip Fan", where: "Twodini", hero: 2, of: "surprise:quips", figure: { hero: 2 }, secret: true });
+  assert.deepEqual(cardLines(two), ["Secret achievement!", "Quip Fan: Twodini!", "You heard every one of Twodini's quips!", "You got a Hero Magnet!"]);
+  assert.deepEqual(cardLines(two).map((_, k) => achievementLine(two, k)), ["Secret achievement!", "Quip Fan: Toodini!", "You heard every one of Toodini's quips!", "You got a Hero Magnet!"], "said Toodini");
+  assert.equal(achievementLine(catalog({}).find((a) => a.id === "surprise:quips@9"), 1), "Quip Fan: Nineja!");
+
+  // Earning: each hero as its quips are all heard; the whole with the first.
+  const heard = { 2: QUIPS[2].slice(), 5: QUIPS[5].slice(0, -1) }, earned = {};
+  const st = { moments: { heard }, ach: { earned } };
+  assert.deepEqual(award(st, earned, 10).map((a) => a.id), ["surprise:quips", "surprise:quips@2"]);
+  assert.deepEqual(paysFor(["surprise:quips", "surprise:quips@2"]), ["surprise:quips@2"], "paid once, by the hero's copy");
+  heard[5] = QUIPS[5].slice(); // High Five's last quip heard
+  assert.deepEqual(award(st, earned, 20).map((a) => a.id), ["surprise:quips@5"]);
+  assert.deepEqual(award(st, earned, 30), [], "once each");
+  assert.deepEqual(rewardsOf(Object.keys(earned)).items, { magnet: 2 });
+  assert.deepEqual(rewardsOf(["surprise:quips"]).items, { magnet: 1 }, "an old save");
+  // The 🏆 card: a page per hero, a count, the earned ones' times.
+  const q = catalog(st).find((a) => a.id === "surprise:quips");
+  assert.ok(q.met && q.unit === "heroes" && q.pages.length === 10);
+  assert.deepEqual(q.pages.filter((p) => p.at).map((p) => [p.hero, p.at]), [[2, 10], [5, 20]]);
+  assert.deepEqual(q.pages.map((p) => p.name), Object.keys(QUIPS).map((d) => HEROES[d].n));
+  assert.equal(q.progress, "2 of 10 heroes");
+  assert.deepEqual(unseen({ earned, seen: [] }), ["surprise:quips@2", "surprise:quips@5"]);
+  // Every Quip is still all ten.
+  assert.ok(!catalog(st).find((a) => a.id === "surprise:allquips").met);
+
+  // An old save (Quip Fan before heroes were counted) goes on the hero whose quips are all heard,
+  // the first by digit, keeping its time and whether it was seen, once; then awarding pays nothing
+  // for that hero, only for others.
+  const both = { moments: { heard: { 3: QUIPS[3].slice(), 7: QUIPS[7].slice() } } };
+  const old = freshAchievements({ earned: { "surprise:quips": 5, "surprise:piggy": 6 }, seen: ["surprise:quips"] });
+  assert.ok(placeOldQuips(old, both, 9));
+  assert.equal(old.earned["surprise:quips@3"], 5);
+  assert.ok(old.seen.includes("surprise:quips@3"), "seen if the old one was");
+  assert.ok(!placeOldQuips(old, both, 9), "once only");
+  const got = award(Object.assign({}, both, { ach: old }), old.earned, 50).map((a) => a.id);
+  assert.deepEqual(got, ["surprise:quips@7"], "Sevenstein's is new; Threasure Hunter's was the old one");
+  assert.deepEqual(rewardsOf(Object.keys(old.earned)).items, { magnet: 2, shield: 1 });
+  assert.deepEqual(unseen(old), ["surprise:piggy", "surprise:quips@7"].sort((x, y) => CARD_IDS.indexOf(x) - CARD_IDS.indexOf(y)));
+  assert.deepEqual(freshAchievements(JSON.parse(JSON.stringify(old))).earned, old.earned, "saved and loaded, kept");
+  // No hero complete now (quips added since): the captain; no captain: Zeroic. Not seen: its card plays.
+  const none = { moments: { heard: { 4: QUIPS[4].slice(0, 1) } } };
+  const old2 = freshAchievements({ earned: { "surprise:quips": 7 } });
+  placeOldQuips(old2, none, 4);
+  assert.equal(old2.earned["surprise:quips@4"], 7);
+  assert.deepEqual(unseen(old2), ["surprise:quips@4"]);
+  const old3 = freshAchievements({ earned: { "surprise:quips": 7 } });
+  placeOldQuips(old3, none, null);
+  assert.equal(old3.earned["surprise:quips@0"], 7);
+  // One already on a hero (a sync from an updated device) is left alone; a save without it too.
+  const old4 = freshAchievements({ earned: { "surprise:quips": 7, "surprise:quips@6": 8 } });
+  assert.ok(!placeOldQuips(old4, both, 2));
+  assert.ok(!placeOldQuips(freshAchievements({ earned: {} }), both, 2));
+  console.log("✓ Quip Fan per hero");
 }
 
 // The stratum secrets (§14.5): the surprises seen in play, once in each stratum.
@@ -282,10 +358,10 @@ console.log(`✓ achievements (${ACHIEVEMENT_IDS.length})`);
   assert.equal(noteEvent(e, "surprise:exact", 70, "hall"), "surprise:exact", "Exact Change is one achievement: the shop is on the surface");
   // The catalog: the surprise with each stratum, and a count.
   const z = catalog({ ach: { earned: e } }).find((a) => a.id === "surprise:zero");
-  assert.ok(z.met && z.strata.length === WINGS.length);
-  assert.deepEqual(z.strata.filter((x) => x.at).map((x) => x.wing), ["hall", "tower"]);
+  assert.ok(z.met && z.pages.length === WINGS.length && z.unit === "strata");
+  assert.deepEqual(z.pages.filter((x) => x.at).map((x) => x.wing), ["hall", "tower"]);
   assert.equal(z.progress, `2 of ${WINGS.length} strata`);
-  assert.deepEqual(z.strata.map((x) => x.name), WINGS.map((w) => w.name.replace(/^The /, "")));
+  assert.deepEqual(z.pages.map((x) => x.name), WINGS.map((w) => w.name.replace(/^The /, "")));
   // Cards: each stratum's copy, never the surprise as a whole.
   assert.ok(!CARD_IDS.includes("surprise:zero") && CARD_IDS.includes("surprise:zero@hall"));
   assert.deepEqual(unseen({ earned: e, seen: [] }), ["surprise:zero@hall", "surprise:zero@tower", "surprise:lastheart@cellar", "holiday:winter", "surprise:exact"].sort((x, y) => CARD_IDS.indexOf(x) - CARD_IDS.indexOf(y)));

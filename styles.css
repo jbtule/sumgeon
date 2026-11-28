@@ -779,6 +779,12 @@ button.as-pg{cursor:pointer}
 .as-pg.secret .as-name{color:var(--ink)}
 .as-pg .as-ico{grid-area:ico;width:48px;font-size:34px;line-height:48px;text-align:center;filter:drop-shadow(0 2px 0 #0008)}
 .as-pg.secret .as-ico{width:44px;height:44px;font:400 26px/40px Bungee,sans-serif;color:var(--muted);border:2px dashed var(--muted);border-radius:50%;filter:none}
+/* A hero's page (Quip Fan, one for each hero): the hero drawn in its own colors, the page tinted
+   with its color (--hero, set on the page). */
+.as-pg.hero{background:radial-gradient(circle at 34px 50%,color-mix(in srgb,var(--hero) 34%,transparent),transparent 70px),linear-gradient(90deg,#0c171cd6,#0c171ca6),var(--panel)}
+.as-pg.hero.secret{border-color:color-mix(in srgb,var(--hero) 55%,var(--edge))}
+.as-pg .as-hero{display:block;width:52px;height:52px;line-height:0}
+.as-pg .as-hero svg{width:100%;height:100%;display:block}
 .as-pg small{grid-area:when;align-self:start;color:var(--muted);font-weight:800;font-size:13px}
 .as-pg.earned small{color:#f3efe4}
 .as-nav{display:flex;align-items:center;justify-content:center;gap:6px}

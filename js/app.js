@@ -50,7 +50,7 @@ import { syncPlayer, remoteVersion, SYNC_URL } from "./sync.js";
 import { SYNCED_KEYS, canon, pack, unpack } from "./merge.js";
 import { linkQR } from "./linkqr.js";
 import { award as awardAchievements, catalog as achCatalog, freshAchievements, unseen as unseenAchievements, rewardOf, achievementOf, cardLines,
-  isComeback, notePracticeDay, holidaysOn, hitSurprises, noteEvent, keepDays, dayNumber, placeOldSurprises, CARD_IDS } from "./achievements.js";
+  isComeback, notePracticeDay, holidaysOn, hitSurprises, noteEvent, keepDays, dayNumber, placeOldSurprises, placeOldQuips, paysFor, CARD_IDS } from "./achievements.js";
 import { renderCard, shareCard } from "./sharecard.js";
 import { installWay, isIPad, safariVersion, iosSteps, ICONS as INSTALL_ICONS } from "./install.js";
 import { achievementLine } from "./lines.js";
@@ -183,6 +183,10 @@ function loadPlayer() {
   const had = ach.days.length;
   ach.days = keepDays(ach.days, Object.values(recs).map((f) => (f && f.t > 0 ? dayNumber(f.t) : 0)));
   if (ach.days.length !== had) saveAch();
+  // Quip Fan from before it was earned once for each hero (DESIGN.md §14.5) goes on the hero whose
+  // quips are all heard (else the captain), keeping its time and whether its card was seen. Done
+  // before awarding, so that hero's copy isn't newly earned and paid again.
+  if (placeOldQuips(ach, achState(), team.captain)) saveAch();
   checkAchievements();
   // A captain picked before heroes could change stays on the team.
   if (team.captain != null && !team.rescued.includes(team.captain)) { team.rescued.push(team.captain); saveTeam(); }
@@ -228,7 +232,8 @@ function checkAchievements() {
 }
 function payAchievements(ids) {
   if (!ids.length) return;
-  for (const id of ids) {
+  // A stratum or hero secret as a whole is earned with its copy, which pays (achievements.js paysFor).
+  for (const id of paysFor(ids)) {
     const r = rewardOf(id);
     wallet += r.cents;
     for (const [k, n] of Object.entries(r.items)) gain(inv, k, n);
@@ -1279,7 +1284,7 @@ function momentFor(typed, critStart, bossFinish) {
   // moment; it waits for one.
   const mo = decideMoment(MS, MR, { typed, team, hinted: G.hinted, spell: sp, first, floor: G.floor, n: G.tries, bossFinish, critStart, always: MOMENTS_ALWAYS || !!G.fx.magnet, teamup: TEAMUP_ALWAYS });
   if (magnetSpent(G.fx, mo)) slotsUI();
-  if (mo) store.player(PID).set("moments", MS);
+  if (mo) { store.player(PID).set("moments", MS); checkAchievements(); } // a hero's last quip heard: Quip Fan
   return mo;
 }
 // Plays it: the hero (or a team-up's two) takes the slow-motion turn, and the answer's other
@@ -3215,7 +3220,7 @@ function achievementCards(ids, i, from) {
   // Every card is drawn like its share picture: a wall darkened behind (its stratum's, or the one
   // being played; the grand ones purple to slate), a warm glow, a gold frame, and who's involved
   // standing on a shadow: the stratum's boss (all four for the grand ones) and the captain wearing
-  // a piece won; otherwise the captain, or Sevenstein, Trollar, the hero of Every Quip. The items
+  // a piece won; otherwise the captain, or Sevenstein, Trollar, the hero of a Quip Fan. The items
   // and coins won stand in a row under them.
   const figs = figuresOf(a), wall = cardWall(a);
   // The reward shows when it's earned; looked at again from the 🏆 sheet, it's the achievement and
@@ -3259,7 +3264,7 @@ function trophyPage() {
   for (const a of list) if (a.kind === "track" && !earnedAt(a.id) && !(a.track in nextTier)) nextTier[a.track] = a;
   const bar = (a) => `<span class="ach-bar" aria-hidden="true"><i style="width:${Math.round(a.share * 100)}%"></i></span>`;
   const row = (a) => {
-    if (a.strata) return strataCard(a);
+    if (a.pages) return pagesCard(a);
     const t = earnedAt(a.id);
     if (t) return `<button type="button" class="ach-row earned${isNewAch(a.id) ? " new" : ""}${isBig(a) ? " top" : ""}" data-ach="${a.id}">
       <span class="ach-ico" aria-hidden="true">${a.icon}</span><span class="ach-txt"><b>${esc(a.title)}${isNewAch(a.id) ? ' <i class="new-pill">New!</i>' : ""}</b><small>${esc(a.detail)}</small><small class="ach-when">Earned ${date(t)}</small><small class="ach-share-hint">${SHARE_ICON} Tap to see it and share</small></span></button>`;
@@ -3278,9 +3283,9 @@ function trophyPage() {
   };
   // Each list puts the earned ones first, newest first, then the rest in their own order. The
   // secrets: the tracks first (they count up), then mastery, then the surprises.
-  // A stratum secret goes by its latest stratum. Each stratum's copy is on its surprise's card,
-  // not a row of its own.
-  const latest = (a) => (a.strata ? Math.max(0, ...a.strata.map((x) => earnedAt(x.id))) : earnedAt(a.id));
+  // A stratum or hero secret goes by its latest page. Each stratum's (or hero's) copy is on its
+  // surprise's card, not a row of its own.
+  const latest = (a) => (a.pages ? Math.max(0, ...a.pages.map((x) => earnedAt(x.id))) : earnedAt(a.id));
   const earnedFirst = (as) => [...as.filter(latest).sort((x, y) => latest(y) - latest(x)), ...as.filter((a) => !latest(a))];
   const shown = list.filter((a) => !a.of);
   const strata = earnedFirst(shown.filter(isBig)), secret = earnedFirst(["track", "mastery", "surprise"].flatMap((k) => shown.filter((a) => a.kind === k)));
@@ -3293,32 +3298,37 @@ function trophyPage() {
   <div class="ach-list">${secret.map(row).join("")}</div>
   <div class="btns"><button class="big" id="achBack">Back</button></div>`);
   $("card").querySelectorAll("[data-ach]").forEach((b) => b.onclick = () => achievementCards([b.dataset.ach], 0, { sheet: true, test: !ach.earned[b.dataset.ach] }));
-  for (const c of $("card").querySelectorAll(".ach-strata")) wireStrata(c);
+  for (const c of $("card").querySelectorAll(".ach-strata")) wirePages(c);
   $("achBack").onclick = () => G.paused ? pause() : menu(); // mid-run, back to the pause card
 }
-// A stratum secret on the 🏆 sheet (DESIGN.md §14.5): one card that swipes sideways through the
-// strata, as a monster's looks do in Monsters & Heroes (scroll-snap, dots under it, ← and →, and
-// the arrow keys). Each stratum's page in its own colors over its wall: earned, the achievement
-// (a tap plays its card); not yet, a "?" and the stratum's name. The card opens on the stratum
-// earned last, else the first, and counts them: "3 of 5 strata".
-function strataCard(a) {
-  const pages = a.strata, n = pages.length, got = pages.filter((x) => earnedAt(x.id)), any = got.length > 0;
+// A stratum or hero secret on the 🏆 sheet (DESIGN.md §14.5): one card that swipes sideways
+// through its pages, as a monster's looks do in Monsters & Heroes (scroll-snap, dots under it, ←
+// and →, and the arrow keys). A stratum's page is in its own colors over its wall; a hero's (Quip
+// Fan) is drawn with the hero, in the hero's own colors. Earned, the achievement (a tap plays its
+// card); not yet, a "?" and the stratum's or hero's name. The card opens on the page earned last,
+// else the first, and counts them: "3 of 5 strata", "4 of 10 heroes".
+function pagesCard(a) {
+  const pages = a.pages, n = pages.length, got = pages.filter((x) => earnedAt(x.id)), any = got.length > 0, unit = a.unit;
+  const one = unit === "heroes" ? "hero" : "stratum";
+  // A page's look: a stratum's palette and wall, or a hero's color.
+  const look = (x, state) => (x.hero != null ? `class="as-pg hero ${state}" style="--hero:${HEROES[x.hero].c}"` : `class="as-pg ${x.wing} ${state}" data-stratum="${x.wing}"`);
+  const art = (x) => (x.hero != null ? `<span class="as-ico as-hero" aria-hidden="true">${heroSvg(HEROES[x.hero])}</span>` : `<span class="as-ico" aria-hidden="true">${a.icon}</span>`);
   const date = (t) => new Date(t).toLocaleDateString(undefined, { month: "short", day: "numeric" });
   const last = any ? pages.indexOf(got.reduce((x, y) => (earnedAt(y.id) > earnedAt(x.id) ? y : x))) : 0;
   const fresh = pages.some((x) => isNewAch(x.id));
   const page = (x, i) => earnedAt(x.id)
-    ? `<button type="button" class="as-pg ${x.wing} earned${isNewAch(x.id) ? " new" : ""}" data-stratum="${x.wing}" data-ach="${x.id}" aria-label="${i + 1} of ${n}: ${esc(achievementOf(x.id).title)}, earned ${date(earnedAt(x.id))}. Tap to see it and share">
-        <b class="as-name">${esc(x.name)}</b><span class="as-ico" aria-hidden="true">${a.icon}</span><small>Earned ${date(earnedAt(x.id))}${isNewAch(x.id) ? ' <i class="new-pill">New!</i>' : ""}</small></button>`
-    : `<div class="as-pg ${x.wing} secret" data-stratum="${x.wing}" role="group" aria-label="${i + 1} of ${n}: ${esc(x.name)}, not found yet"><b class="as-name">${esc(x.name)}</b><span class="as-ico" aria-hidden="true">?</span><small>Not found yet</small></div>`;
+    ? `<button type="button" ${look(x, "earned" + (isNewAch(x.id) ? " new" : ""))} data-ach="${x.id}" aria-label="${i + 1} of ${n}: ${esc(achievementOf(x.id).title)}, earned ${date(earnedAt(x.id))}. Tap to see it and share">
+        <b class="as-name">${esc(x.name)}</b>${art(x)}<small>Earned ${date(earnedAt(x.id))}${isNewAch(x.id) ? ' <i class="new-pill">New!</i>' : ""}</small></button>`
+    : `<div ${look(x, "secret")} role="group" aria-label="${i + 1} of ${n}: ${esc(x.name)}, not found yet"><b class="as-name">${esc(x.name)}</b><span class="as-ico" aria-hidden="true">?</span><small>Not found yet</small></div>`;
   const title = any ? a.name : "???";
-  return `<div class="ach-row ach-strata${any ? " earned" : " secret"}${fresh ? " new" : ""}" role="group" aria-label="${esc(title)}: ${got.length} of ${n} strata" data-start="${last}">
-    <div class="as-head"><span class="ach-ico" aria-hidden="true">${any ? a.icon : "❓"}</span><span class="ach-txt"><b>${esc(title)}</b><small>${any ? esc(a.detail) : "A secret achievement, in every stratum"}</small></span><small class="as-count">${got.length} of ${n} strata</small></div>
-    <div class="as-strip" role="region" aria-label="${esc(title)}, stratum by stratum" tabindex="0">${pages.map(page).join("")}</div>
-    <div class="as-nav"><button type="button" class="icon-btn as-prev" aria-label="Previous stratum">←</button>
+  return `<div class="ach-row ach-strata${any ? " earned" : " secret"}${fresh ? " new" : ""}" role="group" aria-label="${esc(title)}: ${got.length} of ${n} ${unit}" data-start="${last}">
+    <div class="as-head"><span class="ach-ico" aria-hidden="true">${any ? a.icon : "❓"}</span><span class="ach-txt"><b>${esc(title)}</b><small>${any ? esc(a.detail) : `A secret achievement, for every ${one}`}</small></span><small class="as-count">${got.length} of ${n} ${unit}</small></div>
+    <div class="as-strip" role="region" aria-label="${esc(title)}, ${one} by ${one}" tabindex="0">${pages.map(page).join("")}</div>
+    <div class="as-nav"><button type="button" class="icon-btn as-prev" aria-label="Previous ${one}">←</button>
       <div class="lv-dots">${pages.map((x, i) => `<button type="button" class="lv-dot${earnedAt(x.id) ? " on" : ""}" aria-label="${esc(x.name)}${earnedAt(x.id) ? ": earned" : ""}"></button>`).join("")}</div>
-      <button type="button" class="icon-btn as-next" aria-label="Next stratum">→</button></div></div>`;
+      <button type="button" class="icon-btn as-next" aria-label="Next ${one}">→</button></div></div>`;
 }
-function wireStrata(c) {
+function wirePages(c) {
   const strip = c.querySelector(".as-strip"), dots = [...c.querySelectorAll(".lv-dot")], prev = c.querySelector(".as-prev"), next = c.querySelector(".as-next"), n = dots.length;
   const current = () => Math.max(0, Math.min(n - 1, Math.round(strip.scrollLeft / (strip.clientWidth || 1))));
   let t = 0;
