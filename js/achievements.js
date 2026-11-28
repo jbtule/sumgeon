@@ -24,6 +24,7 @@ import { spoken } from "./problems.js";
 import { factState } from "./progress.js";
 import { heardOf, QUIPS } from "./moments.js";
 import { PLUSHIES } from "./plushie.js";
+import { findable } from "./clothes.js";
 
 /* ---------- rewards ----------
    Every achievement has a fixed reward: coins (cents, into the wallet), items ({ id: count }) and
@@ -201,6 +202,9 @@ const SURPRISE = [
   // Snuggle Squad: every one of the ten plushies collected (wardrobe.plush), counting up on the
   // sheet once a second one comes (everyone has Pluffy).
   { id: "surprise:plushies", icon: "🧸", title: "Snuggle Squad", detail: "Collected all ten monster plushies", sayDetail: "Every plushie is home! The heroes want a pillow fight!", test: (s) => plushiesOf(s) >= PLUSHIES.length, reward: { items: EVERY } },
+  // Laundry Day: every findable piece of clothing owned (wardrobe.owned; never the special ones
+  // achievements give), counting up on the sheet once one is owned.
+  { id: "surprise:clothes", icon: "🧺", title: "Laundry Day", detail: "Collected every piece of clothing", sayDetail: "You collected every piece! Now who's doing the laundry?", test: (s) => clothesOf(s) >= findable().length, reward: { items: EVERY } },
   // Holidays (holidaysOn, Sound Box's dates): an answer on one of these days, any year.
   { id: "holiday:thanksgiving", icon: "🦃", title: "Gobble Gobble", detail: "Fought monsters between bites of turkey", sayDetail: "Fought monsters between bites of turkey!", reward: { items: { pie: 1 } } },
   { id: "holiday:winter", icon: "⛄", title: "Snow Much Fun", detail: "Did math over winter break, snow or no snow", sayDetail: "Math over winter break, snow or no snow!", reward: { items: { shield: 1 } } },
@@ -245,6 +249,11 @@ export function placeOldSurprises(ach, wingId) {
 export function plushiesOf(state) {
   const own = new Set(((state && state.wardrobe) || {}).plush || []);
   return PLUSHIES.filter((p) => own.has(p.id)).length;
+}
+// How many of the findable clothes the player owns (state.wardrobe.owned).
+export function clothesOf(state) {
+  const own = new Set(((state && state.wardrobe) || {}).owned || []);
+  return findable().filter((p) => own.has(p.id)).length;
 }
 // The heroes whose quips have all been heard, by digit.
 export function quipHeroes(state) {
@@ -374,6 +383,12 @@ export function catalog(state) {
       const strata = WINGS.map((w) => ({ wing: w.id, id: inStratum(a.id, w.id), name: SHORT[w.id], at: earned[inStratum(a.id, w.id)] || 0 }));
       const n = strata.filter((x) => x.at).length;
       out.push(entry(a, { goal: 1, have: met ? 1 : 0, met, secret: true, strata, progress: `${n} of ${strata.length} strata`, figure: a.figure || null }));
+      continue;
+    }
+    // Laundry Day counts up once a piece is owned: "Clothes: 14 of 25".
+    if (a.id === "surprise:clothes") {
+      const n = clothesOf(state), all = findable().length;
+      out.push(entry(a, { goal: all, have: n, met: n >= all, secret: true, started: n > 0, progress: `Clothes: ${n} of ${all}` }));
       continue;
     }
     // Snuggle Squad counts up from the second plushie: "Plushies: 4 of 10".
