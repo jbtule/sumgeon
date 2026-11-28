@@ -194,7 +194,7 @@ for (const a of none.filter((x) => x.kind === "track" || x.kind === "surprise"))
 // linked player's wallet.
 assert.deepEqual(rewardsOf(none.filter((x) => x.kind === "track").map((a) => a.id)).items, { pie: 8, shield: 9, totem: 9, magnet: 9 });
 // Every Quip (surprise:allquips, 2026-11-27) added one of every item; the others are unchanged.
-assert.deepEqual(rewardsOf(none.filter((x) => x.kind === "surprise" && !x.of && x.id !== "surprise:allquips").map((a) => a.id)).items, { pie: 3, shield: 5, totem: 3, magnet: 3 });
+assert.deepEqual(rewardsOf(none.filter((x) => x.kind === "surprise" && !x.of && x.id !== "surprise:allquips" && x.id !== "surprise:plushies").map((a) => a.id)).items, { pie: 3, shield: 5, totem: 3, magnet: 3 });
 assert.deepEqual(rewardsOf(["surprise:allquips"]).items, { pie: 1, shield: 1, totem: 1, magnet: 1 });
 
 // What the cards say: "New achievement!" (or "Secret achievement!"), the title, what it took and
@@ -248,7 +248,7 @@ console.log(`✓ achievements (${ACHIEVEMENT_IDS.length})`);
   // Which: the ones that happen in a fight or at Trollar's stall. Piggy Bank, the quips and the
   // holidays aren't tied to a stratum.
   assert.deepEqual(STRATUM_SURPRISES, ["surprise:zero", "surprise:palindrome", "surprise:triple", "surprise:double", "surprise:allhands", "surprise:seven", "surprise:iceboss", "surprise:lastheart"]);
-  for (const id of ["surprise:piggy", "surprise:quips", "surprise:allquips", "holiday:thanksgiving", "holiday:winter", "holiday:summer"]) {
+  for (const id of ["surprise:piggy", "surprise:quips", "surprise:allquips", "surprise:plushies", "holiday:thanksgiving", "holiday:winter", "holiday:summer"]) {
     assert.ok(!STRATUM_SURPRISES.includes(id), id);
     assert.ok(!ids.has(id + "@cellar"), id);
   }
@@ -312,4 +312,18 @@ console.log(`✓ achievements (${ACHIEVEMENT_IDS.length})`);
   // One already in a stratum (a sync from an updated device) is left alone.
   const old3 = freshAchievements({ earned: { "surprise:seven": 3, "surprise:seven@hall": 4 } });
   assert.ok(!placeOldSurprises(old3, "cellar"));
+}
+
+// Snuggle Squad: all ten plushies (wardrobe.plush), counting up from the second.
+{
+  const { catalog, plushiesOf, award: awardAchievements } = await import("../js/achievements.js");
+  const { PLUSHIES } = await import("../js/plushie.js");
+  const all = PLUSHIES.map((p) => p.id), two = { wardrobe: { plush: all.slice(0, 2) }, ach: { earned: {} } };
+  assert.equal(plushiesOf(two), 2);
+  const c2 = catalog(two).find((a) => a.id === "surprise:plushies");
+  assert.ok(!c2.met && c2.secret && c2.progress === `Plushies: 2 of ${all.length}`);
+  const full = { wardrobe: { plush: all }, ach: { earned: {} } };
+  assert.ok(catalog(full).find((a) => a.id === "surprise:plushies").met);
+  assert.ok(awardAchievements(full, {}, 5).some((a) => a.id === "surprise:plushies"));
+  console.log("✓ Snuggle Squad");
 }

@@ -23,6 +23,7 @@ import { isDrawKey } from "./shapes.js";
 import { spoken } from "./problems.js";
 import { factState } from "./progress.js";
 import { heardOf, QUIPS } from "./moments.js";
+import { PLUSHIES } from "./plushie.js";
 
 /* ---------- rewards ----------
    Every achievement has a fixed reward: coins (cents, into the wallet), items ({ id: count }) and
@@ -197,6 +198,9 @@ const SURPRISE = [
   // 2026-11-27). Every Quip: all ten heroes' quips, a long goal that counts up on the sheet.
   { id: "surprise:quips", icon: "💬", title: "Quip Fan", detail: "Heard every one of a hero's quips", sayDetail: "You heard every one of a hero's quips!", test: (s) => quipHero(s) != null, reward: { items: { magnet: 1 } } },
   { id: "surprise:allquips", icon: "🎙️", title: "Every Quip", detail: "Heard every quip of all ten heroes", sayDetail: "You heard every quip of every hero!", test: (s) => quipHeroes(s).length >= Object.keys(QUIPS).length, reward: { items: EVERY } },
+  // Snuggle Squad: every one of the ten plushies collected (wardrobe.plush), counting up on the
+  // sheet once a second one comes (everyone has Pluffy).
+  { id: "surprise:plushies", icon: "🧸", title: "Snuggle Squad", detail: "Collected all ten monster plushies", sayDetail: "Every plushie is home! The heroes want a pillow fight!", test: (s) => plushiesOf(s) >= PLUSHIES.length, reward: { items: EVERY } },
   // Holidays (holidaysOn, Sound Box's dates): an answer on one of these days, any year.
   { id: "holiday:thanksgiving", icon: "🦃", title: "Gobble Gobble", detail: "Fought monsters between bites of turkey", sayDetail: "Fought monsters between bites of turkey!", reward: { items: { pie: 1 } } },
   { id: "holiday:winter", icon: "⛄", title: "Snow Much Fun", detail: "Did math over winter break, snow or no snow", sayDetail: "Math over winter break, snow or no snow!", reward: { items: { shield: 1 } } },
@@ -236,6 +240,11 @@ export function placeOldSurprises(ach, wingId) {
     changed = true;
   }
   return changed;
+}
+// How many of the plushies the player owns (state.wardrobe.plush).
+export function plushiesOf(state) {
+  const own = new Set(((state && state.wardrobe) || {}).plush || []);
+  return PLUSHIES.filter((p) => own.has(p.id)).length;
 }
 // The heroes whose quips have all been heard, by digit.
 export function quipHeroes(state) {
@@ -365,6 +374,12 @@ export function catalog(state) {
       const strata = WINGS.map((w) => ({ wing: w.id, id: inStratum(a.id, w.id), name: SHORT[w.id], at: earned[inStratum(a.id, w.id)] || 0 }));
       const n = strata.filter((x) => x.at).length;
       out.push(entry(a, { goal: 1, have: met ? 1 : 0, met, secret: true, strata, progress: `${n} of ${strata.length} strata`, figure: a.figure || null }));
+      continue;
+    }
+    // Snuggle Squad counts up from the second plushie: "Plushies: 4 of 10".
+    if (a.id === "surprise:plushies") {
+      const n = plushiesOf(state), all = PLUSHIES.length;
+      out.push(entry(a, { goal: all, have: n, met: n >= all, secret: true, started: n > 1, progress: `Plushies: ${n} of ${all}` }));
       continue;
     }
     // Every Quip counts up once a hero's quips are all heard: "Heroes heard in full: 3 of 10".

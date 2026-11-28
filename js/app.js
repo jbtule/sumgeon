@@ -216,7 +216,7 @@ function saveWardrobe() { store.player(PID).set("wardrobe", wardrobe); }
 function saveShop() { store.player(PID).set("shop", shop); }
 function saveAch() { store.player(PID).set("achievements", ach); }
 // What achievements.js works them out from.
-const achState = () => ({ facts: recs, wings: progress, moments: MS, wallet, ach });
+const achState = () => ({ facts: recs, wings: progress, moments: MS, wallet, ach, wardrobe });
 // Achievements newly met (achievements.js award), recorded quietly with their rewards (coins into
 // the wallet, items into the inventory, a special piece into the wardrobe), never interrupting a
 // fight: their cards play before the next descent (achievementCards). Checked as the player loads,
@@ -1933,7 +1933,7 @@ function takeLoot(C) {
     // A plushie not owned yet (rare, plushie.js): its name, and whose favorite it is; it sits by
     // that hero on the start scene from now on.
     const p = plushById[what.plush];
-    addPlush(wardrobe, p.id); saveWardrobe();
+    addPlush(wardrobe, p.id); saveWardrobe(); checkAchievements(); // all ten (Snuggle Squad)
     say("p", plushName(p.id)); say("p", plushFavLine(p.id));
     C.lootMsg = `<b class="loot-name">${esc(p.name)}</b>${plushWhose(p.id)}`;
     return `<div class="loot-plush">${plushSvg(p.id)}</div>`;
@@ -2176,7 +2176,7 @@ function shopCard(view) {
       const r = payMany(S.purse, S.counter, c, n, t);
       if (!r.ok) return; // never pays for you
       wallet = r.wallet; S.purse = r.purse; saveWallet();
-      if (t.kind === "item") { gain(inv, t.id, r.n); saveItems(); } else if (t.kind === "plush") { addPlush(wardrobe, t.id); saveWardrobe(); } else { addPiece(wardrobe, t.id); saveWardrobe(); }
+      if (t.kind === "item") { gain(inv, t.id, r.n); saveItems(); } else if (t.kind === "plush") { addPlush(wardrobe, t.id); saveWardrobe(); checkAchievements(); } else { addPiece(wardrobe, t.id); saveWardrobe(); }
       S.paid = r;
       sfx.chestOpen();
       if (r.exact) { say("p", SHOP.exact, true); surprise("surprise:exact"); } else say("p", changeLine(r.change), true);
