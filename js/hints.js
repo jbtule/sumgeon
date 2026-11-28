@@ -12,6 +12,7 @@ import { pvSvg, pvHint, pvFactOf } from "./placevalue.js";
 import { dollarSvg, dollarHint, dollarFactOf } from "./dollars.js";
 import { countSvg, countHint, drawHintSvg, drawHint, shapeFactOf } from "./shapes.js";
 import { flashSvg, flashHint, flashFactOf } from "./flash.js";
+import { fourthHint, isFourthHint } from "./hints4.js";
 
 // Hints (DESIGN.md §5.3): the models classrooms use now, with the classroom's words, and a line
 // for grown-ups who learned it another way. No DOM: returns { model, say, grownups } where model
@@ -615,9 +616,9 @@ function fracCompareHint(f, worked) {
 
 // Rounding (3rd grade): where the number sits on a number line between two tens (or hundreds).
 function roundHint(f, worked) {
-  const lo = Math.floor(f.n / f.to) * f.to, hi = lo + f.to, mid = lo + f.to / 2, x = (n) => 14 + (n - lo) / f.to * 232;
+  const lo = Math.floor(f.n / f.to) * f.to, hi = lo + f.to, mid = lo + f.to / 2, x = (n) => 30 + (n - lo) / f.to * 200;
   let s = `<line x1="8" y1="40" x2="252" y2="40" stroke="${C.line}" stroke-width="3" stroke-linecap="round"/>`;
-  for (const [n, col] of [[lo, C.ink], [mid, C.muted], [hi, C.ink]]) s += `<line x1="${x(n)}" y1="33" x2="${x(n)}" y2="47" stroke="${col}" stroke-width="2.5"/><text x="${x(n)}" y="64" text-anchor="middle" fill="${col}" font-size="13" font-weight="800">${n}</text>`;
+  for (const [n, col] of [[lo, C.ink], [mid, C.muted], [hi, C.ink]]) s += `<line x1="${x(n)}" y1="33" x2="${x(n)}" y2="47" stroke="${col}" stroke-width="2.5"/><text x="${x(n)}" y="64" text-anchor="middle" fill="${col}" font-size="${String(n).length > 4 ? 12 : 13}" font-weight="800">${n}</text>`;
   s += `<circle cx="${x(f.n)}" cy="40" r="6" fill="${C.b}"/><text x="${x(f.n)}" y="22" text-anchor="middle" fill="${C.b}" font-size="14" font-weight="900">${f.n}</text>`;
   const where = f.n === mid ? "is halfway, so it rounds up" : f.n > mid ? "is past halfway, so it rounds up" : "is before halfway, so it rounds down";
   return { model: svg(260, 70, s, `${f.n} on a number line from ${lo} to ${hi}`),
@@ -784,6 +785,8 @@ function flashHintFor(f, worked) {
 }
 
 export function hintFor(f, worked) {
+  // 4th grade (hints4.js): its own models, the area model, partial quotients and the rest.
+  if (isFourthHint(f)) return fourthHint(f, worked);
   if (f.op === "⁙") return flashHintFor(f, worked);
   if (f.op === "◇") return shapeHintFor(f, worked);
   if (f.op === "✓" || f.op === "✎") return tfHintFor(f, worked);

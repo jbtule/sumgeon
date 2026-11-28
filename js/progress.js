@@ -49,6 +49,9 @@ export function factText(key) {
   else if (f.op === "¢") text = `${f.q} = ${a}¢`;
   else if (f.op === "$") text = said.replace(/\.$/, "");
   else if (f.op === "≈") text = `${f.n} ≈ ${a} (nearest ${f.to})`;
+  // 4th grade's rectangles with a side to find, and angles and shapes (fourth.js, angles.js).
+  else if (f.op === "▭" && (f.kind === "s" || f.kind === "q")) text = `${f.kind === "s" ? "Area " + f.area : "Perimeter " + f.per}, sides ${f.h} and ${a}`;
+  else if (f.op === "∠" && f.name) text = `${fill(f.q, a)} (${f.name})`;
   else if (f.op === "▭") text = `${f.kind === "a" ? "Area" : "Perimeter"} of ${f.w} by ${f.h} = ${a}`;
   else if (f.op === "✓") text = `${f.q}: ${f.sym === "T" ? "true" : "false"}`;
   else if (f.op === "◇" && f.draw) text = f.q;
@@ -186,20 +189,24 @@ export function kindOf(key) {
   const op = key[0];
   if (op === "+" || op === "-") {
     const [x, y] = key.slice(1).split(",").map(Number), top = op === "+" ? x + y : x;
-    return top <= 20 ? "teens" : Math.max(x, y) < 100 && top < 100 ? "two" : "three";
+    return top <= 20 ? "teens" : Math.max(x, y) < 100 && top < 100 ? "two" : Math.max(x, y) < 1000 ? "three" : "million";
   }
-  if (op === "×") return "tens";
-  if (op === "÷") return "big";
+  // 4th grade's (the Fraction Forge): multi-digit × and ÷ apart from 3rd grade's × tens and ÷ past 12.
+  if (op === "×") { const [x, y] = key.slice(1).split(",").map(Number), a = Math.min(x, y), b = Math.max(x, y); return b <= 12 || (a < 10 && b < 100 && b % 10 === 0) ? "tens" : "mul4"; }
+  if (op === "÷") { const [x, y] = key.slice(1).split(",").map(Number); return x > 144 || (x / y > 12 && y <= 9) ? "div4" : "big"; }
+  if (op === "○" && key.includes(".")) return "decimals";
   if (op === "¢" || op === "$") return "coins";
   if (op === "/" || op === "↔") return "fractions";
   if (op === "○" && key.includes("/")) return "fractions";
-  return { "□": "missing", "M": "more", "○": "compare", "=": "balance", "✓": "truefalse", "✎": "truefalse", "Σ": "sums", "▦": "arrays", "⌚": "time", "…": "patterns", "◐": "oddeven", "#": "placevalue", "◇": "shapes", "⁙": "dots", "≈": "rounding", "▭": "area" }[op] || "other";
+  return { "□": "missing", "M": "more", "○": "compare", "=": "balance", "✓": "truefalse", "✎": "truefalse", "Σ": "sums", "▦": "arrays", "⌚": "time", "…": "patterns", "◐": "oddeven", "#": "placevalue", "◇": "shapes", "⁙": "dots", "≈": "rounding", "▭": "area", "R": "remainders", "E": "steps", "F": "steps", "ƒ": "fracops", "d": "decimals", "∠": "angles", "u": "units" }[op] || "other";
 }
 export const KIND_NAMES = {
   dots: "Dot flash", more: "Which is more", missing: "Missing numbers", teens: "Teen facts (13 + 4)", compare: "Comparing", balance: "Balancing (equal sign)",
   truefalse: "True or false", sums: "Three or more numbers", two: "Two-digit + and −", three: "Three-digit + and −", placevalue: "Place value",
   coins: "Coins and money", time: "Telling time", patterns: "Counting patterns", oddeven: "Odd and even", arrays: "Arrays", shapes: "Shapes",
-  tens: "× tens", big: "÷ past 12", rounding: "Rounding", fractions: "Fractions", area: "Area and perimeter", other: "Other"
+  tens: "× tens", big: "÷ past 12", rounding: "Rounding", fractions: "Fractions", area: "Area and perimeter",
+  million: "+ and − to a million", mul4: "Multi-digit ×", div4: "Multi-digit ÷", remainders: "Remainders", steps: "Multi-step and factors", fracops: "Adding and multiplying fractions",
+  decimals: "Decimals", angles: "Angles and shapes", units: "Measurement", other: "Other"
 };
 // The other kinds the open strata ask, in the order they first come up: { id, name, keys, total,
 // seen, learned, mastered } (learned counts box 3 and 4).

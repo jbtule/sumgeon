@@ -45,7 +45,9 @@ export function fractionFacts() {
   return out;
 }
 // "one half", "three fourths", "two", for the voice.
-const UNIT = { 2: ["half", "halves"], 3: ["third", "thirds"], 4: ["fourth", "fourths"], 6: ["sixth", "sixths"], 8: ["eighth", "eighths"] };
+// (4th grade adds fifths, ninths, tenths, twelfths and hundredths: fourth.js.)
+const UNIT = { 2: ["half", "halves"], 3: ["third", "thirds"], 4: ["fourth", "fourths"], 5: ["fifth", "fifths"], 6: ["sixth", "sixths"], 8: ["eighth", "eighths"],
+  9: ["ninth", "ninths"], 10: ["tenth", "tenths"], 12: ["twelfth", "twelfths"], 100: ["hundredth", "hundredths"] };
 export function fractionWords(n, d, spoken) {
   if (d === 1) return spoken(n);
   return spoken(n) + " " + UNIT[d][n === 1 ? 0 : 1];
@@ -75,13 +77,19 @@ export function roundFacts() {
 /* ---------- area and perimeter (3.MD.C–D) ----------
    A rectangle drawn with its sides labeled: its area (count the squares, or rows × columns) or
    its perimeter (all four sides). Key "▭a4,3" or "▭p4,3": the kind, the width and the height. */
+// 4th grade (fourth.js) adds a missing side: from the area, "▭s48,6" (the area is 48, one side 6,
+// so the other is 8), or from the perimeter, "▭q30,6" (the other is 9). w is the side to find.
 export function rectFact(kind, w, h) {
+  if (kind === "s") return { op: "▭", kind, w, h, ans: w, area: w * h, q: "Side = □", key: "▭s" + w * h + "," + h };
+  if (kind === "q") return { op: "▭", kind, w, h, ans: w, per: 2 * (w + h), q: "Side = □", key: "▭q" + 2 * (w + h) + "," + h };
   const ans = kind === "a" ? w * h : 2 * (w + h);
   return { op: "▭", kind, w, h, ans, q: (kind === "a" ? "Area" : "Perimeter") + " = □", key: "▭" + kind + w + "," + h };
 }
 export function rectFactOf(key) {
-  const [w, h] = key.slice(2).split(",").map(Number);
-  return rectFact(key[1], w, h);
+  const [a, b] = key.slice(2).split(",").map(Number);
+  if (key[1] === "s") return rectFact("s", a / b, b);
+  if (key[1] === "q") return rectFact("q", a / 2 - b, b);
+  return rectFact(key[1], a, b);
 }
 export function rectFacts() {
   const area = [], per = [];
@@ -94,10 +102,23 @@ export function rectFacts() {
 // For a perimeter all four sides are labeled; opt.grid draws the squares on a perimeter too.
 export function rectSvg(f, opt) {
   opt = opt || {};
-  const per = f.kind === "p", u = Math.min(22, Math.floor(150 / Math.max(f.w, f.h)));
-  const W = f.w * u, H = f.h * u, x0 = 26, y0 = per ? 22 : 6, ink = "var(--ink, #f3efe4)";
+  // 4th grade's rectangles are bigger and use the formula: past 9 a side (or a side to find) no
+  // squares to count, drawn to fit rather than to scale. A missing side is labeled "?" (the
+  // number once worked), with the area or perimeter written inside.
+  const per = f.kind === "p" || f.kind === "q", miss = f.kind === "s" || f.kind === "q", formula = miss || Math.max(f.w, f.h) > 9;
+  const u = Math.min(22, Math.floor(150 / Math.max(f.w, f.h)));
+  const W = formula ? 150 : f.w * u, H = formula ? Math.round(30 + 60 * Math.min(1, f.h / f.w)) : f.h * u, x0 = 26, y0 = per ? 22 : 6, ink = "var(--ink, #f3efe4)";
   let s = `<rect x="${x0}" y="${y0}" width="${W}" height="${H}" fill="#ffc93c33" stroke="${ink}" stroke-width="3"/>`;
-  if (!per || opt.grid) {
+  if (miss) {
+    const lab = (x, y, t, c, size) => `<text x="${x}" y="${y}" text-anchor="middle" fill="${c}" font-family="Nunito,sans-serif" font-size="${size || 15}" font-weight="900">${t}</text>`;
+    const wl = opt.worked ? f.w : "?", coral = "var(--coral, #ff5a4e)";
+    s += lab(x0 + W / 2, y0 + H / 2 + 5, f.kind === "s" ? "Area " + f.area : "Perimeter " + f.per, "var(--gold, #ffc93c)", 14);
+    s += lab(x0 + W / 2, y0 + H + 18, wl, coral) + lab(x0 - 13, y0 + H / 2 + 5, f.h, ink);
+    if (per) s += lab(x0 + W / 2, y0 - 7, wl, coral) + lab(x0 + W + 13, y0 + H / 2 + 5, f.h, ink);
+    const vw = x0 + W + (per ? 26 : 8), vh = y0 + H + 24;
+    return `<svg class="rectfig" viewBox="0 0 ${vw} ${vh}" width="${Math.round(vw * 1.2)}" height="${Math.round(vh * 1.2)}" role="img" aria-label="a rectangle with a side to find">${s}</svg>`;
+  }
+  if (!formula && (!per || opt.grid)) {
     for (let i = 1; i < f.w; i++) s += `<line x1="${x0 + i * u}" y1="${y0}" x2="${x0 + i * u}" y2="${y0 + H}" stroke="${ink}" stroke-opacity=".45" stroke-width="1.5"/>`;
     for (let i = 1; i < f.h; i++) s += `<line x1="${x0}" y1="${y0 + i * u}" x2="${x0 + W}" y2="${y0 + i * u}" stroke="${ink}" stroke-opacity=".45" stroke-width="1.5"/>`;
   }

@@ -115,6 +115,34 @@ export const PATHS = {
     step("Area and perimeter", [["third", "Area and perimeter"]], ["Starbot", "Divvy"], 3, P),
     step("Shapes", [["shapesT", "Quadrilaterals"], ["shapesT", "Unit fractions"]], ["Polly-Gon"], 3),
     step("× and ÷ 11 and 12", [["third", "× and ÷ 11 and 12"]], ["Timesaur", "Divvy"], 3)
+  ],
+  // The Fraction Forge (4th grade, DESIGN.md §4.4), in the order of the school's 4th grade guide's
+  // units: base ten (numbers to a million, adding and subtracting, multiplying, dividing),
+  // algebraic thinking (multi-step problems, factors, patterns), fractions (equivalent, compared,
+  // added and subtracted, times a whole, decimals), then geometry and measurement. ★ is the guide's
+  // priority standards. Four chapters of four new steps.
+  forge: [
+    step("Review: × and ÷", [["third", "× 0, 1, 2, 5 and 10"], ["third", "× 3, 4 and 6"], ["third", "× 7, 8 and 9"], ["third", "÷ 1, 2, 5 and 10"], ["third", "÷ 3, 4 and 6"], ["third", "÷ 7, 8 and 9"]], ["Timesaur", "Divvy"], 1, { review: true }),
+    step("Place value to a million", [["fourth", "Compare to a million"], ["fourth", "Round to any place"]], ["Chompers", "Haberhasher"], 1),
+    step("Add and subtract to a million", [["fourth", "Add and subtract to a million"]], ["Margot-Rythm"], 1),
+    step("× 10, 100 and 1000", [["fourth", "× 10, 100 and 1000"]], ["Timesaur"], 1),
+    step("Multiply by one digit", [["fourth", "Multiply by one digit"]], ["Timesaur"], 1, P),
+    step("Two-digit × two-digit", [["fourth", "Two-digit × two-digit"]], ["Timesaur"], 2, P),
+    step("Divide by one digit", [["fourth", "Divide by one digit"]], ["Divvy"], 2, P),
+    step("Remainders", [["fourth", "Remainders"]], ["Divvy"], 2, P),
+    // Patterns from a rule (4.RA.C): Slimelipsis's strand, open with the algebraic-thinking unit.
+    step("Patterns from a rule", [["patF", "Patterns from a rule"]], ["Slimelipsis"], 2, { ongoing: true }),
+    // Multi-step problems (4.RA.A.2, ★) share the algebraic-thinking unit with factors and
+    // multiples (not a priority), so they're one step.
+    step("Multi-step problems and factors", [["fourth", "Multi-step and variables"], ["fourth", "Factors and multiples"]], ["Divvy", "Timesaur"], 2, P),
+    step("Equivalent fractions", [["fourth", "Equivalent fractions"]], ["Halfling"], 3, P),
+    step("Compare fractions", [["fourth", "Compare fractions"]], ["Halfling", "Chompers"], 3, P),
+    step("Add and subtract fractions", [["fourth", "Add and subtract fractions"]], ["Halfling"], 3, P),
+    step("A fraction times a whole", [["fourth", "A fraction times a whole"]], ["Halfling"], 3, P),
+    step("Decimals", [["fourth", "Tenths and hundredths"], ["fourth", "Compare decimals"]], ["Halfling", "Chompers"], 4),
+    step("Angles and shapes", [["fourth", "Angles"], ["fourth", "Classify shapes"]], ["Polly-Gon"], 4, P),
+    step("Area and perimeter", [["fourth", "Area and perimeter"]], ["Squaresquatch"], 4, P),
+    step("Measurement", [["fourth", "Measurement"]], ["Tick-Tockus"], 4, P)
   ]
 };
 // Level names to indexes ([band, index]), checked: a name that isn't a level is a mistake.

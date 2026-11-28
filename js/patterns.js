@@ -21,7 +21,9 @@ export const PATTERN_LEVELS = [
   { id: "fives", name: "By 5s", grade: "1st", step: 5, stratum: "hall" },
   { id: "twos", name: "By 2s", grade: "2nd", step: 2, stratum: "mines" },
   { id: "hundreds", name: "By 100s", grade: "2nd", step: 100, stratum: "mines" },
-  { id: "middle", name: "Middle □", grade: "1st–2nd", step: 0, stratum: "mines" }
+  { id: "middle", name: "Middle □", grade: "1st–2nd", step: 0, stratum: "mines" },
+  // 4th grade (4.RA.C): a number pattern from a rule, "add 6": 3, 9, 15, 21, □.
+  { id: "rule", name: "From a rule", grade: "4th", step: 0, stratum: "forge" }
 ];
 export const patternLevel = (id) => PATTERN_LEVELS.find((l) => l.id === id) || PATTERN_LEVELS[0];
 
@@ -44,6 +46,10 @@ function rowsOf(id) {
   if (id === "fives") return range(5, 80, 5).map((a) => ({ a, step: 5, shown: 4 }));
   if (id === "twos") return range(2, 42, 2).map((a) => ({ a, step: 2, shown: 4 }));
   if (id === "hundreds") return range(100, 700, 100).map((a) => ({ a, step: 100, shown: 3 }));
+  // rule: 4th grade's rules, steps other than 1, 2, 5, 10 and 100 (those are the counting
+  // levels), from small starts; by 25s and 50s three shown, so the row still fits a phone.
+  if (id === "rule") return [[3, 6], [7, 6], [2, 3], [11, 3], [4, 4], [9, 4], [5, 7], [13, 7], [8, 8], [6, 9], [12, 9], [1, 11], [20, 11], [4, 12], [10, 15], [25, 25], [50, 25], [50, 50], [30, 20], [15, 20]]
+    .map(([a, step]) => ({ a, step, shown: a + 4 * step > 99 ? 3 : 4 }));
   return [];
 }
 // Every row a level can ask: { level, step, nums (with the answer in place), blank (its index),
@@ -250,7 +256,7 @@ function setOf(nums, blank) {
   if (blank < nums.length - 1) return "middle";
   if (step === -1) return nums.length > 4 ? "back20" : "back";
   if (step === 1) return Math.max(...nums) > 94 ? "to120" : "ones";
-  return { 10: "tens", 5: "fives", 2: "twos", 100: "hundreds" }[step];
+  return { 10: "tens", 5: "fives", 2: "twos", 100: "hundreds" }[step] || "rule";
 }
 export function oddEvenFact(set, ask, nums, max) {
   const ans = nums.filter((v) => isEven(v) === (ask === "even")).length;
@@ -273,7 +279,8 @@ export const PATTERN_GAME_LEVELS = [
   { id: "hundreds", name: "Count by 100s", stratum: "mines" },
   { id: "middle", name: "What's missing? By 2s, 5s, 10s, 100s", stratum: "mines" },
   { id: "oddeven20", name: "Odd and even to 20", stratum: "mines" },
-  { id: "oddeven100", name: "Odd and even to 100", stratum: "mines" }
+  { id: "oddeven100", name: "Odd and even to 100", stratum: "mines" },
+  { id: "rule", name: "Patterns from a rule", stratum: "forge" }
 ];
 // A fixed shuffle (a small LCG, as three.js), so a sample never changes between builds.
 function seeded(seed) { let s = seed; return () => (s = (s * 1103515245 + 12345) % 2147483648) / 2147483648; }
@@ -283,7 +290,7 @@ export function patternFacts() {
   const out = [];
   // Every row of the counting levels (the middle one sampled to 30), then 16 groups of each
   // odd and even level.
-  for (const id of ["ones", "tens", "back", "to120", "fives", "twos", "hundreds", "back20"]) for (const p of allPatterns(id)) out.push(patternFact(id, p.nums, p.blank));
+  for (const id of ["ones", "tens", "back", "to120", "fives", "twos", "hundreds", "back20", "rule"]) for (const p of allPatterns(id)) out.push(patternFact(id, p.nums, p.blank));
   const r = seeded(4242), mid = allPatterns("middle");
   for (let i = mid.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [mid[i], mid[j]] = [mid[j], mid[i]]; }
   mid.slice(0, 30).forEach((p) => out.push(patternFact("middle", p.nums, p.blank)));

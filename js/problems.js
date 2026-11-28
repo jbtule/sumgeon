@@ -8,6 +8,8 @@ import { spokenPV, spokenPVAnswer } from "./placevalue.js";
 import { spokenDollars, spokenDollarAnswer } from "./dollars.js";
 import { spokenShape, spokenShapeAnswer } from "./shapes.js";
 import { spokenFlash, spokenFlashAnswer } from "./flash.js";
+import { spokenFourth, spokenFourthAnswer } from "./fourth.js";
+import { spokenAngle, spokenAngleAnswer } from "./angles.js";
 
 // Problem generation and spoken text. No DOM: runs in Node for the tests and, later, the
 // audio build (which records the same spoken text the app asks for).
@@ -81,6 +83,11 @@ function sayPennies(t) { return t.replace(/\bpennies\b/g, "penny's"); }
 // "seven plus eight"; for coins, "two dimes and three pennies. How many cents?", "How many
 // dimes?" (find the coin) or "How many cents?" (one coin: the voice doesn't name it).
 export function spokenProblem(p) {
+  // 4th grade (fourth.js, angles.js): remainders, two steps and n, factors, fractions worked on,
+  // decimals, measurement, a side to find, angles and shapes.
+  if (p.op === "∠") return spokenAngle(p);
+  const four = spokenFourth(p);
+  if (four) return four;
   // Time (Tick-Tockus): "What time is it? How many minutes past three?"; patterns (Slimelipsis):
   // "Two, four, six. What comes next?", "How many even numbers?".
   if (p.op === "⌚") return spokenClockFact(p);
@@ -121,6 +128,9 @@ export function spokenProblem(p) {
 // and three pennies make twenty-three cents", "There are two dimes.", and for one coin the K
 // guide's words: "This is a dime. A dime is small and silver. It's worth ten cents."
 export function spokenFact(p) {
+  if (p.op === "∠") return spokenAngleAnswer(p);
+  const four = spokenFourthAnswer(p);
+  if (four) return four;
   if (p.op === "⌚") return spokenClockAnswer(p);
   if (p.op === "…" || p.op === "◐") return spokenPatternFactAnswer(p);
   if (p.op === "✓" || p.op === "✎") return spokenTFAnswer(p);

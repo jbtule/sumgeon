@@ -71,6 +71,13 @@ for (const band of Object.keys(BANDS)) {
       else assert.ok(new RegExp(`\\b${f.ans}\\b`).test(after.say), `${p.key}: ${after.say}`);
       continue;
     }
+    // 4th grade's two-slot answers (a remainder, a mixed number): questions before, both numbers
+    // after ("7 R 1", "5 and 3/3").
+    if (f.slots && (f.op === "R" || f.op === "ƒ")) {
+      assert.ok(before.say.endsWith("?") && !new RegExp(`\\b${f.slots[0]} (R|and) ${f.slots[1]}\\b`).test(before.say), `${p.key}: ${before.say}`);
+      assert.ok(after.say.includes(f.op === "R" ? `${f.quo} R ${f.rem}` : `${f.whole} and ${f.num}/${f.d}`), `${p.key}: ${after.say}`);
+      continue;
+    }
     // A comparison's answer is its symbol: "3 + 4 ? 8" before, "3 + 4 < 8" after.
     assert.ok(before.say.endsWith(f.sym ? f.l + " ? " + f.r : "= ?"), `${p.key}: ${before.say}`);
     assert.ok(after.say.endsWith(f.sym ? f.l + " " + f.sym + " " + f.r : "= " + f.ans), `${p.key}: ${after.say}`);
@@ -110,6 +117,8 @@ function checkEquations(say, label, f) {
   say = say.replace(/\d+:\d\d/g, "T");
   // A fraction (3/8) is one number, compared, not two: "2/4 = 1/2" isn't "4 = 1".
   say = say.replace(/\d+\/\d+/g, "F");
+  // And so is a decimal (0.7 = 0.70), compared, not two numbers.
+  say = say.replace(/\d*\.\d+/g, "F");
   const filled = f && !f.sym ? say.replace(/□|(?<=^|[\s(])\?(?=$|[\s.,)])/g, String(f.ans)) : say.replace(/[?□]/g, "X");
   for (const m of filled.matchAll(chain)) {
     const parts = m[0].split(" = ").filter((p) => !p.includes("X")).map(value);
@@ -173,6 +182,10 @@ for (const band of Object.keys(BANDS)) {
     if (f.op === "↔") [0, 1, f.wholes, f.d, f.d * f.wholes].forEach((n) => known.add(n));
     // A clock's face numbers ("from the 2 to the 9") and its 12 are on it.
     if (f.op === "⌚") [5, 12, f.m / 5, f.m2 / 5].forEach((n) => known.add(n)); // and "count by 5s"
+    // A protractor's scale (0, 30, 60 … 180) is on it: reading it is what's asked (4th grade).
+    // A side to find: the side, and the area or perimeter, are on the rectangle.
+    if (f.op === "▭" && (f.kind === "s" || f.kind === "q")) [f.h, f.area, f.per].forEach((n) => n != null && known.add(n));
+    if (f.op === "∠" && f.kind === "read") [0, 30, 60, 90, 120, 150, 180].forEach((n) => known.add(n));
     // and so are their digits and tens (73 is 7 tens and 3 ones).
     for (const n of [...known]) if (n >= 10) for (const part of [n % 10, Math.floor(n / 10) % 10, n - (n % 10), Math.floor(n / 10)]) known.add(part);
     // 10 is every + and − strategy's landmark (make 10, 11 is 10 and 1, back to 10), so it may show.

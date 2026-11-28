@@ -11,6 +11,8 @@ import { PHRASE, monsterName, monsterCleared, monsterWon, heroJoins, heroCursed,
 import { WINGS, wingOf, runFloors, bossAt, cursedMonster, openWings, toOpen, floorStars, wingStars, depthScale, depthHP, deepest, MAP_DEPTHS, GRADES, gradeLabel, gradeName, withGrade, bandOf, gradeBand, OLD_BANDS, PATHS, chapterOf, stepsOpen, bossStage, isMega, BOSS_HP, MEGA_EVERY, megasOf, stepMonsters, legendDue, openLegend, beatLegend, legendBeaten, legendProgress, LEGEND_HP } from "./wings.js";
 import { missingOf, pickBlank, filled, spokenMissing, MISSING_SHARE, canHide } from "./missing.js";
 import { rectSvg } from "./third.js";
+import { bigText, fourthLine } from "./fourth.js";
+import { angleSvg } from "./angles.js";
 import { arraySvg } from "./arrays.js";
 import { flashSvg, FLASH_DOTS_MS } from "./flash.js";
 import { clockSvg, clockFactLine, clockFactHint, clockAnswer, elapsedSvg } from "./clock.js";
@@ -402,7 +404,9 @@ function ansUI() {
       b.classList.toggle("typed", !!v); b.classList.toggle("now", i === G.slot.at); b.classList.toggle("wait", i > G.slot.at && !v);
     });
     // Dollars and cents (Trollar) the same way: "Dollars ✓", then "Cents!".
-    const [first, last] = G.cur.op === "$" ? ["Dollars ✓", "Cents!"] : ["Hour ✓", "Minutes!"], what = G.cur.op === "$" ? ["dollars", "cents"] : ["hour", "minutes"];
+    // 4th grade's problems name their own slots (fourth.js): "Quotient ✓", then "Remainder!"; "Whole ✓", then "Numerator!".
+    const own = G.cur.slotNames, [first, last] = own ? [own[0] + " ✓", own[1] + "!"] : G.cur.op === "$" ? ["Dollars ✓", "Cents!"] : ["Hour ✓", "Minutes!"];
+    const what = own ? own.map((w) => w.toLowerCase()) : G.cur.op === "$" ? ["dollars", "cents"] : ["hour", "minutes"];
     if (go) { go.textContent = G.slot.at ? last : first; go.classList.add("longkey"); go.setAttribute("aria-label", G.slot.at ? `Attack with the ${what[1]}` : `The ${what[0]} ${G.cur.op === "$" ? "are" : "is"} done`); }
   } else if (go && go.textContent !== "Hit!") { go.textContent = "Hit!"; go.classList.remove("longkey"); go.setAttribute("aria-label", "Attack"); }
   // The slimes (Slimelipsis): the □ slime fills as you type.
@@ -448,16 +452,20 @@ function probUI() {
   else if (p.op === "…") box.innerHTML = slimeRow(p);
   // Odd and even: the slimes holding their numbers, and "Even numbers = □" under them.
   else if (p.op === "◐") box.innerHTML = oddEvenSvg(p, { hint: G.hinted, perRow: p.nums.length <= 6 ? p.nums.length : 4 }) + `<span class="find">${p.ask === "even" ? "Even" : "Odd"} numbers = ${BLANK}</span>`;
+  // 4th grade's (fourth.js, angles.js): a line of parts with the answer's □ (or two slots: a
+  // remainder, a mixed number) in place, fractions stacked; an angle or a shape drawn over it.
+  else if (p.parts) box.innerHTML = (p.op === "∠" ? angleSvg(p, { hint: G.hinted }) : "") + `<span class="${p.op === "∠" ? "find " : ""}fline${p.parts.join("").length > 15 ? " wide4" : ""}">${partsHTML(p)}</span>`;
   // A comparison: each side in its own box, so Chompers can eat the bigger one (chompAct).
-  // Fractions (the Tower) stacked, as the Tower shows them: 3/8 ○ 5/8.
-  else if (p.sym && p.op === "○") box.innerHTML = `${side("l", p.frac ? stacked(esc(p.l)) : esc(p.l))} ${BLANK} ${side("r", p.frac ? stacked(esc(p.r)) : esc(p.r))}`;
+  // Fractions (the Tower) stacked, as the Tower shows them: 3/8 ○ 5/8. Big numbers (the Forge)
+  // with commas, a little smaller.
+  else if (p.sym && p.op === "○") box.innerHTML = `<span class="${p.big ? "cmp4" : ""}">${side("l", p.frac ? stacked(esc(p.l)) : esc(bigText(p.l)))} ${BLANK} ${side("r", p.frac ? stacked(esc(p.r)) : esc(bigText(p.r)))}</span>`;
   else if (p.blank || p.sym || p.op === "=") box.innerHTML = esc(p.q).replace("□", BLANK);
   // "7 or 4": which is more (K). The voice asks it; the answer box is the answer.
   else if (p.op === "more") box.innerHTML = `${side("l", p.x)} <small class="or">or</small> ${side("r", p.y)}`;
   // Fractions, stacked, with the glowing □ as the hidden numerator: 1/2 = □/4.
   else if (p.op === "/") box.innerHTML = stacked(esc(p.q)).replace("□", BLANK);
   // Rounding: 47 ≈ □, and to what.
-  else if (p.op === "≈") box.innerHTML = esc(p.q).replace("□", BLANK) + `<small class="to">nearest ${p.to}</small>`;
+  else if (p.op === "≈") box.innerHTML = esc(bigText(p.q)).replace("□", BLANK) + `<small class="to">nearest ${bigText(p.to)}</small>`;
   // A rectangle, drawn: "Area = □".
   else if (p.op === "▭") box.innerHTML = rectSvg(p) + `<span class="find">${esc(p.q).replace("□", BLANK)}</span>`;
   // An array (Squaresquatch), drawn: rows of dots, and "5 + 5 + 5 = □" under them.
@@ -476,12 +484,14 @@ function probUI() {
   // Flipped by Judo Judy: each number in its own box, so the throw can swap them (judoThrow).
   else if (p.flipped) box.innerHTML = `<span class="jn">${p.x}</span> <span class="jop">${p.op}</span> <span class="jn">${p.y}</span> =`;
   // Three-digit numbers on one line ("287 + 359 ="), a little smaller so it fits an iPhone SE.
+  // Four- and five-digit numbers (the Forge) smaller again, with commas from 10,000.
+  else if ("+-×÷".includes(p.op) && Math.max(p.x, p.y, p.ans) >= 1000) box.innerHTML = `<span class="wide3 wide4">${esc(bigText(p.q))} =</span>`;
   else if ((p.op === "+" || p.op === "-") && Math.max(p.x, p.y) >= 100) box.innerHTML = `<span class="wide3">${esc(p.q)} =</span>`;
   else box.textContent = p.q + " =";
-  document.querySelector(".game").classList.toggle("missing", !!p.blank || !!p.sym || p.op === "=" || !!p.find || !!p.stacked || "/≈▭▦⌚…◐✓✎↔#$◇⁙".includes(p.op));
+  document.querySelector(".game").classList.toggle("missing", !!p.blank || !!p.sym || p.op === "=" || !!p.find || !!p.stacked || "/≈▭▦⌚…◐✓✎↔#$◇⁙REFƒdu∠".includes(p.op));
   padUI(p.spell ? "spell" : p.draw ? "draw" : p.op === "✓" ? "tf" : p.sym ? "cmp" : "num");
   document.querySelector(".game").classList.toggle("cents", p.op === "¢" && !p.find);
-  document.querySelector(".game").classList.toggle("find", !!p.find || "▭▦⌚◐✓✎↔#$⁙".includes(p.op) || (p.op === "◇" && !p.draw));
+  document.querySelector(".game").classList.toggle("find", !!p.find || "▭▦⌚◐✓✎↔#$⁙∠".includes(p.op) || (p.op === "◇" && !p.draw));
   document.querySelector(".game").classList.toggle("shape", p.op === "◇" && !p.draw);
   document.querySelector(".game").classList.toggle("stack", !!p.stacked);
   // A wide picture over its line (batch 2's): on phones the 🔊 and 💡 buttons stack beside it.
@@ -497,6 +507,16 @@ function flashHTML(p) {
   return `<span class="dotcard${hidden ? " down" : ""}">${flashSvg(p, { hidden, hint: F.grouped })}${peek}</span><span class="find">Dots = ${BLANK}</span>`;
 }
 const slotHTML = (i, p) => (p.slots ? `<span class="blank tslot${i ? " wait" : " now"}" id="blank${i}">?</span>` : BLANK);
+// 4th grade's line (fourth.js parts): text with its fractions stacked, and the □ or the slots.
+// A mixed number's numerator slot sits over its denominator (□ □/8).
+function partsHTML(p) {
+  let k = 0;
+  // n (a letter for a number) and units (ft, in, kg) in Nunito: Bungee has only capitals.
+  const words = (t) => (p.op === "E" ? t.replace(/\bn\b/g, '<i class="var">n</i>') : p.op === "u" ? t.replace(/\b([a-zA-Z]+)\b/g, '<span class="unit">$1</span>') : t);
+  const out = p.parts.map((x) => (x === null ? slotHTML(k++, p) : words(esc(bigText(x)))));
+  return out.map((x, i) => (p.parts[i] === null || !p.parts[i] ? x : stacked(x))).join("")
+    .replace(/(<span class="blank[^"]*"[^>]*>\?<\/span>)\/(\d+)/g, '<span class="frac"><span>$1</span><span>$2</span></span>');
+}
 // Fix it's line: the false equation, its wrong number in place for a moment, then (G.fix.swapped)
 // crossed out and lifted above its place, small and red, the □ taking its place, so the line
 // always reads as one equation. Right, the number settles in and the crossed-out one fades.
@@ -626,13 +646,17 @@ function shownFact(p, ans) {
     if (p.shape) return `${esc(article(p.shape).trim().replace(/^a/, "A"))} ${esc(p.shape)} has ${b(p.ans)} ${p.kind}`;
     return `${SHAPE_LINE[p.kind]} = ${b(p.ans)}`;
   }
-  if (p.sym) return p.q.replace("□", typeof ans === "string" && ans.startsWith("<b>") ? `<b>${esc(p.sym)}</b>` : p.sym);
+  // 4th grade's: "29 ÷ 4 = 7 R 1", "2 1/8 + 3/8 = 2 4/8", "Angle = 40°".
+  if (p.parts) return fourthLine(p, (v) => (bold ? `<b>${v}</b>` : String(v))).map((x, i) => (p.parts[i] === null ? x : esc(bigText(x)))).join("");
+  if (p.sym) return bigText(p.q).replace("□", typeof ans === "string" && ans.startsWith("<b>") ? `<b>${esc(p.sym)}</b>` : p.sym);
   if (p.blank || p.op === "=" || p.op === "/" || p.op === "≈" || p.op === "▦") return filled(p, ans);
+  // A side to find (4th grade): "Area 48, sides 6 and 8".
+  if (p.op === "▭" && (p.kind === "s" || p.kind === "q")) return `${p.kind === "s" ? "Area " + p.area : "Perimeter " + p.per}, sides ${p.h} and ${ans}`;
   if (p.op === "▭") return p.w + " by " + p.h + ": " + filled(p, ans);
   if (p.op === "more") return `${ans} is more`;
   if (p.op === "¢" && p.find) return `${ans} ${p.ans === 1 ? coinOf(p.find).name : p.q}`;
   if (p.op === "¢") return (p.q.includes("+") ? p.q + " = " : "") + ans + "¢";
-  return `${esc(p.q)} = ${ans}`;
+  return `${esc(bigText(p.q))} = ${bigText(ans)}`;
 }
 // The fact whose hint helps: the problem itself (hints.js works out a □ problem's own hint, or
 // uses the fact that works it out: 7 − 3 for 3 + □ = 7).
@@ -866,7 +890,7 @@ function newProblem() {
 // into its answer time; Judo Judy's throw isn't played again (it's already thrown).
 function presentProblem(key, flipped, restored, elapsed) {
   G.input = ""; G.busy = false; G.hinted = false; G.t0 = performance.now() - (elapsed || 0);
-  G.slot = G.cur.slots ? { at: 0, vals: ["", ""] } : null;
+  G.slot = G.cur.slots ? { at: 0, vals: G.cur.slots.map(() => "") } : null;
   G.tfDone = false;
   // The dot flash: shown, then hidden after FLASH_DOTS_MS (flashHide).
   G.flash = G.cur.op === "⁙" ? { shown: true, peeked: false, grouped: false } : null;
@@ -889,7 +913,7 @@ function presentProblem(key, flipped, restored, elapsed) {
   // shapes ("Draw a triangle!", "How many sides?").
   // The dot flash: "How many dots?", and the first time "Look quick! How many dots?".
   if (G.cur.op === "⁙" && once("flash")) say("p", PHRASE.flashHow, false, asked(G.cur));
-  else if ("¢○⌚…◐✓✎↔#$◇⁙".includes(G.cur.op) || G.cur.op === "more") say("q", spokenProblem(G.cur), false, asked(G.cur));
+  else if ("¢○⌚…◐✓✎↔#$◇⁙∠".includes(G.cur.op) || G.cur.op === "more") say("q", spokenProblem(G.cur), false, asked(G.cur));
   // Pipsqueak's dice: "How many dots in all?", and the first 2 times how.
   if (G.cur.dice) { if (once("dice", 2)) say("p", PHRASE.diceHow, false, asked(G.cur)); say("p", PHRASE.diceAll, false, asked(G.cur)); }
   // Drawing a shape: how, the first few times.
@@ -1114,7 +1138,7 @@ function openHint() {
   if (inline) { probUI(); ansUI(); clockArt(h.layer); }
   else if (G.cur.dice) probUI(); // Pipsqueak's dice get their numbers beside them
   // An equation in their words doesn't break across lines ("35 + 2 = ?").
-  box.innerHTML = (inline ? "" : `<div class="model">${h.model}</div>`) + `<p class="hsay">${esc(inline ? h.say.replace(/ ([=+−→]) /g, "\u00a0$1\u00a0") : h.say.replace(/ \? (\S+)$/, "\u00a0?\u00a0$1"))}</p>`; // nor a comparison ("2/3 ? 2/6")
+  box.innerHTML = (inline ? "" : `<div class="model">${h.model}</div>`) + `<p class="hsay">${esc(bigText(inline ? h.say.replace(/ ([=+−→]) /g, "\u00a0$1\u00a0") : h.say.replace(/ \? (\S+)$/, "\u00a0?\u00a0$1")))}</p>`; // nor a comparison ("2/3 ? 2/6")
   box.classList.toggle("words", inline);
   box.hidden = false;
   $("hintBtn").hidden = true; $("hintBtn").classList.remove("nudge");
@@ -1127,7 +1151,7 @@ function openWorked() {
   $("hint").hidden = true; $("hintBtn").hidden = true;
   show(`<div class="worked"><h2>Oops!</h2>
     <p class="worked-fact">${shownFact(G.cur, `<b>${G.cur.ans}</b>`)}</p>
-    <div class="model">${h.model}</div><p class="hsay">${esc(h.say)}</p>
+    <div class="model">${h.model}</div><p class="hsay">${esc(bigText(h.say))}</p>
     <div class="btns"><button class="big" type="button" id="gotIt">Got it</button></div></div>`, "float");
   $("gotIt").onclick = nextAfterMiss;
 }
@@ -1561,10 +1585,10 @@ function nextLock(C) {
 // The lock's problem: "4 + 3 = ?", or with the glowing ? in place of the □ ("7 + ? = 10").
 function lockHTML(p) {
   const B = '<span class="blank" id="lockAns">?</span>';
-  let t = p.op === "more" ? `${p.x} <small class="or">or</small> ${p.y}` : p.op === "/" || p.frac ? stacked(esc(p.q)) : esc(p.q);
+  let t = p.op === "more" ? `${p.x} <small class="or">or</small> ${p.y}` : p.op === "/" || p.frac ? stacked(esc(p.q)) : esc(bigText(p.q));
   if (t.includes("□")) t = t.replace("□", B);
   else t += (p.op === "more" ? "<br>" : " = ") + B;
-  if (p.op === "≈") t += `<small class="to">nearest ${p.to}</small>`;
+  if (p.op === "≈") t += `<small class="to">nearest ${bigText(p.to)}</small>`;
   return t;
 }
 const CHEST_TITLE = { locked: "A treasure chest!", open: "It's open!", shut: "Still locked" };
@@ -1595,7 +1619,7 @@ function chestPress(k) {
   sfx.tick();
   if (k === "del") C.input = C.input.slice(0, -1);
   else if (sym) C.input = k;
-  else if (C.input.length < 4) C.input = (C.input === "0" ? "" : C.input) + k;
+  else if (C.input.length < digitsMax(C.p)) C.input = (C.input === "0" ? "" : C.input) + k;
   const a = $("lockAns");
   if (a) { a.textContent = C.input || "?"; a.classList.toggle("typed", !!C.input); }
 }
@@ -3746,6 +3770,9 @@ async function chompAct(pose) {
 }
 
 /* ---------- input ---------- */
+// How many digits can be typed: four, or seven for the Forge's big numbers (a problem with a
+// number past 999, or an answer past 9999), so the box never tells how long the answer is.
+const digitsMax = (p) => (p && Math.max(p.x || 0, p.y || 0, p.ans || 0, p.n || 0, p.whole || 0) >= 1000 ? 7 : 4);
 function press(k) {
   if (G.next && k === "go") return nextAfterMiss();
   if (G.busy) return;
@@ -3769,7 +3796,7 @@ function press(k) {
   if (k === "del") G.input = rtl ? G.input.slice(1) : G.input.slice(0, -1);
   else if (sym) { G.input = k; chompTurn(mouthOf(k)); }
   else if (rtl) { if (G.input.length < stackWidth(G.cur)) G.input = k + G.input; }
-  else if (G.input.length < 4) G.input = (G.input === "0" ? "" : G.input) + k;
+  else if (G.input.length < digitsMax(G.cur)) G.input = (G.input === "0" ? "" : G.input) + k;
   ansUI();
 }
 // True or false (the Equal Twins): T or F, the key pressed in for a moment while the pad takes no
@@ -3796,14 +3823,16 @@ function slotPress(k) {
     if (s.at === 1) return submit();
     if (!cur) return;
     sfx.tick(); s.at = 1; ansUI();
-    if (G.cur.op === "$") { if (once("cents", 2)) say("p", PHRASE.nowCents, false, asked(G.cur)); }
+    if (G.cur.slotSay === "nowRemainder") { if (once("remainder", 2)) say("p", PHRASE.nowRemainder, false, asked(G.cur)); }
+    else if (G.cur.slotSay) { if (once("numerator", 2)) say("p", PHRASE.nowNumerator, false, asked(G.cur)); }
+    else if (G.cur.op === "$") { if (once("cents", 2)) say("p", PHRASE.nowCents, false, asked(G.cur)); }
     else if (once("minutes", 2)) say("p", PHRASE.nowMinutes, false, asked(G.cur));
     return;
   }
   if (k !== "del" && !/^[0-9]$/.test(k)) return;
   sfx.tick();
   if (k === "del") { if (cur) s.vals[s.at] = cur.slice(0, -1); else if (s.at) s.at--; }
-  else if (cur.length < 2) s.vals[s.at] = (s.at === 0 && cur === "0" ? "" : cur) + k;
+  else if (cur.length < (G.cur.slotMax || [2, 2])[s.at]) s.vals[s.at] = (s.at === 0 && cur === "0" ? "" : cur) + k;
   G.input = s.vals.join("");
   ansUI();
 }
@@ -4116,6 +4145,8 @@ document.addEventListener("keydown", (e) => {
   else if (/^[tf]$/i.test(e.key)) { if (G.cur && G.cur.op === "✓") press(e.key.toUpperCase()); }
   // ":" after the hour moves on to the minutes, as on a clock.
   else if (e.key === ":") { if (G.cur && G.slot && G.slot.at === 0) press("go"); }
+  // R after the quotient moves on to the remainder (29 ÷ 4 = 7 R 1), as it's written.
+  else if (e.key === "r" || e.key === "R") { if (G.cur && G.cur.op === "R" && G.slot && G.slot.at === 0) press("go"); }
   // ? opens the hint, like tapping 💡, when this problem has one.
   else if (e.key === "?") { if (!$("hintBtn").hidden) { e.preventDefault(); $("hintBtn").click(); } }
 });

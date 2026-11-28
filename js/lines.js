@@ -22,6 +22,8 @@ import { dollarFacts } from "./dollars.js";
 import { shapeFacts, squawkLine } from "./shapes.js";
 import { flashFacts, spokenFlash } from "./flash.js";
 import { traitOf } from "./traits.js";
+import { bigCompareFacts, roundFacts4, addSub4, times10s, timesOne, timesTwo, divideOne, remFacts, exprFacts, factorFacts, equivFacts4, fracCompare4, fracOpFacts, fracTimesFacts, decimalFacts, decCompareFacts, unitFacts, rect4Facts } from "./fourth.js";
+import { angleFacts, shapeAngleFacts } from "./angles.js";
 import { QUIPS, FINALS, CRIT, TEAM_LINES, TEAM_NUMBERS, CAPTAIN_LINES, captainNames } from "./moments.js";
 import { fewest, ITEMS } from "./loot.js";
 import { clothesById, findable } from "./clothes.js";
@@ -49,6 +51,10 @@ export var PHRASE = {
   nowMinutes: "Now the minutes!",
   // Bills and coins (Trollar) are typed the same way: the dollars, then the cents.
   nowCents: "Now the cents!",
+  // 4th grade (the Fraction Forge) the same way: a remainder after the quotient, a mixed
+  // number's numerator after its whole (fourth.js).
+  nowRemainder: "Now the remainder!",
+  nowNumerator: "Now the numerator!",
   // True or false (the Equal Twins): the two big keys, the first couple of times.
   tfHow: "Is it true? Tap True or False!",
   // Drawing a shape (Polly-Gon), the first few times; and when a drawing can't be read twice,
@@ -201,7 +207,7 @@ export function wingCleared(w) { return "You cleared " + w.name + "!"; }
 // A monster arriving as its step of the path opens (DESIGN.md §4.3), said on the floor-cleared or
 // end card: "A new monster appears in the Mines: Squaresquatch!" One per monster per stratum it
 // arrives in, in the monster's own sprite.
-var SHORT = { cellar: "the Cellar", hall: "the Hall", mines: "the Mines", tower: "the Tower" };
+var SHORT = { cellar: "the Cellar", hall: "the Hall", mines: "the Mines", tower: "the Tower", forge: "the Forge" };
 export function newMonsterLine(m, w) { return sayAs("A new monster appears in " + SHORT[w.id] + ": " + (m.base || m.n) + "!"); }
 // Every monster that arrives with a step, per stratum: [{ m, w }].
 export function arrivals() {
@@ -340,7 +346,7 @@ export function achievementLine(a, k) { return cardLines(a)[k]; }
 
 // [{ kind, text }], each once.
 // The groups the listen check (review/listen/) plays lines in.
-export var GROUPS = ["Phrases", "Monsters & heroes", "Add & subtract", "Times & divide", "Missing numbers", "Which is more", "Coins", "Two-digit", "Three-digit", "Balance Hall", "Compare to 1000", "Three numbers", "Up to four numbers", "Arrays", "Time", "Patterns", "True or false", "Place value", "Dollars", "Number line", "Shapes", "Fractions", "Compare fractions", "Rounding", "Area & perimeter", "Dot flash", "Hero quips", "Team-ups", "Captain lines", "Boss forms", "Chests & items", "Money", "Shop", "Clothing", "Achievements"];
+export var GROUPS = ["Phrases", "Monsters & heroes", "Add & subtract", "Times & divide", "Missing numbers", "Which is more", "Coins", "Two-digit", "Three-digit", "Balance Hall", "Compare to 1000", "Three numbers", "Up to four numbers", "Arrays", "Time", "Patterns", "True or false", "Place value", "Dollars", "Number line", "Shapes", "Fractions", "Compare fractions", "Rounding", "Area & perimeter", "Dot flash", "Big numbers", "Big × and ÷", "Remainders", "Steps & factors", "Fraction work", "Decimals", "Angles & shapes", "Measurement", "Hero quips", "Team-ups", "Captain lines", "Boss forms", "Chests & items", "Money", "Shop", "Clothing", "Achievements"];
 
 // [{ kind, text, group, sprite? }], each once.
 export function spokenLines() {
@@ -409,7 +415,7 @@ export function spokenLines() {
   // Time (Tick-Tockus) and patterns (Slimelipsis), asked and answered, each in a small audio
   // sprite for its strand ("time-h", "time-m", "time-t"; "pat-k", "pat-h", "pat-m"), since a
   // fight asks them one after another. A line two strands share is in the first one's.
-  var SPRITE_AT = { cellar: "k", hall: "h", mines: "m", tower: "t" };
+  var SPRITE_AT = { cellar: "k", hall: "h", mines: "m", tower: "t", forge: "f" };
   var stratumOf = function (list, set) { return list.find(function (l) { return l.id === set; }).stratum; };
   clockFacts().forEach(function (f) { var sp = "time-" + SPRITE_AT[stratumOf(TIME_LEVELS, f.set)]; add("q", spokenProblem(f), "Time", sp); add("q", spokenFact(f), "Time", sp); });
   patternFacts().forEach(function (f) { var sp = "pat-" + SPRITE_AT[stratumOf(PATTERN_GAME_LEVELS, f.set)]; add("q", spokenProblem(f), "Patterns", sp); add("q", spokenFact(f), "Patterns", sp); });
@@ -443,6 +449,14 @@ export function spokenLines() {
   sumFacts().forEach(function (f) { add("q", spokenProblem(f), "Up to four numbers"); add("q", spokenFact(f), "Up to four numbers"); });
   // The Balance Hall: "Compare three plus four and eight.", "three plus four is less than eight".
   balanceFacts().forEach(function (f) { add("q", spokenProblem(f), "Balance Hall"); add("q", spokenFact(f), "Balance Hall"); });
+  // 4th grade (the Fraction Forge, fourth.js and angles.js), asked and answered, a sum or a product
+  // either way round. Their sprites go by band and level (spriteFor), like every problem's.
+  var turn = function (f) { return (f.op === "+" || f.op === "×") && f.x !== f.y ? [f, { op: f.op, x: f.y, y: f.x, ans: f.ans }] : [f]; };
+  [[bigCompareFacts, "Big numbers"], [roundFacts4, "Rounding"], [addSub4, "Big numbers"], [times10s, "Big × and ÷"], [timesOne, "Big × and ÷"], [timesTwo, "Big × and ÷"], [divideOne, "Big × and ÷"],
+    [remFacts, "Remainders"], [exprFacts, "Steps & factors"], [factorFacts, "Steps & factors"], [equivFacts4, "Fractions"], [fracCompare4, "Compare fractions"], [fracOpFacts, "Fraction work"],
+    [fracTimesFacts, "Fraction work"], [decimalFacts, "Decimals"], [decCompareFacts, "Decimals"], [angleFacts, "Angles & shapes"], [shapeAngleFacts, "Angles & shapes"], [rect4Facts, "Area & perimeter"], [unitFacts, "Measurement"]].forEach(function (set) {
+    set[0]().forEach(function (f) { turn(f).forEach(function (g) { add("q", spokenProblem(g), set[1]); add("q", spokenFact(g), set[1]); }); });
+  });
   // Hero Moments (moments.js): every hero's quips, and the two for the big moments.
   Object.keys(QUIPS).forEach(function (d) { QUIPS[d].forEach(function (q) { add("h", quipLine(q), "Hero quips"); }); });
   FINALS.forEach((q) => add("h", quipLine(q), "Hero quips"));
@@ -492,7 +506,7 @@ export function estSeconds(text) { return text.length / CHARS_PER_S + SPRITE_GAP
 // (runSprites).
 export var ALWAYS = ["phrases-start", "phrases-fight", "phrases-explain", "heroes", "quips", "captains", "bosses", "loot", "money", "depths", "shop", "change", "clothes", "achievements"];
 var slug = function (t) { return t.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, ""); };
-var KIND = { "+": "add", "-": "sub", "×": "mul", "÷": "div", "□": "bonds", "○": "cmp", "=": "bal", "¢": "coins", "M": "more", "/": "frac", "≈": "round", "▭": "rect", "Σ": "three", "▦": "arrays", "✓": "tf", "✎": "fix", "↔": "line", "#": "pv", "$": "dollars", "◇": "shapes", "⁙": "flash" };
+var KIND = { "+": "add", "-": "sub", "×": "mul", "÷": "div", "□": "bonds", "○": "cmp", "=": "bal", "¢": "coins", "M": "more", "/": "frac", "≈": "round", "▭": "rect", "Σ": "three", "▦": "arrays", "✓": "tf", "✎": "fix", "↔": "line", "#": "pv", "$": "dollars", "◇": "shapes", "⁙": "flash", "R": "rem", "E": "steps", "F": "factors", "ƒ": "fracops", "d": "dec", "u": "units", "∠": "angles" };
 var memo = null;
 function index() {
   if (memo) return memo;

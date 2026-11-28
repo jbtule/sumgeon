@@ -21,6 +21,9 @@ import { dollarFacts, dollarFactOf, DOLLAR_GAME_LEVELS } from "./dollars.js";
 import { shapeFacts, shapeFactOf, SHAPE_STRANDS, isDrawKey } from "./shapes.js";
 import { flashFacts, flashFactOf, FLASH_LEVELS } from "./flash.js";
 import { asks as asksOf } from "./traits.js";
+import { bigCompareFacts, roundFacts4, addSub4, times10s, timesOne, timesTwo, divideOne, remFacts, remFactOf, exprFacts, exprFact, factorFacts, factorFactOf,
+  equivFacts4, fracCompare4, fracOpFacts, fracTimesFacts, fracOpFact, decimalFacts, decFact, decCompareFacts, unitFacts, unitFact, rect4Facts } from "./fourth.js";
+import { angleFacts, shapeAngleFacts, angleFact } from "./angles.js";
 
 // One band per grade, K to 3rd (DESIGN.md §2, §4.1), each the facts of one stratum, with its
 // levels in the order the school teaches them (Missouri Learning Standards and the school's
@@ -130,6 +133,24 @@ export const BANDS = {
       { name: "× and ÷ 11 and 12", has: big }
     ]
   },
+  // The Fraction Forge (DESIGN.md §4.4): 4th grade, in the order of the school's 4th grade guide:
+  // numbers to a million (comparing, rounding, adding and subtracting), multiplying and dividing,
+  // multi-step problems and factors, fractions, decimals, then geometry and measurement. Fixed
+  // samples (fourth.js, angles.js); every answer a whole number, a remainder or a mixed number in
+  // two slots. Its answers are long and worked in steps: fluent at 8 s (and a second a digit).
+  fourth: {
+    label: "4th grade", grade: 4, hearts: 5, fluentMs: 8000,
+    facts: () => bigCompareFacts().concat(roundFacts4(), addSub4(), times10s(), timesOne(), timesTwo(), divideOne(), remFacts(), exprFacts(), factorFacts(),
+      equivFacts4(), fracCompare4(), fracOpFacts(), fracTimesFacts(), decimalFacts(), decCompareFacts(), angleFacts(), shapeAngleFacts(), rect4Facts(), unitFacts()),
+    levels: [
+      ["Compare to a million", "cmp1m"], ["Round to any place", "round4"], ["Add and subtract to a million", "addsub4"],
+      ["× 10, 100 and 1000", "x10"], ["Multiply by one digit", "x1"], ["Two-digit × two-digit", "x2"],
+      ["Divide by one digit", "div1"], ["Remainders", "rem"], ["Multi-step and variables", "expr"], ["Factors and multiples", "factors"],
+      ["Equivalent fractions", "equiv4"], ["Compare fractions", "cmpfrac"], ["Add and subtract fractions", "fracops"], ["A fraction times a whole", "fractimes"],
+      ["Tenths and hundredths", "dec"], ["Compare decimals", "cmpdec"],
+      ["Angles", "angles"], ["Classify shapes", "classify"], ["Area and perimeter", "rect4"], ["Measurement", "units"]
+    ].map(([name, set]) => ({ name, has: (f) => f.set === set }))
+  },
   // Coins in the Cellar (K): find the coin, and what each is worth.
   coinsK: { label: "Coins", strand: true, hearts: 7, fluentMs: 5000, facts: coinFacts, levels: COIN_LEVELS.slice(0, 2) },
   // Coin values in the Hall (1st grade, 1.GM.C.9: each coin's worth): Trollar visits with the
@@ -175,6 +196,8 @@ export const BANDS = {
   // and by 5s in the Hall (1st), by 2s and 100s, what's missing, and odd and even in the Mines (2nd).
   patK: { label: "Patterns: count on", strand: true, hearts: 7, fluentMs: 5000, facts: patternFacts, levels: levelsOf(PATTERN_GAME_LEVELS, "cellar", ["ones", "back", "tens"]) },
   patH: { label: "Patterns: to 120", strand: true, hearts: 7, fluentMs: 5000, facts: patternFacts, levels: levelsOf(PATTERN_GAME_LEVELS, "hall") },
+  // Patterns from a rule (4th grade, 4.RA.C): Slimelipsis visiting the Fraction Forge.
+  patF: { label: "Patterns: rules", strand: true, hearts: 5, fluentMs: 6000, facts: patternFacts, levels: levelsOf(PATTERN_GAME_LEVELS, "forge") },
   patM: { label: "Patterns: skip counting", strand: true, hearts: 5, fluentMs: 6000, facts: patternFacts, levels: levelsOf(PATTERN_GAME_LEVELS, "mines", ["hundreds", "middle", "twos", "oddeven20", "oddeven100"]) },
   // Shapes (Polly-Gon, js/shapes.js), a strand in each stratum: drawing and naming circles,
   // squares, triangles, rectangles and hexagons, their sides and corners, in the Cellar (K);
@@ -224,7 +247,8 @@ export function keyOf(f) {
 }
 // A problem for a key, turned around half the time for + and ×.
 export function factOf(key, rnd) {
-  const own = { "¢": coinFactOf, "○": balanceFactOf, "=": balanceFactOf, "□": hiddenFactOf, "M": moreFactOf, "/": fractionFactOf, "≈": roundFactOf, "▭": rectFactOf, "Σ": threeFactOf, "▦": arrayFactOf, "⌚": clockFactOf, "…": patternFactOf, "◐": oddEvenFactOf, "✓": tfFactOf, "✎": tfFactOf, "↔": lineFactOf, "#": pvFactOf, "$": dollarFactOf, "◇": shapeFactOf, "⁙": flashFactOf }[key[0]];
+  const own = { "¢": coinFactOf, "○": balanceFactOf, "=": balanceFactOf, "□": hiddenFactOf, "M": moreFactOf, "/": fractionFactOf, "≈": roundFactOf, "▭": rectFactOf, "Σ": threeFactOf, "▦": arrayFactOf, "⌚": clockFactOf, "…": patternFactOf, "◐": oddEvenFactOf, "✓": tfFactOf, "✎": tfFactOf, "↔": lineFactOf, "#": pvFactOf, "$": dollarFactOf, "◇": shapeFactOf, "⁙": flashFactOf,
+    "R": remFactOf, "E": exprFact, "F": factorFactOf, "ƒ": fracOpFact, "d": decFact, "u": unitFact, "∠": angleFact }[key[0]];
   if (own) return own(key, rnd);
   const op = key[0], [a, b] = key.slice(1).split(",").map(Number);
   const flip = (op === "+" || op === "×") && (rnd || Math.random)() < 0.5;
