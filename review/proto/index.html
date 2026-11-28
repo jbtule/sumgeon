@@ -70,7 +70,11 @@
   .pp .prob.long:not(.words){font-size:clamp(20px,6vw,28px)}
   .pp-pic svg.pv{width:100%;height:100%;max-height:100cqh;display:block}
   .seg button{padding:0 5px;font-size:17px}
+  /* Eight kinds: on a 320-wide phone the icons squeeze up so the level still shows. */
+  @media(max-width:360px){.seg{gap:0;padding:2px}.seg button{padding:0 2px;font-size:15px}}
   .pp-pic svg.nl{width:100%;max-height:100cqh;display:block}
+  /* Charts (Graphzilla): the chart on its own chalkboard, as big as the box allows. */
+  .pp-pic svg.chart{width:100%;height:100%;max-height:100cqh;display:block}
   .pp-pic svg.money,.pp-pic svg.tf{width:100%;height:100%;max-height:100cqh;display:block}
   /* Fix it: the wrong number, crossed out, lifts above its place, small and red; the "?" takes
      its place on the line. */
@@ -139,6 +143,7 @@
 <section class="notes">
   <h1>Sum<b>geon</b> prototype</h1>
   <p>Two new kinds of problem to try on a phone before they go in the game: telling time with Tick-Tockus, and what comes next with Slimelipsis. Nothing is saved or learned here. The voice is the device's own (these lines aren't recorded yet); the small line under the problem is what it says.</p>
+  <p>📊 Charts: Graphzilla's charts, a kind for each grade from 1st to 5th (tally charts, picture and bar graphs, scaled ones, line plots, frequency tables with mode and range, the median, line graphs). <code>?type=chart&amp;grade=3</code> opens a grade, <code>&amp;level=sbar3</code> a kind, <code>&amp;q=m</code> a question (how many more), <code>&amp;chart=&lt;key&gt;</code> one fact.</p>
   <p>Type the answer and tap Hit! (or Enter). 💡 (or ?) shows the hint; a miss shows the answer and the worked hint. Next (or Enter again) brings a new problem.</p>
   <!-- scripts/stamp.mjs fills in the commit at deploy time; locally it reads "dev". -->
   <a class="badge" id="buildLink" href="https://github.com/jbtule/sumgeon" target="_blank" rel="noopener" title="Deployed version">

@@ -15,6 +15,7 @@ import { TF_LEVELS, tfProblem, tfSvg, tiltOf, tfHint, spokenTF, spokenTFAnswer, 
 import { LINE_LEVELS, lineProblem, lineSvg, lineHint, spokenLine, spokenLineAnswer } from "../../js/numberline.js";
 import { PV_LEVELS, pvProblem, pvSvg, pvLine, pvHint, spokenPV, spokenPVAnswer } from "../../js/placevalue.js";
 import { DOLLAR_LEVELS, dollarProblem, dollarSvg, dollarHint, spokenDollars, sayMoney } from "../../js/dollars.js";
+import { CHART_LEVELS, chartProblem, chartFactOf, chartSvg, chartLine, chartHint, spokenChart, spokenChartAnswer, chartQuestion, platesOf } from "../../js/charts.js";
 import { SHAPE_LEVELS, shapeLevel, isDraw, countProblem, countSvg, countHint, spokenCount, spokenDraw, readShape, judgeShape, cleanShape, article, CORNERS, COUNT_LINE } from "../../js/shapes.js";
 
 const $ = (id) => document.getElementById(id);
@@ -111,6 +112,17 @@ const TYPES = {
     words: (p) => p.kind !== "expanded",
     hint: pvHint, spoken: spokenPV, missed: spokenPVAnswer, answer: (p) => p.ans
   },
+  chart: {
+    // Reading charts (Graphzilla): its grade's kind of chart in each stratum (1st to 5th grade).
+    // The chart is the picture; Graphzilla's back plates echo its data (platesOf).
+    icon: "📊", label: "Charts", mon: "Graphzilla", levels: CHART_LEVELS,
+    problem: (lv, rnd) => chartProblem(lv.id, rnd),
+    picture: (p, st) => chartSvg(p, { hint: !!st.hint, worked: st.worked }),
+    plates: platesOf,
+    line: (p, slot) => chartLine(p).map((x) => (x === null ? slot(0) : esc(x))).join(""), words: true,
+    question: chartQuestion,
+    hint: chartHint, spoken: spokenChart, missed: spokenChartAnswer, answer: (p) => p.ans
+  },
   dollars: {
     icon: "💵", label: "Dollars", mon: "Trollar", levels: DOLLAR_LEVELS,
     problem: (lv, rnd) => dollarProblem(lv.id, rnd),
@@ -142,6 +154,12 @@ if (TYPES[q.get("type")]) view.type = q.get("type");
 if (q.get("level")) view[view.type] = q.get("level");
 if (q.get("numbers")) view.numbers = q.get("numbers") === "hand" ? "hand" : "bungee";
 if (q.get("hands")) view.hands = q.get("hands") === "tentacle" ? "tentacle" : "arrow";
+// Charts: ?grade=3 opens that grade's first kind of chart (or ?level=sbar3 a kind); ?q=m asks that
+// question first (n, m, f, t, a; at, gt, mo, ra, me; to; v, c); ?chart=<key> asks that fact.
+if (view.type === "chart" && q.get("grade") && !q.get("level")) {
+  const lv = CHART_LEVELS.find((l) => l.grade.startsWith(q.get("grade")));
+  if (lv) view.chart = lv.id;
+}
 // ?seed=<n> makes the problems the same each time (for screenshots).
 let seed = Number(q.get("seed")) || 0;
 const rnd = seed ? () => ((seed = (seed * 9301 + 49297) % 233280) / 233280) : Math.random;
@@ -200,6 +218,8 @@ function draw() {
   const t = T(), p = S.p, worked = S.hint === "worked", hint = hintNow();
   const st = { typed: S.typed, done: S.done, hint, worked };
   $("pic").innerHTML = t.picture(p, st);
+  // Graphzilla's back plates show the problem's data.
+  if (t.plates) $("mon").innerHTML = svg({ ...monster(t.mon), plates: t.plates(p) });
   $("prob").className = "prob" + ((typeof t.words === "function" ? t.words(p) : t.words) ? " words" : "");
   $("prob").innerHTML = t.line(p, slot);
   // A long line ("1 hundred + 17 tens + 6 ones = □") gets smaller and may wrap.
@@ -325,6 +345,8 @@ function next(speak) {
   const tm = !S && view.type === "clock" && !p.kind && /^(\d{1,2}):(\d\d)$/.exec(q.get("time") || "");
   if (tm) { const h = Number(tm[1]), m = Number(tm[2]); p = { level: lv.id, h, m, ask: m && q.get("ask") !== "hour" ? "minutes" : "hour", ans: m && q.get("ask") !== "hour" ? m : h }; }
   if (!S && p.draw && q.get("shape")) p.shape = q.get("shape");
+  if (!S && view.type === "chart" && q.get("chart")) p = chartFactOf(q.get("chart"));
+  else if (!S && view.type === "chart" && q.get("q")) for (let i = 0; i < 200 && p.q.k !== q.get("q"); i++) p = t.problem(lv, rnd);
   // ?frac=5/8 puts the number line's dot there first.
   const fr = !S && view.type === "numberline" && p.kind === "where" && /^(\d+)\/(\d+)$/.exec(q.get("frac") || "");
   if (fr) { p.n = Number(fr[1]); p.d = Number(fr[2]); p.ans = p.n; }
