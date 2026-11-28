@@ -907,6 +907,7 @@ function fitName(m) {
 function superCharge(fresh) {
   const c = G.cur && G.cur.charge, el = $("superCharge");
   el.hidden = !c;
+  el.parentElement.classList.toggle("badged", !!c);
   if (!c) return;
   el.classList.toggle("braced", !!c.down);
   el.innerHTML = c.up ? `<b>⚡</b><i>×${c.up.toLocaleString("en-US")}</i>` : `<b>🛡️</b><i>÷${c.down.toLocaleString("en-US")}</i>`;

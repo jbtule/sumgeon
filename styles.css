@@ -1547,3 +1547,13 @@ body.on-scene>.top,body.on-scene>.who,body.on-scene>.game,body.on-scene>.badges{
 .game .ans.longer{font-size:clamp(16px,5vw,24px)}
 .prob .blank.long{font-size:.74em}
 .prob .blank.longer{font-size:.6em}
+/* On a phone the Super Charge badge is one compact line, and while it shows the 🔊 and 💡 stack,
+   so the row keeps its width and nothing is pushed off the screen. */
+@media (max-width: 759px){
+  .supercharge{flex-direction:row;gap:2px;padding:2px 5px}
+  .supercharge b{font-size:12px}
+  .supercharge i{font-size:11px}
+  .probrow.badged{display:grid;grid-auto-flow:column;grid-template-rows:auto auto;align-items:center}
+  .probrow.badged > .icon-btn{grid-row:span 1}
+  .probrow.badged > :not(.icon-btn){grid-row:1 / span 2}
+}
