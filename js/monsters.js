@@ -291,6 +291,36 @@ MON.push(
    +X.map(face).join('')
    +X.map((x)=>`<circle cx="${x-14}" cy="${B-47}" r="3.5" fill="#fff" opacity=".7"/>`).join('')}});
 
+// Graphzilla (reading charts, js/charts.js; on the prototype page, not in the game yet): a friendly
+// kaiju standing upright, its back plates a bar chart rising behind it, in the colors of the chart's
+// things. The plates take the problem's data (m.plates, [{ v, c }], up to four; charts.js platesOf),
+// as Tick-Tockus's clock shows the time asked. A round body, a striped belly, a short tail, round feet.
+const GZ_PLATES = [{ v: 3, c: GOLD }, { v: 5, c: CORAL }, { v: 2, c: '#45d6e6' }, { v: 4, c: '#9a7bff' }];
+function graphzilla(c, plates) {
+  const ps = (plates && plates.length ? plates : GZ_PLATES).slice(0, 4), most = Math.max(1, ...ps.map((p) => p.v));
+  const x0 = 40, span = 120, slot = span / ps.length, w = Math.min(24, slot - 4), BASE = 110;
+  const bars = ps.map((p, i) => { const h = 40 + 58 * Math.max(0, p.v) / most; return solid(`<rect x="${f1(x0 + slot * i + (slot - w) / 2)}" y="${f1(BASE - h)}" width="${f1(w)}" height="${f1(h + 14)}" rx="5"/>`, p.c); }).join('');
+  const BELLY = '#c8f0dc';
+  return bars
+  // A short tail, then the body and its striped belly.
+  +solid(`<path d="M150 170 Q186 176 190 160 Q172 168 150 156 Z"/>`,c)
+  +solid(`<path d="M56 170 Q50 92 100 86 Q150 92 144 170 Q144 196 100 196 Q56 196 56 170 Z"/>`,c)
+  +solid(`<ellipse cx="100" cy="166" rx="28" ry="25"/>`,BELLY)
+  +`<path d="M82 156 H118 M78 168 H122 M84 180 H116" ${thin(2.5)} opacity=".25"/>`
+  // Round feet and little arms.
+  +solid(`<ellipse cx="74" cy="198" rx="20" ry="9"/><ellipse cx="126" cy="198" rx="20" ry="9"/>`,c)
+  +solid(`<ellipse cx="54" cy="160" rx="9" ry="15" transform="rotate(25 54 160)"/><ellipse cx="146" cy="160" rx="9" ry="15" transform="rotate(-25 146 160)"/>`,c)
+  // The face: round eyes, cheeks, a smile.
+  +eye(86,114,10)+eye(114,114,10)
+  +`<ellipse cx="74" cy="130" rx="7" ry="4" fill="#ff7a6e" opacity=".6"/><ellipse cx="126" cy="130" rx="7" ry="4" fill="#ff7a6e" opacity=".6"/>`
+  +`<path d="M90 130 Q100 138 110 130" ${ds}/>`;
+}
+NEW_MON.push(
+ {n:'Graphzilla',op:'▥',sym:'📊',stratum:"every stratum, its grade's charts",c:'#2fa37a',hits:3,
+  trait:{icon:'📊',name:'Chart Stomp',text:"Asks reading charts, its stratum's grade of them; its back plates are the chart's bars"},
+  quip:'stomps off to draw a bigger chart.',
+  d:(c,m)=>graphzilla(c,m&&m.plates)});
+
 /* ---------- Chompers' jaws ----------
    Chompers' mouth is the < symbol: two jaws hinged at (44, 100). jaw.o is how open they are (1,
    the drawing's <, down to 0, closed flat) and jaw.gap how far apart (24 is "=", the mouth shut as
@@ -347,6 +377,8 @@ export const ANCHOR = {
   "Margot-Rythm": { eyes: [[82, 41, 10], [118, 41, 10]], mouth: [100, 129], top: [100, 1], neck: [100, 148], ground: 193 },
   // Polly-Gon (NEW_MON): its mouth is the beak, its top the head under the crest.
   "Polly-Gon": { eyes: [[86, 40, 11], [114, 40, 11]], mouth: [100, 62], top: [100, 12], neck: [100, 80], ground: 196 },
+  // Graphzilla (NEW_MON): upright, its head the top of its round body; no neck, so it's under the smile.
+  Graphzilla: { eyes: [[86, 114, 10], [114, 114, 10]], mouth: [100, 132], top: [100, 88], neck: [100, 144], ground: 205 },
   // Rulerpillar (NEW_MON): its head is the front end of the arch.
   Rulerpillar: { eyes: [[151, 136, 9], [173, 136, 9]], mouth: [162, 156], top: [162, 118], neck: [162, 178], ground: 196 }
 };

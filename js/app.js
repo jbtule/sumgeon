@@ -33,11 +33,11 @@ import { byLevel, offlineLine } from "./offline.js";
 import { freshState as freshMoments, freshRun, decide as decideMoment, joined, heardOf, nameLine } from "./moments.js";
 import { playMoment } from "./slowmo.js";
 import { playDescent, descending, skipDescent, surfaceHTML } from "./descent.js";
-import { plushSvg, PLUSH, PLUSH_HEART } from "./plushie.js";
-import { chestAfter, lockKey, lockOf, contents, moneyFor, fewest, setBills, ITEMS, itemOf, SLOTS, freshItems, countOf, gain, putInSlot, clearSlot, useSlot, eatPie, arm, blockMiss, totemMult, magnetSpent, freshWardrobe, addPiece, wearOf, putOn, ownedFor, unowned, billsOn } from "./loot.js";
+import { plushSvg, plushById, favoriteOf, heroOfPlush, PLUSH_HEART } from "./plushie.js";
+import { chestAfter, lockKey, lockOf, contents, moneyFor, fewest, setBills, ITEMS, itemOf, SLOTS, freshItems, countOf, gain, putInSlot, clearSlot, useSlot, eatPie, arm, blockMiss, totemMult, magnetSpent, freshWardrobe, addPiece, wearOf, putOn, ownedFor, unowned, billsOn, addPlush, hasPlush, plushLeft } from "./loot.js";
 import { kPrices, priceOf, MANY, manyOK, howMany, mostFor, sumText, moneyText as moneyAmt, timesOK, payMany, freshShop, restock, forSale, TOKENS, valueOf, empty as emptyCounter, total as counterTotal, left as purseLeft, purseFor, putDown, takeBack, enough, canAfford } from "./shop.js";
 import { CLOTHES, SPOTS, clothesById, pieceSvg } from "./clothes.js";
-import { LOOT, askLine, itemName, itemWhat, itemUse, moneyLine, purseLine, ALWAYS, runSprites, SHOP, clothingName, priceLine, changeLine, manyLine, affordLine } from "./lines.js";
+import { LOOT, askLine, itemName, itemWhat, itemUse, moneyLine, purseLine, ALWAYS, runSprites, SHOP, clothingName, priceLine, changeLine, manyLine, affordLine, plushName, plushFavLine } from "./lines.js";
 import { stepRows, stratumSummary, strataOrder, gridOf, gridsFor, kindsFor, needsWork, factLabel, factDetail, factState, STATE_WORDS, secs } from "./progress.js";
 import { chestSvg, purseSvg, walletSvg, walletMini, stallSvg, priceTag, billSvg, pieSvg } from "./chest.js";
 import { newKey, keysFor, isKey, linkFor, keyFromLink } from "./seal.js";
@@ -524,7 +524,11 @@ function stackCells(p, typed) {
 }
 function stackHTML(p) {
   const nums = p.nums || [p.x, p.y], w = stackWidth(p);
-  const rows = nums.map((n, i) => `<span class="sop">${i === nums.length - 1 ? (p.op === "-" ? "−" : "+") : ""}</span><span class="snum">${n}</span>`).join("");
+  // Each digit in a cell of its own, one column wide (the answer's cells are the same width), so
+  // ones line up under ones whatever the font: Bungee's digits aren't all the same width, and
+  // long numbers drifted out of their columns.
+  const cols = (n) => `<span class="scols">${[...String(n)].map((d) => `<span class="scell">${d}</span>`).join("")}</span>`;
+  const rows = nums.map((n, i) => `<span class="sop">${i === nums.length - 1 ? (p.op === "-" ? "−" : "+") : ""}</span><span class="snum">${cols(n)}</span>`).join("");
   return `<span class="stacked${nums.length > 2 ? " rows" + nums.length : ""}" style="--w:${w}" role="img" aria-label="${esc(p.q)}">${rows}<span class="sbar"></span><span class="sop"></span><span class="snum sans"><span class="blank scells" id="blank" aria-label="Answer, typed from the ones">${stackCells(p, "")}</span></span></span>`;
 }
 // A shape problem (Polly-Gon): what to draw (the voice says it too; the body flashes it), or the
@@ -1633,10 +1637,20 @@ function chestSubmit(C) {
 }
 // What's inside (loot.js contents): money, counted aloud, or an item. Saved at once.
 function takeLoot(C) {
-  let what = contents(Math.random, wardrobe.owned, moneyOK(), C.big);
+  let what = contents(Math.random, wardrobe.owned, moneyOK(), C.big, wardrobe.plush);
   if (CHEST_ALWAYS === "money") what = { kind: "money" };
   if (CHEST_ALWAYS === "item" && what.kind !== "item") what = { kind: "item", item: ITEMS[Math.floor(Math.random() * ITEMS.length)].id };
   if (CHEST_ALWAYS === "clothing" && what.kind !== "clothing") { const l = unowned(wardrobe.owned); if (l.length) what = { kind: "clothing", piece: l[Math.floor(Math.random() * l.length)].id }; }
+  if (CHEST_ALWAYS === "plush" && !C.big) { const l = plushLeft(wardrobe.plush); if (l.length) what = { kind: "plush", plush: l[Math.floor(Math.random() * l.length)].id }; }
+  if (what.kind === "plush") {
+    // A plushie not owned yet (rare, plushie.js): its name, and whose favorite it is; it sits by
+    // that hero on the start scene from now on.
+    const p = plushById[what.plush];
+    addPlush(wardrobe, p.id); saveWardrobe();
+    say("p", plushName(p.id)); say("p", plushFavLine(p.id));
+    C.lootMsg = `<b class="loot-name">${esc(p.name)}</b>${plushWhose(p.id)}`;
+    return `<div class="loot-plush">${plushSvg(p.id)}</div>`;
+  }
   if (what.kind === "clothing") {
     // A piece not owned yet, into the bag; shown on the captain, with Put it on beside Next.
     const p = clothesById[what.piece];
@@ -1749,17 +1763,20 @@ function wardrobeCard(back, quiet) {
    fewest bills and coins) are tapped onto the counter one at a time, and tapped back off, until
    there's enough, and Buy lights up. The game never pays. Too much: Trollar gives change, as the
    fewest coins, back into the purse. Can't afford it: Trollar says so, with no counter. */
-const thingName = (t) => (t.kind === "item" ? itemOf(t.id).name : clothesById[t.id].name);
-const thingArt = (t) => (t.kind === "item" ? `<span class="ico" aria-hidden="true">${itemIcon(t.id)}</span>` : pieceSvg(t.id));
+const thingName = (t) => (t.kind === "item" ? itemOf(t.id).name : t.kind === "plush" ? plushById[t.id].name + " plushie" : clothesById[t.id].name);
+const thingArt = (t) => (t.kind === "item" ? `<span class="ico" aria-hidden="true">${itemIcon(t.id)}</span>` : t.kind === "plush" ? plushSvg(t.id, { label: false }) : pieceSvg(t.id));
+// Whose favorite a plushie is, as written under it: "Chef Eight's favorite!"
+const plushWhose = (id) => `${esc(HEROES[heroOfPlush(id)].n)}'s favorite!`;
 // One coin (or a $1 bill) as art.
 const tokenArt = (k) => (k === "b" ? billSvg() : coinsSvg([{ k }]));
 // The coins as a row of single tokens, biggest first: [{ k, i }] for each one.
 const tokensOf = (c) => TOKENS.flatMap((t) => Array.from({ length: c[t.k] || 0 }, (_, i) => ({ k: t.k, i })));
-function shopRestock() { shop.stock = restock(wardrobe.owned, Math.random, shop.stock); saveShop(); }
+function shopRestock() { shop.stock = restock(wardrobe.owned, Math.random, shop.stock, wardrobe.plush); saveShop(); }
 function shopCard(view) {
   setBills(billsOK());
   G.onMenu = false;
-  if (!shop.stock.length && unowned(wardrobe.owned).length) shopRestock();
+  // A stock saved before plushies (or none yet) gets a fresh handful.
+  if ((!shop.stock.length && unowned(wardrobe.owned).length) || (!shop.stock.some((id) => plushById[id]) && plushLeft(wardrobe.plush).length)) shopRestock();
   const k = kPrices(st.grade), S = G.shopping = G.shopping || {};
   S.purse = purseFor(wallet, S.purse); // this visit's coins (shop.js purseFor)
   const troll = MON.find((m) => m.n === "Trollar");
@@ -1767,10 +1784,10 @@ function shopCard(view) {
   <div class="shop-top"><div class="shop-troll">${svg(troll)}</div><p class="bubble" id="shopSays">${msg}</p></div>`;
   const back = () => { G.shopping = null; menu(); };
   if (!view || view === "stock") {
-    const sale = forSale(shop, wardrobe.owned);
+    const sale = forSale(shop, wardrobe.owned, wardrobe.plush);
     const tiles = sale.map((t, i) => {
       const c = priceOf(t, k), have = t.kind === "item" ? countOf(inv, t.id) : 0;
-      return `<button type="button" class="stile${t.kind === "clothing" ? " cloth" : ""}${wallet < c ? " dear" : ""}" data-i="${i}" aria-label="${esc(thingName(t))}, ${c} cents">
+      return `<button type="button" class="stile${t.kind === "clothing" ? " cloth" : t.kind === "plush" ? " plush" : ""}${wallet < c ? " dear" : ""}" data-i="${i}" aria-label="${esc(thingName(t))}, ${c} cents">
         <span class="sart">${thingArt(t)}${have ? `<b class="shave">${have}</b>` : ""}</span>${priceTag(c)}</button>`;
     }).join("");
     const noClothes = !unowned(wardrobe.owned).length, first = !S.greeted && once("shopHello");
@@ -1788,7 +1805,7 @@ function shopCard(view) {
     $("card").querySelectorAll(".stile").forEach((b) => b.onclick = () => {
       const t = sale[Number(b.dataset.i)], c = priceOf(t, k);
       sfx.tick();
-      say("p", priceLine(t, c), true);
+      if (t.kind === "plush") { say("p", plushName(t.id), true); say("p", priceLine(t, c)); } else say("p", priceLine(t, c), true);
       Object.assign(S, { thing: t, price: c, n: 1, counter: emptyCounter(), paid: null });
       if (!canAfford(wallet, c)) { say("p", SHOP.need); return shopCard("need"); }
       // An item: how many first (1 to MANY); clothing is one each, straight to paying.
@@ -1868,12 +1885,12 @@ function shopCard(view) {
       const r = payMany(S.purse, S.counter, c, n, t);
       if (!r.ok) return; // never pays for you
       wallet = r.wallet; S.purse = r.purse; saveWallet();
-      if (t.kind === "item") { gain(inv, t.id, r.n); saveItems(); } else { addPiece(wardrobe, t.id); saveWardrobe(); }
+      if (t.kind === "item") { gain(inv, t.id, r.n); saveItems(); } else if (t.kind === "plush") { addPlush(wardrobe, t.id); saveWardrobe(); } else { addPiece(wardrobe, t.id); saveWardrobe(); }
       S.paid = r;
       sfx.chestOpen();
       if (r.exact) { say("p", SHOP.exact, true); surprise("surprise:exact"); } else say("p", changeLine(r.change), true);
       say("p", SHOP.thanks);
-      if (t.kind === "item") { if (r.n > 1) say("p", SHOP.inItemsMany); else say("p", SHOP.inItems); } else if (hasCaptain()) say("p", SHOP.putOn);
+      if (t.kind === "item") { if (r.n > 1) say("p", SHOP.inItemsMany); else say("p", SHOP.inItems); } else if (t.kind === "plush") say("p", plushFavLine(t.id)); else if (hasCaptain()) say("p", SHOP.putOn);
       shopCard("bought");
     };
     return;
@@ -1885,7 +1902,7 @@ function shopCard(view) {
   show(`${head("Thank you! Come again!")}${thing.replace('class="sthing', 'class="sthing got')}
   ${change}
   <div class="spurse"><span class="slabel">Your purse</span><div class="scoins">${tokensOf(S.purse).map((x) => `<span class="stoken">${tokenArt(x.k)}</span>`).join("") || "<small>Empty</small>"}</div><b class="stotal">${moneyAmt(wallet, billsOn())}</b></div>
-  <p class="snote">${t.kind === "item" ? (r.n > 1 ? "They're in your 🎒 items." : "It's in your 🎒 items.") : cloth ? "Put it on?" : "It's in your 👕 wardrobe."}</p>
+  <p class="snote">${t.kind === "item" ? (r.n > 1 ? "They're in your 🎒 items." : "It's in your 🎒 items.") : t.kind === "plush" ? plushWhose(t.id) : cloth ? "Put it on?" : "It's in your 👕 wardrobe."}</p>
   <div class="btns">${cloth ? `<button class="big alt" id="shopBack">Not now</button><button class="big" id="shopWear">👕 Put it on</button>` : `<button class="big" id="shopBack">Back to the shop</button>`}</div>`, "page shop");
   $("shopBack").onclick = toShop;
   if ($("shopWear")) $("shopWear").onclick = () => {
@@ -2371,7 +2388,7 @@ function menu() {
   const kept = !G.running && hasCaptain() ? savedRun() : null;
   G.askKeep = !!kept;
   const keepNote = kept ? `${esc(WINGS.find((x) => x.id === kept.s.wing).name)} · ${kept.s.depth > 1 ? `Depth ${kept.s.depth} · ` : ""}${kept.floors[kept.s.floor + (kept.s.stage === "floor" ? 1 : 0)].boss ? "Boss floor" : `Floor ${kept.s.floor + (kept.s.stage === "floor" ? 2 : 1)} / ${kept.floors.length}`}` : "";
-  show(`${head.replace('<div class="scene-gap" aria-hidden="true"></div>', '<div class="scene-gap"><button type="button" class="stall-tap" id="stallTap" tabindex="-1" aria-label="Trollar\'s shop" hidden></button><button type="button" class="plush-tap" id="plushTap" tabindex="-1" aria-label="${PLUSH.name}" hidden></button></div>')}
+  show(`${head.replace('<div class="scene-gap" aria-hidden="true"></div>', '<div class="scene-gap"><button type="button" class="stall-tap" id="stallTap" tabindex="-1" aria-label="Trollar\'s shop" hidden></button></div>')}
   ${captainHTML()}
   ${lootRowHTML()}
   <div class="grp"><span>Pick a stratum</span><div class="wings strata"><div class="surface" aria-hidden="true"></div>${wingsHTML()}</div></div>
@@ -2398,7 +2415,6 @@ function menu() {
   if ($("openPurse")) $("openPurse").onclick = () => purseCard(false);
   $("openItems").onclick = () => itemsCard(false);
   $("stallTap").onclick = () => { G.shopping = null; shopCard(); };
-  $("plushTap").onclick = squeezePlush;
   if ($("openShop")) $("openShop").onclick = $("stallTap").onclick;
   $("go").onclick = () => {
     if (!hasCaptain()) { $("warn").textContent = freePick(team, fresh()) ? "Pick your hero first." : "Pick who leads first."; $("captain").scrollIntoView({ block: "center", behavior: "smooth" }); say("p", PHRASE.heroFirst, true); return; }
@@ -2476,7 +2492,10 @@ function installCard() {
 // from this same surface (sceneNow), and start() takes it away.
 let sceneHz = null;
 function sceneHeroes() {
-  const art = (d, role, o) => ({ svg: heroSvg(HEROES[d], Object.assign({ wear: dressOf(d) }, o)), role });
+  // A hero whose favorite plushie the player owns has it at their feet (plushie.js FAVORITE).
+  const art = (d, role, o) => { const p = favoriteOf(d), h = { svg: heroSvg(HEROES[d], Object.assign({ wear: dressOf(d) }, o)), role };
+    if (p && hasPlush(wardrobe, p.id)) Object.assign(h, { plush: plushArt(p.id), plushId: p.id });
+    return h; };
   const rest = team.rescued.filter((d) => d !== team.captain).sort((a, b) => a - b).map((d) => art(d, "team"));
   if (hasCaptain()) return [art(team.captain, "cap", { color: team.color }), ...rest];
   return rest; // with nobody picked, just the door
@@ -2492,13 +2511,23 @@ function drawScene() {
     card.style.setProperty("--sheet", sheet + "px");
     sceneHz = card.getBoundingClientRect().top + $("ov").scrollTop + sheet - 16;
   }
-  sc.innerHTML = surfaceHTML({ W, H, hz: sceneHz || H * 0.4, heroes: sceneHeroes(), stall: shopOK() ? STALL : "", plush: PLUSH_SVG });
+  sc.innerHTML = surfaceHTML({ W, H, hz: sceneHz || H * 0.4, heroes: sceneHeroes(), stall: shopOK() ? STALL : "", plush: plushArt("pluffy") });
   // Trollar's stall opens the shop: the scene is under the card, so a see-through button in the
   // card's window (the scene-gap) sits over it. Only on the start screen proper (#stallTap is
   // there), never mid-run.
   overScene($("stallTap"), gap, sc.querySelector(".d-stall"));
-  // Pluffy squeaks when tapped (squeezePlush): its tap target, the same way.
-  overScene($("plushTap"), gap, sc.querySelector(".d-plush"), 6);
+  // Each plushie squeaks when tapped (squeezePlush): a tap target over each, the same way. Only on
+  // the start screen proper (the stall's target is there too).
+  if (gap) gap.querySelectorAll(".plush-tap").forEach((b) => b.remove());
+  if (gap && $("stallTap")) sc.querySelectorAll(".d-plush").forEach((toy) => {
+    const b = document.createElement("button");
+    Object.assign(b, { type: "button", className: "plush-tap", tabIndex: -1, hidden: true });
+    const p = plushById[toy.dataset.plush || "pluffy"];
+    b.setAttribute("aria-label", p ? p.name : "Plushie");
+    b.onclick = () => squeezePlush(toy);
+    gap.appendChild(b);
+    overScene(b, gap, toy, 6);
+  });
 }
 // A see-through button in the card's window, put over a part of the scene (hidden when too
 // little of it shows through the window to tap). pad: extra px around it, for a small one.
@@ -2509,12 +2538,12 @@ function overScene(tap, gap, box, pad = 0) {
   Object.assign(tap.style, { left: Math.round(s.left - pad - g.left) + "px", top: Math.round(top) + "px", width: Math.round(s.width + 2 * pad) + "px", height: Math.max(0, Math.round(bottom - top)) + "px" });
   tap.hidden = bottom - top < 24;
 }
-// Pluffy, the plus plushie (plushie.js), sits by the captain on the start scene. A tap squeezes
-// it: a squeak (sfx.squeak, with the sound effects), a squish and a heart popping up. No voice
-// and nothing saved: a toy to poke at while picking a stratum.
-const PLUSH_SVG = plushSvg({ label: false });
-function squeezePlush() {
-  const toy = document.querySelector("#scene .d-plush");
+// The plushies (plushie.js) sit by their heroes on the start scene. A tap squeezes one: a squeak
+// (sfx.squeak, with the sound effects), a squish and a heart popping up. No voice and nothing
+// saved: toys to poke at while picking a stratum.
+const PLUSH_ART = {};
+const plushArt = (id) => (PLUSH_ART[id] = PLUSH_ART[id] || plushSvg(id, { label: false }));
+function squeezePlush(toy) {
   sfx.squeak();
   if (!toy) return;
   toy.classList.remove("squeak"); void toy.offsetWidth; toy.classList.add("squeak");
@@ -2527,7 +2556,7 @@ function squeezePlush() {
 }
 const STALL = stallSvg();
 const sceneOn = () => !$("scene").hidden;
-const sceneNow = () => (sceneOn() ? { hz: sceneHz, heroes: sceneHeroes(), stall: shopOK() ? STALL : "", plush: PLUSH_SVG } : null);
+const sceneNow = () => (sceneOn() ? { hz: sceneHz, heroes: sceneHeroes(), stall: shopOK() ? STALL : "", plush: plushArt("pluffy") } : null);
 function hideScene() { $("scene").hidden = true; $("scene").innerHTML = ""; document.body.classList.remove("on-scene"); }
 let sceneFrame = 0;
 const redrawScene = () => { if (!sceneOn() || descending()) return; cancelAnimationFrame(sceneFrame); sceneFrame = requestAnimationFrame(drawScene); };
@@ -2983,8 +3012,8 @@ function bookPage() {
   beasts += "</div>";
   const heroes = HEROES.map((h) => onTeam(h.d)
     ? `<section class="hero-card${h.d === team.captain ? " captain-card" : ""}">${heroArt(h.d)}
-        <b>${esc(h.n)}</b><small>${esc(h.cls)}</small><small>${esc(h.move)}</small>${quipsHeard(h.d)}${h.d === team.captain ? '<small class="cap-tag">Your hero</small>' : ""}</section>`
-    : `<section class="hero-card unmet">${heroSvg(h, { cursed: true, cracks: cracksOf(h.d) })}<b>???</b><small>${cracksOf(h.d) ? `Curse cracked ${cracksOf(h.d)} of ${CURSE_HITS}` : "Still cursed"}</small></section>`).join("");
+        <b>${esc(h.n)}</b><small>${esc(h.cls)}</small><small>${esc(h.move)}</small>${quipsHeard(h.d)}${h.d === team.captain ? '<small class="cap-tag">Your hero</small>' : ""}${favHTML(h.d)}</section>`
+    : `<section class="hero-card unmet">${heroSvg(h, { cursed: true, cracks: cracksOf(h.d) })}<b>???</b><small>${cracksOf(h.d) ? `Curse cracked ${cracksOf(h.d)} of ${CURSE_HITS}` : "Still cursed"}</small>${favHTML(h.d)}</section>`).join("");
   const freed = HEROES.filter((h) => onTeam(h.d)).length, met = roster().filter((x) => seen[x.m.n]).length;
   show(`<div class="cardhead"><h2>Monsters &amp; Heroes</h2></div>
   <h3 class="book-title">Monsters <small>${met} of ${roster().length} met</small></h3>
@@ -3052,6 +3081,13 @@ function lookView(m, from) {
   for (const b of v.querySelectorAll(".lv-art")) b.onclick = close;
   showing();
   v.querySelector(".lv-close").focus({ preventScroll: true });
+}
+// A hero's favorite plushie (plushie.js FAVORITE) on their card: found, with its name, or a
+// silhouette and "???" until it's found (in a chest or Trollar's shop).
+function favHTML(d) {
+  const p = favoriteOf(d), got = hasPlush(wardrobe, p.id);
+  return `<div class="hero-fav${got ? "" : " unfound"}"><span class="fav-art">${plushSvg(p.id, got ? { label: `${p.name}, ${HEROES[d].n}'s favorite plushie` } : { shadow: true, label: "A plushie not found yet" })}</span>`
+    + `<small><span class="fav-tag">Favorite plushie</span>${got ? esc(p.name) : "???"}</small></div>`;
 }
 // A hero's quips heard in Hero Moments (moments.js), "Quips: 1 of 3", gold when all are.
 function quipsHeard(d) {

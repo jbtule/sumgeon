@@ -9,12 +9,13 @@
 // small sizes too.
 // Clothing (clothes.js, not in the game yet): every piece on its own, then all ten heroes in one
 // outfit, picked with three selects (head, face, neck) or stepped through sample outfits, big and
-// at the small sizes. Pluffy, the plus plushie (plushie.js): on each wall and at the small sizes.
+// at the small sizes. The plushies (plushie.js): the ten picked, each on a wall, at the small
+// sizes, with its hero and price; then every candidate tried and not picked, with why.
 import { MON, NEW_MON, RETIRED, svg, bossForm } from "../../js/monsters.js";
 import { HEROES, heroSvg, dressed } from "../../js/heroes.js";
 import { CLOTHES, SPOTS, pieceSvg } from "../../js/clothes.js";
 import { TRAITS } from "../../js/traits.js";
-import { plushSvg } from "../../js/plushie.js";
+import { plushSvg, PLUSHIES, CANDIDATES, heroOfPlush } from "../../js/plushie.js";
 import { monsterName, monsterCleared, monsterWon } from "../../js/lines.js";
 
 const $ = (id) => document.getElementById(id);
@@ -201,9 +202,17 @@ $("wearNext").onclick = () => { sample = (sample + 1) % SAMPLES.length; setWear(
 $("wearNone").onclick = () => setWear(null);
 setWear(SAMPLES[0]);
 
-/* ---------- Pluffy, the plushie (plushie.js) ---------- */
-const plush = plushSvg();
-$("plushGrid").innerHTML = ALL_WALLS.map((w) => `<div data-stratum="${w}" style="background:var(--wall-${w})"><span class="p-big">${plush}</span>${SHORT[w]}</div>`).join("")
-  + `<div class="p-smalls">${[72, 40, 26].map((n) => `<i style="width:${n}px;height:${n}px">${plush}</i>`).join("")}</div>`;
+/* ---------- the plushies (plushie.js) ---------- */
+const plushCard = (p, i) => {
+  const w = ALL_WALLS[i % ALL_WALLS.length], d = heroOfPlush(p.id), art = plushSvg(p.id);
+  return `<div class="p-card${p.picked ? "" : " p-not"}"><div class="p-wall" data-stratum="${w}" style="background:var(--wall-${w})"><span class="p-big">${art}</span></div>
+    <div class="p-smalls">${[72, 40, 26].map((n) => `<i style="width:${n}px;height:${n}px">${art}</i>`).join("")}</div>
+    <b>${p.picked ? "" : "✗ "}${esc(p.name)}</b><small>${esc(p.of)}${d != null ? ` · ${esc(HEROES[d].n)}'s favorite` : ""}${p.price ? ` · ${p.price}¢ (K: 25¢)` : p.picked ? " · everyone has it" : ""}</small><small class="p-why">${esc(p.why)}</small></div>`;
+};
+$("plushGrid").innerHTML = PLUSHIES.map(plushCard).join("");
+$("plushTried").innerHTML = CANDIDATES.filter((p) => !p.picked).map(plushCard).join("");
+// Each hero with their favorite, as on the start scene.
+$("plushHeroes").innerHTML = HEROES.map((h) => { const p = PLUSHIES.find((x) => heroOfPlush(x.id) === h.d);
+  return `<div><span class="p-pair">${heroSvg(h)}<i>${plushSvg(p.id)}</i></span><small>${esc(h.n)} · ${esc(p.name)}</small></div>`; }).join("");
 
 render(); reportUI();
