@@ -1164,6 +1164,14 @@ function submit() {
   // True or false swings to the truth as it's answered, right or wrong; fix it, answered right,
   // takes the number and levels.
   if (G.cur.op === "✓") { G.tfDone = true; probUI(); }
+  // Ones first, typed the other way round (fast, tens first: 42 comes out 24): the answer's right,
+  // only flipped. It's put the right way round and noted, and counts as a hinted answer (it hits,
+  // but builds no streak and isn't fast), not a miss.
+  if (onesFirst(G.cur) && G.input.length > 1 && G.input !== String(G.cur.ans) && [...G.input].reverse().join("") === String(G.cur.ans)) {
+    G.input = String(G.cur.ans); G.hinted = true; ansUI();
+    setMsg("Ones first! I flipped it for you.", "good");
+    say("p", PHRASE.onesFirst, true);
+  }
   // A comparison's answer is its symbol (<, = or >); everything else is a number.
   // A drawn shape was judged as it was cast (castShape).
   const right = G.cur.draw ? G.drawn === "right" : G.cur.slots ? G.slot.vals.every((v, i) => v !== "" && Number(v) === G.cur.slots[i]) : G.cur.sym ? G.input === G.cur.sym : Number(G.input) === G.cur.ans;
