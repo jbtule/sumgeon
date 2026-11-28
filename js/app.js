@@ -1707,13 +1707,19 @@ function end(win) {
   const fallen = !win && hasCaptain() ? HEROES[team.captain] : null;
   // A stratum cleared: the fanfare for now; it's meant to get something really big (DESIGN.md §8.3).
   // A Legend beaten gets the big fanfare and "Legend!" first.
-  if (legendWin) { sfx.legend(); say("p", PHRASE.legend); say("p", monsterCleared(m)); }
-  else if (win) { sfx.victory(); say("p", monsterCleared(m)); say("p", wingCleared(w)); } else say("p", monsterWon(m));
-  if (fallen) say("p", heroCursed(fallen));
-  if (chOpened) say("p", PHRASE.chapter);
-  if (opened) { say("p", PHRASE.unlocked); openedAll.forEach((x) => say("p", wingOpened(x))); }
-  // What the win card offers, the first few wins (a new stratum's own offer says it otherwise).
-  else if (win && once("deeper", 3)) say("p", PHRASE.deeper);
+  // The fanfare now; the card's lines (the boss's beaten line, "You cleared …!", what's next) are
+  // said when the card shows, so they come with it, after any achievement cards (endLines, below).
+  if (legendWin) sfx.legend(); else if (win) sfx.victory();
+  const deeperTold = !opened && win && once("deeper", 3);
+  const endLines = () => {
+    if (legendWin) { say("p", PHRASE.legend); say("p", monsterCleared(m)); }
+    else if (win) { say("p", monsterCleared(m)); say("p", wingCleared(w)); } else say("p", monsterWon(m));
+    if (fallen) say("p", heroCursed(fallen));
+    if (chOpened) say("p", PHRASE.chapter);
+    if (opened) { say("p", PHRASE.unlocked); openedAll.forEach((x) => say("p", wingOpened(x))); }
+    // What the win card offers, the first few wins (a new stratum's own offer says it otherwise).
+    else if (deeperTold) say("p", PHRASE.deeper);
+  };
   if (fallen) { Object.assign(team, curseCaptain(team)); saveTeam(); captainUI(); whoUI(); }
   const cursedLine = !fallen ? "" : `<div class="fallen"><div class="cardmon small">${heroSvg(fallen, { cursed: true })}</div>
     <p><strong>${esc(fallen.n)} was cursed!</strong> ${team.rescued.length ? "Pick who leads next, and" : "Pick a new hero to start again, and"} rescue ${esc(fallen.n)} on a rescue floor.</p></div>`;
@@ -1762,7 +1768,7 @@ function end(win) {
   // deeper), they've been seen. Before, they waited for the next descent, so Play again or Menu
   // didn't show them.
   const pending = achievementQueue();
-  if (pending.length) achievementCards(pending, 0, { mode: "end", done: card }); else card();
+  if (pending.length) achievementCards(pending, 0, { mode: "end", done: () => { card(); endLines(); } }); else { endLines(); card(); }
   syncSoon(); // a linked player syncs at the end of a run
 }
 // A card over the game. It opens at the top, and its main button gets focus (Enter presses it)
@@ -3227,8 +3233,9 @@ function achievementCards(ids, i, from) {
     ${from.sheet ? "" : `<p class="ach-got"><span>You got</span> ${esc(rewardWords(r))}</p>`}${when ? `<p class="ach-date">${esc(when)}</p>` : ""}${!from.sheet && ids.length > 1 ? `<p class="ach-count">${i + 1} of ${ids.length}</p>` : ""}</div>
     <div class="btns"><button class="big alt ach-share" id="achShare" type="button" aria-label="Share" title="Share" hidden>${SHARE_ICON}</button><button class="big" id="achNext">${next}</button></div>`, "page ach");
   if (big) sfx.legend(); else sfx.chestOpen();
-  // At a run's end, the first card's lines wait for the win or loss lines already said (no cut-off).
-  cardLines(a).forEach((_, k) => say("p", achievementLine(a, k), k === 0 && !(from.mode === "end" && i === 0)));
+  // At a run's end the win or loss lines wait for the run's card (end's endLines), so every card's
+  // first line clears the queue, here too.
+  cardLines(a).forEach((_, k) => say("p", achievementLine(a, k), k === 0));
   prepareShare(a); // every card can be shared, the moment it's earned or later from the sheet
   $("achNext").onclick = () => {
     shareFor = shareBlob = null;
