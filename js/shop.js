@@ -102,3 +102,54 @@ export function pay(purse, counter, price) {
   TOKENS.forEach((x) => { after[x.k] = l[x.k] + changeCoins[x.k]; });
   return { ok: true, wallet: total(purse) - price, purse: after, change, changeCoins, exact: change === 0 };
 }
+
+/* ---------- buying more than one ----------
+   An item can be bought 1 to MANY at once (clothing is one each: a piece is owned once). The total
+   is the price times how many, and paying, Buy and change all work against it (pay above takes any
+   total, and change stays under a dollar, since one coin or bill takes the counter over). How the
+   total is written suits the grade: repeated addition up to 2nd grade ("35¢ + 35¢ + 35¢ = 105¢",
+   2.OA.C.4), multiplication from 3rd ("3 × 35¢ = $1.05", 3.OA); in dollars once bills are shown
+   (2nd grade, app.js billsOK), in cents before, as the purse is. */
+export const MANY = 5;
+export const manyOK = (thing) => !!thing && thing.kind === "item";
+const capOf = (thing) => (!thing || manyOK(thing) ? MANY : 1);
+// The most of a thing the purse pays for, 0 to MANY (1 for clothing).
+export function mostFor(cents, price, thing) {
+  return price > 0 ? Math.max(0, Math.min(capOf(thing), Math.floor(Math.max(0, cents) / price))) : 0;
+}
+// How many, kept 1 to MANY (1 for clothing), from anything saved or tapped.
+export function howMany(n, thing) {
+  const k = Math.floor(Number(n));
+  return k >= 1 ? Math.min(capOf(thing), k) : 1;
+}
+// Money as written: "35¢", or past a dollar "$1.05" with bills shown and "105¢" without.
+export function moneyText(c, dollars) {
+  if (!dollars || c < 100) return c + "¢";
+  return "$" + Math.floor(c / 100) + "." + String(c % 100).padStart(2, "0");
+}
+// Multiplication from 3rd grade; repeated addition before.
+export const timesOK = (grade) => grade != null && grade >= 3;
+// The total as math: { terms: ["35¢", …] or null, times: "3 × 35¢" or null, total: "$1.05", text }.
+export function sumText(price, n, { times = false, dollars = false } = {}) {
+  const k = howMany(n), p = moneyText(price, dollars), t = moneyText(price * k, dollars);
+  if (k === 1) return { terms: [p], times: null, total: t, text: p };
+  if (times) return { terms: null, times: k + " × " + p, total: t, text: k + " × " + p + " = " + t };
+  const terms = Array.from({ length: k }, () => p);
+  return { terms, times: null, total: t, text: terms.join(" + ") + " = " + t };
+}
+// Buy n of a thing: the counter must hold the total, and the wallet loses exactly price × n (app.js
+// then gains n items). Clothing is always one.
+export function payMany(purse, counter, price, n, thing) {
+  const k = howMany(n, thing), r = pay(purse, counter, price * k);
+  return r.ok ? Object.assign(r, { n: k, total: price * k }) : r;
+}
+// Every total a player can see for more than one item (2 to MANY, both price lists): for the tests
+// and the recorded lines.
+export function allTotals() {
+  const out = [];
+  for (const k of [true, false]) ITEMS.forEach((i) => {
+    const c = priceOf({ kind: "item", id: i.id }, k);
+    for (let n = 2; n <= MANY; n++) out.push({ kind: "item", id: i.id, k, n, c, total: c * n });
+  });
+  return out;
+}

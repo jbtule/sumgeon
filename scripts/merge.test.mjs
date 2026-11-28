@@ -5,6 +5,7 @@ import assert from "node:assert/strict";
 import { toRecord, merge, adopt, fromRecord, canon, pack, unpack, walletOf, RECORD_VERSION, SYNCED_KEYS, LOCAL_KEYS } from "../js/merge.js";
 import { OWN_KEYS, DUNGEON_VERSION } from "../js/store.js";
 import { rewardOf } from "../js/achievements.js";
+import { purseOf, empty as emptyCounter, TOKENS, enough, putDown, payMany } from "../js/shop.js";
 import { busyRecord, busyPlayer, DEVICES } from "./sync-size.mjs";
 
 const clone = (x) => JSON.parse(JSON.stringify(x));
@@ -204,6 +205,37 @@ test("items: each item is a ledger like the wallet; the slots go by the latest e
   server = sync(b, server); server = sync(a, server); server = sync(b, server);
   for (const d of [a, b]) assert.deepEqual(d.data.items.have, { shield: 3 });
   assert.deepEqual(b.data.items.slots, ["shield", null, null]);
+});
+
+// Buying more than one item at Trollar's shop (shop.js payMany), as app.js does it: the wallet
+// loses price × n, and n of the item are gained in one go.
+function buyMany(dev, id, price, n) {
+  const purse = purseOf(dev.data.wallet), counter = emptyCounter();
+  for (const t of TOKENS) while (counter[t.k] < purse[t.k] && !enough(counter, price * n)) putDown(purse, counter, t.k, price * n);
+  const r = payMany(purse, counter, price, n, { kind: "item", id });
+  assert.ok(r.ok);
+  dev.data.wallet = r.wallet;
+  dev.data.items.have[id] = (dev.data.items.have[id] || 0) + r.n;
+  return r;
+}
+test("the shop: buying 3 at once spends exactly 3 × the price and adds exactly 3, and syncing neither doubles nor loses any", () => {
+  const a = device("a"), b = device("b");
+  a.data.wallet = 250; a.data.items.have = { pie: 1 };
+  let server = sync(a, null); server = sync(b, server);
+  const r = buyMany(a, "pie", 35, 3); // $1.05 for three pies
+  assert.equal(r.n, 3); assert.equal(a.data.wallet, 145); assert.equal(a.data.items.have.pie, 4);
+  b.data.wallet += 20; // b finds 20¢ meanwhile
+  buyMany(b, "shield", 45, 2); // and b buys two shields: 90¢
+  b.data.items.have.pie -= 1; // and b eats a pie
+  for (let i = 0; i < 6; i++) server = sync(i % 2 ? b : a, server);
+  for (const d of [a, b]) {
+    assert.equal(d.data.wallet, 250 - 105 + 20 - 90, "each purchase spent once");
+    assert.deepEqual(d.data.items.have, { pie: 3, shield: 2 }, "each purchase's items counted once");
+  }
+  assert.equal(walletOf(server), 75);
+  // Syncing the same records again, in any order, changes nothing.
+  const ra = toRecord(a.data, a.base, "a"), rb = toRecord(b.data, b.base, "b");
+  assert.equal(walletOf(merge(ra, rb)), 75); assert.equal(walletOf(merge(rb, merge(ra, rb))), 75);
 });
 
 // An achievement awarded on a device, as app.js does it: recorded, and its reward added at once.
