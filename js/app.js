@@ -1085,7 +1085,7 @@ function heroBonus(typed) {
 // grade, not a little more than an answer (changed 2026-11-28: it was +25% of the answer for each
 // rescued hero, which a crit's 2× beat every time, and was nothing against a 4th grade monster's
 // tens of thousands of HP). The captain's power hit (+50%) is separate and unchanged.
-const MOMENT_HP = 0.1;
+const MOMENT_HP = 0.15;
 function momentBoost(mo) {
   if (!mo) return 0;
   return [mo.hero, mo.partner].filter((d) => d != null).length;
