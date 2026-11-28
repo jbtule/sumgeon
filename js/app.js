@@ -1,6 +1,6 @@
 // Everything on screen: the game loop, the menu and players, and the attack animations.
 // Problems, monsters, saving, sound and speech live in their own modules.
-import { MON, svg, LOOKS, lookOf, allLooks, CHOMP_SHUT, bossForm } from "./monsters.js";
+import { MON, svg, LOOKS, lookOf, allLooks, CHOMP_SHUT, bossForm, jerseyFrac } from "./monsters.js";
 import { chompPose, morePose, mouthOf, SNAP, FLIP_MS, SNAP_MS, EAT_MS } from "./chomp.js";
 import { spokenProblem, spokenFact } from "./problems.js";
 import { BANDS, choose, factOf, record as recordAnswer, helpFor, monsterHP, probeKey, tierOf, skipTo, SKIP_PROBES, SKIP_WINDOW, MAX_LEAP, fluentTime, spellKey, RECENT, pool, drawHit, openLevels, reachOf, chaptersOf, pathBands, reviewFacts, placeReviews, examKey, examFacts, examRound, hpOf, endlessKey } from "./learn.js";
@@ -25,7 +25,7 @@ import { coinsSvg, pileOf, coinOf } from "./coins.js";
 import { stackOf } from "./twodigit.js";
 import { read as readSigil, judge as judgeSigil, offEdge } from "./sigil.js";
 import { HANDWRITING } from "./handwriting.js";
-import { traitOf, charged, prefers, hitBy, atHalf, asks, flipOf, flashOf, dieSvg, mega } from "./traits.js";
+import { traitOf, charged, fourthDown, prefers, hitBy, atHalf, asks, flipOf, flashOf, dieSvg, mega } from "./traits.js";
 import { roster, mastery, meet, beat, renamed, RENAMED } from "./bestiary.js";
 import { HEROES, CHALK, heroSvg, freePick, pickHero, curseCaptain, crackCurse, CURSE_HITS, resetTeam } from "./heroes.js";
 import * as sfx from "./sfx.js";
@@ -566,6 +566,13 @@ function clockArt(layer) {
   if (!onClock() || !p || p.op !== "⌚") return;
   $("mon").innerHTML = monsterArt(Object.assign({}, G.floors[G.floor], { at: { h: p.h, m: p.m, layer } }));
 }
+// Quarterjack wearing the problem's fraction on its jersey (monsters.js jerseyFrac; ¼ with none),
+// as Tick-Tockus shows the time asked.
+function jerseyArt() {
+  const m = G.floors && G.floors[G.floor];
+  if (!m || (m.base || m.n) !== "Quarterjack" || !G.cur) return;
+  $("mon").innerHTML = monsterArt(Object.assign({}, m, { frac: jerseyFrac(G.cur) }));
+}
 // The picture over a time problem's line: elapsed time's clocks (with the open number line or
 // the sweep once the hint is open), or a plain clock when the monster isn't Tick-Tockus.
 function timePicture(p) {
@@ -848,6 +855,9 @@ function newProblem() {
   const key = forced || (exam && exam.key) || spell || probe
     || (endless && endlessKey(PATHS[wing().id], bk, recs, Object.assign({ now: Date.now(), recent: G.recent, retry: due ? due.key : null, asks: kinds, like: prefers(m), avoidAns }, lean)))
     || choose(bk, recs, Object.assign({ now: Date.now(), recent: G.recent, retry: due ? due.key : null, op, asks: kinds, like: prefers(m), depth: G.depth, avoidAns, open: lv.levels, review: lv.review, reviews }, lean));
+  // Fourth down (Quarterjack): every 4th problem on the floor, counted as a charge is; a right
+  // answer on it is a touchdown (traits.js hitBy, from the problem's down).
+  const down = fourthDown(m, G.onFloor);
   // Charge (Minustaur): every 4th problem on the floor, a miss costs 2 hearts.
   G.charged = charged(m, G.onFloor++);
   $("charge").hidden = !G.charged;
@@ -882,6 +892,8 @@ function newProblem() {
   // the time for two-digit numbers, half for three-digit ones and for adding several (twodigit.js
   // stackShare), always on Margot-Rythm's floor. The same fact and record, only laid out differently.
   G.cur = stackOf(G.cur, STACK_ALWAYS || (m.base || m.n) === "Margot-Rythm");
+  if (down) { G.cur.down = true; say("p", PHRASE.fourthDown, false, () => G.cur && G.cur.down && !G.busy); }
+  $("down").hidden = !down;
   G.recent = [key].concat(G.recent).slice(0, RECENT);
   presentProblem(key, !!flipped);
 }
@@ -900,6 +912,7 @@ function presentProblem(key, flipped, restored, elapsed) {
   if (G.fix && !G.fix.swapped) { const cur = G.cur; setTimeout(() => { if (G.cur === cur && G.fix && !G.fix.swapped) fixSwap(); }, FIX_SWAP_MS); }
   probUI();
   clockArt();
+  jerseyArt();
   if (onChompers() && G.chomp !== G.chompFace) chompTurn(G.chompFace);
   if (flipped && !restored) judoThrow(G.cur);
   if (G.flash) flashHide(G.cur);
@@ -1287,8 +1300,9 @@ function submit() {
       // hit, each once a floor. None when something else was just said (a new level, skipping
       // ahead, a backwards spell, or "Critical hits!", unless it's the half-HP change, which only
       // happens once).
-      const bark = half ? (half.split ? "split" : half.curl ? "curl" : "second") : trait.mult > 1 ? "double" : trait.mult < 1 ? "half" : bonus.power ? "power" : null;
-      if (bark && !level && (half || !critsNow) && !G.cur.reversed && !G.cur.howTo && !G.barked[bark]) { G.barked[bark] = true; say("p", BARK[bark]); }
+      // A touchdown (Quarterjack's fourth down) is cheered every time: its fourth down was called.
+      const bark = half ? (half.split ? "split" : half.curl ? "curl" : "second") : trait.bark || (trait.mult > 1 ? "double" : trait.mult < 1 ? "half" : bonus.power ? "power" : null);
+      if (bark && !level && (half || !critsNow) && !G.cur.reversed && !G.cur.howTo && (!G.barked[bark] || bark === "touchdown")) { G.barked[bark] = true; say("p", BARK[bark]); }
       if (G.hp <= 0) { setTimeout(() => { $("mon").className = "mon dead" + ($("mon").classList.contains("face-l") ? " face-l" : ""); }, 300); setTimeout(cleared, 1100); }
       else setTimeout(newProblem, level ? 1200 : 450);
     });
@@ -2232,7 +2246,7 @@ function keepGoing(R) {
   if (s.stage === "beaten" || s.stage === "chested") { const chested = s.stage === "chested"; G.busy = true; $("mon").className = "mon dead"; setTimeout(() => { if (G.running) cleared(chested); }, 600); return; }
   setMsg("Welcome back! Keep fighting.", "good");
   if (s.stage === "next") { newProblem(); return; }
-  G.cur = s.cur; G.charged = s.charged; $("charge").hidden = !G.charged;
+  G.cur = s.cur; G.charged = s.charged; $("charge").hidden = !G.charged; $("down").hidden = !s.cur.down;
   G.spellFails = 0; G.drawFails = 0; G.drawn = null;
   presentProblem(s.cur.key, false, true, s.elapsed);
   if (s.hinted && !$("hintBtn").hidden) openHint(); else if (s.hinted) G.hinted = true;

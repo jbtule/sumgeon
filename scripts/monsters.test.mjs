@@ -17,7 +17,7 @@ for (const m of MON) {
 }
 // The new monsters, drawn but not in the game yet: the same checks, numbers that are numbers,
 // and anchors so looks can dress them later.
-const KIT = ["crown", "bow", "lashes", "blush", "mustache", "glasses", "monocle", "sunglasses", "eyepatch", "bandana", "tophat", "nightcap", "headband", "lids", "spiral", "sparkles", "scarf", "bowtie", "medal", "mini"];
+const KIT = ["crown", "bow", "lashes", "blush", "mustache", "glasses", "monocle", "sunglasses", "eyepatch", "bandana", "tophat", "nightcap", "headband", "lids", "spiral", "sparkles", "scarf", "bowtie", "medal", "eyeblack", "mini"];
 assert.equal(new Set([...MON, ...NEW_MON].map((m) => m.n)).size, MON.length + NEW_MON.length, "new monsters have their own names");
 for (const m of NEW_MON) {
   assert.ok(m.sym && m.stratum && m.trait && m.trait.icon && m.trait.name && m.trait.text, m.n);
@@ -64,6 +64,29 @@ assert.equal(new Set(Object.values(LOOKS).flat().map((l) => l[0])).size, Object.
   assert.notEqual(svg({ ...tt, at: { h: 3, m: 0 } }), svg({ ...tt, at: { h: 9, m: 45 } }), "it shows the time asked");
   const FACE = ["lashes", "blush", "mustache", "glasses", "monocle", "sunglasses", "eyepatch", "lids", "spiral", "headband"];
   for (const [name, kit] of LOOKS["Tick-Tockus"]) assert.ok(!kit.some((k) => FACE.includes(k)), `${name} keeps the clock's face clear`);
+}
+// Quarterjack is a football player whose jersey shows the problem's fraction (m.frac, monsters.js
+// jerseyFrac), drawn from strokes, never text; ¼ with none. Its helmet is its hat, so its looks
+// wear none.
+{
+  const { jerseyFrac } = await import("../js/monsters.js");
+  const { fractionFact, fracCompareFact } = await import("../js/third.js");
+  const { fracOpFact } = await import("../js/fourth.js");
+  const qj = MON.find((m) => m.n === "Quarterjack");
+  const plain = svg(qj), a = svg({ ...qj, frac: { n: 3, d: 8 } }), b = svg({ ...qj, frac: { n: 11, d: 12 } });
+  assert.ok(plain !== a && a !== b && !/<text\b|NaN|undefined/.test(a + b), "the jersey shows the fraction it's given");
+  assert.equal(svg({ ...qj, frac: { n: 1, d: 4 } }), plain, "with none, the jersey is ¼");
+  assert.deepEqual(jerseyFrac(fractionFact(1, 2, 4)), { n: 1, d: 2 });
+  assert.deepEqual(jerseyFrac(fractionFact(1, 1, 4)), { n: "□", d: 4 }, "1 = □/4 shows □/4");
+  assert.deepEqual(jerseyFrac(fracOpFact("ƒ3/8+2/8")), { n: 3, d: 8 });
+  assert.deepEqual(jerseyFrac(fracOpFact("ƒ2 1/8+3/8")), { n: 1, d: 8 });
+  assert.deepEqual(jerseyFrac(fracOpFact("ƒ3×2/5")), { n: 2, d: 5 });
+  assert.deepEqual(jerseyFrac(fracOpFact("ƒ5/8=1/8+2/8")), { n: 5, d: 8 });
+  assert.deepEqual(jerseyFrac(fracCompareFact("2/3", "3/4")), { n: 2, d: 3 });
+  assert.equal(jerseyFrac({ op: "+", x: 3, y: 4, ans: 7 }), null);
+  assert.ok(!/<text\b/.test(svg({ ...qj, frac: { n: "□", d: 4 } })));
+  const HATS = ["crown", "bow", "tophat", "nightcap", "bandana", "headband"];
+  for (const [name, kit] of LOOKS.Quarterjack) assert.ok(!kit.some((k) => HATS.includes(k)), `${name} wears no hat over the helmet`);
 }
 // Retired monsters: out of every Wing, still drawable for the gallery.
 assert.deepEqual(RETIRED.map((m) => m.n), ["The Unknown"]);

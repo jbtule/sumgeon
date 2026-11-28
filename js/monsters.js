@@ -1,5 +1,6 @@
 // The monsters: data and inline SVG art. No DOM, so the check can run it in Node.
 import { clockMonster, TENTACLE } from "./clock.js";
+import { handwritingPath } from "./handwriting.js";
 // Art is simple shapes, no fonts: solid() and line() draw a dark outline, then the color,
 // then a white sheen gradient.
 export const DK='#0c171c';
@@ -269,25 +270,12 @@ MON.push(
 // The Fraction Forge's three (4th grade, DESIGN.md §4.4): Quarterjack (¼, fractions), Dotty (.,
 // decimals) and Boomainder (R, remainders). Their traits are in traits.js.
 MON.push(
- // A jack-in-the-box: a round head cut into quarters, one shaded gold, in a jester's cap with
- // bells, popping up on its spring out of a box with a ♦ on it, white gloves on the rim.
+ // A fraction football player (a quarterback): the ¼ itself, stacked. Its 1 is the head in a
+ // football helmet (a 1 on its front), the fraction bar its shoulder pads, the 4 its body, in a
+ // jersey showing the problem's fraction (m.frac, set by app.js; ¼ with none). It holds a football.
  {n:'Quarterjack',op:'mix',sym:'¼',stratum:'forge',c:'#2ec4a6',hits:3,
-  quip:'springs back into the box with a pop.',
-  d:c=>`<path d="M100 146 L80 138 L120 128 L80 118 L120 108 L100 100" fill="none" stroke="${DK}" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/><path d="M100 146 L80 138 L120 128 L80 118 L120 108 L100 100" fill="none" stroke="#c9d1d8" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>`
-   +solid(`<path d="M48 146 L22 114 L66 104 L92 146 Z"/>`,'#1d8f79')
-   +solid(`<rect x="46" y="142" width="108" height="56" rx="7"/>`,c)
-   +`<path d="M46 156 H154" stroke="${DK}" stroke-width="3" opacity=".35"/>`
-   +solid(`<path d="M100 158 L112 174 L100 190 L88 174 Z"/>`,CORAL)
-   +solid(`<ellipse cx="52" cy="142" rx="13" ry="10"/><ellipse cx="148" cy="142" rx="13" ry="10"/>`,CREAM)
-   +`<path d="M46 140 v6 M52 139 v7 M142 139 v7 M148 140 v6" ${ds} stroke-width="2.5"/>`
-   +solid(`<path d="M66 50 Q46 10 14 18 Q42 30 70 64 Z M134 50 Q154 10 186 18 Q158 30 130 64 Z"/>`,'#9b7bff')
-   +solid(`<path d="M100 20 Q90 0 100 -6 Q110 0 100 20 Z"/>`,CORAL)
-   +solid(`<circle cx="100" cy="66" r="38"/>`,CREAM)
-   +`<path d="M100 28 A38 38 0 0 1 138 66 L100 66 Z" fill="${GOLD}"/><path d="M100 29 V103 M63 66 H137" stroke="${DK}" stroke-width="3" opacity=".55"/>`
-   +`<circle cx="100" cy="66" r="38" fill="none" stroke="${DK}" stroke-width="4"/>`
-   +solid(`<path d="M60 52 Q100 18 140 52 Q100 34 60 52 Z"/>`,c)
-   +solid(`<circle cx="14" cy="18" r="9"/><circle cx="186" cy="18" r="9"/><circle cx="100" cy="-6" r="7"/>`,GOLD)
-   +`${eye(86,64,9)}${eye(114,64,9)}<path d="M84 82 Q100 96 116 82" ${ds} stroke-width="3.5"/><ellipse cx="74" cy="80" rx="6" ry="3.5" fill="#ff9ab8" opacity=".85"/><ellipse cx="126" cy="80" rx="6" ry="3.5" fill="#ff9ab8" opacity=".85"/>`},
+  quip:'fumbles the ball and runs off the field.',
+  d:(c,m)=>quarterjack(c,m&&m.frac)},
  // The decimal point: a round little dot sitting on the line like a period, freckled with dots,
  // a bow on top.
  {n:'Dotty',op:'mix',sym:'.',stratum:'forge',c:'#ff6fa8',hits:3,
@@ -310,6 +298,66 @@ MON.push(
    +`<ellipse cx="94" cy="54" rx="9" ry="13" fill="${DK}"/><ellipse cx="124" cy="54" rx="9" ry="13" fill="${DK}"/><circle cx="96" cy="49" r="3" fill="#fff"/><circle cx="126" cy="49" r="3" fill="#fff"/>`
    +`<ellipse cx="110" cy="82" rx="8" ry="9" fill="${DK}"/><ellipse cx="110" cy="85" rx="4.5" ry="4" fill="#ff7a8a"/>`
    +`<ellipse cx="80" cy="72" rx="7" ry="4" fill="#c9b8ff" opacity=".8"/><ellipse cx="140" cy="72" rx="7" ry="4" fill="#c9b8ff" opacity=".8"/>`});
+// Quarterjack's jersey: a fraction stacked, drawn from the school-style digits (handwriting.js),
+// cream with a dark edge, no text. n is a number or "□" (1 = □/4 shows □/4), d a number; cx, cy
+// the bar's middle, h a digit's height.
+const JERSEY = '#1d8f79';
+function jerseyNumber(t, cx, y, h) {
+  const s = String(t), adv = h * .62, x0 = cx - (s.length * adv) / 2 - h * .19;
+  return [...s].map((ch, i) => {
+    const x = f1(x0 + i * adv);
+    if (ch === "□") return `<rect x="${f1(x + h * .2)}" y="${f1(y + h * .06)}" width="${f1(h * .62)}" height="${f1(h * .88)}" rx="2" fill="${DK}" stroke="${CREAM}" stroke-width="2.5"/>`;
+    const p = handwritingPath(Number(ch), h);
+    return `<g transform="translate(${x} ${f1(y)})"><path d="${p}" fill="none" stroke="${DK}" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/><path d="${p}" fill="none" stroke="${CREAM}" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/></g>`;
+  }).join("");
+}
+function jerseyFraction(f, cx, cy, h) {
+  const w = Math.max(String(f.n).length, String(f.d).length) * h * .62 + 6;
+  return jerseyNumber(f.n, cx, cy - h - 4, h)
+    + `<path d="M${f1(cx - w / 2)} ${cy} H${f1(cx + w / 2)}" stroke="${DK}" stroke-width="7" stroke-linecap="round"/><path d="M${f1(cx - w / 2)} ${cy} H${f1(cx + w / 2)}" stroke="${CREAM}" stroke-width="3.4" stroke-linecap="round"/>`
+    + jerseyNumber(f.d, cx, cy + 4, h);
+}
+// The fraction a problem shows Quarterjack's jersey: its first fraction (1/2 = □/4 shows 1/2, 3/8 ○
+// 5/8 shows 3/8, 2 1/8 + 3/8 shows 1/8, 3 × 2/5 shows 2/5), a whole's □/4 for 1 = □/4, and null
+// for anything else (a missed fact of another kind coming back), which shows ¼.
+export function jerseyFrac(p) {
+  if (!p) return null;
+  if (p.op === "/" && p.d) return p.b === 1 ? { n: "□", d: p.d } : { n: p.a, d: p.b };
+  if (p.op === "ƒ") {
+    if (p.l) return { n: p.l.n, d: p.l.d };
+    if (p.kind === "tenths") return { n: p.a, d: 10 };
+    if (p.n != null && p.d) return { n: p.n, d: p.d };
+  }
+  if (p.op === "○") { const m = /^(\d+)\/(\d+)$/.exec(String(p.l)); if (m) return { n: +m[1], d: +m[2] }; }
+  return null;
+}
+function quarterjack(c, frac) {
+  const f = frac && frac.n != null && frac.d ? frac : { n: 1, d: 4 }, PAD = '#eef2f4', CAGE = '#c9d1d8', BALL = '#9a5b34';
+  return `${foot(86,192,14)}${foot(140,192,16)}`
+   // A leg in the jersey's dark green, so it isn't read as part of the 4.
+   +line(`<path d="M88 164 V184"/>`,JERSEY,14)
+   // The 4: its body. The jersey hangs from the pads, the 4's strokes its trim, its stem a leg.
+   +solid(`<path d="M40 106 H160 L156 166 H44 Z"/>`,JERSEY)
+   +line(`<path d="M56 112 L52 162 H164 M138 108 V184"/>`,c,17)
+   +jerseyFraction(f,96,135,18)
+   // An arm holding the football; the other a fist.
+   +line(`<path d="M30 106 Q12 128 26 150"/>`,c,14)+solid(`<circle cx="28" cy="152" r="10"/>`,c)
+   +line(`<path d="M170 106 Q190 126 178 144"/>`,c,14)
+   +solid(`<ellipse cx="168" cy="150" rx="22" ry="13" transform="rotate(-28 168 150)"/>`,BALL)
+   +`<path d="M156 150 L180 137" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/><path d="M162 142 l4 7 M168 139 l4 7 M174 136 l4 7" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/>`
+   +solid(`<circle cx="176" cy="158" r="9"/>`,c)
+   // The fraction bar: shoulder pads, each shoulder a dome.
+   +solid(`<rect x="24" y="88" width="152" height="22" rx="11"/>`,PAD)
+   +solid(`<path d="M18 104 Q20 78 54 80 Q70 82 72 100 Z M182 104 Q180 78 146 80 Q130 82 128 100 Z"/>`,PAD)
+   +`<path d="M36 92 Q48 84 62 90 M164 92 Q152 84 138 90" ${ds} stroke-width="2.5" opacity=".5"/>`
+   // The 1: the head, in a helmet with a 1 on its front, a face guard under the eyes.
+   +solid(`<path d="M56 70 Q52 2 100 2 Q148 2 144 70 Q144 84 130 84 H70 Q56 84 56 70 Z"/>`,GOLD)
+   +solid(`<rect x="72" y="34" width="56" height="46" rx="14"/>`,c)
+   +line(`<path d="M91 23 L101 15 V29"/>`,c,5)
+   +`<circle cx="62" cy="56" r="4.5" fill="${DK}"/><circle cx="138" cy="56" r="4.5" fill="${DK}"/>`
+   +`${eye(89,48,8)}${eye(111,48,8)}<path d="M93 72.5 Q100 76.5 107 72.5" ${ds} stroke-width="3"/>`
+   +[[DK,8],[CAGE,3.5]].map(([s,w])=>`<path d="M62 67 H138 M68 81 H132 M100 67 V70 M100 79 V82 M76 67 V81 M124 67 V81" fill="none" stroke="${s}" stroke-width="${w}" stroke-linecap="round"/>`).join('');
+}
 // The Fraction Forge's boss (DESIGN.md §4.4): The Denominator, a great iron robot that is a
 // fraction. Its head is the numerator (a riveted box with a dark visor and amber eyes), the
 // fraction bar its wide steel shoulders and arms ending in fists, its body the denominator box, on
@@ -390,9 +438,10 @@ export const ANCHOR = {
   Halfling: { eyes: [[93, 50, 8], [111, 50, 8]], mouth: [102, 68], top: [102, 4], neck: [102, 82], ground: 196 },
   // Margot-Rythm's mouth is the gap above its keyboard jaw; its neck is the keyboard.
   "Margot-Rythm": { eyes: [[82, 41, 10], [118, 41, 10]], mouth: [100, 129], top: [100, 1], neck: [100, 148], ground: 193 },
-  // The Fraction Forge's three. Quarterjack's top is its cap's band; Dotty's its bow; Boomainder's
-  // the top of its R.
-  Quarterjack: { eyes: [[86, 64, 9], [114, 64, 9]], mouth: [100, 88], top: [100, 28], hat: true, neck: [100, 106], ground: 198 },
+  // The Fraction Forge's three. Quarterjack's top is its helmet (a hat already), its eyes in the
+  // helmet's opening, its neck the middle of its shoulder pads; Dotty's top is its bow;
+  // Boomainder's the top of its R.
+  Quarterjack: { eyes: [[89, 48, 8], [111, 48, 8]], mouth: [100, 74], top: [100, 6], hat: true, neck: [100, 100], ground: 199 },
   Dotty: { eyes: [[84, 102, 11], [116, 102, 11]], mouth: [100, 128], top: [100, 58], neck: [100, 150], ground: 182 },
   Boomainder: { eyes: [[94, 54, 9], [124, 54, 9]], mouth: [110, 82], top: [100, 12], neck: [100, 104], ground: 192 },
   // Polly-Gon (NEW_MON): its mouth is the beak, its top the head under the crest.
@@ -422,6 +471,8 @@ const KIT = {
   sparkles: (a) => [[-34, 6, 1], [36, -4, .8], [24, 26, .6]].map(([dx, dy, k]) => { const x = a.top[0] + dx, y = a.top[1] + dy; return `<path d="M${x} ${y - 9 * k} L${x + 2.5 * k} ${y - 2.5 * k} L${x + 9 * k} ${y} L${x + 2.5 * k} ${y + 2.5 * k} L${x} ${y + 9 * k} L${x - 2.5 * k} ${y + 2.5 * k} L${x - 9 * k} ${y} L${x - 2.5 * k} ${y - 2.5 * k} Z" fill="#ffc93c"/>`; }).join(""),
   scarf: (a) => { const [x, y] = a.neck; return `<path d="M${x - 24} ${y - 4} Q${x} ${y + 8} ${x + 24} ${y - 4} L${x + 24} ${y + 4} Q${x} ${y + 16} ${x - 24} ${y + 4} Z" fill="#45d6e6" ${st}/><path d="M${x + 12} ${y + 6} l4 22 l10 -2 l-4 -20" fill="#45d6e6" ${st}/>`; },
   bowtie: (a) => { const [x, y] = a.neck; return `<path d="M${x} ${y} l-14 -8 l0 16 z M${x} ${y} l14 -8 l0 16 z" fill="#ff5a4e" ${st}/><circle cx="${x}" cy="${y}" r="4" fill="#ff5a4e" ${st}/>`; },
+  // A football player's eye black: a dark stripe under each eye.
+  eyeblack: (a) => a.eyes.map(([x, y, r]) => `<path d="M${x - r * .9} ${y + r + 4} H${x + r * .9}" stroke="${DK}" stroke-width="5.5" stroke-linecap="round"/>`).join(""),
   medal: (a) => { const [x, y] = a.neck; return `<path d="M${x - 8} ${y - 12} L${x} ${y + 2} L${x + 8} ${y - 12}" stroke="#ff5a4e" stroke-width="5" fill="none"/><circle cx="${x}" cy="${y + 8}" r="8" fill="#ffc93c" ${st}/>`; }
 };
 // The looks: [name, accessories, he/she]. "mini" draws the monster smaller. Names are anything
@@ -448,8 +499,8 @@ export const LOOKS = {
   // Batch 1 (time and patterns). Tick-Tockus's extras sit on its case, never its face.
   "Tick-Tockus": [["Tick-Tock Tot", ["mini"]], ["Grandfather Tockus", ["tophat", "bowtie"], "he"], ["Bedtime Tockus", ["nightcap", "scarf"]], ["Cuckoo Tockus", ["bow", "sparkles"]]],
   Slimelipsis: [["Slimelets", ["mini"]], ["Slime Time", ["sunglasses"]], ["Snoozelipsis", ["nightcap", "lids"]], ["Gooey Belle", ["bow", "lashes"], "she"]],
-  // The Fraction Forge's. Quarterjack keeps its jester's cap, so no hats.
-  Quarterjack: [["Jack Jr.", ["mini"]], ["Jolly Jack", ["blush", "sparkles"]], ["Snoozejack", ["lids"]], ["Cool Jack", ["sunglasses"]]],
+  // The Fraction Forge's. Quarterjack's helmet is its hat, so no hats: football things instead.
+  Quarterjack: [["Tiny Tackle", ["mini"]], ["Game Day Jack", ["eyeblack"]], ["Benchwarmer", ["lids"]], ["Showtime Jack", ["sunglasses", "sparkles"]]],
   Dotty: [["Tiny Dot", ["mini"]], ["Polka Dotty", ["sparkles", "blush"]], ["Dizzy Dotty", ["spiral"]], ["Dotty in Shades", ["sunglasses", "medal"]]],
   Boomainder: [["Little Boo", ["mini"]], ["Count Boomainder", ["tophat", "monocle"], "he"], ["Sleepy Boo", ["nightcap", "lids"]], ["Boomainder Belle", ["bow", "lashes"], "she"]],
   // Shapes: a pirate's parrot, of course.

@@ -79,6 +79,8 @@ export var PHRASE = {
   // Events: a charged problem (Minustaur), a miss on one, the curse's cracks, a floor cleared.
   charged: "Lightning problem!",
   chargedMiss: "Lightning! You lost two hearts.",
+  // Quarterjack's fourth down (every 4th problem on its floor): a right answer is a touchdown.
+  fourthDown: "Fourth down!",
   crackTwo: "Two more to go!",
   heart: "You found a heart!",
   nextBoss: "Next: the boss!",
@@ -171,7 +173,7 @@ export var TRAIT_LINE = {
   "Halves": "Fractions! Find the one that's the same size.",
   "Tick Tock": "What time is it? Read the clock!",
   "What's Next": "What comes next? Count the pattern!",
-  "Four of a Kind": "Multiples of four hit double!",
+  "Fourth Down": "Every fourth problem, a right answer scores a touchdown!",
   "On the Dot": "Answers that end in zero hit double!",
   "Leftovers": "Leftovers! The remainder hits too.",
   "Heavy Metal": "A thousand or more hits double!"
@@ -203,6 +205,7 @@ export var BARK = {
   level: "New level!",
   power: "Power hit!",
   double: "Double damage!",
+  touchdown: "Touchdown!",
   half: "Half damage!",
   split: "Split in two!",
   second: "Second wind!",

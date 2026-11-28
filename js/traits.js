@@ -32,7 +32,7 @@ export const TRAITS = {
   "Tick-Tockus": { icon: "🕒", name: "Tick Tock", text: "Asks the time" },
   "Slimelipsis": { icon: "🫧", name: "What's Next", text: "Counts in patterns" },
   // The Fraction Forge's (4th grade, DESIGN.md §4.4).
-  "Quarterjack": { icon: "🃏", name: "Four of a Kind", text: "Answers that are a multiple of 4 hit double" },
+  "Quarterjack": { icon: "🏈", name: "Fourth Down", text: "4th down: a touchdown hits double" },
   "Dotty": { icon: "🔍", name: "On the Dot", text: "Answers ending in 0 hit double" },
   "Boomainder": { icon: "👻", name: "Leftovers", text: "The remainder hits too" },
   "The Denominator": { icon: "🔨", name: "Heavy Metal", text: "Answers of 1000 or more hit double" }
@@ -139,6 +139,9 @@ export function dieSvg(n) {
 // the floor, a miss costing 2 hearts. n counts from 0.
 // The Megaminator's ⚡ Overload is the same rule.
 export function charged(m, n) { return (kind(m) === "Minustaur" || ((kind(m) === "Judo Judy" || kind(m) === "The Denominator") && mega(m))) && n % 4 === 3; }
+// Whether this problem is a fourth down (Quarterjack, 🏈 Fourth Down): every 4th on the floor,
+// counted as a charge is. A right answer on it is a touchdown and hits double (hitBy, p.down).
+export function fourthDown(m, n) { return kind(m) === "Quarterjack" && n % 4 === 3; }
 
 // Facts a monster asks more often (Starbot: anything with a 5 or 10), as a test on a fact key.
 export function prefers(m) {
@@ -167,7 +170,7 @@ export function hitBy(m, ans, typed, low, p) {
   if (k === "The Centipede" && ans >= 100) return { mult: 2, note: "Hundred Legs! Double damage" };
   if (k === "Margot-Rythm" && regroups(p)) return { mult: 2, note: "Regrouped! Double damage" };
   if (k === "The Denominator" && ans >= 1000) return { mult: 2, note: "Heavy Metal! Double damage" };
-  if (k === "Quarterjack" && ans > 0 && ans % 4 === 0) return { mult: 2, note: "Four of a Kind! Double damage" };
+  if (k === "Quarterjack" && p && p.down) return { mult: 2, note: "Touchdown! Double damage", bark: "touchdown" };
   if (k === "Dotty" && ans > 0 && ans % 10 === 0) return { mult: 2, note: "On the Dot! Double damage" };
   // Boomainder: 29 ÷ 4 = 7 R 1 hits for 7 + 1.
   if (k === "Boomainder" && p && p.op === "R" && p.rem > 0 && ans > 0) return { mult: (ans + p.rem) / ans, note: `Leftovers! +${p.rem}` };
