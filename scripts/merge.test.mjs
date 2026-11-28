@@ -4,7 +4,8 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { toRecord, merge, adopt, fromRecord, canon, pack, unpack, walletOf, RECORD_VERSION, SYNCED_KEYS, LOCAL_KEYS } from "../js/merge.js";
 import { OWN_KEYS, DUNGEON_VERSION } from "../js/store.js";
-import { rewardOf, noteEvent, placeOldSurprises, freshAchievements } from "../js/achievements.js";
+import { rewardOf, noteEvent, placeOldSurprises, placeOldQuips, freshAchievements, award, paysFor } from "../js/achievements.js";
+import { QUIPS } from "../js/moments.js";
 import { purseOf, empty as emptyCounter, TOKENS, enough, putDown, payMany } from "../js/shop.js";
 import { busyRecord, busyPlayer, DEVICES } from "./sync-size.mjs";
 
@@ -42,10 +43,12 @@ const SHAPE = {
   3: ["ach", "best", "bestiary", "dungeon", "facts", "items", "moments", "owned", "reg", "spells", "told", "v", "wallet", "wings"],
   4: ["ach", "best", "bestiary", "dungeon", "facts", "items", "moments", "owned", "plush", "reg", "spells", "told", "v", "wallet", "wings"],
   // 5: the same keys; ach.e holds the stratum secrets' ids ("surprise:zero@cellar").
-  5: ["ach", "best", "bestiary", "dungeon", "facts", "items", "moments", "owned", "plush", "reg", "spells", "told", "v", "wallet", "wings"]
+  5: ["ach", "best", "bestiary", "dungeon", "facts", "items", "moments", "owned", "plush", "reg", "spells", "told", "v", "wallet", "wings"],
+  // 6: the same keys; ach.e holds Quip Fan once for each hero ("surprise:quips@2").
+  6: ["ach", "best", "bestiary", "dungeon", "facts", "items", "moments", "owned", "plush", "reg", "spells", "told", "v", "wallet", "wings"]
 };
 // Inside the record's achievements, by version (3 added the practice days and comebacks).
-const ACH_SHAPE = { 2: ["e", "s"], 3: ["c", "d", "e", "s"], 4: ["c", "d", "e", "s"], 5: ["c", "d", "e", "s"] };
+const ACH_SHAPE = { 2: ["e", "s"], 3: ["c", "d", "e", "s"], 4: ["c", "d", "e", "s"], 5: ["c", "d", "e", "s"], 6: ["c", "d", "e", "s"] };
 test("the record's shape matches its version", () => {
   const rec = busyRecord();
   assert.equal(rec.v, RECORD_VERSION);
@@ -396,6 +399,57 @@ test("stratum secrets: each stratum's copy only grows and pays once, an old save
   assert.deepEqual(c.data.items.have, { shield: 1 });
   const rc = sync(c, null);
   assert.deepEqual(Object.keys(rc.ach.e).sort(), ["surprise:palindrome", "surprise:palindrome@tower"]);
+  const m1 = merge(rc, server), m2 = merge(server, rc);
+  assert.deepEqual(canon(m1), canon(m2), "in either order");
+  assert.deepEqual(canon(merge(m1, rc)), canon(m1), "and again changes nothing");
+});
+
+// Quip Fan once for each hero (achievements.js HERO_SURPRISES): as the stratum secrets, each hero's
+// copy pays again, the whole and its first hero pay once, and an old save's Quip Fan placed on a
+// hero on one device isn't paid again when it meets the other's.
+function hearAll(dev, d) { dev.data.moments.heard[d] = QUIPS[d].slice(); }
+// Awarded as app.js does it (checkAchievements, then payAchievements: never a whole).
+function awardOn(dev, t = now) {
+  const ach = dev.data.achievements = dev.data.achievements || { earned: {}, seen: [] };
+  for (const id of paysFor(award({ moments: dev.data.moments, ach }, ach.earned, t).map((a) => a.id)))
+    for (const [k, n] of Object.entries(rewardOf(id).items)) dev.data.items.have[k] = (dev.data.items.have[k] || 0) + n;
+}
+const quipIds = (d) => Object.keys(d.data.achievements.earned).filter((k) => k.startsWith("surprise:quips@")).sort();
+test("Quip Fan per hero: each hero's copy only grows and pays once, an old save's is never paid twice", () => {
+  const a = device("a"), b = device("b");
+  // An old save: Quip Fan earned (and paid) for Twodini before heroes were counted, on both devices.
+  hearAll(a, 2); hearAll(b, 2);
+  earn(a, "surprise:quips", now); earn(b, "surprise:quips", now + 5);
+  let server = sync(a, null); server = sync(b, server); server = sync(a, server);
+  for (const d of [a, b]) assert.deepEqual(d.data.items.have, { magnet: 1 });
+  // a updates: Quip Fan goes on Twodini before awarding, so nothing is paid.
+  const fa = freshAchievements(a.data.achievements);
+  assert.ok(placeOldQuips(fa, { moments: a.data.moments }, 2));
+  assert.ok(!placeOldQuips(fa, { moments: a.data.moments }, 2), "once only");
+  a.data.achievements = fa; awardOn(a);
+  assert.deepEqual(quipIds(a), ["surprise:quips@2"]);
+  assert.deepEqual(a.data.items.have, { magnet: 1 }, "placing it pays nothing");
+  server = sync(a, server); server = sync(b, server); server = sync(a, server);
+  for (const d of [a, b]) {
+    assert.equal(d.data.achievements.earned["surprise:quips@2"], now, "its time kept");
+    assert.deepEqual(d.data.items.have, { magnet: 1 });
+  }
+  // Then each hears all of another hero's quips while apart: Onesie on a, Onesie and Nine-ja on b.
+  hearAll(a, 1); awardOn(a, now + 100);
+  hearAll(b, 1); hearAll(b, 9); awardOn(b, now + 200);
+  server = sync(a, server); server = sync(b, server); server = sync(a, server);
+  for (const d of [a, b]) {
+    assert.deepEqual(quipIds(d), ["surprise:quips@1", "surprise:quips@2", "surprise:quips@9"]);
+    assert.equal(d.data.achievements.earned["surprise:quips@1"], now + 100, "the earliest");
+    assert.equal(d.data.achievements.earned["surprise:quips"], now, "the whole keeps its first time");
+    assert.deepEqual(d.data.items.have, { magnet: 3 }, "one magnet for each hero");
+  }
+  // A new player: the whole and its first hero, awarded together, pay once.
+  const c = device("c");
+  hearAll(c, 5); awardOn(c);
+  assert.deepEqual(c.data.items.have, { magnet: 1 });
+  const rc = sync(c, null);
+  assert.deepEqual(Object.keys(rc.ach.e).sort(), ["surprise:quips", "surprise:quips@5"]);
   const m1 = merge(rc, server), m2 = merge(server, rc);
   assert.deepEqual(canon(m1), canon(m2), "in either order");
   assert.deepEqual(canon(merge(m1, rc)), canon(m1), "and again changes nothing");
