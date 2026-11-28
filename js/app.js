@@ -1075,18 +1075,20 @@ function fly(text, crit) {
   })));
 }
 
-// The captain's digit in the answer is a power hit, +50% (rescued heroes: momentBoost, below).
+// The captain's digit in the answer is a power hit, +50% (a Hero Moment's: momentBoost, below).
 function heroBonus(typed) {
   const power = hasCaptain() && [...typed].map(Number).includes(team.captain);
   return { mult: power ? 1.5 : 1, power };
 }
-// Rescued heroes hit harder only in a Hero Moment (settled 2026-11-25; they used to add 10% to
-// every answer with their digit, which nobody noticed): +25% for each rescued hero in the moment
-// (a team-up can have two). The captain's power hit is separate and unchanged.
-const MOMENT_BOOST = 0.25;
+// Heroes hit harder only in a Hero Moment: each hero in it (the captain too; a team-up has two)
+// adds MOMENT_HP of the monster's full HP on top of the hit, so a moment is a big blow at any
+// grade, not a little more than an answer (changed 2026-11-28: it was +25% of the answer for each
+// rescued hero, which a crit's 2× beat every time, and was nothing against a 4th grade monster's
+// tens of thousands of HP). The captain's power hit (+50%) is separate and unchanged.
+const MOMENT_HP = 0.1;
 function momentBoost(mo) {
   if (!mo) return 0;
-  return [mo.hero, mo.partner].filter((d) => d != null && d !== team.captain && team.rescued.includes(d)).length;
+  return [mo.hero, mo.partner].filter((d) => d != null).length;
 }
 /* ---------- Hero Moments (DESIGN.md §8.4) ----------
    Now and then a hero in a right answer gets a slow-motion close-up and a quip before it strikes
@@ -1286,9 +1288,9 @@ function submit() {
     const critsNow = G.streak === 3 && !G.hinted;
     if (critsNow) say("p", PHRASE.crits);
     // Now and then a Hero Moment: a slow-motion close-up and a quip before the hit (moments.js).
-    // A rescued hero in it adds MOMENT_BOOST (momentBoost).
+    // Each hero in it adds MOMENT_HP of the monster's full HP (momentBoost).
     const mo = momentFor(typed, critsNow, !!m.boss && G.hp - dmg <= 0), boost = momentBoost(mo);
-    if (boost) dmg = Math.round(dmg * (1 + MOMENT_BOOST * boost));
+    if (boost) dmg += Math.round(G.max * MOMENT_HP * boost);
     const momentName = mo ? HEROES[mo.hero].n + (mo.partner != null ? " & " + HEROES[mo.partner].n : "") : "";
     // The run as it will be once this hit lands, in case the app is closed mid-attack: the next
     // problem, or the monster beaten.

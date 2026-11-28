@@ -722,7 +722,7 @@ _Settled with the user on 2026-11-27: not a separate high-score mode. Once a str
 - **Picking a captain** (the start screen, the end card's "who leads next", a free pick) the hero says a name line in the quip voice (§8.4) in place of their plain name: "Captain Twodini, reporting for duty!", "…at your service!", "Captain Twodini leads the charge!" or "Make way for Captain Twodini!". The style rotates across all picks, whichever hero, so tapping through the heroes varies; the very first captain a player picks reports for duty. Nothing is said after it.
 
 **The mechanic: your answer summons its digits.** On a correct answer, the digits of the answer burst out of the answer box and attack together. 56 sends the 5 and the 6, and 55 sends two High Fives, who high-five each other first.
-- **Rescued digits** appear as their hero, with their own move. Their bonus comes only in a Hero Moment (§8.4): **+25% for each rescued hero in it** (a team-up can have two). Until 2026-11-25 they added 10% to every answer with their digit, which nobody noticed.
+- **Rescued digits** appear as their hero, with their own move. Their bonus comes only in a Hero Moment (§8.4): **10% of the monster's full HP for each hero in it** (the captain too; a team-up can have two; until 2026-11-28 it was +25% of the answer per rescued hero, less than a crit's 2×). Until 2026-11-25 they added 10% to every answer with their digit, which nobody noticed.
 - **Digits not yet rescued** fly as plain chalk numerals. Seeing a bare "3" fly every time is the pull to go rescue Threasure Hunter.
 - **Captain's digit in the answer means a power hit (+50%)**, with a bigger animation. This stacks with crits. It's luck, not strategy, but it gets kids noticing the digits inside a number.
 - Party bonuses make a player stronger as they rescue more. That is intended progress, and the cap keeps it modest. Monster HP (§5.5) does not scale with the party.
@@ -816,7 +816,7 @@ Now and then, a hero in your answer gets a slow-motion close-up and a quip befor
 - **A rest after each:** none in the next 6 problems, and at most 2 per floor.
 - **A different hero next time,** when the answer has more than one hero's digit.
 - **Always on two occasions:** a rescued hero's first answer after joining the team (their debut), and the blow that finishes a boss.
-- **Damage:** each rescued hero in a moment adds +25% (§6.6); that's where rescued heroes' bonus now lives. The captain's power hit is unchanged.
+- **Damage:** each hero in a moment adds 10% of the monster's full HP (§6.6); that's where heroes' bonus now lives. The captain's power hit is unchanged.
 
 **The animation** (about 2 s, like a video editor's jog shuttle):
 1. **Wind-down:** the hit starts at normal speed, then time drags to a quarter speed, and the room dims a little.
