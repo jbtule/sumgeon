@@ -4,13 +4,13 @@
 // winning every run and going deeper each time, and counts the problems that are Super Charged
 // (×N) or find the monster braced (÷N), with the floor's typical hit taken as the floor starts,
 // as app.js does. Target: almost never from kindergarten to 3rd grade; mostly in the Forge.
-// Run: node scripts/charge-sim.mjs [stratum] [runs] (CHARGE_AT=<n> tries another threshold)
+// Run: node scripts/charge-sim.mjs [stratum] [runs] (CHARGE_AT=<n> and BRACE_AT=<n> try other thresholds)
 import { BANDS, choose, factOf, record, probeKey, tierOf, skipTo, SKIP_PROBES, SKIP_WINDOW, MAX_LEAP, fluentTime, fluentFor, monsterHP, RECENT, drawHit, openLevels, reachOf, chaptersOf, reviewFacts, placeReviews, floorTypical, levelTypical } from "../js/learn.js";
 import { WINGS, depthHP, depthScale, runFloors, bandOf, PATHS, stepsOpen, stepMonsters, bossStage, BOSS_HP, MEGA_EVERY } from "../js/wings.js";
 import { asks } from "../js/traits.js";
-import { chargeFor, chargedHit, CHARGE_AT } from "../js/charge.js";
+import { chargeFor, chargedHit, problemScale, CHARGE_AT, BRACE_AT } from "../js/charge.js";
 
-const RUNS = Number(process.argv[3]) || 20, AT = Number(process.env.CHARGE_AT) || CHARGE_AT;
+const RUNS = Number(process.argv[3]) || 20, AT = Number(process.env.CHARGE_AT) || CHARGE_AT, BAT = Number(process.env.BRACE_AT) || BRACE_AT;
 function trial(wing, seed, { slip = 0.05, think = [1.2, 2.6], tap = [0.5, 0.9] } = {}) {
   let s = seed; const rnd = () => ((s = (s * 1103515245 + 12345) % 2147483648) / 2147483648);
   const recs = {}, flows = {}, flowOf = (bk) => flows[bk] || (flows[bk] = { fluent: 0, cool: 0, hist: [], on: false, leap: 1 });
@@ -30,7 +30,7 @@ function trial(wing, seed, { slip = 0.05, think = [1.2, 2.6], tap = [0.5, 0.9] }
         const op = m.op === "mix" || bk !== wing.band ? null : m.op;
         const probe = f.on && f.cool <= 0 ? probeKey(bk, recs, rnd, recent, avoid, f.leap, kinds, reachOf(path, ch, bk)) : null;
         const o = lv(), key = probe || choose(bk, recs, { now, rnd, recent, op, asks: kinds, avoidAns: avoid, depth, open: o.levels, review: o.review, steps: o.steps, reviews });
-        const fact = factOf(key, rnd), c = chargeFor(levelTypical(bk, key, m), typical, AT);
+        const fact = factOf(key, rnd), c = chargeFor(problemScale(levelTypical(bk, key, m), fact), typical, AT, BAT);
         out.n++;
         if (c && c.up) { out.up++; out.ups[c.up] = (out.ups[c.up] || 0) + 1; }
         if (c && c.down) { out.down++; out.downs[c.down] = (out.downs[c.down] || 0) + 1; }

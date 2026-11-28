@@ -4,7 +4,7 @@ import { MON, svg, LOOKS, lookOf, allLooks, CHOMP_SHUT, bossForm, jerseyFrac } f
 import { chompPose, morePose, mouthOf, SNAP, FLIP_MS, SNAP_MS, EAT_MS } from "./chomp.js";
 import { spokenProblem, spokenFact } from "./problems.js";
 import { BANDS, choose, factOf, record as recordAnswer, helpFor, monsterHP, probeKey, tierOf, skipTo, SKIP_PROBES, SKIP_WINDOW, MAX_LEAP, fluentTime, fluentFor, spellKey, RECENT, pool, drawHit, openLevels, reachOf, chaptersOf, pathBands, reviewFacts, placeReviews, examKey, examFacts, examRound, hpOf, endlessKey, floorTypical, typicalHit, levelTypical } from "./learn.js";
-import { chargeFor, chargedHit, chargeBadge, chargePop } from "./charge.js";
+import { chargeFor, chargedHit, chargeBadge, chargePop, problemScale, oneHit } from "./charge.js";
 import { countSvg, readShape, judgeShape, cleanFor, isDrawKey, SHAPE_LINE, SHAPE_CODE, article } from "./shapes.js";
 import { hintFor, STRATEGIES } from "./hints.js";
 import { openStore, displayName, DUNGEON_VERSION, DUNGEON_KEYS, LEARNING_RESETS } from "./store.js";
@@ -1014,8 +1014,9 @@ function newProblem() {
   if (down) { G.cur.down = true; say("p", PHRASE.fourthDown, false, () => G.cur && G.cur.down && !G.busy); }
   $("down").hidden = !down;
   // The Super Charge: a problem whose level answers far below the floor's typical hit is charged
-  // (×N), one far above it finds the monster braced (÷N), from its level, never its own answer.
-  const c = chargeFor(levelTypical(bk, G.cur.key || key, m), G.typical);
+  // (×N), one whose level, or the biggest number it shows, is 3 times above it finds the monster
+  // braced (÷N); never from its own answer (charge.js problemScale, shownMax).
+  const c = chargeFor(problemScale(levelTypical(bk, G.cur.key || key, m), G.cur), G.typical);
   if (c) G.cur.charge = c;
   superCharge(true);
   G.recent = [key].concat(G.recent).slice(0, RECENT);
@@ -1408,8 +1409,14 @@ function submit() {
     const mo = momentFor(typed, critsNow, !!m.boss && G.hp - dmg <= 0), boost = momentBoost(mo);
     if (boost) dmg += Math.round(G.max * MOMENT_HP * boost);
     if (dmg > guardCap) { dmg = guardCap; guarded = true; }
+    // No one-shot without help: a regular monster at full HP keeps at least 1 HP after a hit that
+    // has neither a Hero Moment nor an item in it (charge.js oneHit). It hangs on.
+    const unhelped = dmg;
+    if (!m.boss) dmg = oneHit(dmg, G.hp, G.max, !!mo || totem > 1);
+    const held = dmg < unhelped;
     // Insta-banish: a hit that takes a monster from full HP to nothing is announced first, echoing
-    // like "Now entering the Sumgeon!" (a boss can't be: its Guard).
+    // like "Now entering the Sumgeon!" (a boss can't be: its Guard; a regular monster only with a
+    // Hero Moment or an item in the hit: oneHit).
     const banish = G.hp >= G.max && dmg >= G.hp;
     if (banish) say("p", PHRASE.banish, true, null, ENTER_FX);
     const momentName = mo ? HEROES[mo.hero].n + (mo.partner != null ? " & " + HEROES[mo.partner].n : "") : "";
@@ -1432,7 +1439,7 @@ function submit() {
       surprise(...hitSurprises({ ans: G.cur.sym || G.cur.draw || G.cur.slots || G.cur.spell ? null : G.cur.ans, typed, dmg, base: Math.round(G.cur.ans * (G.cur.reversed ? 0.5 : 1)) || 0, hpLeft: G.hp, team: [...new Set([team.captain, ...team.rescued])].filter((d) => d != null) }));
       // A charge goes on its own line over the hit ("×100!" over "−400").
       if (guarded) { sfx.clang(); if (once("guarded", 2)) say("p", PHRASE.guarded); }
-      pop((banish ? "Insta-banish!\n" : guarded ? "Guarded!\n" : G.cur.charge ? chargePop(G.cur.charge).trim() + "\n" : "") + (boost ? "Hero! " : bonus.power ? "Power! " : crit ? "Crit! " : "") + "−" + dmg, crit || bonus.power || !!boost);
+      pop((banish ? "Insta-banish!\n" : guarded ? "Guarded!\n" : held ? "Hangs on!\n" : G.cur.charge ? chargePop(G.cur.charge).trim() + "\n" : "") + (boost ? "Hero! " : bonus.power ? "Power! " : crit ? "Crit! " : "") + "−" + dmg, crit || bonus.power || !!boost);
       restartAnim($("mon"), "hit");
       if (crit && !mo) restartAnim($("arena"), "shake");
       setMsg(totem > 1 ? `Times Two Totem! Double hit for ${dmg}!` : G.cur.reversed ? `Your ${G.cur.ans} is facing backwards. It faces this way → Half damage: ${dmg}` : G.cur.howTo ? `Here's how to write it. Hit for ${dmg}!` : level ? level : trait.note ? `${trait.note}: ${dmg}!` : boost ? `${momentName} hero hit for ${dmg}!` : bonus.power ? `${HEROES[team.captain].n} power hit for ${dmg}!` : crit ? `Critical hit for ${dmg}!` : G.cur.charge ? (G.cur.charge.up ? `Super charge! Hit for ${dmg}!` : `Braced! Hit for ${dmg}.`) : `Hit for ${dmg}!`, "good");
