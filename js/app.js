@@ -34,10 +34,10 @@ import { freshState as freshMoments, freshRun, decide as decideMoment, joined, h
 import { playMoment } from "./slowmo.js";
 import { playDescent, descending, skipDescent, surfaceHTML } from "./descent.js";
 import { plushSvg, PLUSH, PLUSH_HEART } from "./plushie.js";
-import { chestAfter, lockKey, lockOf, contents, moneyFor, fewest, setBills, ITEMS, itemOf, SLOTS, freshItems, countOf, gain, putInSlot, clearSlot, useSlot, eatPie, arm, blockMiss, totemMult, magnetSpent, freshWardrobe, addPiece, wearOf, putOn, ownedFor, unowned } from "./loot.js";
-import { kPrices, priceOf, freshShop, restock, forSale, TOKENS, valueOf, empty as emptyCounter, total as counterTotal, left as purseLeft, purseFor, putDown, takeBack, enough, pay, canAfford } from "./shop.js";
+import { chestAfter, lockKey, lockOf, contents, moneyFor, fewest, setBills, ITEMS, itemOf, SLOTS, freshItems, countOf, gain, putInSlot, clearSlot, useSlot, eatPie, arm, blockMiss, totemMult, magnetSpent, freshWardrobe, addPiece, wearOf, putOn, ownedFor, unowned, billsOn } from "./loot.js";
+import { kPrices, priceOf, MANY, manyOK, howMany, mostFor, sumText, moneyText as moneyAmt, timesOK, payMany, freshShop, restock, forSale, TOKENS, valueOf, empty as emptyCounter, total as counterTotal, left as purseLeft, purseFor, putDown, takeBack, enough, canAfford } from "./shop.js";
 import { CLOTHES, SPOTS, clothesById, pieceSvg } from "./clothes.js";
-import { LOOT, askLine, itemName, itemWhat, itemUse, moneyLine, purseLine, ALWAYS, runSprites, SHOP, clothingName, priceLine, changeLine } from "./lines.js";
+import { LOOT, askLine, itemName, itemWhat, itemUse, moneyLine, purseLine, ALWAYS, runSprites, SHOP, clothingName, priceLine, changeLine, manyLine, affordLine } from "./lines.js";
 import { stepRows, stratumSummary, strataOrder, gridOf, gridsFor, kindsFor, needsWork, factLabel, factDetail, factState, STATE_WORDS, secs } from "./progress.js";
 import { chestSvg, purseSvg, walletSvg, walletMini, stallSvg, priceTag, billSvg, pieSvg } from "./chest.js";
 import { newKey, keysFor, isKey, linkFor, keyFromLink } from "./seal.js";
@@ -1760,7 +1760,7 @@ function shopCard(view) {
     show(`${head(S.greeted ? "What will it be?" : first ? "Welcome to my shop!" : "Hello again!")}
     <div class="sgrid">${tiles}</div>
     ${noClothes ? `<p class="snote">You have all my clothes!</p>` : ""}
-    <div class="shop-wallet">${purseSvg()}<div class="scoins">${tokensOf(S.purse).map((x) => `<span class="stoken">${tokenArt(x.k)}</span>`).join("") || "<small>Empty</small>"}</div><b class="stotal">${wallet}¢</b></div>
+    <div class="shop-wallet">${purseSvg()}<div class="scoins">${tokensOf(S.purse).map((x) => `<span class="stoken">${tokenArt(x.k)}</span>`).join("") || "<small>Empty</small>"}</div><b class="stotal">${moneyAmt(wallet, billsOn())}</b></div>
     <div class="btns"><button class="big" id="shopDone">Done</button></div>`, "page shop");
     if (!S.greeted) {
       S.greeted = true;
@@ -1772,52 +1772,91 @@ function shopCard(view) {
       const t = sale[Number(b.dataset.i)], c = priceOf(t, k);
       sfx.tick();
       say("p", priceLine(t, c), true);
-      Object.assign(S, { thing: t, price: c, counter: emptyCounter(), paid: null });
+      Object.assign(S, { thing: t, price: c, n: 1, counter: emptyCounter(), paid: null });
       if (!canAfford(wallet, c)) { say("p", SHOP.need); return shopCard("need"); }
+      // An item: how many first (1 to MANY); clothing is one each, straight to paying.
+      if (manyOK(t)) { if (once("shopMany", 3)) say("p", SHOP.howMany); return shopCard("many"); }
       if (once("shopHow", 3)) say("p", SHOP.how);
       shopCard("pay");
     });
     $("shopDone").onclick = back;
     return;
   }
-  const t = S.thing, c = S.price;
-  const thing = `<div class="sthing"><span class="sart lg">${thingArt(t)}</span><span class="sname"><b>${esc(thingName(t))}</b>${priceTag(c)}</span></div>`;
+  const t = S.thing, c = S.price, n = howMany(S.n, t), due = c * n;
+  // The total as math, written for the grade (shop.js sumText): repeated addition, or × from 3rd
+  // grade; in dollars once bills are shown.
+  const dollars = billsOn(), math = (m) => {
+    const s = sumText(c, m, { times: timesOK(st.grade), dollars });
+    const left = s.times ? `<span>${esc(s.times)}</span>` : s.terms.map((x) => `<span>${x}</span>`).join("<i>+</i>");
+    return `<p class="smath" aria-label="${esc(s.text)}">${left}<span class="eq">= <b>${esc(s.total)}</b></span></p>`;
+  };
+  const many = n > 1 ? `<b class="smult">×${n}</b>` : "";
+  const thing = `<div class="sthing${n > 1 ? " many" : ""}"><span class="sart lg">${thingArt(t)}${many}</span><span class="sname"><b>${esc(thingName(t))}</b>${n > 1 ? math(n) : priceTag(c)}</span></div>`;
   const toShop = () => { S.thing = null; shopCard("stock"); };
+  if (view === "many") {
+    // How many: big 1 to MANY buttons, the item drawn that many times, and the total as math.
+    // A count the purse can't pay for stays picked (the math shows why), with Pay off.
+    const most = mostFor(wallet, c, t), ok = n <= most;
+    const nums = Array.from({ length: MANY }, (_, i) => i + 1).map((m) =>
+      `<button type="button" class="snum${m === n ? " on" : ""}${m > most ? " dear" : ""}" data-n="${m}" aria-pressed="${m === n}" aria-label="${m}">${m}</button>`).join("");
+    show(`${head(ok ? "How many?" : `You have enough coins for ${most}.`)}
+    <div class="sthing"><span class="sart lg">${thingArt(t)}</span><span class="sname"><b>${esc(thingName(t))}</b>${priceTag(c)}</span></div>
+    <div class="snums" role="group" aria-label="How many">${nums}</div>
+    <div class="scopies n${n}" aria-hidden="true">${Array.from({ length: n }, () => `<span class="scopy"><span class="sart">${thingArt(t)}</span>${k ? priceTag(c) : ""}</span>`).join("")}</div>
+    <div class="smathbox${ok ? "" : " short"}">${math(n)}</div>
+    <div class="btns"><button class="big alt" id="shopBack">Back</button><button class="big buy" id="shopPay" ${ok ? "" : "disabled"}>Pay</button></div>`, "page shop");
+    $("card").querySelectorAll(".snum").forEach((b) => b.onclick = () => {
+      const m = Number(b.dataset.n);
+      S.n = m; sfx.tick();
+      if (m > most) say("p", affordLine(most), true); else say("p", manyLine(t, m, c, dollars), true);
+      shopCard("many");
+    });
+    $("shopBack").onclick = toShop;
+    $("shopPay").onclick = () => {
+      if (!ok) return;
+      S.counter = emptyCounter();
+      if (once("shopHow", 3)) say("p", SHOP.how, true);
+      shopCard("pay");
+    };
+    return;
+  }
   if (view === "need") {
     show(`${head("You need more coins. Open chests to find some!")}${thing}
-    <div class="spurse"><span class="slabel">Your purse</span><div class="scoins">${tokensOf(S.purse).map((x) => `<span class="stoken">${tokenArt(x.k)}</span>`).join("") || "<small>Empty</small>"}</div><b class="stotal">${wallet}¢</b></div>
+    <div class="spurse"><span class="slabel">Your purse</span><div class="scoins">${tokensOf(S.purse).map((x) => `<span class="stoken">${tokenArt(x.k)}</span>`).join("") || "<small>Empty</small>"}</div><b class="stotal">${moneyAmt(wallet, billsOn())}</b></div>
     <div class="btns"><button class="big" id="shopBack">Back</button></div>`, "page shop");
     $("shopBack").onclick = toShop;
     return;
   }
   if (view === "pay") {
-    const on = counterTotal(S.counter), ok = enough(S.counter, c), rest = purseLeft(S.purse, S.counter);
+    // The counter works against the total (price × how many).
+    const on = counterTotal(S.counter), ok = enough(S.counter, due), rest = purseLeft(S.purse, S.counter);
     // The purse as stacks, one per kind, biggest first: tap one to put a coin down.
     const stacks = TOKENS.filter((x) => rest[x.k] > 0 || S.purse[x.k] > 0).map((x) =>
       `<button type="button" class="stack${rest[x.k] ? "" : " gone"}" data-k="${x.k}" ${rest[x.k] ? "" : "disabled"} aria-label="Put down ${x.k === "b" ? "a dollar" : "a " + coinOf(x.k).name}, ${rest[x.k]} left">${tokenArt(x.k)}<b>${rest[x.k] > 1 ? "×" + rest[x.k] : ""}</b></button>`).join("");
     const counter = tokensOf(S.counter).map((x) => `<button type="button" class="ctoken" data-k="${x.k}" aria-label="Take back ${x.k === "b" ? "the dollar" : "a " + coinOf(x.k).name}">${tokenArt(x.k)}</button>`).join("");
     show(`${head(ok ? "That's enough! Tap Buy!" : "Tap coins to pay me!")}${thing}
-    <div class="counter${ok ? " ok" : ""}"><div class="ccoins">${counter || '<span class="chint">Tap your coins</span>'}</div><p class="ctotal">You put down <b>${on}¢</b></p></div>
+    <div class="counter${ok ? " ok" : ""}"><div class="ccoins">${counter || '<span class="chint">Tap your coins</span>'}</div><p class="ctotal">You put down <b>${moneyAmt(on, dollars)}</b></p></div>
     <div class="spurse"><span class="slabel">Your purse</span><div class="stacks">${stacks}</div></div>
     <div class="btns"><button class="big alt" id="shopBack">Back</button><button class="big buy" id="shopBuy" ${ok ? "" : "disabled"}>Buy</button></div>`, "page shop");
     $("card").querySelectorAll(".stack:not([disabled])").forEach((b) => b.onclick = () => {
-      if (!putDown(S.purse, S.counter, b.dataset.k, c)) { if (enough(S.counter, c)) say("p", SHOP.enough, true); return; }
+      if (!putDown(S.purse, S.counter, b.dataset.k, due)) { if (enough(S.counter, due)) say("p", SHOP.enough, true); return; }
       sfx.coins(1);
-      if (enough(S.counter, c)) say("p", SHOP.enough, true);
+      if (enough(S.counter, due)) say("p", SHOP.enough, true);
       shopCard("pay");
     });
     $("card").querySelectorAll(".ctoken").forEach((b) => b.onclick = () => { if (takeBack(S.counter, b.dataset.k)) { sfx.tick(); shopCard("pay"); } });
-    $("shopBack").onclick = toShop;
+    // Back: an item to how many (the coins down go back in the purse), clothing to the shop.
+    $("shopBack").onclick = () => (manyOK(t) ? (S.counter = emptyCounter(), shopCard("many")) : toShop());
     $("shopBuy").onclick = () => {
-      const r = pay(S.purse, S.counter, c);
+      const r = payMany(S.purse, S.counter, c, n, t);
       if (!r.ok) return; // never pays for you
       wallet = r.wallet; S.purse = r.purse; saveWallet();
-      if (t.kind === "item") { gain(inv, t.id); saveItems(); } else { addPiece(wardrobe, t.id); saveWardrobe(); }
+      if (t.kind === "item") { gain(inv, t.id, r.n); saveItems(); } else { addPiece(wardrobe, t.id); saveWardrobe(); }
       S.paid = r;
       sfx.chestOpen();
       if (r.exact) { say("p", SHOP.exact, true); surprise("surprise:exact"); } else say("p", changeLine(r.change), true);
       say("p", SHOP.thanks);
-      if (t.kind === "item") say("p", SHOP.inItems); else if (hasCaptain()) say("p", SHOP.putOn);
+      if (t.kind === "item") { if (r.n > 1) say("p", SHOP.inItemsMany); else say("p", SHOP.inItems); } else if (hasCaptain()) say("p", SHOP.putOn);
       shopCard("bought");
     };
     return;
@@ -1826,10 +1865,10 @@ function shopCard(view) {
   const r = S.paid, change = r.exact ? `<p class="exact">⭐ Exact change! ⭐</p>`
     : `<div class="change"><span class="slabel">Here's ${r.change}¢ back!</span><div class="ccoins">${tokensOf(r.changeCoins).map((x, i) => `<span class="ctoken back" style="--i:${i}">${tokenArt(x.k)}</span>`).join("")}</div></div>`;
   const cloth = t.kind === "clothing" && hasCaptain();
-  show(`${head("Thank you! Come again!")}${thing.replace('class="sthing"', 'class="sthing got"')}
+  show(`${head("Thank you! Come again!")}${thing.replace('class="sthing', 'class="sthing got')}
   ${change}
-  <div class="spurse"><span class="slabel">Your purse</span><div class="scoins">${tokensOf(S.purse).map((x) => `<span class="stoken">${tokenArt(x.k)}</span>`).join("") || "<small>Empty</small>"}</div><b class="stotal">${wallet}¢</b></div>
-  <p class="snote">${t.kind === "item" ? "It's in your 🎒 items." : cloth ? "Put it on?" : "It's in your 👕 wardrobe."}</p>
+  <div class="spurse"><span class="slabel">Your purse</span><div class="scoins">${tokensOf(S.purse).map((x) => `<span class="stoken">${tokenArt(x.k)}</span>`).join("") || "<small>Empty</small>"}</div><b class="stotal">${moneyAmt(wallet, billsOn())}</b></div>
+  <p class="snote">${t.kind === "item" ? (r.n > 1 ? "They're in your 🎒 items." : "It's in your 🎒 items.") : cloth ? "Put it on?" : "It's in your 👕 wardrobe."}</p>
   <div class="btns">${cloth ? `<button class="big alt" id="shopBack">Not now</button><button class="big" id="shopWear">👕 Put it on</button>` : `<button class="big" id="shopBack">Back to the shop</button>`}</div>`, "page shop");
   $("shopBack").onclick = toShop;
   if ($("shopWear")) $("shopWear").onclick = () => {

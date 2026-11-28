@@ -25,7 +25,7 @@ import { traitOf } from "./traits.js";
 import { QUIPS, FINALS, CRIT, TEAM_LINES, TEAM_NUMBERS, CAPTAIN_LINES, captainNames } from "./moments.js";
 import { fewest, ITEMS } from "./loot.js";
 import { clothesById, findable } from "./clothes.js";
-import { allPrices } from "./shop.js";
+import { allPrices, allTotals, MANY } from "./shop.js";
 import { coinWords } from "./coins.js";
 import { BANDS, pool, factOf, pathBands } from "./learn.js";
 import { spokenLines as achievementLines, cardLines } from "./achievements.js";
@@ -304,6 +304,8 @@ export var SHOP = {
   exact: "Exact change!",
   thanks: "Thank you! Come again!",
   inItems: "It's in your items!",
+  inItemsMany: "They're in your items!",
+  howMany: "How many? Tap a number!",
   putOn: "Put it on?",
   allClothes: "You have all my clothes!",
   wardrobeHow: "Tap something to put it on your captain!",
@@ -316,6 +318,20 @@ export function priceLine(thing, c) {
   var what = thing.kind === "item" ? ITEM_THE[thing.id] : "The " + pieceWords(thing.id).toLowerCase();
   return what + (thing.kind === "clothing" && PAIRS[thing.id] ? " cost " : " costs ") + cents(c) + ".";
 }
+// More than one item (shop.js MANY): "Three pies cost one hundred five cents.", or in dollars once
+// bills are shown ("Three pies cost one dollar and five cents."), as the total is written.
+var ITEM_MANY = { pie: "pies", shield: "shields", totem: "totems", magnet: "Hero Magnets" };
+function amount(c, dollars) {
+  if (!dollars || c < 100) return cents(c);
+  var b = Math.floor(c / 100), r = c % 100;
+  return spoken(b) + (b === 1 ? " dollar" : " dollars") + (r ? " and " + cents(r) : "");
+}
+export function manyLine(thing, n, c, dollars) {
+  if (n === 1) return priceLine(thing, c);
+  return capital(spoken(n)) + " " + ITEM_MANY[thing.id] + " cost " + amount(c * n, dollars) + ".";
+}
+// A count the purse can't pay for: the most it can ("You have enough coins for two.").
+export function affordLine(n) { return "You have enough coins for " + spoken(n) + "."; }
 // Change from Trollar: "Here's ten cents back!" (always under a dollar: shop.js pay).
 export function changeLine(c) { return "Here's " + cents(c) + " back!"; }
 // An achievement card's line k (achievements.js cardLines): "New achievement!", its title, what it
@@ -447,6 +463,10 @@ export function spokenLines() {
   Object.keys(SHOP).forEach(function (k) { add("p", SHOP[k], "Shop", "shop"); });
   allPrices().forEach(function (t) { add("p", priceLine(t, t.c), "Shop", "shop"); });
   for (c = 1; c < 100; c++) add("p", changeLine(c), "Shop", "change");
+  // More than one item: each total, in cents and (past a dollar) in dollars; and the most a purse
+  // can pay for.
+  allTotals().forEach(function (t) { [false, true].forEach(function (d) { add("p", manyLine(t, t.n, t.c, d), "Shop", "shop"); }); });
+  for (c = 1; c < MANY; c++) add("p", affordLine(c), "Shop", "shop");
   findable().forEach(function (p) { add("p", clothingName(p.id), "Clothing", "clothes"); });
   // Achievement cards (achievements.js, DESIGN.md §14): "New achievement!", each one's title,
   // what it took and its reward, in their own sprite, "achievements".

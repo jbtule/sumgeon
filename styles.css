@@ -1267,6 +1267,29 @@ body.on-scene>.top,body.on-scene>.who,body.on-scene>.game,body.on-scene>.badges{
 .sthing .pcoins svg.coins{height:28px;max-width:160px}
 .sthing.got .sart{animation:gotpop .5s cubic-bezier(.3,1.6,.6,1)}
 @keyframes gotpop{from{transform:scale(.4)}}
+/* How many (an item, 1 to 5): big number buttons, the item drawn that many times, and the total
+   as math (repeated addition, or × from 3rd grade). */
+.snums{display:flex;justify-content:center;gap:8px}
+.snum{width:54px;height:54px;padding:0;border-radius:14px;border:2px solid var(--edge);background:var(--btn);color:var(--ink);font:400 26px Bungee,sans-serif;line-height:1}
+.snum.on{border-color:var(--gold);background:#ffc93c33;color:var(--gold);box-shadow:0 0 0 2px #ffc93c66}
+.snum.dear{opacity:.5}
+.snum.dear.on{opacity:1;border-color:var(--coral);color:var(--coral);background:#ff5a4e26;box-shadow:0 0 0 2px #ff5a4e55}
+.scopies{display:flex;flex-wrap:wrap;justify-content:center;gap:4px;min-height:56px}
+.scopy{display:grid;justify-items:center;gap:2px}
+.sthing.many{gap:20px}
+.smath{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:center;column-gap:6px;row-gap:2px;margin:0;font:400 20px Bungee,sans-serif;color:var(--ink)}
+.smath i{font-style:normal;color:var(--muted)}
+.smath .eq{white-space:nowrap;color:var(--muted)}
+.smath .eq b{font-weight:400;color:var(--gold)}
+.card .smath{max-width:none}
+.smathbox.short .eq b{color:var(--coral)}
+.sthing .smath{justify-content:flex-start;font-size:15px;column-gap:4px}
+.smult{position:absolute;right:-10px;bottom:-6px;font:400 20px Bungee,sans-serif;color:var(--gold);-webkit-text-stroke:1px var(--dark);text-shadow:0 2px 0 var(--dark)}
+@media (max-width: 359px){
+  .snums{gap:6px}.snum{width:48px;height:48px;font-size:22px}
+  .scopies .sart{width:44px;height:44px}.scopies .sart .ico{font-size:30px}
+  .smath{font-size:17px}
+}
 /* The counter: a wooden plank the coins are tapped onto, with the running total. */
 .counter{display:grid;gap:4px;padding:10px;border-radius:16px;background:linear-gradient(#bd7838,#8a5a2e);border:3px solid var(--dark);box-shadow:inset 0 -6px 0 #0003}
 .counter.ok{box-shadow:inset 0 -6px 0 #0003,0 0 0 3px var(--gold),0 0 18px #ffc93c66}

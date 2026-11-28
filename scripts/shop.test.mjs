@@ -1,11 +1,11 @@
 // Trollar's shop (js/shop.js, DESIGN.md §6.3): prices, stock, paying and change.
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { ITEM_PRICE, K_ITEM_PRICE, K_CLOTHING_PRICE, kPrices, priceOf, allPrices, STOCK, freshShop, restock, forSale, TOKENS, valueOf, empty, total, count, purseOf, purseFor, left, canAfford, putDown, takeBack, enough, pay } from "../js/shop.js";
-import { ITEMS, fewest } from "../js/loot.js";
+import { ITEM_PRICE, K_ITEM_PRICE, K_CLOTHING_PRICE, kPrices, priceOf, allPrices, STOCK, freshShop, restock, forSale, TOKENS, valueOf, empty, total, count, purseOf, purseFor, left, canAfford, putDown, takeBack, enough, pay, MANY, manyOK, mostFor, howMany, moneyText, timesOK, sumText, payMany, allTotals } from "../js/shop.js";
+import { ITEMS, fewest, setBills } from "../js/loot.js";
 import { CLOTHES, clothesById, findable } from "../js/clothes.js";
 import { seeded } from "../js/moments.js";
-import { spokenLines, SHOP, priceLine, changeLine, clothingName, GROUPS, ALWAYS } from "../js/lines.js";
+import { spokenLines, SHOP, priceLine, changeLine, clothingName, GROUPS, ALWAYS, manyLine, affordLine } from "../js/lines.js";
 
 const r = seeded(11);
 // Fisher–Yates with the seeded r: the same order in every JavaScript engine. (A sort with a random
@@ -131,5 +131,70 @@ for (const t of allPrices()) {
   const app = readFileSync(new URL("../js/app.js", import.meta.url), "utf8");
   for (const k of Object.keys(SHOP)) assert.ok(app.includes("SHOP." + k), `SHOP.${k} is recorded but never said`);
   assert.ok(/if \(!r\.ok\) return; \/\/ never pays for you/.test(app), "Buy pays only with enough down");
+}
+// More than one item at once: 1 to MANY of an item (clothing one each), the total as math for the
+// grade, and paying against the total from every wallet, with and without bills.
+{
+  const pie = { kind: "item", id: "pie" }, hat = { kind: "clothing", id: "partyhat" };
+  assert.ok(manyOK(pie) && !manyOK(hat));
+  assert.equal(MANY, 5);
+  assert.equal(mostFor(105, 35, pie), 3); assert.equal(mostFor(104, 35, pie), 2); assert.equal(mostFor(10, 35, pie), 0);
+  assert.equal(mostFor(1000, 5, pie), MANY, "never more than MANY"); assert.equal(mostFor(1000, 25, hat), 1, "clothing is one");
+  assert.equal(howMany(3, pie), 3); assert.equal(howMany(9, pie), MANY); assert.equal(howMany(0, pie), 1); assert.equal(howMany("x"), 1); assert.equal(howMany(3, hat), 1);
+  assert.equal(moneyText(35), "35¢"); assert.equal(moneyText(105), "105¢"); assert.equal(moneyText(105, true), "$1.05"); assert.equal(moneyText(300, true), "$3.00"); assert.equal(moneyText(99, true), "99¢");
+  assert.ok(!timesOK(null) && !timesOK(0) && !timesOK(1) && !timesOK(2) && timesOK(3) && timesOK(5));
+  // K and 1st grade: repeated addition in cents; 2nd: in dollars; 3rd: multiplication.
+  assert.equal(sumText(5, 3).text, "5¢ + 5¢ + 5¢ = 15¢");
+  assert.equal(sumText(35, 3).text, "35¢ + 35¢ + 35¢ = 105¢");
+  assert.equal(sumText(35, 3, { dollars: true }).text, "35¢ + 35¢ + 35¢ = $1.05");
+  assert.equal(sumText(35, 3, { times: true, dollars: true }).text, "3 × 35¢ = $1.05");
+  assert.equal(sumText(35, 1, { times: true }).text, "35¢");
+  assert.deepEqual(sumText(60, 2).terms, ["60¢", "60¢"]);
+  // Every total, from wallets around it, bills on and off: coins tapped down until the counter
+  // holds the total; the wallet loses exactly price × n, n of the item, change under a dollar.
+  const totals = allTotals();
+  assert.equal(totals.length, 2 * ITEMS.length * (MANY - 1));
+  let buys = 0;
+  for (const bills of [true, false]) {
+    setBills(bills);
+    for (const t of totals) for (const w of [t.total - 1, t.total, t.total + 1, t.total + 37, t.total + 99, t.total + 250]) {
+      const purse = purseOf(w), counter = empty();
+      assert.equal(mostFor(w, t.c, t) >= t.n, w >= t.total);
+      if (w < t.total) { assert.equal(payMany(purse, counter, t.c, t.n, t).ok, false); continue; }
+      let guard = 0;
+      while (!enough(counter, t.total) && guard++ < 200) {
+        // Biggest and smallest coins in turn.
+        const l = left(purse, counter), ks = TOKENS.map((x) => x.k).filter((x) => l[x] > 0), k = guard % 2 ? ks[0] : ks[ks.length - 1];
+        assert.equal(payMany(purse, counter, t.c, t.n, t).ok, false, "never pays while short of the total");
+        assert.ok(putDown(purse, counter, k, t.total));
+      }
+      const r = payMany(purse, counter, t.c, t.n, t);
+      assert.ok(r.ok, `${w}¢ pays ${t.n} × ${t.c}¢`);
+      assert.equal(r.n, t.n); assert.equal(r.total, t.c * t.n);
+      assert.equal(r.wallet, w - t.c * t.n, "the wallet loses exactly price × n");
+      assert.ok(r.change >= 0 && r.change < 100, "change is under a dollar");
+      assert.equal(total(r.changeCoins), r.change);
+      const ff = fewest(r.change);
+      assert.equal(count(r.changeCoins), ff.bills + ff.q + ff.d + ff.n + ff.p, "change as the fewest coins");
+      assert.equal(total(r.purse), r.wallet);
+      if (!bills) assert.equal(r.purse.b, 0, "no bills before 2nd grade");
+      buys++;
+    }
+  }
+  setBills(true);
+  assert.ok(buys > 150, `${buys} buys of more than one`);
+  // Clothing bought with a count still costs one.
+  const rh = payMany(purseOf(500), Object.assign(empty(), { b: 1 }), 45, 3, hat);
+  assert.ok(rh.ok && rh.n === 1 && rh.wallet === 455);
+  // The lines: every total said in cents and in dollars, the most a purse can pay for, all recorded
+  // and short.
+  const ids = new Set(spokenLines().map((l) => l.kind + ":" + l.text)), words = (x) => x.split(/\s+/).length;
+  for (const t of totals) for (const d of [false, true]) { const l = manyLine(t, t.n, t.c, d); assert.ok(ids.has("p:" + l) && words(l) <= 12, l); }
+  for (let n = 1; n < MANY; n++) assert.ok(ids.has("p:" + affordLine(n)), affordLine(n));
+  assert.equal(manyLine(pie, 3, 35, false), "Three pies cost one hundred five cents.");
+  assert.equal(manyLine(pie, 3, 35, true), "Three pies cost one dollar and five cents.");
+  assert.equal(manyLine({ kind: "item", id: "totem" }, 2, 10, true), "Two totems cost twenty cents.");
+  assert.equal(manyLine(pie, 1, 35, true), priceLine(pie, 35));
+  assert.equal(affordLine(2), "You have enough coins for two.");
 }
 console.log("✓ shop: prices, stock, paying and change");
