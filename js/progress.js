@@ -2,7 +2,8 @@
 // changes nothing. Everything here is pure data from the saved records (learn.js: a fact record is
 // { b: box 0–4, n: seen, c: right, ms: average answer time, t: last seen }) and the stratum's
 // progress (wings.js); app.js draws it. No DOM: runs in Node for scripts/progress.test.mjs.
-import { BANDS, pool, keyOf, factOf, learned, topBox, stepFacts, fluentTime, TIER_KNOWN, chaptersOf } from "./learn.js";
+import { fourthLine } from "./fourth.js";
+import { BANDS, pool, keyOf, factOf, learned, topBox, stepFacts, fluentFor, TIER_KNOWN, chaptersOf } from "./learn.js";
 import { WINGS, PATHS, stepsOpen, chapterOf, megasOf, MEGA_EVERY, OPEN_AT, learnedShare, legendShare, legendDue, legendBeaten, deepest } from "./wings.js";
 import { spokenFact } from "./problems.js";
 import { coinOf } from "./coins.js";
@@ -18,11 +19,11 @@ function bandIndex() {
 }
 // Every key any band asks (older saved keys that no band asks any more are left out).
 export const known = (key) => bandIndex().has(key);
-// How long a fluent answer to this fact may take (learn.js fluentTime: the band's time, plus a
+// How long a fluent answer to this fact may take (learn.js fluentFor: its level's or band's time, plus a
 // second for each extra digit to tap).
 export function fluentLimit(key) {
   const k = bandIndex().get(key);
-  return k ? fluentTime(BANDS[k.band].fluentMs, k.ans) : 4000;
+  return k ? fluentFor(k.band, key, k.ans) : 4000;
 }
 // A fact's state from its record: "new" (not seen), "learning" (box 0–2), "learned" (box 3) or
 // "mastered" (box 4); fluent: learned and answered, on average, inside its fluent time.
@@ -49,6 +50,12 @@ export function factText(key) {
   else if (f.op === "¢") text = `${f.q} = ${a}¢`;
   else if (f.op === "$") text = said.replace(/\.$/, "");
   else if (f.op === "≈") text = `${f.n} ≈ ${a} (nearest ${f.to})`;
+  // 4th grade's rectangles with a side to find, and angles and shapes (fourth.js, angles.js).
+  // 4th grade's lines with their answers in place: "29 ÷ 4 = 7 R 1", "$3.25 + $1.40 = $4.65".
+  else if (f.parts && f.op !== "∠") text = fourthLine(f, String).join("");
+  else if (f.op === "P") text = `${f.n} is ${f.sym === "P" ? "prime" : "composite"}`;
+  else if (f.op === "▭" && (f.kind === "s" || f.kind === "q")) text = `${f.kind === "s" ? "Area " + f.area : "Perimeter " + f.per}, sides ${f.h} and ${a}`;
+  else if (f.op === "∠" && f.name) text = `${fill(f.q, a)} (${f.name})`;
   else if (f.op === "▭") text = `${f.kind === "a" ? "Area" : "Perimeter"} of ${f.w} by ${f.h} = ${a}`;
   else if (f.op === "✓") text = `${f.q}: ${f.sym === "T" ? "true" : "false"}`;
   else if (f.op === "◇" && f.draw) text = f.q;
@@ -110,6 +117,12 @@ export function stepRows(wing, progress, recs, chapter) {
       keys: fs.map((f) => f.key)
     };
   });
+}
+// The words for a step's state: "Learned ✓"; an open step "Up now" once it's been asked, and "Up
+// next" until then (open, but no problem from it yet: a step can wait a little for its turn); "Not
+// started" for one not open yet.
+export function stepLabel(r) {
+  return r.state === "learned" ? "Learned ✓" : r.state === "now" ? (r.seen ? "Up now" : "Up next") : "Not started";
 }
 // Above each path: the chapter they're on and the next mega boss's depth; how close the next
 // stratum is; and the Legend.
@@ -186,20 +199,24 @@ export function kindOf(key) {
   const op = key[0];
   if (op === "+" || op === "-") {
     const [x, y] = key.slice(1).split(",").map(Number), top = op === "+" ? x + y : x;
-    return top <= 20 ? "teens" : Math.max(x, y) < 100 && top < 100 ? "two" : "three";
+    return top <= 20 ? "teens" : Math.max(x, y) < 100 && top < 100 ? "two" : Math.max(x, y) < 1000 ? "three" : "million";
   }
-  if (op === "×") return "tens";
-  if (op === "÷") return "big";
+  // 4th grade's (the Fraction Forge): multi-digit × and ÷ apart from 3rd grade's × tens and ÷ past 12.
+  if (op === "×") { const [x, y] = key.slice(1).split(",").map(Number), a = Math.min(x, y), b = Math.max(x, y); return b <= 12 || (a < 10 && b < 100 && b % 10 === 0) ? "tens" : "mul4"; }
+  if (op === "÷") { const [x, y] = key.slice(1).split(",").map(Number); return x > 144 || (x / y > 12 && y <= 9) ? "div4" : "big"; }
+  if (op === "○" && key.includes(".")) return "decimals";
   if (op === "¢" || op === "$") return "coins";
   if (op === "/" || op === "↔") return "fractions";
   if (op === "○" && key.includes("/")) return "fractions";
-  return { "□": "missing", "M": "more", "○": "compare", "=": "balance", "✓": "truefalse", "✎": "truefalse", "Σ": "sums", "▦": "arrays", "⌚": "time", "…": "patterns", "◐": "oddeven", "#": "placevalue", "◇": "shapes", "⁙": "dots", "≈": "rounding", "▭": "area" }[op] || "other";
+  return { "□": "missing", "M": "more", "○": "compare", "=": "balance", "✓": "truefalse", "✎": "truefalse", "Σ": "sums", "▦": "arrays", "⌚": "time", "…": "patterns", "◐": "oddeven", "#": "placevalue", "◇": "shapes", "⁙": "dots", "≈": "rounding", "▭": "area", "R": "remainders", "E": "steps", "F": "steps", "ƒ": "fracops", "d": "decimals", "∠": "angles", "u": "units", "P": "primes", "D": "coins" }[op] || "other";
 }
 export const KIND_NAMES = {
   dots: "Dot flash", more: "Which is more", missing: "Missing numbers", teens: "Teen facts (13 + 4)", compare: "Comparing", balance: "Balancing (equal sign)",
   truefalse: "True or false", sums: "Three or more numbers", two: "Two-digit + and −", three: "Three-digit + and −", placevalue: "Place value",
   coins: "Coins and money", time: "Telling time", patterns: "Counting patterns", oddeven: "Odd and even", arrays: "Arrays", shapes: "Shapes",
-  tens: "× tens", big: "÷ past 12", rounding: "Rounding", fractions: "Fractions", area: "Area and perimeter", other: "Other"
+  tens: "× tens", big: "÷ past 12", rounding: "Rounding", fractions: "Fractions", area: "Area and perimeter",
+  million: "+ and − to a million", mul4: "Multi-digit ×", div4: "Multi-digit ÷", remainders: "Remainders", steps: "Multi-step and factors", fracops: "Adding and multiplying fractions",
+  decimals: "Decimals", primes: "Prime or composite", angles: "Angles and shapes", units: "Measurement", other: "Other"
 };
 // The other kinds the open strata ask, in the order they first come up: { id, name, keys, total,
 // seen, learned, mastered } (learned counts box 3 and 4).

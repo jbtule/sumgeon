@@ -1,6 +1,6 @@
 // Settings → Progress (DESIGN.md §9, js/progress.js): the data the tab shows.
 import assert from "node:assert/strict";
-import { stepRows, stratumSummary, strataOrder, gridOf, gridsFor, GRIDS, kindsFor, kindOf, needsWork, factState, factText, factLabel, factDetail, fluentLimit, ago, DONE_AT, inAnyGrid, openFacts } from "../js/progress.js";
+import { stepRows, stepLabel, stratumSummary, strataOrder, gridOf, gridsFor, GRIDS, kindsFor, kindOf, needsWork, factState, factText, factLabel, factDetail, fluentLimit, ago, DONE_AT, inAnyGrid, openFacts } from "../js/progress.js";
 import { WINGS, PATHS, MEGA_EVERY, OPEN_AT, priorityFacts, legendFacts } from "../js/wings.js";
 import { BANDS, pool, stepFacts, keyOf, JOIN_AT } from "../js/learn.js";
 
@@ -130,6 +130,12 @@ const rec = (b, extra = {}) => Object.assign({ b, n: 3, c: 3, ms: 1500, t: NOW -
   // The Hall's review step is open from the start, and marked.
   const hall = stepRows(WINGS[1], {}, {});
   assert.ok(hall[0].review && hall[0].state === "now");
+  // The words: an open step is "Up next" until it's been asked, then "Up now".
+  assert.ok(fresh.filter((r) => r.state === "now").every((r) => stepLabel(r) === "Up next"), "a new player's open steps are up next");
+  const asked = {};
+  asked[stepFacts(PATHS.cellar[3])[0].key] = rec(1);
+  assert.equal(stepLabel(stepRows(cellar, {}, asked)[3]), "Up now", "asked once: up now");
+  assert.deepEqual([stepLabel(rows[1]), stepLabel(fresh[6])], ["Learned ✓", "Not started"]);
 }
 
 // Above each path: the chapter and the next mega boss, the next stratum, the Legend.
@@ -155,8 +161,9 @@ const rec = (b, extra = {}) => Object.assign({ b, n: 3, c: 3, ms: 1500, t: NOW -
   assert.equal(stratumSummary(cellar, {}, all, ["cellar"]).legend.state, "open");
   assert.equal(stratumSummary(cellar, {}, all, ["cellar"]).legend.share, 1);
   assert.equal(stratumSummary(cellar, { cellar: { legend: NOW } }, all, ["cellar"]).legend.state, "beaten");
-  // The Tower is last: no next stratum.
-  assert.equal(stratumSummary(tower, {}, {}, ["tower"]).next, null);
+  // The Forge is last: no next stratum.
+  assert.equal(stratumSummary(WINGS[4], {}, {}, ["forge"]).next, null);
+  assert.equal(stratumSummary(tower, {}, {}, ["tower"]).next.name, "The Fraction Forge");
   // The current stratum comes first.
   assert.deepEqual(strataOrder(["cellar", "hall", "mines"], "hall").map((w) => w.id), ["hall", "cellar", "mines"]);
 }

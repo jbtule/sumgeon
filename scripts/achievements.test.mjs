@@ -73,7 +73,7 @@ assert.deepEqual(award({ facts: {}, wings }, earned, 300).map((a) => a.id), ["le
 // The grand ones: every stratum.
 const all = Object.fromEntries(WINGS.map((w) => [w.id, { megas: megasNeeded(w.id), legend: 9 }]));
 assert.deepEqual(award({ facts: {}, wings: all }, earned, 400).map((a) => a.id).sort(),
-  ["champion:hall", "champion:mines", "champion:tower", "grand:champion", "grand:legend", "legend:hall", "legend:mines", "legend:tower"]);
+  ["champion:forge", "champion:hall", "champion:mines", "champion:tower", "grand:champion", "grand:legend", "legend:forge", "legend:hall", "legend:mines", "legend:tower"]);
 // The Legend's progress: the share of its facts mastered.
 const halfCellar = legendFacts(WINGS[0]).slice(0, Math.floor(legendFacts(WINGS[0]).length / 2)).map((f) => f.key);
 assert.match(catalog({ facts: top(halfCellar), wings: {} }).find((a) => a.id === "legend:cellar").progress, /^(49|50)% of its facts mastered$/);
@@ -151,6 +151,9 @@ assert.deepEqual(hit({ ans: 121, typed: "121" }), ["surprise:palindrome"]);
 assert.deepEqual(hit({ ans: 7, typed: "7" }), [], "one digit isn't a palindrome");
 assert.deepEqual(hit({ ans: null, typed: "44" }), [], "a comparison or a time isn't typed as a number");
 assert.deepEqual(hit({ dmg: 100 }), ["surprise:triple"]);
+// Triple Digits ignores bonuses: a crit or a Hero Moment on 60 hitting for 2000 doesn't count, 120 does.
+assert.deepEqual(hit({ dmg: 2000, base: 60 }), []);
+assert.deepEqual(hit({ dmg: 120, base: 120 }), ["surprise:triple"]);
 assert.deepEqual(hit({ ans: 55, typed: "55", team: [5] }), ["surprise:palindrome", "surprise:double"]);
 assert.deepEqual(hit({ ans: 505, typed: "505", team: [5] }), ["surprise:palindrome", "surprise:double"], "505: two 5s, but 0 isn't on the team");
 assert.deepEqual(hit({ ans: 505, typed: "505", team: [5, 0] }), ["surprise:palindrome", "surprise:double", "surprise:allhands"]);
@@ -159,7 +162,7 @@ assert.deepEqual(hit({ ans: 123, typed: "123", team: [1, 2, 3] }), ["surprise:al
 assert.deepEqual(hit({ ans: 12, typed: "12", team: [1, 2] }), [], "All Hands needs three digits");
 // Recorded straight into earned, once; only the ones seen in play.
 const ev = {};
-assert.ok(noteEvent(ev, "surprise:zero", 5)); assert.ok(!noteEvent(ev, "surprise:zero", 9)); assert.equal(ev["surprise:zero"], 5);
+assert.equal(noteEvent(ev, "surprise:zero", 5), "surprise:zero@cellar"); assert.equal(noteEvent(ev, "surprise:zero", 9), null); assert.equal(ev["surprise:zero"], 5);
 assert.ok(!noteEvent(ev, "surprise:piggy", 5) && !noteEvent(ev, "fluent:25", 5), "worked out from the state, not noted");
 assert.ok(catalog({ ach: { earned: ev } }).find((a) => a.id === "surprise:zero").met);
 for (const id of ["surprise:zero", "surprise:palindrome", "surprise:triple", "surprise:double", "surprise:allhands", "surprise:seven", "surprise:iceboss", "surprise:lastheart", "surprise:exact", "holiday:thanksgiving", "holiday:winter", "holiday:summer"])
@@ -191,7 +194,7 @@ for (const a of none.filter((x) => x.kind === "track" || x.kind === "surprise"))
 // linked player's wallet.
 assert.deepEqual(rewardsOf(none.filter((x) => x.kind === "track").map((a) => a.id)).items, { pie: 8, shield: 9, totem: 9, magnet: 9 });
 // Every Quip (surprise:allquips, 2026-11-27) added one of every item; the others are unchanged.
-assert.deepEqual(rewardsOf(none.filter((x) => x.kind === "surprise" && x.id !== "surprise:allquips").map((a) => a.id)).items, { pie: 3, shield: 5, totem: 3, magnet: 3 });
+assert.deepEqual(rewardsOf(none.filter((x) => x.kind === "surprise" && !x.of && x.id !== "surprise:allquips").map((a) => a.id)).items, { pie: 3, shield: 5, totem: 3, magnet: 3 });
 assert.deepEqual(rewardsOf(["surprise:allquips"]).items, { pie: 1, shield: 1, totem: 1, magnet: 1 });
 
 // What the cards say: "New achievement!" (or "Secret achievement!"), the title, what it took and
@@ -237,4 +240,76 @@ console.log(`✓ achievements (${ACHIEVEMENT_IDS.length})`);
   const e1 = c1.find((a) => a.id === "surprise:allquips");
   assert.ok(!e1.met && e1.started && e1.have === 1 && /1 of 10/.test(e1.progress), JSON.stringify(e1));
   assert.ok(c10.find((a) => a.id === "surprise:allquips").met);
+}
+
+// The stratum secrets (§14.5): the surprises seen in play, once in each stratum.
+{
+  const { STRATUM_SURPRISES, placeOldSurprises, inStratum, surpriseOf, whereIn, CARD_IDS } = await import("../js/achievements.js");
+  // Which: the ones that happen in a fight or at Trollar's stall. Piggy Bank, the quips and the
+  // holidays aren't tied to a stratum.
+  assert.deepEqual(STRATUM_SURPRISES, ["surprise:zero", "surprise:palindrome", "surprise:triple", "surprise:double", "surprise:allhands", "surprise:seven", "surprise:iceboss", "surprise:lastheart"]);
+  for (const id of ["surprise:piggy", "surprise:quips", "surprise:allquips", "holiday:thanksgiving", "holiday:winter", "holiday:summer"]) {
+    assert.ok(!STRATUM_SURPRISES.includes(id), id);
+    assert.ok(!ids.has(id + "@cellar"), id);
+  }
+  // Every stratum has its copy of each, with the stratum in its title, as shown and said.
+  for (const id of STRATUM_SURPRISES) for (const w of WINGS) {
+    const sid = inStratum(id, w.id), a = achievementOf(sid);
+    assert.ok(a && ids.has(sid), sid);
+    assert.deepEqual(surpriseOf(sid), { id, wing: w.id });
+    assert.equal(a.title, `${achievementOf(id).title} ${whereIn(w.id)}`);
+    assert.deepEqual(rewardOf(sid), rewardOf(id), `${sid} pays the surprise's reward`);
+  }
+  assert.equal(whereIn("mines"), "in the Crystal Mines");
+  assert.equal(achievementOf("surprise:zero@cellar").title, "Exactly Zero in the Counting Cellar");
+  assert.equal(surpriseOf("surprise:zero"), null);
+  const card = catalog({ ach: { earned: { "surprise:palindrome": 1, "surprise:palindrome@mines": 1 } } }).find((a) => a.id === "surprise:palindrome@mines");
+  assert.deepEqual({ name: card.name, where: card.where, wing: card.wing, of: card.of, kind: card.kind, secret: card.secret },
+    { name: "Palindrome", where: "in the Crystal Mines", wing: "mines", of: "surprise:palindrome", kind: "surprise", secret: true });
+  assert.deepEqual(cardLines(card), ["Secret achievement!", "Pal-in-drome in the Crystal Mines!", "Your answer reads the same backward!", "You got a shield!"]);
+  assert.equal(cardLines(catalog({}).find((a) => a.id === "surprise:lastheart@forge"))[1], "Never Gave Up in the Fraction Forge!");
+
+  // Earning: once in each stratum; the first also earns the surprise as a whole (keeping its time).
+  const e = {};
+  assert.equal(noteEvent(e, "surprise:zero", 10, "hall"), "surprise:zero@hall");
+  assert.deepEqual(e, { "surprise:zero": 10, "surprise:zero@hall": 10 });
+  assert.equal(noteEvent(e, "surprise:zero", 20, "hall"), null, "once in the Hall");
+  assert.equal(noteEvent(e, "surprise:zero", 30, "tower"), "surprise:zero@tower");
+  assert.equal(e["surprise:zero"], 10);
+  assert.equal(noteEvent(e, "holiday:winter", 40, "tower"), "holiday:winter", "a holiday is one achievement");
+  assert.equal(noteEvent(e, "holiday:winter", 50, "hall"), null);
+  assert.equal(noteEvent(e, "surprise:lastheart", 60), "surprise:lastheart@cellar", "no stratum given: the Cellar");
+  assert.equal(noteEvent(e, "surprise:exact", 70, "hall"), "surprise:exact", "Exact Change is one achievement: the shop is on the surface");
+  // The catalog: the surprise with each stratum, and a count.
+  const z = catalog({ ach: { earned: e } }).find((a) => a.id === "surprise:zero");
+  assert.ok(z.met && z.strata.length === WINGS.length);
+  assert.deepEqual(z.strata.filter((x) => x.at).map((x) => x.wing), ["hall", "tower"]);
+  assert.equal(z.progress, `2 of ${WINGS.length} strata`);
+  assert.deepEqual(z.strata.map((x) => x.name), WINGS.map((w) => w.name.replace(/^The /, "")));
+  // Cards: each stratum's copy, never the surprise as a whole.
+  assert.ok(!CARD_IDS.includes("surprise:zero") && CARD_IDS.includes("surprise:zero@hall"));
+  assert.deepEqual(unseen({ earned: e, seen: [] }), ["surprise:zero@hall", "surprise:zero@tower", "surprise:lastheart@cellar", "holiday:winter", "surprise:exact"].sort((x, y) => CARD_IDS.indexOf(x) - CARD_IDS.indexOf(y)));
+  // Rewards: once a stratum; the surprise and its first stratum together pay once.
+  assert.deepEqual(rewardsOf(["surprise:zero"]).items, { totem: 1 }, "an old save");
+  assert.deepEqual(rewardsOf(["surprise:zero", "surprise:zero@cellar"]).items, { totem: 1 });
+  assert.deepEqual(rewardsOf(["surprise:zero", "surprise:zero@cellar", "surprise:zero@hall", "surprise:zero@mines"]).items, { totem: 3 });
+  assert.deepEqual(rewardsOf(["surprise:zero@hall", "surprise:zero", "surprise:zero@hall"]).items, { totem: 1 }, "any order, each once");
+
+  // An old save (before strata were counted): each surprise goes in the player's start stratum,
+  // keeping its time and whether its card was seen; nothing is lost, and it happens once.
+  const old = freshAchievements({ earned: { "surprise:zero": 5, "surprise:palindrome": 6, "surprise:piggy": 7, "holiday:winter": 8 }, seen: ["surprise:zero", "surprise:piggy"] });
+  assert.ok(placeOldSurprises(old, "mines"));
+  assert.deepEqual(old.earned, { "surprise:zero": 5, "surprise:palindrome": 6, "surprise:piggy": 7, "holiday:winter": 8, "surprise:zero@mines": 5, "surprise:palindrome@mines": 6 });
+  assert.deepEqual(unseen(old), ["holiday:winter", "surprise:palindrome@mines"], "an old card not yet seen plays with its stratum; one seen doesn't again");
+  assert.ok(!placeOldSurprises(old, "hall"), "once only");
+  assert.deepEqual(rewardsOf(Object.keys(old.earned)).items, rewardsOf(["surprise:zero", "surprise:palindrome", "surprise:piggy", "holiday:winter"]).items, "placing them pays nothing");
+  // Saved and loaded again, the ids are kept.
+  assert.deepEqual(freshAchievements(JSON.parse(JSON.stringify(old))).earned, old.earned);
+  // An unknown stratum (a save with a band gone) falls back to the Cellar.
+  const old2 = freshAchievements({ earned: { "surprise:seven": 3 } });
+  placeOldSurprises(old2, "nowhere");
+  assert.equal(old2.earned["surprise:seven@cellar"], 3);
+  // One already in a stratum (a sync from an updated device) is left alone.
+  const old3 = freshAchievements({ earned: { "surprise:seven": 3, "surprise:seven@hall": 4 } });
+  assert.ok(!placeOldSurprises(old3, "cellar"));
 }

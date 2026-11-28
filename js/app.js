@@ -1,16 +1,19 @@
 // Everything on screen: the game loop, the menu and players, and the attack animations.
 // Problems, monsters, saving, sound and speech live in their own modules.
-import { MON, svg, LOOKS, lookOf, allLooks, CHOMP_SHUT, bossForm } from "./monsters.js";
+import { MON, svg, LOOKS, lookOf, allLooks, CHOMP_SHUT, bossForm, jerseyFrac } from "./monsters.js";
 import { chompPose, morePose, mouthOf, SNAP, FLIP_MS, SNAP_MS, EAT_MS } from "./chomp.js";
 import { spokenProblem, spokenFact } from "./problems.js";
-import { BANDS, choose, factOf, record as recordAnswer, helpFor, monsterHP, probeKey, tierOf, skipTo, SKIP_PROBES, SKIP_WINDOW, MAX_LEAP, fluentTime, spellKey, RECENT, pool, drawHit, openLevels, reachOf, chaptersOf, pathBands, reviewFacts, placeReviews, examKey, examFacts, examRound, hpOf, endlessKey } from "./learn.js";
+import { BANDS, choose, factOf, record as recordAnswer, helpFor, monsterHP, probeKey, tierOf, skipTo, SKIP_PROBES, SKIP_WINDOW, MAX_LEAP, fluentTime, fluentFor, spellKey, RECENT, pool, drawHit, openLevels, reachOf, chaptersOf, pathBands, reviewFacts, placeReviews, examKey, examFacts, examRound, hpOf, endlessKey, floorTypical, typicalHit, levelTypical } from "./learn.js";
+import { chargeFor, chargedHit, chargeBadge, chargePop, problemScale, oneHit } from "./charge.js";
 import { countSvg, readShape, judgeShape, cleanFor, isDrawKey, SHAPE_LINE, SHAPE_CODE, article } from "./shapes.js";
 import { hintFor, STRATEGIES } from "./hints.js";
 import { openStore, displayName, DUNGEON_VERSION, DUNGEON_KEYS, LEARNING_RESETS } from "./store.js";
-import { PHRASE, monsterName, monsterCleared, monsterWon, heroJoins, heroCursed, heroRescue, heroAlmost, heroHelps, traitLine, BARK, wingCleared, wingOpened, wingEnter, depthLine, DEPTH_MAX_SPOKEN, reversedLine, howToWriteLine, quipLine, squawk, trait2Line, newMonsterLine } from "./lines.js";
+import { PHRASE, monsterName, monsterCleared, monsterWon, heroJoins, heroCursed, heroRescue, heroAlmost, heroHelps, traitLine, BARK, wingCleared, wingOpened, wingEnter, depthLine, DEPTH_MAX_SPOKEN, reversedLine, howToWriteLine, quipLine, squawk, trait2Line, newMonsterLine, chargeLine } from "./lines.js";
 import { WINGS, wingOf, runFloors, bossAt, cursedMonster, openWings, toOpen, floorStars, wingStars, depthScale, depthHP, deepest, MAP_DEPTHS, GRADES, gradeLabel, gradeName, withGrade, bandOf, gradeBand, OLD_BANDS, PATHS, chapterOf, stepsOpen, bossStage, isMega, BOSS_HP, MEGA_EVERY, megasOf, stepMonsters, legendDue, openLegend, beatLegend, legendBeaten, legendProgress, LEGEND_HP } from "./wings.js";
 import { missingOf, pickBlank, filled, spokenMissing, MISSING_SHARE, canHide } from "./missing.js";
 import { rectSvg } from "./third.js";
+import { bigText, fourthLine, commas } from "./fourth.js";
+import { angleSvg } from "./angles.js";
 import { arraySvg } from "./arrays.js";
 import { flashSvg, FLASH_DOTS_MS } from "./flash.js";
 import { clockSvg, clockFactLine, clockFactHint, clockAnswer, elapsedSvg } from "./clock.js";
@@ -20,10 +23,10 @@ import { lineSvg } from "./numberline.js";
 import { pvSvg, pvLine } from "./placevalue.js";
 import { dollarSvg, dollarLine, moneyText } from "./dollars.js";
 import { coinsSvg, pileOf, coinOf } from "./coins.js";
-import { stackOf } from "./twodigit.js";
+import { stackOf, markable, toggleCarry, regroup, regroupMove, regroupView } from "./twodigit.js";
 import { read as readSigil, judge as judgeSigil, offEdge } from "./sigil.js";
 import { HANDWRITING } from "./handwriting.js";
-import { traitOf, charged, prefers, hitBy, atHalf, asks, flipOf, flashOf, dieSvg, mega } from "./traits.js";
+import { traitOf, charged, fourthDown, prefers, hitBy, atHalf, asks, flipOf, flashOf, dieSvg, mega } from "./traits.js";
 import { roster, mastery, meet, beat, renamed, RENAMED } from "./bestiary.js";
 import { HEROES, CHALK, heroSvg, freePick, pickHero, curseCaptain, crackCurse, CURSE_HITS, resetTeam } from "./heroes.js";
 import * as sfx from "./sfx.js";
@@ -38,14 +41,14 @@ import { chestAfter, lockKey, lockOf, contents, moneyFor, fewest, setBills, ITEM
 import { kPrices, priceOf, MANY, manyOK, howMany, mostFor, sumText, moneyText as moneyAmt, timesOK, payMany, freshShop, restock, forSale, TOKENS, valueOf, empty as emptyCounter, total as counterTotal, left as purseLeft, purseFor, putDown, takeBack, enough, canAfford } from "./shop.js";
 import { CLOTHES, SPOTS, clothesById, pieceSvg } from "./clothes.js";
 import { LOOT, askLine, itemName, itemWhat, itemUse, moneyLine, purseLine, ALWAYS, runSprites, SHOP, clothingName, priceLine, changeLine, manyLine, affordLine, plushName, plushFavLine } from "./lines.js";
-import { stepRows, stratumSummary, strataOrder, gridOf, gridsFor, kindsFor, needsWork, factLabel, factDetail, factState, STATE_WORDS, secs } from "./progress.js";
+import { stepRows, stratumSummary, strataOrder, gridOf, gridsFor, kindsFor, needsWork, factLabel, factDetail, factState, STATE_WORDS, secs, stepLabel } from "./progress.js";
 import { chestSvg, purseSvg, walletSvg, walletMini, stallSvg, priceTag, billSvg, pieSvg } from "./chest.js";
 import { newKey, keysFor, isKey, linkFor, keyFromLink } from "./seal.js";
 import { syncPlayer, remoteVersion, SYNC_URL } from "./sync.js";
 import { SYNCED_KEYS, canon, pack, unpack } from "./merge.js";
 import { linkQR } from "./linkqr.js";
-import { award as awardAchievements, catalog as achCatalog, freshAchievements, unseen as unseenAchievements, rewardOf, achievementOf, cardLines, ACHIEVEMENT_IDS,
-  isComeback, notePracticeDay, holidaysOn, hitSurprises, noteEvent, keepDays, dayNumber } from "./achievements.js";
+import { award as awardAchievements, catalog as achCatalog, freshAchievements, unseen as unseenAchievements, rewardOf, achievementOf, cardLines,
+  isComeback, notePracticeDay, holidaysOn, hitSurprises, noteEvent, keepDays, dayNumber, placeOldSurprises, CARD_IDS } from "./achievements.js";
 import { renderCard, shareCard } from "./sharecard.js";
 import { installWay, isIPad, safariVersion, iosSteps, ICONS as INSTALL_ICONS } from "./install.js";
 import { achievementLine } from "./lines.js";
@@ -190,6 +193,15 @@ function loadPlayer() {
   }
   // The band a player started in opens its Wing from the start (DESIGN.md §4).
   if (!st.start) { st.start = st.band; saveSettings(); }
+  // Surprises earned before they were counted per stratum (DESIGN.md §14.5) had no stratum: each
+  // goes in the stratum the player started in, the likeliest (done before the Forge's raise just
+  // below, which would move a grade 4 player's to a stratum that wasn't there yet). Once only:
+  // a surprise with any stratum's copy is left alone. Nothing is paid again.
+  if (placeOldSurprises(ach, wingFor(st.start || st.band).id)) saveAch();
+  // The Fraction Forge (4th grade) came after grade 4 and 5 players had started in the Tables Tower:
+  // their start is raised so the Forge is open to them, but where they're playing (band), their
+  // depths, stars, chapters and facts stay: they keep playing the Tower until they pick the Forge.
+  if (st.grade >= 4 && st.start === "third") { st.start = "fourth"; saveSettings(); }
   if (!openWings(progress, recs, st.start).includes(wingFor(st.band).id)) { st.band = WINGS[0].band; saveSettings(); }
   sfx.setSfx(st.sfx);
   setVoice(st.voice);
@@ -225,9 +237,12 @@ function payAchievements(ids) {
 }
 // Surprises seen in play (DESIGN.md §14.5: a hit, a payment, a floor cleared a certain way),
 // recorded as they happen, just as quietly; ?achievements test runs record nothing.
+// The stratum ones (Exactly Zero, Exact Change, …) are earned once in each stratum: the run's, or
+// at Trollar's stall the one picked on the start screen.
 function surprise(...ids) {
   if (LEGEND_TEST) return; // ?legend's practice run saves nothing
-  payAchievements(ids.filter((id) => noteEvent(ach.earned, id, Date.now())));
+  const now = Date.now();
+  payAchievements(ids.map((id) => noteEvent(ach.earned, id, now, wing().id)).filter(Boolean));
 }
 // ?wallet=<cents> sets the wallet, for testing the shop.
 const WALLET_AT = new URLSearchParams(location.search).has("wallet") ? Math.max(0, Math.floor(Number(new URLSearchParams(location.search).get("wallet"))) || 0) : null;
@@ -389,8 +404,13 @@ function flipCells(done) {
   });
   setTimeout(done, SWAP_MS + 120);
 }
+// The typed answer as shown: commas from 10,000 (as the problems write big numbers), and smaller
+// type once it's long, so 100,000 fits the box on a phone. Never on a stacked problem (its columns).
+function shownInput(t) { return /^\d{5,}$/.test(t) ? commas(Number(t)) : t; }
+function fitAns(el, text) { el.classList.toggle("long", text.length >= 6); el.classList.toggle("longer", text.length >= 8); }
 function ansUI() {
-  $("ans").textContent = G.input;
+  const shown = shownInput(G.input);
+  $("ans").textContent = shown; fitAns($("ans"), shown);
   // A whole time in two slots (Tick-Tockus): the one being typed glows, the one to come waits,
   // and Hit! says which: "Hour ✓", then "Minutes!".
   const go = $("pad").dataset.mode === "num" ? $("pad").querySelector('[data-k="go"]') : null;
@@ -402,20 +422,34 @@ function ansUI() {
       b.classList.toggle("typed", !!v); b.classList.toggle("now", i === G.slot.at); b.classList.toggle("wait", i > G.slot.at && !v);
     });
     // Dollars and cents (Trollar) the same way: "Dollars ✓", then "Cents!".
-    const [first, last] = G.cur.op === "$" ? ["Dollars ✓", "Cents!"] : ["Hour ✓", "Minutes!"], what = G.cur.op === "$" ? ["dollars", "cents"] : ["hour", "minutes"];
+    // 4th grade's problems name their own slots (fourth.js): "Quotient ✓", then "Remainder!"; "Whole ✓", then "Numerator!".
+    const own = G.cur.slotNames, [first, last] = own ? [own[0] + " ✓", own[1] + "!"] : G.cur.op === "$" ? ["Dollars ✓", "Cents!"] : ["Hour ✓", "Minutes!"];
+    const what = own ? own.map((w) => w.toLowerCase()) : G.cur.op === "$" ? ["dollars", "cents"] : ["hour", "minutes"];
     if (go) { go.textContent = G.slot.at ? last : first; go.classList.add("longkey"); go.setAttribute("aria-label", G.slot.at ? `Attack with the ${what[1]}` : `The ${what[0]} ${G.cur.op === "$" ? "are" : "is"} done`); }
   } else if (go && go.textContent !== "Hit!") { go.textContent = "Hit!"; go.classList.remove("longkey"); go.setAttribute("aria-label", "Attack"); }
   // The slimes (Slimelipsis): the □ slime fills as you type.
   if (G.cur && G.cur.op === "…") $("prob").innerHTML = slimeRow(G.cur);
   // A missing-number problem fills its □ as you type.
   if (G.cur && G.cur.stacked && $("blank")) { $("blank").innerHTML = stackCells(G.cur, G.input); $("blank").classList.toggle("typed", !!G.input); }
-  else if ($("blank")) { $("blank").textContent = G.input || "?"; $("blank").classList.toggle("typed", !!G.input); }
+  else if ($("blank")) { $("blank").textContent = shown || "?"; $("blank").classList.toggle("typed", !!G.input); fitAns($("blank"), shown); }
 }
 // The problem as shown: "3 + 4 =", or with a glowing □ for a missing number ("3 + □ = 7").
 const BLANK = '<span class="blank" id="blank">?</span>';
 const side = (lr, t) => `<span class="side" data-side="${lr}">${t}</span>`;
 // A fraction stacked, numerator over denominator: "1/2" → ½ drawn as two rows.
 const stacked = (t) => t.replace(/(\d+|□)\/(\d+)/g, '<span class="frac"><span>$1</span><span>$2</span></span>');
+// A long line (4th grade's big numbers, a remainder's two slots, a mixed number) shrinks until it
+// fits beside its 🔊 and 💡, inside the pad's width: on an iPad in landscape the right column is
+// narrow, and "2736 ÷ 7 = □ R □" ran past it.
+function fitLine() {
+  const box = $("prob"), el = box && box.querySelector(".fline, .cmp4, .wide4"), pad = document.querySelector(".pad");
+  if (!el || !pad) return;
+  el.style.fontSize = "";
+  const base = parseFloat(getComputedStyle(el).fontSize), right = pad.getBoundingClientRect().right + 1, left = pad.getBoundingClientRect().left - 1;
+  const out = () => { const r = el.getBoundingClientRect(); return r.right > right || r.left < left; };
+  for (let k = 0.95; out() && k >= 0.5; k -= 0.05) el.style.fontSize = (base * k).toFixed(1) + "px";
+}
+addEventListener("resize", () => requestAnimationFrame(fitLine));
 function probUI() {
   const p = G.cur, box = $("prob");
   // Batch 2 (DESIGN.md §4.1): each with its picture over the line, the hint drawn on the picture.
@@ -448,16 +482,21 @@ function probUI() {
   else if (p.op === "…") box.innerHTML = slimeRow(p);
   // Odd and even: the slimes holding their numbers, and "Even numbers = □" under them.
   else if (p.op === "◐") box.innerHTML = oddEvenSvg(p, { hint: G.hinted, perRow: p.nums.length <= 6 ? p.nums.length : 4 }) + `<span class="find">${p.ask === "even" ? "Even" : "Odd"} numbers = ${BLANK}</span>`;
+  // 4th grade's (fourth.js, angles.js): a line of parts with the answer's □ (or two slots: a
+  // remainder, a mixed number) in place, fractions stacked; an angle or a shape drawn over it.
+  else if (p.op === "P") box.innerHTML = `<span class="pnum">${p.n}</span><span class="tfask">Prime or composite?</span>`;
+  else if (p.parts) box.innerHTML = (p.op === "∠" ? angleSvg(p, { hint: G.hinted }) : "") + `<span class="${p.op === "∠" ? "find " : ""}fline${p.parts.join("").length > 15 ? " wide4" : ""}">${partsHTML(p)}</span>`;
   // A comparison: each side in its own box, so Chompers can eat the bigger one (chompAct).
-  // Fractions (the Tower) stacked, as the Tower shows them: 3/8 ○ 5/8.
-  else if (p.sym && p.op === "○") box.innerHTML = `${side("l", p.frac ? stacked(esc(p.l)) : esc(p.l))} ${BLANK} ${side("r", p.frac ? stacked(esc(p.r)) : esc(p.r))}`;
+  // Fractions (the Tower) stacked, as the Tower shows them: 3/8 ○ 5/8. Big numbers (the Forge)
+  // with commas, a little smaller.
+  else if (p.sym && p.op === "○") box.innerHTML = `<span class="${p.big ? "cmp4" : ""}">${side("l", p.frac ? stacked(esc(p.l)) : esc(bigText(p.l)))} ${BLANK} ${side("r", p.frac ? stacked(esc(p.r)) : esc(bigText(p.r)))}</span>`;
   else if (p.blank || p.sym || p.op === "=") box.innerHTML = esc(p.q).replace("□", BLANK);
   // "7 or 4": which is more (K). The voice asks it; the answer box is the answer.
   else if (p.op === "more") box.innerHTML = `${side("l", p.x)} <small class="or">or</small> ${side("r", p.y)}`;
   // Fractions, stacked, with the glowing □ as the hidden numerator: 1/2 = □/4.
   else if (p.op === "/") box.innerHTML = stacked(esc(p.q)).replace("□", BLANK);
   // Rounding: 47 ≈ □, and to what.
-  else if (p.op === "≈") box.innerHTML = esc(p.q).replace("□", BLANK) + `<small class="to">nearest ${p.to}</small>`;
+  else if (p.op === "≈") box.innerHTML = esc(bigText(p.q)).replace("□", BLANK) + `<small class="to">nearest ${bigText(p.to)}</small>`;
   // A rectangle, drawn: "Area = □".
   else if (p.op === "▭") box.innerHTML = rectSvg(p) + `<span class="find">${esc(p.q).replace("□", BLANK)}</span>`;
   // An array (Squaresquatch), drawn: rows of dots, and "5 + 5 + 5 = □" under them.
@@ -476,12 +515,17 @@ function probUI() {
   // Flipped by Judo Judy: each number in its own box, so the throw can swap them (judoThrow).
   else if (p.flipped) box.innerHTML = `<span class="jn">${p.x}</span> <span class="jop">${p.op}</span> <span class="jn">${p.y}</span> =`;
   // Three-digit numbers on one line ("287 + 359 ="), a little smaller so it fits an iPhone SE.
+  // Four- and five-digit numbers (the Forge) smaller again, with commas from 10,000.
+  else if ("+-×÷".includes(p.op) && Math.max(p.x, p.y, p.ans) >= 1000) box.innerHTML = `<span class="wide3 wide4">${esc(bigText(p.q))} =</span>`;
   else if ((p.op === "+" || p.op === "-") && Math.max(p.x, p.y) >= 100) box.innerHTML = `<span class="wide3">${esc(p.q)} =</span>`;
   else box.textContent = p.q + " =";
-  document.querySelector(".game").classList.toggle("missing", !!p.blank || !!p.sym || p.op === "=" || !!p.find || !!p.stacked || "/≈▭▦⌚…◐✓✎↔#$◇⁙".includes(p.op));
-  padUI(p.spell ? "spell" : p.draw ? "draw" : p.op === "✓" ? "tf" : p.sym ? "cmp" : "num");
+  document.querySelector(".game").classList.toggle("missing", !!p.blank || !!p.sym || p.op === "=" || !!p.find || !!p.stacked || "/≈▭▦⌚…◐✓✎↔#$◇⁙REFƒdu∠PD".includes(p.op));
+  padUI(p.spell ? "spell" : p.draw ? "draw" : p.op === "✓" ? "tf" : p.op === "P" ? "pc" : p.sym ? "cmp" : "num");
+  // Typed ones first (stacked): delete takes back the leftmost digit, so its icon points right.
+  $("pad").classList.toggle("rtl", onesFirst(p) && $("pad").dataset.mode === "num");
+  requestAnimationFrame(fitLine);
   document.querySelector(".game").classList.toggle("cents", p.op === "¢" && !p.find);
-  document.querySelector(".game").classList.toggle("find", !!p.find || "▭▦⌚◐✓✎↔#$⁙".includes(p.op) || (p.op === "◇" && !p.draw));
+  document.querySelector(".game").classList.toggle("find", !!p.find || "▭▦⌚◐✓✎↔#$⁙∠P".includes(p.op) || (p.op === "◇" && !p.draw));
   document.querySelector(".game").classList.toggle("shape", p.op === "◇" && !p.draw);
   document.querySelector(".game").classList.toggle("stack", !!p.stacked);
   // A wide picture over its line (batch 2's): on phones the 🔊 and 💡 buttons stack beside it.
@@ -497,6 +541,16 @@ function flashHTML(p) {
   return `<span class="dotcard${hidden ? " down" : ""}">${flashSvg(p, { hidden, hint: F.grouped })}${peek}</span><span class="find">Dots = ${BLANK}</span>`;
 }
 const slotHTML = (i, p) => (p.slots ? `<span class="blank tslot${i ? " wait" : " now"}" id="blank${i}">?</span>` : BLANK);
+// 4th grade's line (fourth.js parts): text with its fractions stacked, and the □ or the slots.
+// A mixed number's numerator slot sits over its denominator (□ □/8).
+function partsHTML(p) {
+  let k = 0;
+  // n (a letter for a number) and units (ft, in, kg) in Nunito: Bungee has only capitals.
+  const words = (t) => (p.op === "E" ? t.replace(/\bn\b/g, '<i class="var">n</i>') : p.op === "u" ? t.replace(/\b([a-zA-Z]+)\b/g, '<span class="unit">$1</span>') : t);
+  const out = p.parts.map((x) => (x === null ? slotHTML(k++, p) : words(esc(bigText(x)))));
+  return out.map((x, i) => (p.parts[i] === null || !p.parts[i] ? x : stacked(x))).join("")
+    .replace(/(<span class="blank[^"]*"[^>]*>\?<\/span>)\/(\d+)/g, '<span class="frac"><span>$1</span><span>$2</span></span>');
+}
 // Fix it's line: the false equation, its wrong number in place for a moment, then (G.fix.swapped)
 // crossed out and lifted above its place, small and red, the □ taking its place, so the line
 // always reads as one equation. Right, the number settles in and the crossed-out one fades.
@@ -528,9 +582,62 @@ function stackHTML(p) {
   // ones line up under ones whatever the font: Bungee's digits aren't all the same width, and
   // long numbers drifted out of their columns.
   const cols = (n) => `<span class="scols">${[...String(n)].map((d) => `<span class="scell">${d}</span>`).join("")}</span>`;
-  const rows = nums.map((n, i) => `<span class="sop">${i === nums.length - 1 ? (p.op === "-" ? "−" : "+") : ""}</span><span class="snum">${cols(n)}</span>`).join("");
-  return `<span class="stacked${nums.length > 2 ? " rows" + nums.length : ""}" style="--w:${w}" role="img" aria-label="${esc(p.q)}">${rows}<span class="sbar"></span><span class="sop"></span><span class="snum sans"><span class="blank scells" id="blank" aria-label="Answer, typed from the ones">${stackCells(p, "")}</span></span></span>`;
+  // Marking regrouping (three-digit numbers and bigger, twodigit.js markable): a row above the numbers,
+  // always there so a mark never moves anything, and the top number's digits tappable to regroup.
+  const mk = markable(p), M = G.marks || { carry: [], gives: [] };
+  const view = mk && p.op === "-" ? regroupView(p.x, M.gives) : null;
+  const top = (n) => `<span class="scols">${view.slice().reverse().map((v, i, a) => {
+    const c = a.length - 1 - i;
+    return `<span class="scell${c ? " tap" : ""}${v.crossed ? " x" : ""}" data-col="${c}">${v.front ? '<i class="f1">1</i>' : ""}${v.d}</span>`;
+  }).join("")}</span>`;
+  const marks = !mk ? "" : `<span class="sop"></span><span class="snum smarks" aria-hidden="true"><span class="scols">${Array.from({ length: w }, (_, i) => {
+    const c = w - 1 - i;
+    if (p.op !== "-") return `<span class="scell smark${c ? " tap" : ""}" data-col="${c}">${M.carry.includes(c) ? "1" : ""}</span>`;
+    const v = view[c], can = !!v && c > 0;
+    return `<span class="scell smark${can ? " tap" : ""}"${can ? ` data-col="${c}"` : ""}>${v ? v.above : ""}</span>`;
+  }).join("")}</span></span>`;
+  const rows = nums.map((n, i) => `<span class="sop">${i === nums.length - 1 ? (p.op === "-" ? "−" : "+") : ""}</span><span class="snum${i ? "" : " stop"}">${i === 0 && view ? top(n) : cols(n)}</span>`).join("");
+  return `<span class="stacked${nums.length > 2 ? " rows" + nums.length : ""}${mk ? " mk" : ""}" style="--w:${w}" role="img" aria-label="${esc(p.q)}">${marks}${rows}<span class="sbar"></span><span class="sop"></span><span class="snum sans"><span class="blank scells" id="blank" aria-label="Answer, typed from the ones">${stackCells(p, "")}</span></span></span>`;
 }
+// Whether to say how to mark this markable problem: the first 2 times for each (carrying,
+// regrouping), and in each of the first 3 markable problems while nothing has been marked yet
+// (saved in told: markSeen, marked).
+function markTell() {
+  const told = store.player(PID).get("told", {}) || {}, n = (told.markSeen || 0) + 1;
+  if (n <= 3) { told.markSeen = n; store.player(PID).set("told", told); }
+  const first = once(G.cur.op === "-" ? "regroupMark" : "carryMark", 2);
+  return first || (n <= 3 && !told.marked);
+}
+// A tap on the marking row or the top number's digits (markable problems): a carried 1 toggled
+// above a column, or a digit regrouped (or the regroup undone). A scratch mark only: nothing about
+// the answer, its time or its record changes. Not while busy (an attack) or after a miss.
+function markTap(e) {
+  const p = G.cur, cell = e.target.closest(".stacked.mk [data-col]");
+  if (!cell || !p || !markable(p) || G.busy || G.next || G.paused) return;
+  const col = Number(cell.dataset.col), M = G.marks || (G.marks = { carry: [], gives: [] });
+  const before = JSON.stringify(M);
+  if (p.op !== "-") M.carry = toggleCarry(M.carry, col, stackWidth(p));
+  else {
+    // One place at a time: a 0 with nothing to give yet, or a regroup the next column has built on,
+    // stays as it is, with a little shake (and, the first 2 times, where to look).
+    const move = regroupMove(p.x, M.gives, col);
+    if (move === "empty" || move === "blocked") {
+      const d = $("prob").querySelector(`.stop .scell[data-col="${col}"]`);
+      if (d && !reduced()) restartAnim(d, "nope");
+      if (move === "empty" && once("regroupEmpty", 2)) say("p", PHRASE.regroupEmpty, true);
+      return;
+    }
+    M.gives = regroup(p.x, M.gives, col);
+  }
+  if (JSON.stringify(M) === before) return;
+  sfx.tick();
+  $("prob").innerHTML = stackHTML(p);
+  ansUI();
+  // They've found it: the voice stops reminding them (markTell).
+  const told = store.player(PID).get("told", {}) || {};
+  if (!told.marked) { told.marked = 1; store.player(PID).set("told", told); }
+}
+$("prob").addEventListener("click", markTap);
 // A shape problem (Polly-Gon): what to draw (the voice says it too; the body flashes it), or the
 // shape to count over its line, with the hint drawn on it once it's open.
 function shapeHTML(p) {
@@ -549,6 +656,13 @@ function clockArt(layer) {
   const p = G.cur;
   if (!onClock() || !p || p.op !== "⌚") return;
   $("mon").innerHTML = monsterArt(Object.assign({}, G.floors[G.floor], { at: { h: p.h, m: p.m, layer } }));
+}
+// Quarterjack wearing the problem's fraction on its jersey (monsters.js jerseyFrac; ¼ with none),
+// as Tick-Tockus shows the time asked.
+function jerseyArt() {
+  const m = G.floors && G.floors[G.floor];
+  if (!m || (m.base || m.n) !== "Quarterjack" || !G.cur) return;
+  $("mon").innerHTML = monsterArt(Object.assign({}, m, { frac: jerseyFrac(G.cur) }));
 }
 // The picture over a time problem's line: elapsed time's clocks (with the open number line or
 // the sweep once the hint is open), or a plain clock when the monster isn't Tick-Tockus.
@@ -616,6 +730,7 @@ function shownFact(p, ans) {
   // Batch 2: "4 + 2 = 7 is False", fix it filled in ("4 + 2 = 6"), "3/4", "4 equal parts",
   // "34 tens and 3 ones = 343", "$26", "$11 and 37¢".
   if (p.op === "✓") return `${esc(p.q)} is ${b(p.sym === "T" ? "True" : "False")}`;
+  if (p.op === "P") return `${p.n} is ${b(p.sym === "P" ? "prime" : "composite")}`;
   if (p.op === "✎") return fixParts(p).map((x) => (x !== null ? esc(x) : b(p.ans))).join("");
   if (p.op === "↔") return p.kind === "parts" ? `${b(p.d)} equal parts` : `${b(p.n)}/${p.d}`;
   if (p.op === "#") return pvLine(p).map((x) => (x !== null ? esc(x) : b(p.ans))).join("");
@@ -630,13 +745,17 @@ function shownFact(p, ans) {
     if (p.shape) return `${esc(article(p.shape).trim().replace(/^a/, "A"))} ${esc(p.shape)} has ${b(p.ans)} ${p.kind}`;
     return `${SHAPE_LINE[p.kind]} = ${b(p.ans)}`;
   }
-  if (p.sym) return p.q.replace("□", typeof ans === "string" && ans.startsWith("<b>") ? `<b>${esc(p.sym)}</b>` : p.sym);
+  // 4th grade's: "29 ÷ 4 = 7 R 1", "2 1/8 + 3/8 = 2 4/8", "Angle = 40°".
+  if (p.parts) return fourthLine(p, (v) => (bold ? `<b>${v}</b>` : String(v))).map((x, i) => (p.parts[i] === null ? x : esc(bigText(x)))).join("");
+  if (p.sym) return bigText(p.q).replace("□", typeof ans === "string" && ans.startsWith("<b>") ? `<b>${esc(p.sym)}</b>` : p.sym);
   if (p.blank || p.op === "=" || p.op === "/" || p.op === "≈" || p.op === "▦") return filled(p, ans);
+  // A side to find (4th grade): "Area 48, sides 6 and 8".
+  if (p.op === "▭" && (p.kind === "s" || p.kind === "q")) return `${p.kind === "s" ? "Area " + p.area : "Perimeter " + p.per}, sides ${p.h} and ${ans}`;
   if (p.op === "▭") return p.w + " by " + p.h + ": " + filled(p, ans);
   if (p.op === "more") return `${ans} is more`;
   if (p.op === "¢" && p.find) return `${ans} ${p.ans === 1 ? coinOf(p.find).name : p.q}`;
   if (p.op === "¢") return (p.q.includes("+") ? p.q + " = " : "") + ans + "¢";
-  return `${esc(p.q)} = ${ans}`;
+  return `${esc(bigText(p.q))} = ${bigText(ans)}`;
 }
 // The fact whose hint helps: the problem itself (hints.js works out a □ problem's own hint, or
 // uses the fact that works it out: 7 − 3 for 3 + □ = 7).
@@ -727,6 +846,9 @@ function loadMonster(i, quiet) {
   // A boss powering up has a little more HP, a mega boss more (wings.js BOSS_HP).
   const stage = m.boss ? bossStage(G.depth) : 0;
   G.max = G.hp = Math.round(monsterHP(m, strandOf(m), recs, levelsFor(strandOf(m)).levels) * depthScale(i, G.floors.length) * depthHP(G.depth) * BOSS_HP[stage]);
+  // The floor's typical hit, what its HP is built on: each problem's Super Charge puts its hit on
+  // this scale (charge.js, superCharge).
+  G.typical = floorTypical(m, strandOf(m), recs, levelsFor(strandOf(m)).levels);
   // The Legend's exam (learn.js examKey): its HP from every fact the exam can ask (those seen),
   // as much as a mega boss's, or up to twice that to last about one answer of every kind
   // (examRound); no fact twice, so nothing missed comes back on its floor.
@@ -735,6 +857,7 @@ function loadMonster(i, quiet) {
     const path = PATHS[wing().id], all = examFacts(path), seenF = all.filter((f) => recs[f.key] && recs[f.key].n), scale = depthScale(i, G.floors.length) * depthHP(G.depth);
     const megaHP = hpOf(m, seenF.length ? seenF : all, wing().band) * LEGEND_HP;
     G.max = G.hp = Math.round(Math.max(megaHP, Math.min(2 * megaHP, examRound(path, recs))) * scale);
+    G.typical = typicalHit(m, seenF.length ? seenF : all, wing().band);
     G.exam = { used: [], steps: [] }; G.retry = [];
   }
   const el = $("mon");
@@ -786,6 +909,29 @@ function fitName(m) {
   if (m.n.length > 13 || nm.scrollWidth > nm.clientWidth + 1 || tight()) nm.classList.add("long");
   if (tight()) nm.classList.add("wrap");
 }
+// The Super Charge's badge by the problem ("⚡ ×100", "🛡️ ÷10"), and as it appears (fresh) its
+// sound and line: "Super charge, times one hundred!" the first 3 times for each N (the very first
+// time, why), "The monster braces!" the first 3 times; after that the badge and the sound.
+function superCharge(fresh) {
+  const c = G.cur && G.cur.charge, el = $("superCharge");
+  el.hidden = !c;
+  el.parentElement.classList.toggle("badged", !!c);
+  if (!c) return;
+  el.classList.toggle("braced", !!c.down);
+  el.innerHTML = c.up ? `<b>⚡</b><i>×${c.up.toLocaleString("en-US")}</i>` : `<b>🛡️</b><i>÷${c.down.toLocaleString("en-US")}</i>`;
+  el.title = chargeBadge(c);
+  el.setAttribute("aria-label", chargeBadge(c));
+  if (!fresh) return;
+  if (c.up) {
+    sfx.powerUp();
+    if (once("chargeHow")) say("p", PHRASE.chargeHow, false, asked(G.cur));
+    const n = c.up;
+    if (once("charge:" + n, 3)) say("p", chargeLine(n), false, asked(G.cur));
+  } else {
+    sfx.clang();
+    if (once("braced", 3)) say("p", PHRASE.braced, false, asked(G.cur));
+  }
+}
 // The next problem, chosen by the learning engine (learn.js): a missed fact when it's due back,
 // otherwise learning, review or new facts, with the monster's operation preferred.
 function newProblem() {
@@ -827,12 +973,15 @@ function newProblem() {
   const lean = { digit: team.captain, digitShare: captainLean() ? CAPTAIN_BIAS : 0, avoidDigitShare: firstFight() ? CAPTAIN_HOLD : 0 };
   const key = forced || (exam && exam.key) || spell || probe
     || (endless && endlessKey(PATHS[wing().id], bk, recs, Object.assign({ now: Date.now(), recent: G.recent, retry: due ? due.key : null, asks: kinds, like: prefers(m), avoidAns }, lean)))
-    || choose(bk, recs, Object.assign({ now: Date.now(), recent: G.recent, retry: due ? due.key : null, op, asks: kinds, like: prefers(m), depth: G.depth, avoidAns, open: lv.levels, review: lv.review, reviews }, lean));
+    || choose(bk, recs, Object.assign({ now: Date.now(), recent: G.recent, retry: due ? due.key : null, op, asks: kinds, like: prefers(m), depth: G.depth, avoidAns, open: lv.levels, review: lv.review, steps: lv.steps, reviews }, lean));
+  // Fourth down (Quarterjack): every 4th problem on the floor, counted as a charge is; a right
+  // answer on it is a touchdown (traits.js hitBy, from the problem's down).
+  const down = fourthDown(m, G.onFloor);
   // Charge (Minustaur): every 4th problem on the floor, a miss costs 2 hearts.
   G.charged = charged(m, G.onFloor++);
   $("charge").hidden = !G.charged;
   // Mega Judy's big throw (⚡ Black Belt) is charged the same way.
-  if (G.charged) { sfx.charge(); if (mega(m)) say("p", PHRASE.bigThrow, false, () => G.charged && !G.busy); else say("p", PHRASE.charged, false, () => G.charged && !G.busy); }
+  if (G.charged) { sfx.charge(); if (mega(m) && (m.base || m.n) === "Judo Judy") say("p", PHRASE.bigThrow, false, () => G.charged && !G.busy); else say("p", PHRASE.charged, false, () => G.charged && !G.busy); }
   G.cur = factOf(key);
   // A shape to draw hits for its strand's typical answer (learn.js drawHit). Without a touch screen
   // (a missed one coming back, or ?fact=), a counting problem about it instead.
@@ -862,6 +1011,14 @@ function newProblem() {
   // the time for two-digit numbers, half for three-digit ones and for adding several (twodigit.js
   // stackShare), always on Margot-Rythm's floor. The same fact and record, only laid out differently.
   G.cur = stackOf(G.cur, STACK_ALWAYS || (m.base || m.n) === "Margot-Rythm");
+  if (down) { G.cur.down = true; say("p", PHRASE.fourthDown, false, () => G.cur && G.cur.down && !G.busy); }
+  $("down").hidden = !down;
+  // The Super Charge: a problem whose level answers far below the floor's typical hit is charged
+  // (×N), one whose level, or the biggest number it shows, is 3 times above it finds the monster
+  // braced (÷N); never from its own answer (charge.js problemScale, shownMax).
+  const c = chargeFor(problemScale(levelTypical(bk, G.cur.key || key, m), G.cur), G.typical);
+  if (c) G.cur.charge = c;
+  superCharge(true);
   G.recent = [key].concat(G.recent).slice(0, RECENT);
   presentProblem(key, !!flipped);
 }
@@ -870,7 +1027,8 @@ function newProblem() {
 // into its answer time; Judo Judy's throw isn't played again (it's already thrown).
 function presentProblem(key, flipped, restored, elapsed) {
   G.input = ""; G.busy = false; G.hinted = false; G.t0 = performance.now() - (elapsed || 0);
-  G.slot = G.cur.slots ? { at: 0, vals: ["", ""] } : null;
+  G.marks = { carry: [], gives: [] }; // regrouping marks clear with each problem
+  G.slot = G.cur.slots ? { at: 0, vals: G.cur.slots.map(() => "") } : null;
   G.tfDone = false;
   // The dot flash: shown, then hidden after FLASH_DOTS_MS (flashHide).
   G.flash = G.cur.op === "⁙" ? { shown: true, peeked: false, grouped: false } : null;
@@ -880,6 +1038,7 @@ function presentProblem(key, flipped, restored, elapsed) {
   if (G.fix && !G.fix.swapped) { const cur = G.cur; setTimeout(() => { if (G.cur === cur && G.fix && !G.fix.swapped) fixSwap(); }, FIX_SWAP_MS); }
   probUI();
   clockArt();
+  jerseyArt();
   if (onChompers() && G.chomp !== G.chompFace) chompTurn(G.chompFace);
   if (flipped && !restored) judoThrow(G.cur);
   if (G.flash) flashHide(G.cur);
@@ -893,18 +1052,25 @@ function presentProblem(key, flipped, restored, elapsed) {
   // shapes ("Draw a triangle!", "How many sides?").
   // The dot flash: "How many dots?", and the first time "Look quick! How many dots?".
   if (G.cur.op === "⁙" && once("flash")) say("p", PHRASE.flashHow, false, asked(G.cur));
-  else if ("¢○⌚…◐✓✎↔#$◇⁙".includes(G.cur.op) || G.cur.op === "more") say("q", spokenProblem(G.cur), false, asked(G.cur));
+  else if ("¢○⌚…◐✓✎↔#$◇⁙∠PD".includes(G.cur.op) || G.cur.op === "more") say("q", spokenProblem(G.cur), false, asked(G.cur));
   // Pipsqueak's dice: "How many dots in all?", and the first 2 times how.
   if (G.cur.dice) { if (once("dice", 2)) say("p", PHRASE.diceHow, false, asked(G.cur)); say("p", PHRASE.diceAll, false, asked(G.cur)); }
   // Drawing a shape: how, the first few times.
   if (G.cur.draw) { setMsg(`Draw ${article(G.cur.shape)}${G.cur.shape}!`, "good"); if (once("draw", 3)) say("p", PHRASE.drawHow, false, asked(G.cur)); }
   // The first true or false problems: how the two big keys work.
   if (G.cur.op === "✓" && once("truefalse", 2)) say("p", PHRASE.tfHow, false, asked(G.cur));
+  if (G.cur.op === "P" && once("prime", 2)) say("p", PHRASE.primeHow, false, asked(G.cur));
   // The first comparison: how the < = > keys work.
   if (G.cur.op === "○" && once("compare")) { say("p", PHRASE.cmpHow, false, asked(G.cur)); say("p", PHRASE.cmpSame, false, asked(G.cur)); }
   // Typed ones first (a stacked problem, or across on Margot-Rythm's floor): the cursor blinks in the
   // ones column, and the first 3 times it's said.
   if (onesFirst(G.cur) && once("onesFirst", 3)) { setMsg("Start with the ones!", "good"); say("p", PHRASE.onesFirst, false, asked(G.cur)); }
+  // Marking regrouping (three-digit numbers and bigger): how to mark it, the first 2 times each, and
+  // again in each of the first 3 markable problems while nothing has been marked yet.
+  if (markable(G.cur) && markTell()) {
+    if (G.cur.op === "-") say("p", PHRASE.regroupHow, false, asked(G.cur));
+    else say("p", PHRASE.carryHow, false, asked(G.cur));
+  }
   if (G.cur.spell) {
     setMsg("Cast a spell! Draw the answer.", "good"); say("p", PHRASE.spell);
     if (once("spell", 3)) say("p", PHRASE.spellHow, false, asked(G.cur)); // the first few spells
@@ -1018,18 +1184,22 @@ function fly(text, crit) {
   })));
 }
 
-// The captain's digit in the answer is a power hit, +50% (rescued heroes: momentBoost, below).
+// The captain's digit in the answer is a power hit, +50% (a Hero Moment's: momentBoost, below).
 function heroBonus(typed) {
   const power = hasCaptain() && [...typed].map(Number).includes(team.captain);
   return { mult: power ? 1.5 : 1, power };
 }
-// Rescued heroes hit harder only in a Hero Moment (settled 2026-11-25; they used to add 10% to
-// every answer with their digit, which nobody noticed): +25% for each rescued hero in the moment
-// (a team-up can have two). The captain's power hit is separate and unchanged.
-const MOMENT_BOOST = 0.25;
+// Heroes hit harder only in a Hero Moment: each hero in it (the captain too; a team-up has two)
+// adds MOMENT_HP of the monster's full HP on top of the hit, so a moment is a big blow at any
+// grade, not a little more than an answer (changed 2026-11-28: it was +25% of the answer for each
+// rescued hero, which a crit's 2× beat every time, and was nothing against a 4th grade monster's
+// tens of thousands of HP). The captain's power hit (+50%) is separate and unchanged.
+const MOMENT_HP = 0.15;
+// Boss Guard: the most of a boss's full HP one hit can take (submit).
+const BOSS_GUARD = 1 / 3;
 function momentBoost(mo) {
   if (!mo) return 0;
-  return [mo.hero, mo.partner].filter((d) => d != null && d !== team.captain && team.rescued.includes(d)).length;
+  return [mo.hero, mo.partner].filter((d) => d != null).length;
 }
 /* ---------- Hero Moments (DESIGN.md §8.4) ----------
    Now and then a hero in a right answer gets a slow-motion close-up and a quip before it strikes
@@ -1118,7 +1288,7 @@ function openHint() {
   if (inline) { probUI(); ansUI(); clockArt(h.layer); }
   else if (G.cur.dice) probUI(); // Pipsqueak's dice get their numbers beside them
   // An equation in their words doesn't break across lines ("35 + 2 = ?").
-  box.innerHTML = (inline ? "" : `<div class="model">${h.model}</div>`) + `<p class="hsay">${esc(inline ? h.say.replace(/ ([=+−→]) /g, "\u00a0$1\u00a0") : h.say.replace(/ \? (\S+)$/, "\u00a0?\u00a0$1"))}</p>`; // nor a comparison ("2/3 ? 2/6")
+  box.innerHTML = (inline ? "" : `<div class="model">${h.model}</div>`) + `<p class="hsay">${esc(bigText(inline ? h.say.replace(/ ([=+−→]) /g, "\u00a0$1\u00a0") : h.say.replace(/ \? (\S+)$/, "\u00a0?\u00a0$1")))}</p>`; // nor a comparison ("2/3 ? 2/6")
   box.classList.toggle("words", inline);
   box.hidden = false;
   $("hintBtn").hidden = true; $("hintBtn").classList.remove("nudge");
@@ -1131,7 +1301,7 @@ function openWorked() {
   $("hint").hidden = true; $("hintBtn").hidden = true;
   show(`<div class="worked"><h2>Oops!</h2>
     <p class="worked-fact">${shownFact(G.cur, `<b>${G.cur.ans}</b>`)}</p>
-    <div class="model">${h.model}</div><p class="hsay">${esc(h.say)}</p>
+    <div class="model">${h.model}</div><p class="hsay">${esc(bigText(h.say))}</p>
     <div class="btns"><button class="big" type="button" id="gotIt">Got it</button></div></div>`, "float");
   $("gotIt").onclick = nextAfterMiss;
 }
@@ -1149,7 +1319,7 @@ function learnFrom(ok) {
   if (G.cur.spell) return null;
   const bk = curBand(), b = BANDS[bk], key = G.cur.key, ms = performance.now() - G.t0;
   // Fluent: right, unhinted and quick, with a second more for each extra digit to tap.
-  const limit = fluentTime(b.fluentMs, G.cur.sym || G.cur.ans);
+  const limit = fluentFor(bk, key, G.cur.sym || G.cur.ans);
   const before = stepsNow().open, fluent = ok && !G.hinted && ms < limit, f = flowOf(bk);
   // The achievements' counts (DESIGN.md §14.4): a comeback (a missed fact, right on its own), and
   // today as a practice day; and a holiday's surprise (§14.5).
@@ -1204,7 +1374,7 @@ function submit() {
   if (G.cur.op === "✓") { G.tfDone = true; probUI(); }
   // A comparison's answer is its symbol (<, = or >); everything else is a number.
   // A drawn shape was judged as it was cast (castShape).
-  const right = G.cur.draw ? G.drawn === "right" : G.cur.slots ? G.slot.vals.every((v, i) => v !== "" && Number(v) === G.cur.slots[i]) : G.cur.sym ? G.input === G.cur.sym : Number(G.input) === G.cur.ans;
+  const right = G.cur.draw ? G.drawn === "right" : G.cur.slots ? G.slot.vals.every((v, i) => v !== "" && Number(v) === G.cur.slots[i] && (!G.cur.slotDigits || !G.cur.slotDigits[i] || v.length === G.cur.slotDigits[i])) : G.cur.sym ? G.input === G.cur.sym : Number(G.input) === G.cur.ans;
   if (right && G.fix) { G.fix.done = true; probUI(); ansUI(); }
   if (right) {
     G.busy = true; G.solved++;
@@ -1218,7 +1388,13 @@ function submit() {
     // A spell drawn backwards fizzles at half damage.
     // The Times Two Totem (an item, loot.js): the next right answer hits double, once.
     const totem = totemMult(G.fx);
-    let dmg = Math.max(1, Math.round(G.cur.ans * (crit ? 2 : 1) * trait.mult * bonus.mult * totem * (G.cur.reversed ? 0.5 : 1)));
+    // The Super Charge first (× or ÷ the answer, charge.js), then crits, traits, power hits and the totem.
+    let dmg = Math.max(1, Math.round(chargedHit(G.cur.ans, G.cur.charge) * (crit ? 2 : 1) * trait.mult * bonus.mult * totem * (G.cur.reversed ? 0.5 : 1)));
+    // Boss Guard: a boss (a mega boss and the Legend too) loses at most BOSS_GUARD of its full HP
+    // to one hit, crits and Hero Moments included, so it always takes at least three hits.
+    const guardCap = m.boss ? Math.ceil(G.max * BOSS_GUARD) : Infinity;
+    let guarded = dmg > guardCap;
+    dmg = Math.min(dmg, guardCap);
     if (totem > 1) slotsUI();
     const level = learnFrom(true);
     // Chompers (🐊) acts it out first: he chomps the bigger side (chompAct). A comparison keeps its
@@ -1229,9 +1405,20 @@ function submit() {
     const critsNow = G.streak === 3 && !G.hinted;
     if (critsNow) say("p", PHRASE.crits);
     // Now and then a Hero Moment: a slow-motion close-up and a quip before the hit (moments.js).
-    // A rescued hero in it adds MOMENT_BOOST (momentBoost).
+    // Each hero in it adds MOMENT_HP of the monster's full HP (momentBoost).
     const mo = momentFor(typed, critsNow, !!m.boss && G.hp - dmg <= 0), boost = momentBoost(mo);
-    if (boost) dmg = Math.round(dmg * (1 + MOMENT_BOOST * boost));
+    if (boost) dmg += Math.round(G.max * MOMENT_HP * boost);
+    if (dmg > guardCap) { dmg = guardCap; guarded = true; }
+    // No one-shot without help: a regular monster at full HP keeps at least 1 HP after a hit that
+    // has neither a Hero Moment nor an item in it (charge.js oneHit). It hangs on.
+    const unhelped = dmg;
+    if (!m.boss) dmg = oneHit(dmg, G.hp, G.max, !!mo || totem > 1);
+    const held = dmg < unhelped;
+    // Insta-banish: a hit that takes a monster from full HP to nothing is announced first, echoing
+    // like "Now entering the Sumgeon!" (a boss can't be: its Guard; a regular monster only with a
+    // Hero Moment or an item in the hit: oneHit).
+    const banish = G.hp >= G.max && dmg >= G.hp;
+    if (banish) say("p", PHRASE.banish, true, null, ENTER_FX);
     const momentName = mo ? HEROES[mo.hero].n + (mo.partner != null ? " & " + HEROES[mo.partner].n : "") : "";
     // The run as it will be once this hit lands, in case the app is closed mid-attack: the next
     // problem, or the monster beaten.
@@ -1249,11 +1436,13 @@ function submit() {
       // Surprises in the hit (achievements.js hitSurprises): exactly 0 HP left, a palindrome, a
       // hit of 100 or more, two of one hero, every digit a hero. Recorded quietly.
       G.lastTyped = typed;
-      surprise(...hitSurprises({ ans: G.cur.sym || G.cur.draw || G.cur.slots || G.cur.spell ? null : G.cur.ans, typed, dmg, hpLeft: G.hp, team: [...new Set([team.captain, ...team.rescued])].filter((d) => d != null) }));
-      pop((boost ? "Hero! " : bonus.power ? "Power! " : crit ? "Crit! " : "") + "−" + dmg, crit || bonus.power || !!boost);
+      surprise(...hitSurprises({ ans: G.cur.sym || G.cur.draw || G.cur.slots || G.cur.spell ? null : G.cur.ans, typed, dmg, base: Math.round(G.cur.ans * (G.cur.reversed ? 0.5 : 1)) || 0, hpLeft: G.hp, team: [...new Set([team.captain, ...team.rescued])].filter((d) => d != null) }));
+      // A charge goes on its own line over the hit ("×100!" over "−400").
+      if (guarded) { sfx.clang(); if (once("guarded", 2)) say("p", PHRASE.guarded); }
+      pop((banish ? "Insta-banish!\n" : guarded ? "Guarded!\n" : held ? "Hangs on!\n" : G.cur.charge ? chargePop(G.cur.charge).trim() + "\n" : "") + (boost ? "Hero! " : bonus.power ? "Power! " : crit ? "Crit! " : "") + "−" + dmg, crit || bonus.power || !!boost);
       restartAnim($("mon"), "hit");
       if (crit && !mo) restartAnim($("arena"), "shake");
-      setMsg(totem > 1 ? `Times Two Totem! Double hit for ${dmg}!` : G.cur.reversed ? `Your ${G.cur.ans} is facing backwards. It faces this way → Half damage: ${dmg}` : G.cur.howTo ? `Here's how to write it. Hit for ${dmg}!` : level ? level : trait.note ? `${trait.note}: ${dmg}!` : boost ? `${momentName} hero hit for ${dmg}!` : bonus.power ? `${HEROES[team.captain].n} power hit for ${dmg}!` : crit ? `Critical hit for ${dmg}!` : `Hit for ${dmg}!`, "good");
+      setMsg(totem > 1 ? `Times Two Totem! Double hit for ${dmg}!` : G.cur.reversed ? `Your ${G.cur.ans} is facing backwards. It faces this way → Half damage: ${dmg}` : G.cur.howTo ? `Here's how to write it. Hit for ${dmg}!` : level ? level : trait.note ? `${trait.note}: ${dmg}!` : boost ? `${momentName} hero hit for ${dmg}!` : bonus.power ? `${HEROES[team.captain].n} power hit for ${dmg}!` : crit ? `Critical hit for ${dmg}!` : G.cur.charge ? (G.cur.charge.up ? `Super charge! Hit for ${dmg}!` : `Braced! Hit for ${dmg}.`) : `Hit for ${dmg}!`, "good");
       hpUI(); streakUI();
       // Half HP: Divvy splits in two, Sigma Rex armors up (traits.js).
       const half = !G.halved && G.hp > 0 && G.hp <= G.max / 2 ? atHalf(m) : null;
@@ -1267,8 +1456,9 @@ function submit() {
       // hit, each once a floor. None when something else was just said (a new level, skipping
       // ahead, a backwards spell, or "Critical hits!", unless it's the half-HP change, which only
       // happens once).
-      const bark = half ? (half.split ? "split" : half.curl ? "curl" : "second") : trait.mult > 1 ? "double" : trait.mult < 1 ? "half" : bonus.power ? "power" : null;
-      if (bark && !level && (half || !critsNow) && !G.cur.reversed && !G.cur.howTo && !G.barked[bark]) { G.barked[bark] = true; say("p", BARK[bark]); }
+      // A touchdown (Quarterjack's fourth down) is cheered every time: its fourth down was called.
+      const bark = half ? (half.split ? "split" : half.curl ? "curl" : "second") : trait.bark || (trait.mult > 1 ? "double" : trait.mult < 1 ? "half" : bonus.power ? "power" : null);
+      if (bark && !level && (half || !critsNow) && !G.cur.reversed && !G.cur.howTo && (!G.barked[bark] || bark === "touchdown")) { G.barked[bark] = true; say("p", BARK[bark]); }
       if (G.hp <= 0) { setTimeout(() => { $("mon").className = "mon dead" + ($("mon").classList.contains("face-l") ? " face-l" : ""); }, 300); setTimeout(cleared, 1100); }
       else setTimeout(newProblem, level ? 1200 : 450);
     });
@@ -1308,7 +1498,7 @@ function miss(why) {
   // The whole fact, said out loud: "three plus four is seven".
   const said = G.cur.fact || G.cur;
   say("q", spokenFact(said));
-  if (cost > 1 && mega(G.floors[G.floor])) say("p", PHRASE.bigThrowMiss);
+  if (cost > 1 && mega(G.floors[G.floor]) && (G.floors[G.floor].base || G.floors[G.floor].n) === "Judo Judy") say("p", PHRASE.bigThrowMiss);
   else if (cost > 1) say("p", PHRASE.chargedMiss);
   if (G.hearts > 0) saveRun("next"); else clearRun(); // a lost run can't be picked up again
   if (blocked) setTimeout(() => { G.next = true; openWorked(); }, 600);
@@ -1565,10 +1755,10 @@ function nextLock(C) {
 // The lock's problem: "4 + 3 = ?", or with the glowing ? in place of the □ ("7 + ? = 10").
 function lockHTML(p) {
   const B = '<span class="blank" id="lockAns">?</span>';
-  let t = p.op === "more" ? `${p.x} <small class="or">or</small> ${p.y}` : p.op === "/" || p.frac ? stacked(esc(p.q)) : esc(p.q);
+  let t = p.op === "more" ? `${p.x} <small class="or">or</small> ${p.y}` : p.op === "/" || p.frac ? stacked(esc(p.q)) : esc(bigText(p.q));
   if (t.includes("□")) t = t.replace("□", B);
   else t += (p.op === "more" ? "<br>" : " = ") + B;
-  if (p.op === "≈") t += `<small class="to">nearest ${p.to}</small>`;
+  if (p.op === "≈") t += `<small class="to">nearest ${bigText(p.to)}</small>`;
   return t;
 }
 const CHEST_TITLE = { locked: "A treasure chest!", open: "It's open!", shut: "Still locked" };
@@ -1599,7 +1789,7 @@ function chestPress(k) {
   sfx.tick();
   if (k === "del") C.input = C.input.slice(0, -1);
   else if (sym) C.input = k;
-  else if (C.input.length < 4) C.input = (C.input === "0" ? "" : C.input) + k;
+  else if (C.input.length < digitsMax(C.p)) C.input = (C.input === "0" ? "" : C.input) + k;
   const a = $("lockAns");
   if (a) { a.textContent = C.input || "?"; a.classList.toggle("typed", !!C.input); }
 }
@@ -1608,7 +1798,7 @@ function chestSubmit(C) {
   const p = C.p, ok = p.sym ? C.input === p.sym : Number(C.input) === p.ans;
   C.busy = true;
   // Recorded like any answer (learn.js record), with no damage.
-  const ms = performance.now() - C.t0, limit = fluentTime(BANDS[st.band].fluentMs, p.sym || p.ans);
+  const ms = performance.now() - C.t0, limit = fluentFor(st.band, C.key, p.sym || p.ans);
   recs[C.key] = recordAnswer(recs[C.key], { ok, ms, hinted: false, now: Date.now(), fluentMs: limit });
   store.player(PID).set("facts", recs);
   checkAchievements();
@@ -1827,6 +2017,9 @@ function shopCard(view) {
   const many = n > 1 ? `<b class="smult">×${n}</b>` : "";
   const thing = `<div class="sthing${n > 1 ? " many" : ""}"><span class="sart lg">${thingArt(t)}${many}</span><span class="sname"><b>${esc(thingName(t))}</b>${n > 1 ? math(n) : priceTag(c)}</span></div>`;
   const toShop = () => { S.thing = null; shopCard("stock"); };
+  // The purse, its coins and its total: shown while choosing how many (so the count can be
+  // checked against it) and when there isn't enough.
+  const purseRow = () => `<div class="spurse"><span class="slabel">${purseSvg()}Your purse</span><div class="scoins">${tokensOf(S.purse).map((x) => `<span class="stoken">${tokenArt(x.k)}</span>`).join("") || "<small>Empty</small>"}</div><b class="stotal">${moneyAmt(wallet, billsOn())}</b></div>`;
   if (view === "many") {
     // How many: big 1 to MANY buttons, the item drawn that many times, and the total as math.
     // A count the purse can't pay for stays picked (the math shows why), with Pay off.
@@ -1838,6 +2031,7 @@ function shopCard(view) {
     <div class="snums" role="group" aria-label="How many">${nums}</div>
     <div class="scopies n${n}" aria-hidden="true">${Array.from({ length: n }, () => `<span class="scopy"><span class="sart">${thingArt(t)}</span>${k ? priceTag(c) : ""}</span>`).join("")}</div>
     <div class="smathbox${ok ? "" : " short"}">${math(n)}</div>
+    ${purseRow()}
     <div class="btns"><button class="big alt" id="shopBack">Back</button><button class="big buy" id="shopPay" ${ok ? "" : "disabled"}>Pay</button></div>`, "page shop");
     $("card").querySelectorAll(".snum").forEach((b) => b.onclick = () => {
       const m = Number(b.dataset.n);
@@ -1856,7 +2050,7 @@ function shopCard(view) {
   }
   if (view === "need") {
     show(`${head("You need more coins. Open chests to find some!")}${thing}
-    <div class="spurse"><span class="slabel">Your purse</span><div class="scoins">${tokensOf(S.purse).map((x) => `<span class="stoken">${tokenArt(x.k)}</span>`).join("") || "<small>Empty</small>"}</div><b class="stotal">${moneyAmt(wallet, billsOn())}</b></div>
+    ${purseRow()}
     <div class="btns"><button class="big" id="shopBack">Back</button></div>`, "page shop");
     $("shopBack").onclick = toShop;
     return;
@@ -1870,7 +2064,7 @@ function shopCard(view) {
     const counter = tokensOf(S.counter).map((x) => `<button type="button" class="ctoken" data-k="${x.k}" aria-label="Take back ${x.k === "b" ? "the dollar" : "a " + coinOf(x.k).name}">${tokenArt(x.k)}</button>`).join("");
     show(`${head(ok ? "That's enough! Tap Buy!" : "Tap coins to pay me!")}${thing}
     <div class="counter${ok ? " ok" : ""}"><div class="ccoins">${counter || '<span class="chint">Tap your coins</span>'}</div><p class="ctotal">You put down <b>${moneyAmt(on, dollars)}</b></p></div>
-    <div class="spurse"><span class="slabel">Your purse</span><div class="stacks">${stacks}</div></div>
+    <div class="spurse"><span class="slabel">${purseSvg()}Your purse</span><div class="stacks">${stacks}</div></div>
     <div class="btns"><button class="big alt" id="shopBack">Back</button><button class="big buy" id="shopBuy" ${ok ? "" : "disabled"}>Buy</button></div>`, "page shop");
     $("card").querySelectorAll(".stack:not([disabled])").forEach((b) => b.onclick = () => {
       if (!putDown(S.purse, S.counter, b.dataset.k, due)) { if (enough(S.counter, due)) say("p", SHOP.enough, true); return; }
@@ -1901,7 +2095,7 @@ function shopCard(view) {
   const cloth = t.kind === "clothing" && hasCaptain();
   show(`${head("Thank you! Come again!")}${thing.replace('class="sthing', 'class="sthing got')}
   ${change}
-  <div class="spurse"><span class="slabel">Your purse</span><div class="scoins">${tokensOf(S.purse).map((x) => `<span class="stoken">${tokenArt(x.k)}</span>`).join("") || "<small>Empty</small>"}</div><b class="stotal">${moneyAmt(wallet, billsOn())}</b></div>
+  <div class="spurse"><span class="slabel">${purseSvg()}Your purse</span><div class="scoins">${tokensOf(S.purse).map((x) => `<span class="stoken">${tokenArt(x.k)}</span>`).join("") || "<small>Empty</small>"}</div><b class="stotal">${moneyAmt(wallet, billsOn())}</b></div>
   <p class="snote">${t.kind === "item" ? (r.n > 1 ? "They're in your 🎒 items." : "It's in your 🎒 items.") : t.kind === "plush" ? plushWhose(t.id) : cloth ? "Put it on?" : "It's in your 👕 wardrobe."}</p>
   <div class="btns">${cloth ? `<button class="big alt" id="shopBack">Not now</button><button class="big" id="shopWear">👕 Put it on</button>` : `<button class="big" id="shopBack">Back to the shop</button>`}</div>`, "page shop");
   $("shopBack").onclick = toShop;
@@ -2225,7 +2419,8 @@ function keepGoing(R) {
   if (s.stage === "beaten" || s.stage === "chested") { const chested = s.stage === "chested"; G.busy = true; $("mon").className = "mon dead"; setTimeout(() => { if (G.running) cleared(chested); }, 600); return; }
   setMsg("Welcome back! Keep fighting.", "good");
   if (s.stage === "next") { newProblem(); return; }
-  G.cur = s.cur; G.charged = s.charged; $("charge").hidden = !G.charged;
+  G.cur = s.cur; G.charged = s.charged; $("charge").hidden = !G.charged; $("down").hidden = !s.cur.down;
+  const sc = s.cur.charge; if (sc && !(sc.up > 0 || sc.down > 0)) delete s.cur.charge; superCharge(false);
   G.spellFails = 0; G.drawFails = 0; G.drawn = null;
   presentProblem(s.cur.key, false, true, s.elapsed);
   if (s.hinted && !$("hintBtn").hidden) openHint(); else if (s.hinted) G.hinted = true;
@@ -2608,7 +2803,7 @@ function settings(paused, tab) {
   const tabs = [
     ...(paused ? [] : [{ id: "players", icon: "👥", label: "Players" }]),
     { id: "game", icon: "🎨", label: "Game" },
-    ...(paused ? [] : [{ id: "progress", icon: "📈", label: "Progress" }]),
+    { id: "progress", icon: "📈", label: "Progress" },
     { id: "about", icon: "ℹ️", label: "About" },
   ];
   const on = tabs.some((t) => t.id === tab) ? tab : tabs[0].id;
@@ -2624,7 +2819,7 @@ function settings(paused, tab) {
     ${MUSIC_ON ? toggle("musicOn", "Music", "Quiet sounds of each stratum in a fight", st.music !== false) : ""}
   </div></div>
   <div class="grp"><span>Sound check</span><div class="soundcheck"><pre id="soundState"></pre><button class="small" type="button" id="soundTest">🔊 Test sound</button></div></div>`)}
-  ${paused ? "" : panel("progress", progressHTML())}
+  ${panel("progress", progressHTML())}
   ${panel("about", aboutHTML())}
   <div class="btns"><button class="big" id="done">Done</button></div>`);
   wireTabs();
@@ -2649,7 +2844,8 @@ function settings(paused, tab) {
   soundState(); const soundTimer = setInterval(() => { if (!$("soundState")) clearInterval(soundTimer); else soundState(); }, 800);
   $("soundTest").onclick = () => { sfx.restart(sfx.victory); setTimeout(soundState, 300); };
   wireSwatches();
-  if (!paused) { wirePlayers(); wireProgress(); showLink(null); }
+  wireProgress(); // read-only, so it's there mid-run too (the facts are saved as they're answered)
+  if (!paused) { wirePlayers(); showLink(null); }
   $("done").onclick = () => { if (linkView) showLink(null); (paused ? pause : menu)(); };
 }
 // Tabs (the WAI-ARIA tabs pattern): a tap, or ←/→/Home/End on the tab row, picks a tab and shows
@@ -2719,7 +2915,7 @@ function progressHTML() {
       const head = r.chapter !== lastCh ? `<li class="pg-ch">Chapter ${r.chapter}${r.chapter > s.chapter ? " (not open yet)" : ""}</li>` : "";
       lastCh = r.chapter;
       const tags = [r.priority ? '<span class="pg-star" title="Priority standard"><span aria-hidden="true">★</span><span class="sr">priority</span></span>' : "", r.ongoing ? '<span class="pg-tag">ongoing</span>' : "", r.review ? '<span class="pg-tag">review</span>' : ""].join("");
-      const state = { learned: "Learned ✓", now: r.seen ? "In progress" : "Up now", later: "Not started" }[r.state];
+      const state = stepLabel(r);
       return `${head}<li class="pg-step st-${r.state}"><div class="pg-step-top"><b>${esc(r.name)}</b>${tags}<span class="pg-state">${state}</span></div>
         ${pgBar(r.share, r.total ? r.mastered / r.total : 0)}<small>${r.learned} of ${r.total} learned${r.mastered ? ` · ${r.mastered} mastered` : ""}${r.seen && r.state !== "learned" ? ` · ${r.seen} seen` : ""}</small></li>`;
     }).join("");
@@ -2829,18 +3025,19 @@ function badgesCopy() {
    them earned on the sheet, without saving or paying anything, for testing. */
 const ACH_TEST = (() => {
   const q = new URLSearchParams(location.search);
-  if (q.get("achievements") === "all") return ACHIEVEMENT_IDS.slice();
+  if (q.get("achievements") === "all") return CARD_IDS.slice();
   const ids = q.getAll("achieve").flatMap((v) => v.split(",")).filter((id) => achievementOf(id));
   return ids.length ? ids : null;
 })();
 let achTestLeft = ACH_TEST ? ACH_TEST.slice() : [];
 const earnedAt = (id) => ach.earned[id] || (ACH_TEST && ACH_TEST.includes(id) ? Date.now() : 0);
-const isNewAch = (id) => !!earnedAt(id) && !ach.seen.includes(id);
+// A stratum secret (achievements.js STRATUM_SURPRISES) is new while any stratum's copy is.
+const isNewAch = (id) => !!earnedAt(id) && !ach.seen.includes(id) && CARD_IDS.includes(id);
 // The cards to play before this descent: the test aid's once, else the unseen ones.
 function achievementQueue() { return achTestLeft.length ? achTestLeft.splice(0) : unseenAchievements(ach); }
 function markSeen(id) { if (ach.earned[id] && !ach.seen.includes(id)) { ach.seen.push(id); saveAch(); } }
 function trophyButton() {
-  const fresh = ACHIEVEMENT_IDS.filter(isNewAch).length;
+  const fresh = CARD_IDS.filter(isNewAch).length;
   return `<button class="icon-btn trophy-btn" id="openTrophies" type="button" aria-label="Achievements${fresh ? `, ${fresh} new` : ""}">🏆${fresh ? '<i class="new-dot" aria-hidden="true"></i>' : ""}</button>`;
 }
 const STRATUM_BOSS = (id) => MON.find((m) => m.n === wingOf(id).boss);
@@ -2895,7 +3092,7 @@ let shareFor = null, shareBlob = null;
 function prepareShare(a) {
   shareFor = a.id; shareBlob = null;
   const btn = $("achShare");
-  renderCard({ icon: a.icon, title: a.title, detail: a.detail, secret: a.secret }, earnedAt(a.id) || Date.now(), figuresOf(a), cardWall(a)).then((b) => {
+  renderCard({ icon: a.icon, title: a.name, where: a.where, detail: a.detail, secret: a.secret }, earnedAt(a.id) || Date.now(), figuresOf(a), cardWall(a)).then((b) => {
     if (shareFor !== a.id || !btn.isConnected) return; // moved on meanwhile
     shareBlob = b; btn.hidden = false;
   }).catch(() => {}); // no canvas: just no Share button
@@ -2925,7 +3122,7 @@ function achievementCards(ids, i, from) {
   show(`<div class="ach-card${big ? " huge" : ""}${wall ? "" : " grand"}"${wall ? ` data-stratum="${wall}"` : ""}>
     <p class="ach-kicker">${a.secret ? "Secret achievement!" : "New achievement!"}</p>
     <div class="ach-icon" aria-hidden="true">${a.icon}</div>
-    <h2 class="ach-title">${esc(a.title)}</h2>
+    <h2 class="ach-title">${esc(a.name)}${a.where ? `<span class="ach-where">${esc(a.where)}</span>` : ""}</h2>
     <p class="ach-detail">${esc(a.detail)}</p>
     ${stage}
     ${from.sheet ? "" : `<p class="ach-got"><span>You got</span> ${esc(rewardWords(r))}</p>`}${when ? `<p class="ach-date">${esc(when)}</p>` : ""}${!from.sheet && ids.length > 1 ? `<p class="ach-count">${i + 1} of ${ids.length}</p>` : ""}</div>
@@ -2956,6 +3153,7 @@ function trophyPage() {
   for (const a of list) if (a.kind === "track" && !earnedAt(a.id) && !(a.track in nextTier)) nextTier[a.track] = a;
   const bar = (a) => `<span class="ach-bar" aria-hidden="true"><i style="width:${Math.round(a.share * 100)}%"></i></span>`;
   const row = (a) => {
+    if (a.strata) return strataCard(a);
     const t = earnedAt(a.id);
     if (t) return `<button type="button" class="ach-row earned${isNewAch(a.id) ? " new" : ""}${isBig(a) ? " top" : ""}" data-ach="${a.id}">
       <span class="ach-ico" aria-hidden="true">${a.icon}</span><span class="ach-txt"><b>${esc(a.title)}${isNewAch(a.id) ? ' <i class="new-pill">New!</i>' : ""}</b><small>${esc(a.detail)}</small><small class="ach-when">Earned ${date(t)}</small><small class="ach-share-hint">${SHARE_ICON} Tap to see it and share</small></span></button>`;
@@ -2974,18 +3172,65 @@ function trophyPage() {
   };
   // Each list puts the earned ones first, newest first, then the rest in their own order. The
   // secrets: the tracks first (they count up), then mastery, then the surprises.
-  const earnedFirst = (as) => [...as.filter((a) => earnedAt(a.id)).sort((x, y) => earnedAt(y.id) - earnedAt(x.id)), ...as.filter((a) => !earnedAt(a.id))];
-  const strata = earnedFirst(list.filter(isBig)), secret = earnedFirst(["track", "mastery", "surprise"].flatMap((k) => list.filter((a) => a.kind === k)));
-  const got = list.filter((a) => earnedAt(a.id)).length;
+  // A stratum secret goes by its latest stratum. Each stratum's copy is on its surprise's card,
+  // not a row of its own.
+  const latest = (a) => (a.strata ? Math.max(0, ...a.strata.map((x) => earnedAt(x.id))) : earnedAt(a.id));
+  const earnedFirst = (as) => [...as.filter(latest).sort((x, y) => latest(y) - latest(x)), ...as.filter((a) => !latest(a))];
+  const shown = list.filter((a) => !a.of);
+  const strata = earnedFirst(shown.filter(isBig)), secret = earnedFirst(["track", "mastery", "surprise"].flatMap((k) => shown.filter((a) => a.kind === k)));
+  const got = shown.filter(latest).length;
   show(`<div class="cardhead"><h2>🏆 Achievements</h2></div>
-  <p class="ach-sum">${got} of ${list.length} earned</p>
+  <p class="ach-sum">${got} of ${shown.length} earned</p>
   <h3 class="book-title">The strata</h3>
   <div class="ach-list">${strata.map(row).join("")}</div>
-  <h3 class="book-title">Secrets <small>${secret.filter((a) => earnedAt(a.id)).length} of ${secret.length} found</small></h3>
+  <h3 class="book-title">Secrets <small>${secret.filter(latest).length} of ${secret.length} found</small></h3>
   <div class="ach-list">${secret.map(row).join("")}</div>
   <div class="btns"><button class="big" id="achBack">Back</button></div>`);
   $("card").querySelectorAll("[data-ach]").forEach((b) => b.onclick = () => achievementCards([b.dataset.ach], 0, { sheet: true, test: !ach.earned[b.dataset.ach] }));
+  for (const c of $("card").querySelectorAll(".ach-strata")) wireStrata(c);
   $("achBack").onclick = () => G.paused ? pause() : menu(); // mid-run, back to the pause card
+}
+// A stratum secret on the 🏆 sheet (DESIGN.md §14.5): one card that swipes sideways through the
+// strata, as a monster's looks do in Monsters & Heroes (scroll-snap, dots under it, ← and →, and
+// the arrow keys). Each stratum's page in its own colors over its wall: earned, the achievement
+// (a tap plays its card); not yet, a "?" and the stratum's name. The card opens on the stratum
+// earned last, else the first, and counts them: "3 of 5 strata".
+function strataCard(a) {
+  const pages = a.strata, n = pages.length, got = pages.filter((x) => earnedAt(x.id)), any = got.length > 0;
+  const date = (t) => new Date(t).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  const last = any ? pages.indexOf(got.reduce((x, y) => (earnedAt(y.id) > earnedAt(x.id) ? y : x))) : 0;
+  const fresh = pages.some((x) => isNewAch(x.id));
+  const page = (x, i) => earnedAt(x.id)
+    ? `<button type="button" class="as-pg ${x.wing} earned${isNewAch(x.id) ? " new" : ""}" data-stratum="${x.wing}" data-ach="${x.id}" aria-label="${i + 1} of ${n}: ${esc(achievementOf(x.id).title)}, earned ${date(earnedAt(x.id))}. Tap to see it and share">
+        <b class="as-name">${esc(x.name)}</b><span class="as-ico" aria-hidden="true">${a.icon}</span><small>Earned ${date(earnedAt(x.id))}${isNewAch(x.id) ? ' <i class="new-pill">New!</i>' : ""}</small></button>`
+    : `<div class="as-pg ${x.wing} secret" data-stratum="${x.wing}" role="group" aria-label="${i + 1} of ${n}: ${esc(x.name)}, not found yet"><b class="as-name">${esc(x.name)}</b><span class="as-ico" aria-hidden="true">?</span><small>Not found yet</small></div>`;
+  const title = any ? a.name : "???";
+  return `<div class="ach-row ach-strata${any ? " earned" : " secret"}${fresh ? " new" : ""}" role="group" aria-label="${esc(title)}: ${got.length} of ${n} strata" data-start="${last}">
+    <div class="as-head"><span class="ach-ico" aria-hidden="true">${any ? a.icon : "❓"}</span><span class="ach-txt"><b>${esc(title)}</b><small>${any ? esc(a.detail) : "A secret achievement, in every stratum"}</small></span><small class="as-count">${got.length} of ${n} strata</small></div>
+    <div class="as-strip" role="region" aria-label="${esc(title)}, stratum by stratum" tabindex="0">${pages.map(page).join("")}</div>
+    <div class="as-nav"><button type="button" class="icon-btn as-prev" aria-label="Previous stratum">←</button>
+      <div class="lv-dots">${pages.map((x, i) => `<button type="button" class="lv-dot${earnedAt(x.id) ? " on" : ""}" aria-label="${esc(x.name)}${earnedAt(x.id) ? ": earned" : ""}"></button>`).join("")}</div>
+      <button type="button" class="icon-btn as-next" aria-label="Next stratum">→</button></div></div>`;
+}
+function wireStrata(c) {
+  const strip = c.querySelector(".as-strip"), dots = [...c.querySelectorAll(".lv-dot")], prev = c.querySelector(".as-prev"), next = c.querySelector(".as-next"), n = dots.length;
+  const current = () => Math.max(0, Math.min(n - 1, Math.round(strip.scrollLeft / (strip.clientWidth || 1))));
+  let t = 0;
+  const showing = () => {
+    const i = current();
+    dots.forEach((d, j) => d.setAttribute("aria-current", j === i ? "true" : "false"));
+    prev.disabled = i === 0; next.disabled = i === n - 1;
+  };
+  const go = (i) => strip.scrollTo({ left: Math.max(0, Math.min(n - 1, i)) * strip.clientWidth, behavior: reduced() ? "auto" : "smooth" });
+  strip.addEventListener("scroll", () => { clearTimeout(t); t = setTimeout(showing, 150); }, { passive: true });
+  strip.addEventListener("scrollend", () => { clearTimeout(t); showing(); });
+  prev.onclick = () => go(current() - 1);
+  next.onclick = () => go(current() + 1);
+  dots.forEach((d, i) => { d.onclick = () => go(i); });
+  strip.onkeydown = (e) => { if (e.key === "ArrowLeft" || e.key === "ArrowRight") { e.preventDefault(); go(current() + (e.key === "ArrowLeft" ? -1 : 1)); } };
+  // Open on the stratum earned last, without the smooth scroll.
+  strip.scrollLeft = Number(c.dataset.start || 0) * strip.clientWidth;
+  showing();
 }
 function bookPage() {
   G.onMenu = false; // an update waits until the start screen
@@ -3782,6 +4027,9 @@ async function chompAct(pose) {
 }
 
 /* ---------- input ---------- */
+// How many digits can be typed: four, or seven for the Forge's big numbers (a problem with a
+// number past 999, or an answer past 9999), so the box never tells how long the answer is.
+const digitsMax = (p) => (p && Math.max(p.x || 0, p.y || 0, p.ans || 0, p.n || 0, p.whole || 0) >= 1000 ? 7 : 4);
 function press(k) {
   if (G.next && k === "go") return nextAfterMiss();
   if (G.busy) return;
@@ -3792,7 +4040,7 @@ function press(k) {
   }
   if (G.cur && G.cur.slots && G.slot) return slotPress(k);
   // True or false: a tap answers at once, after a brief press on the key (no Hit!, no delete).
-  if (G.cur && G.cur.op === "✓") return tfPress(k);
+  if (G.cur && (G.cur.op === "✓" || G.cur.op === "P")) return tfPress(k);
   if (G.fix && !G.fix.swapped && k !== "go") fixSwap();
   if (k === "go") return submit();
   const cmp = !!(G.cur && G.cur.sym), sym = "<=>".includes(k);
@@ -3805,14 +4053,14 @@ function press(k) {
   if (k === "del") G.input = rtl ? G.input.slice(1) : G.input.slice(0, -1);
   else if (sym) { G.input = k; chompTurn(mouthOf(k)); }
   else if (rtl) { if (G.input.length < stackWidth(G.cur)) G.input = k + G.input; }
-  else if (G.input.length < 4) G.input = (G.input === "0" ? "" : G.input) + k;
+  else if (G.input.length < digitsMax(G.cur)) G.input = (G.input === "0" ? "" : G.input) + k;
   ansUI();
 }
 // True or false (the Equal Twins): T or F, the key pressed in for a moment while the pad takes no
 // more taps, then it's answered.
 const TF_PRESS_MS = 160;
 function tfPress(k) {
-  if (k !== "T" && k !== "F") return;
+  if (!(G.cur.op === "P" ? "PC" : "TF").includes(k) || k.length !== 1) return;
   sfx.tick();
   G.input = k; G.busy = true;
   const pad = $("pad"), key = pad.querySelector(`[data-k="${k}"]`);
@@ -3832,14 +4080,16 @@ function slotPress(k) {
     if (s.at === 1) return submit();
     if (!cur) return;
     sfx.tick(); s.at = 1; ansUI();
-    if (G.cur.op === "$") { if (once("cents", 2)) say("p", PHRASE.nowCents, false, asked(G.cur)); }
+    if (G.cur.slotSay === "nowRemainder") { if (once("remainder", 2)) say("p", PHRASE.nowRemainder, false, asked(G.cur)); }
+    else if (G.cur.slotSay) { if (once("numerator", 2)) say("p", PHRASE.nowNumerator, false, asked(G.cur)); }
+    else if (G.cur.op === "$") { if (once("cents", 2)) say("p", PHRASE.nowCents, false, asked(G.cur)); }
     else if (once("minutes", 2)) say("p", PHRASE.nowMinutes, false, asked(G.cur));
     return;
   }
   if (k !== "del" && !/^[0-9]$/.test(k)) return;
   sfx.tick();
   if (k === "del") { if (cur) s.vals[s.at] = cur.slice(0, -1); else if (s.at) s.at--; }
-  else if (cur.length < 2) s.vals[s.at] = (s.at === 0 && cur === "0" ? "" : cur) + k;
+  else if (cur.length < (G.cur.slotMax || [2, 2])[s.at]) s.vals[s.at] = (s.at === 0 && cur === "0" ? "" : cur) + k;
   G.input = s.vals.join("");
   ansUI();
 }
@@ -4112,9 +4362,16 @@ const KEY_LABEL = { del: [DEL_ICON, "Delete"], go: ["Hit!", "Attack"], "<": ["<"
 function padUI(mode) {
   const pad = $("pad"), cmp = mode === "cmp", drawn = mode === "spell" || mode === "draw";
   if (pad.dataset.mode === mode) { if (drawn) sigilReset(); return; }
-  pad.dataset.mode = mode; pad.classList.toggle("cmp", cmp); pad.classList.toggle("spell", drawn); pad.classList.toggle("tfpad", mode === "tf");
+  pad.dataset.mode = mode; pad.classList.toggle("cmp", cmp); pad.classList.toggle("spell", drawn); pad.classList.toggle("tfpad", mode === "tf"); pad.classList.toggle("pcpad", mode === "pc");
   if (mode === "tf") {
     pad.innerHTML = `<button type="button" data-k="T" class="tfk yes" aria-label="True"><b>✓</b>True</button><button type="button" data-k="F" class="tfk no" aria-label="False"><b>✗</b>False</button>`;
+    return;
+  }
+  // Prime or composite (4th grade): the same two big keys, an A or B answer. Prime's mark is one
+  // long row (one rectangle), Composite's a grid (more than one).
+  if (mode === "pc") {
+    pad.classList.add("tfpad");
+    pad.innerHTML = `<button type="button" data-k="P" class="tfk yes" aria-label="Prime"><b>▬</b>Prime</button><button type="button" data-k="C" class="tfk no" aria-label="Composite"><b>▦</b>Composite</button>`;
     return;
   }
   if (drawn) {
@@ -4150,8 +4407,12 @@ document.addEventListener("keydown", (e) => {
   else if (e.key === "Enter") { e.preventDefault(); press("go"); }
   // True or false on a keyboard: T and F.
   else if (/^[tf]$/i.test(e.key)) { if (G.cur && G.cur.op === "✓") press(e.key.toUpperCase()); }
+  // Prime or composite: P or C.
+  else if (/^[pc]$/i.test(e.key)) { if (G.cur && G.cur.op === "P") press(e.key.toUpperCase()); }
   // ":" after the hour moves on to the minutes, as on a clock.
   else if (e.key === ":") { if (G.cur && G.slot && G.slot.at === 0) press("go"); }
+  // R after the quotient moves on to the remainder (29 ÷ 4 = 7 R 1), as it's written.
+  else if (e.key === "r" || e.key === "R") { if (G.cur && G.cur.op === "R" && G.slot && G.slot.at === 0) press("go"); }
   // ? opens the hint, like tapping 💡, when this problem has one.
   else if (e.key === "?") { if (!$("hintBtn").hidden) { e.preventDefault(); $("hintBtn").click(); } }
 });

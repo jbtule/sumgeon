@@ -37,6 +37,6 @@ assert.equal(spokenPV({ kind: "odd", form: "hundred", h: 1, t: 14, o: 5 }), "One
 assert.equal(spokenPV({ kind: "expanded", h: 2, t: 4, o: 5 }), "Two hundred plus forty plus five equals what?");
 assert.equal(spokenPVAnswer({ kind: "tens", ans: 12 }), "Twelve tens.");
 assert.deepEqual(pvLine({ kind: "odd", form: "tens", t: 34, o: 3 }), ["34 tens and 3 ones = ", null]);
-assert.equal(pvHint({ kind: "odd", form: "tens", h: 0, t: 34, o: 3, ans: 343 }, false).say, "Every 10 tens make a hundred: 34 tens is 3 hundreds and 4 tens. 3 hundreds, 4 tens, 3 ones = ?");
+assert.equal(pvHint({ kind: "odd", form: "tens", h: 0, t: 34, o: 3, ans: 343 }, false).say, "Every 10 tens make a hundred. How many hundreds in 34 tens? Then the rest. 34 tens, 3 ones = ?");
 assert.equal(pvHint({ kind: "tens", h: 1, t: 2, ans: 12 }, true).say, "1 hundred is 10 tens. 10 + 2 = 12 tens");
 console.log("✓ place value: answers, blocks, hints, words");

@@ -82,7 +82,8 @@ function roundRect(ctx, x, y, w, h, r) {
   if (ctx.roundRect) ctx.roundRect(x, y, w, h, r); else ctx.rect(x, y, w, h);
 }
 
-// a = { icon, title, detail, secret }; when = the time it was earned; figures = the game's SVG art
+// a = { icon, title, where?, detail, secret } (where: a stratum secret's "in the Counting Cellar",
+// drawn on its own line under the title, which it finishes); when = the time it was earned; figures = the game's SVG art
 // of the monsters or heroes involved (up to 4); wall = a stratum's id for its wall behind (else a
 // gold-on-purple ground, as the grand ones' card). Resolves to a PNG Blob.
 export async function renderCard(a, when, figures, wall) {
@@ -133,10 +134,17 @@ async function draw(a, when, figures, wall) {
   fit(ctx, a.title, `400 {s}px ${DISPLAY}`, 96, 44, inner);
   ctx.fillStyle = DARK; ctx.fillText(a.title, W / 2, 568 + 6);
   ctx.fillStyle = GOLD; ctx.fillText(a.title, W / 2, 568);
+  let y = 660;
+  if (a.where) {
+    fit(ctx, a.where, `400 {s}px ${DISPLAY}`, 50, 30, inner);
+    ctx.fillStyle = DARK; ctx.fillText(a.where, W / 2, 646 + 4);
+    ctx.fillStyle = GOLD; ctx.fillText(a.where, W / 2, 646);
+    y = 724;
+  }
   ctx.fillStyle = CHALK;
   ctx.font = `800 44px ${BODY}`;
   const lines = wrap(ctx, a.detail, inner, 2);
-  lines.forEach((l, i) => ctx.fillText(l, W / 2, 660 + i * 56));
+  lines.forEach((l, i) => ctx.fillText(l, W / 2, y + i * 56));
 
   // The monsters or heroes involved, standing on a shadow.
   const imgs = [];
@@ -148,7 +156,7 @@ async function draw(a, when, figures, wall) {
     } catch (e) {}
   }
   if (imgs.length) {
-    const bottom = 1130, h = imgs.length > 2 ? 230 : 330, gap = 30;
+    const bottom = 1130, h = imgs.length > 2 ? 230 : a.where ? 290 : 330, gap = 30;
     const ws = imgs.map((x) => h * x.ratio), total = ws.reduce((s, w) => s + w, 0) + gap * (imgs.length - 1);
     const scale = Math.min(1, (W - 2 * m - 80) / total);
     let x = W / 2 - total * scale / 2;

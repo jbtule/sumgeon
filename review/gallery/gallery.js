@@ -22,9 +22,9 @@ const $ = (id) => document.getElementById(id);
 const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
 const STORE = "sumgeon:gallery";
 const TAGS = ["Symbol", "Creature", "Color", "Small size", "Style", "Too scary", "Quip"];
-const WALLS = { cellar: "The Counting Cellar", hall: "The Balance Hall", mines: "The Crystal Mines", tower: "The Tables Tower", plain: "Plain" };
-const ALL_WALLS = ["cellar", "hall", "mines", "tower"];
-const SHORT = { cellar: "Cellar", hall: "Hall", mines: "Mines", tower: "Tower" };
+const WALLS = { cellar: "The Counting Cellar", hall: "The Balance Hall", mines: "The Crystal Mines", tower: "The Tables Tower", forge: "The Fraction Forge", plain: "Plain" };
+const ALL_WALLS = ["cellar", "hall", "mines", "tower", "forge"];
+const SHORT = { cellar: "Cellar", hall: "Hall", mines: "Mines", tower: "Tower", forge: "Forge" };
 
 // The game's own monsters: their symbol and their strata in the grade plan (DESIGN.md §4.1).
 // Kept here rather than read from wings.js, which is being restructured.
@@ -78,7 +78,7 @@ const ITEMS = { newGrid: NEW_MON.map(monItem), oldGrid: MON.map(monItem), heroGr
 // One row per boss: the boss, powering up 1 and 2, its mega form and its Legend form, side by
 // side on its stratum's wall (or the wall picked above; "All four" keeps its own), big and at
 // 72 px and 26 px.
-const BOSS_ORDER = ["Make-Ten Golem", "Judo Judy", "The Centipede", "Sigma Rex"];
+const BOSS_ORDER = ["Make-Ten Golem", "Judo Judy", "The Centipede", "Sigma Rex", "The Denominator"];
 const BOSSES = MON.filter((m) => m.boss).sort((a, b) => BOSS_ORDER.indexOf(a.n) - BOSS_ORDER.indexOf(b.n));
 const FORM_TAG = { boss: ["g-boss", "Boss"], power1: ["g-power", "Powering up 1"], power2: ["g-power", "Powering up 2"], mega: ["g-mega", "Mega"], legend: ["g-legend", "Legend"] };
 // A boss powering up keeps its name (and lines), so its key and tag carry the stage.
@@ -185,7 +185,8 @@ const SAMPLES = [
   { head: "bunnyears", face: "starglasses", neck: "bowtie" }, { head: "flowercrown", face: "sunglasses", neck: "medal" },
   { head: "chefhat", face: "mustache", neck: "necktie" }, { head: "headband", face: "mask", neck: "cape" },
   { head: "legend-cellar", neck: "badge-cellar" }, { head: "legend-hall", neck: "badge-hall" },
-  { head: "legend-mines", neck: "badge-mines" }, { head: "legend-tower", neck: "champcape" }
+  { head: "legend-mines", neck: "badge-mines" }, { head: "legend-tower", neck: "badge-tower" },
+  { head: "legend-forge", neck: "badge-forge" }, { head: "crown", neck: "champcape" }
 ];
 const SEL = { head: $("wearHead"), face: $("wearFace"), neck: $("wearNeck") };
 for (const s of SPOTS) SEL[s].innerHTML = `<option value="">None</option>` + CLOTHES.filter((p) => p.spot === s).map((p) => `<option value="${p.id}">${esc(p.name)}${p.tier === "special" ? " ★" : ""}</option>`).join("");

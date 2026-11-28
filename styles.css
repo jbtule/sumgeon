@@ -52,7 +52,7 @@ h1 b{color:var(--coral);font-weight:400}
 @keyframes hit{20%{transform:translateX(-12px) rotate(-4deg);filter:brightness(2)}60%{transform:translateX(9px) rotate(3deg)}}
 @keyframes dead{to{transform:translateY(40px) rotate(25deg) scale(.6);opacity:0}}
 #fx{position:absolute;inset:0;pointer-events:none;z-index:2}
-.pop{position:absolute;left:50%;top:38%;transform:translateX(-50%);font:400 clamp(30px,7vw,46px) Bungee,sans-serif;color:var(--gold);-webkit-text-stroke:2px var(--dark);animation:pop .9s ease-out forwards;white-space:nowrap}
+.pop{position:absolute;left:50%;top:38%;transform:translateX(-50%);font:400 clamp(30px,7vw,46px) Bungee,sans-serif;color:var(--gold);-webkit-text-stroke:2px var(--dark);animation:pop .9s ease-out forwards;white-space:pre;text-align:center}
 .pop.crit{color:var(--coral)}
 @keyframes pop{0%{opacity:0;transform:translate(-50%,10px) scale(.6)}20%{opacity:1;transform:translate(-50%,-6px) scale(1.15)}100%{opacity:0;transform:translate(-50%,-60px)}}
 .you{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-weight:900}
@@ -253,6 +253,16 @@ h1 b{color:var(--coral);font-weight:400}
 .split svg{width:100%;height:auto}
 .split svg:last-child{transform:translateY(-12%)}
 @media(prefers-reduced-motion:reduce){.charge{animation:none}}
+/* The Super Charge (charge.js): "⚡ ×100" by a problem whose answers run far below the floor's,
+   "🛡️ ÷10" (the monster braced) by one far above; the icon over the number, to stay narrow */
+.supercharge{display:inline-flex;flex-direction:column;align-items:center;flex:none;gap:1px;padding:2px 5px;border-radius:10px;background:var(--dark);border:2px solid var(--gold);box-shadow:0 0 10px #ffc93c88;line-height:1;animation:superin .35s ease-out}
+.supercharge[hidden]{display:none}
+.supercharge b{font-size:15px;font-weight:400}
+.supercharge i{font:400 12px/1 Bungee,sans-serif;font-style:normal;color:var(--gold);white-space:nowrap}
+.supercharge.braced{border-color:var(--muted);box-shadow:none}
+.supercharge.braced i{color:var(--ink)}
+@keyframes superin{from{transform:scale(1.6);opacity:0}}
+@media(prefers-reduced-motion:reduce){.supercharge{animation:none}}
 /* Floor stars (wings.js floorStars): earned stars pop in one after another */
 .stars{display:flex;justify-content:center;gap:14px}
 .star{display:grid;justify-items:center;gap:2px;width:86px;text-align:center}
@@ -441,6 +451,18 @@ h1 b{color:var(--coral);font-weight:400}
 .prob .sum3.sum4{font-size:.5em}
 /* Three-digit numbers on one line ("287 + 359 ="). */
 .prob .wide3{font-size:.8em;white-space:nowrap}
+/* 4th grade (the Fraction Forge): big numbers smaller again, a line of parts (fourth.js) on one
+   line, n (a letter for a number) and units (ft, in, kg) in Nunito, since Bungee has only capitals,
+   and an angle or a shape to classify (angles.js) over its line. */
+.prob .wide3.wide4,.prob .fline.wide4{font-size:.7em}
+.prob .fline{white-space:nowrap}
+.prob .cmp4{white-space:nowrap;font-size:.8em}
+@media (max-width: 359px){.prob .cmp4{font-size:.68em}}
+.prob .var,.prob .unit{font-family:Nunito,system-ui,sans-serif;font-weight:900}
+.prob .var{font-style:italic;font-size:1.15em}
+.game.find .prob svg.anglefig{display:block;width:auto;height:min(20dvh,170px);max-width:min(80vw,320px);overflow:visible}
+@media (min-width: 760px){.game.hinted.find .prob svg.anglefig{height:min(14dvh,140px)}}
+@media (max-width: 759px) and (max-height: 700px){.game.find .prob svg.anglefig{height:16dvh}}
 .game.cents .ans::after{content:"¢";margin-left:2px;font-size:.7em;opacity:.75}
 /* Time (Tick-Tockus): the clock is the monster, so the problem is only its line ("□ o'clock",
    "3:□"); a whole time is two slots, "□:□□", the one being typed glowing and the next one dim.
@@ -516,8 +538,12 @@ h1 b{color:var(--coral);font-weight:400}
 .pad.tfpad .tfk b{font:900 clamp(40px,12vw,64px)/1 Nunito,sans-serif}
 .pad.tfpad .yes{background:#2b4f3a}.pad.tfpad .yes b{color:#7fdc8a}
 .pad.tfpad .no{background:#4f2b2f}.pad.tfpad .no b{color:#ff8a7f}
+.pad.pcpad .tfk{font-size:clamp(15px,4.6vw,24px)}
+.prob .pnum{font-size:1.6em;line-height:1}
 .pad.tfpad .pressed{transform:translateY(3px) scale(.97);box-shadow:0 1px 0 var(--dark);filter:brightness(1.3)}
 .pad.locked{pointer-events:none}
+/* Typed ones first (a stacked problem, app.js probUI): delete takes back the leftmost digit, so it points right. */
+.pad.rtl .del svg{transform:scaleX(-1)}
 /* A two- or three-digit sum stacked in columns (app.js stackHTML): the sign in its own column,
    the numbers right-aligned in a column --w digits wide, a line, and the answer's □ under it,
    right-aligned. Smaller than a one-line problem, so three rows fit an iPhone SE. */
@@ -540,6 +566,22 @@ h1 b{color:var(--coral);font-weight:400}
 /* Three or four numbers added (Triceraplus in the Mines): more rows, so smaller and tighter. */
 .prob .stacked.rows3{font-size:.6em}
 .prob .stacked.rows4{font-size:.5em}
+/* Marking regrouping (three-digit numbers and bigger, app.js stackHTML, .mk): a row above the numbers for
+   the carried 1s, or a regrouped digit's new value, always there so a mark moves nothing, and at
+   least 36px tall to tap. Its cells are the columns' width in a smaller font (.82em / .6). A
+   regrouped digit is crossed out; one that took a ten has a small 1 in front of it. */
+.prob .stacked .smarks .scell{font-size:.6em;width:1.367em;height:max(36px,1.6em);display:inline-flex;align-items:flex-end;justify-content:center;padding-bottom:.1em;box-sizing:border-box;color:var(--gold)}
+.prob .stacked .tap{cursor:pointer;-webkit-tap-highlight-color:transparent}
+/* Each spot that takes a mark shows a faint dashed box where the mark goes (over a column that can
+   carry, or a top digit that can regroup), so the row reads as tappable; a mark takes its place.
+   The whole cell, the column's full width, is the target. */
+.prob .stacked .smark.tap:empty::before{content:"";position:absolute;left:.16em;right:.16em;bottom:.1em;height:1.3em;border:1.5px dashed var(--muted);border-radius:.3em;opacity:.55;box-sizing:border-box}
+.prob .stacked .stop .scell.x{color:var(--muted)}
+/* A digit that can't regroup yet (a 0 with nothing to give): a little shake. */
+.prob .stacked .stop .scell.nope{animation:nope .32s ease-in-out}
+@keyframes nope{25%{transform:translateX(-.08em)}50%{transform:translateX(.07em)}75%{transform:translateX(-.04em)}}
+.prob .stacked .stop .scell.x::before{content:"";position:absolute;left:.06em;right:.06em;top:50%;height:.11em;margin-top:-.055em;border-radius:.04em;background:var(--coral);transform:rotate(-58deg)}
+.prob .stacked .stop .f1{position:absolute;right:calc(100% - .3em);top:-.12em;font-size:.55em;font-style:normal;color:var(--gold);text-shadow:0 0 2px var(--dark),0 0 2px var(--dark),0 0 3px var(--dark);z-index:1}
 
 /* Deeper in a Wing, the room gets darker (--murk, set by app.js from the depth). */
 .game{--murk:0}
@@ -555,6 +597,10 @@ body[data-stratum="tower"] .game,.wing.tower,.d-layer.tower{--wall:var(--wall-to
    seem to jut out of it (chromostereopsis). Drawn by design/walls/mines.mjs; rerun it to change. */
 :root{--wall-mines:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='224' height='208'%3E%3Crect width='224' height='208' fill='%231b1e3c'/%3E%3Cdefs%3E%3CradialGradient id='g'%3E%3Cstop offset='0' stop-color='%23a03a78' stop-opacity='0.12'/%3E%3Cstop offset='1' stop-color='%23a03a78' stop-opacity='0'/%3E%3C/radialGradient%3E%3C/defs%3E%3Cpath d='M16 20L82 13L98 50L61 76L21 63Z' fill='%23202447'/%3E%3Cpath d='M21 63L16 20L82 13' stroke='%23ffffff0c' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M112 24L175 17L198 56L149 80L105 61Z' fill='%23171a34'/%3E%3Cpath d='M105 61L112 24L175 17' stroke='%23ffffff0c' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M175 98L229 91L240 139L205 163L163 139Z' fill='%23202447'/%3E%3Cg transform='translate(-224 0)'%3E%3Cpath d='M175 98L229 91L240 139L205 163L163 139Z' fill='%23202447'/%3E%3C/g%3E%3Cpath d='M163 139L175 98L229 91' stroke='%23ffffff0c' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cg transform='translate(-224 0)'%3E%3Cpath d='M163 139L175 98L229 91' stroke='%23ffffff0c' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/g%3E%3Cpath d='M23 104L75 95L93 139L51 165L14 147Z' fill='%23171a34'/%3E%3Cpath d='M14 147L23 104L75 95' stroke='%23ffffff0c' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M100 152L154 145L175 191L128 219L91 195Z' fill='%23202447'/%3E%3Cg transform='translate(0 -208)'%3E%3Cpath d='M100 152L154 145L175 191L128 219L91 195Z' fill='%23202447'/%3E%3C/g%3E%3Cpath d='M91 195L100 152L154 145' stroke='%23ffffff0c' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M70 85L107 76L138 102L117 130L82 121Z' fill='%231e2140'/%3E%3Cpath d='M82 121L70 85L107 76' stroke='%23ffffff0c' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M98 50L107 76' stroke='%230d0f24' stroke-width='1.4' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M149 80L163 104L175 98' stroke='%230d0f24' stroke-width='1.4' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M51 165L70 184L91 195' stroke='%230d0f24' stroke-width='1.4' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M21 63L16 89L23 104' stroke='%230d0f24' stroke-width='1.4' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M198 56L219 65L229 91' stroke='%230d0f24' stroke-width='1.4' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cg transform='translate(-224 0)'%3E%3Cpath d='M198 56L219 65L229 91' stroke='%230d0f24' stroke-width='1.4' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/g%3E%3Cpath d='M128 219L131 232' stroke='%230d0f24' stroke-width='1.4' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cg transform='translate(0 -208)'%3E%3Cpath d='M128 219L131 232' stroke='%230d0f24' stroke-width='1.4' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/g%3E%3Cpath d='M75 95L70 85' stroke='%230d0f24' stroke-width='1.4' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M138 102L163 113' stroke='%230d0f24' stroke-width='1.4' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3Ccircle cx='30' cy='24' r='1.6' fill='%230d0f24'/%3E%3Ccircle cx='140' cy='50' r='1.2' fill='%230d0f24'/%3E%3Ccircle cx='196' cy='121' r='1.5' fill='%230d0f24'/%3E%3Ccircle cx='61' cy='130' r='1.3' fill='%230d0f24'/%3E%3Ccircle cx='121' cy='182' r='1.6' fill='%230d0f24'/%3E%3Ccircle cx='9' cy='191' r='1.4' fill='%230d0f24'/%3E%3Cg transform='translate(158 150) rotate(4) scale(1.3)'%3E%3Ccircle cx='0' cy='-14' r='26' fill='url(%23g)'/%3E%3Cg transform='translate(3 2)' opacity='.7'%3E%3Cg transform='rotate(-32) translate(-7 0)'%3E%3Cpath d='M-4 0V-11L0 -15.8V0Z' fill='%230d0f24'/%3E%3Cpath d='M0 0V-15.8L4 -11V0Z' fill='%230d0f24'/%3E%3C/g%3E%3Cg transform='rotate(28) translate(8 0)'%3E%3Cpath d='M-3.5 0V-9L0 -13.2V0Z' fill='%230d0f24'/%3E%3Cpath d='M0 0V-13.2L3.5 -9V0Z' fill='%230d0f24'/%3E%3C/g%3E%3Cg transform='rotate(-4) translate(0 0)'%3E%3Cpath d='M-5.5 0V-22L0 -28.6V0Z' fill='%230d0f24'/%3E%3Cpath d='M0 0V-28.6L5.5 -22V0Z' fill='%230d0f24'/%3E%3C/g%3E%3C/g%3E%3Cg transform='rotate(-32) translate(-7 0)'%3E%3Cpath d='M-4 0V-11L0 -15.8V0Z' fill='%2374409a'/%3E%3Cpath d='M0 0V-15.8L4 -11V0Z' fill='%234f2a6c'/%3E%3Cpath d='M-4 -11L0 -15.8' stroke='%23ffffff30' stroke-width='.8'/%3E%3C/g%3E%3Cg transform='rotate(28) translate(8 0)'%3E%3Cpath d='M-3.5 0V-9L0 -13.2V0Z' fill='%239a3c7a'/%3E%3Cpath d='M0 0V-13.2L3.5 -9V0Z' fill='%236a2854'/%3E%3Cpath d='M-3.5 -9L0 -13.2' stroke='%23ffffff30' stroke-width='.8'/%3E%3C/g%3E%3Cg transform='rotate(-4) translate(0 0)'%3E%3Cpath d='M-5.5 0V-22L0 -28.6V0Z' fill='%23a63a62'/%3E%3Cpath d='M0 0V-28.6L5.5 -22V0Z' fill='%23732643'/%3E%3Cpath d='M-5.5 -22L0 -28.6' stroke='%23ffffff30' stroke-width='.8'/%3E%3C/g%3E%3Cpath d='M-10 1Q0 7 10 1Q0 -2 -10 1Z' fill='%230d0f24'/%3E%3C/g%3E%3Cg transform='translate(48 66) rotate(-12) scale(1.15)'%3E%3Ccircle cx='0' cy='-14' r='26' fill='url(%23g)'/%3E%3Cg transform='translate(3 2)' opacity='.7'%3E%3Cg transform='rotate(-26) translate(-4 0)'%3E%3Cpath d='M-3.5 0V-9L0 -13.2V0Z' fill='%230d0f24'/%3E%3Cpath d='M0 0V-13.2L3.5 -9V0Z' fill='%230d0f24'/%3E%3C/g%3E%3Cg transform='rotate(12) translate(4 0)'%3E%3Cpath d='M-4 0V-15L0 -19.8V0Z' fill='%230d0f24'/%3E%3Cpath d='M0 0V-19.8L4 -15V0Z' fill='%230d0f24'/%3E%3C/g%3E%3C/g%3E%3Cg transform='rotate(-26) translate(-4 0)'%3E%3Cpath d='M-3.5 0V-9L0 -13.2V0Z' fill='%2374409a'/%3E%3Cpath d='M0 0V-13.2L3.5 -9V0Z' fill='%234f2a6c'/%3E%3Cpath d='M-3.5 -9L0 -13.2' stroke='%23ffffff30' stroke-width='.8'/%3E%3C/g%3E%3Cg transform='rotate(12) translate(4 0)'%3E%3Cpath d='M-4 0V-15L0 -19.8V0Z' fill='%239a3c7a'/%3E%3Cpath d='M0 0V-19.8L4 -15V0Z' fill='%236a2854'/%3E%3Cpath d='M-4 -15L0 -19.8' stroke='%23ffffff30' stroke-width='.8'/%3E%3C/g%3E%3Cpath d='M-10 1Q0 7 10 1Q0 -2 -10 1Z' fill='%230d0f24'/%3E%3C/g%3E%3Cg transform='translate(206 52) rotate(62) scale(1)'%3E%3Cg transform='translate(3 2)' opacity='.7'%3E%3Cg transform='rotate(-10) translate(-3 0)'%3E%3Cpath d='M-3.5 0V-12L0 -16.2V0Z' fill='%230d0f24'/%3E%3Cpath d='M0 0V-16.2L3.5 -12V0Z' fill='%230d0f24'/%3E%3C/g%3E%3Cg transform='rotate(18) translate(4 0)'%3E%3Cpath d='M-3 0V-8L0 -11.6V0Z' fill='%230d0f24'/%3E%3Cpath d='M0 0V-11.6L3 -8V0Z' fill='%230d0f24'/%3E%3C/g%3E%3C/g%3E%3Cg transform='rotate(-10) translate(-3 0)'%3E%3Cpath d='M-3.5 0V-12L0 -16.2V0Z' fill='%23ae4068'/%3E%3Cpath d='M0 0V-16.2L3.5 -12V0Z' fill='%23782a48'/%3E%3Cpath d='M-3.5 -12L0 -16.2' stroke='%23ffffff30' stroke-width='.8'/%3E%3C/g%3E%3Cg transform='rotate(18) translate(4 0)'%3E%3Cpath d='M-3 0V-8L0 -11.6V0Z' fill='%239a3c7a'/%3E%3Cpath d='M0 0V-11.6L3 -8V0Z' fill='%236a2854'/%3E%3Cpath d='M-3 -8L0 -11.6' stroke='%23ffffff30' stroke-width='.8'/%3E%3C/g%3E%3Cpath d='M-10 1Q0 7 10 1Q0 -2 -10 1Z' fill='%230d0f24'/%3E%3C/g%3E%3Cg transform='translate(-224 0)'%3E%3Cg transform='translate(206 52) rotate(62) scale(1)'%3E%3Cg transform='translate(3 2)' opacity='.7'%3E%3Cg transform='rotate(-10) translate(-3 0)'%3E%3Cpath d='M-3.5 0V-12L0 -16.2V0Z' fill='%230d0f24'/%3E%3Cpath d='M0 0V-16.2L3.5 -12V0Z' fill='%230d0f24'/%3E%3C/g%3E%3Cg transform='rotate(18) translate(4 0)'%3E%3Cpath d='M-3 0V-8L0 -11.6V0Z' fill='%230d0f24'/%3E%3Cpath d='M0 0V-11.6L3 -8V0Z' fill='%230d0f24'/%3E%3C/g%3E%3C/g%3E%3Cg transform='rotate(-10) translate(-3 0)'%3E%3Cpath d='M-3.5 0V-12L0 -16.2V0Z' fill='%23ae4068'/%3E%3Cpath d='M0 0V-16.2L3.5 -12V0Z' fill='%23782a48'/%3E%3Cpath d='M-3.5 -12L0 -16.2' stroke='%23ffffff30' stroke-width='.8'/%3E%3C/g%3E%3Cg transform='rotate(18) translate(4 0)'%3E%3Cpath d='M-3 0V-8L0 -11.6V0Z' fill='%239a3c7a'/%3E%3Cpath d='M0 0V-11.6L3 -8V0Z' fill='%236a2854'/%3E%3Cpath d='M-3 -8L0 -11.6' stroke='%23ffffff30' stroke-width='.8'/%3E%3C/g%3E%3Cpath d='M-10 1Q0 7 10 1Q0 -2 -10 1Z' fill='%230d0f24'/%3E%3C/g%3E%3C/g%3E%3Cg transform='translate(84 190) rotate(14) scale(0.9)'%3E%3Cg transform='translate(3 2)' opacity='.7'%3E%3Cg transform='rotate(6) translate(0 0)'%3E%3Cpath d='M-3.5 0V-10L0 -14.2V0Z' fill='%230d0f24'/%3E%3Cpath d='M0 0V-14.2L3.5 -10V0Z' fill='%230d0f24'/%3E%3C/g%3E%3C/g%3E%3Cg transform='rotate(6) translate(0 0)'%3E%3Cpath d='M-3.5 0V-10L0 -14.2V0Z' fill='%23ae4068'/%3E%3Cpath d='M0 0V-14.2L3.5 -10V0Z' fill='%23782a48'/%3E%3Cpath d='M-3.5 -10L0 -14.2' stroke='%23ffffff30' stroke-width='.8'/%3E%3C/g%3E%3Cpath d='M-10 1Q0 7 10 1Q0 -2 -10 1Z' fill='%230d0f24'/%3E%3C/g%3E%3Cg transform='translate(0 -208)'%3E%3Cg transform='translate(84 190) rotate(14) scale(0.9)'%3E%3Cg transform='translate(3 2)' opacity='.7'%3E%3Cg transform='rotate(6) translate(0 0)'%3E%3Cpath d='M-3.5 0V-10L0 -14.2V0Z' fill='%230d0f24'/%3E%3Cpath d='M0 0V-14.2L3.5 -10V0Z' fill='%230d0f24'/%3E%3C/g%3E%3C/g%3E%3Cg transform='rotate(6) translate(0 0)'%3E%3Cpath d='M-3.5 0V-10L0 -14.2V0Z' fill='%23ae4068'/%3E%3Cpath d='M0 0V-14.2L3.5 -10V0Z' fill='%23782a48'/%3E%3Cpath d='M-3.5 -10L0 -14.2' stroke='%23ffffff30' stroke-width='.8'/%3E%3C/g%3E%3Cpath d='M-10 1Q0 7 10 1Q0 -2 -10 1Z' fill='%230d0f24'/%3E%3C/g%3E%3C/g%3E%3Cpath d='M153 107.4L153.9 110.1L156.6 111L153.9 111.9L153 114.6L152.1 111.9L149.4 111L152.1 110.1Z' fill='%23ffffff3a'/%3E%3Cpath d='M50 41.4L50.7 43.4L52.6 44L50.7 44.7L50 46.6L49.4 44.7L47.4 44L49.4 43.4Z' fill='%23ffd6e830'/%3E%3Ccircle cx='22' cy='34' r='.9' fill='%23c9c8ff2a'/%3E%3Ccircle cx='170' cy='70' r='.9' fill='%23c9c8ff2a'/%3E%3Ccircle cx='70' cy='170' r='.9' fill='%23c9c8ff2a'/%3E%3Ccircle cx='214' cy='150' r='.9' fill='%23c9c8ff2a'/%3E%3Ccircle cx='120' cy='30' r='.9' fill='%23c9c8ff2a'/%3E%3Ccircle cx='110' cy='110' r='.9' fill='%23c9c8ff2a'/%3E%3C/svg%3E")}
 body[data-stratum="mines"] .game,.wing.mines,.d-layer.mines{--wall:var(--wall-mines)}
+/* The Fraction Forge: dark iron plates in staggered rows, riveted, with faint amber seams. Drawn
+   by design/walls/forge.mjs; rerun it to change. */
+:root{--wall-forge:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='80'%3E%3Crect width='120' height='80' fill='%23171412'/%3E%3Crect x='1.5' y='1.5' width='57' height='37' rx='2' fill='%2324201e'/%3E%3Crect x='1.5' y='1.5' width='57' height='2' fill='%23ffffff' opacity='.05'/%3E%3Crect x='1.5' y='36.5' width='57' height='2' fill='%23000' opacity='.18'/%3E%3Ccircle cx='6' cy='6' r='1.8' fill='%233a3431'/%3E%3Ccircle cx='5.5' cy='5.5' r='.7' fill='%235a524d'/%3E%3Ccircle cx='54' cy='6' r='1.8' fill='%233a3431'/%3E%3Ccircle cx='53.5' cy='5.5' r='.7' fill='%235a524d'/%3E%3Ccircle cx='6' cy='34' r='1.8' fill='%233a3431'/%3E%3Ccircle cx='5.5' cy='33.5' r='.7' fill='%235a524d'/%3E%3Ccircle cx='54' cy='34' r='1.8' fill='%233a3431'/%3E%3Ccircle cx='53.5' cy='33.5' r='.7' fill='%235a524d'/%3E%3Crect x='61.5' y='1.5' width='57' height='37' rx='2' fill='%232b2623'/%3E%3Crect x='61.5' y='1.5' width='57' height='2' fill='%23ffffff' opacity='.05'/%3E%3Crect x='61.5' y='36.5' width='57' height='2' fill='%23000' opacity='.18'/%3E%3Ccircle cx='66' cy='6' r='1.8' fill='%233a3431'/%3E%3Ccircle cx='65.5' cy='5.5' r='.7' fill='%235a524d'/%3E%3Ccircle cx='114' cy='6' r='1.8' fill='%233a3431'/%3E%3Ccircle cx='113.5' cy='5.5' r='.7' fill='%235a524d'/%3E%3Ccircle cx='66' cy='34' r='1.8' fill='%233a3431'/%3E%3Ccircle cx='65.5' cy='33.5' r='.7' fill='%235a524d'/%3E%3Ccircle cx='114' cy='34' r='1.8' fill='%233a3431'/%3E%3Ccircle cx='113.5' cy='33.5' r='.7' fill='%235a524d'/%3E%3Crect x='-28.5' y='41.5' width='57' height='37' rx='2' fill='%232b2623'/%3E%3Crect x='-28.5' y='41.5' width='57' height='2' fill='%23ffffff' opacity='.05'/%3E%3Crect x='-28.5' y='76.5' width='57' height='2' fill='%23000' opacity='.18'/%3E%3Ccircle cx='-24' cy='46' r='1.8' fill='%233a3431'/%3E%3Ccircle cx='-24.5' cy='45.5' r='.7' fill='%235a524d'/%3E%3Ccircle cx='24' cy='46' r='1.8' fill='%233a3431'/%3E%3Ccircle cx='23.5' cy='45.5' r='.7' fill='%235a524d'/%3E%3Ccircle cx='-24' cy='74' r='1.8' fill='%233a3431'/%3E%3Ccircle cx='-24.5' cy='73.5' r='.7' fill='%235a524d'/%3E%3Ccircle cx='24' cy='74' r='1.8' fill='%233a3431'/%3E%3Ccircle cx='23.5' cy='73.5' r='.7' fill='%235a524d'/%3E%3Crect x='31.5' y='41.5' width='57' height='37' rx='2' fill='%2324201e'/%3E%3Crect x='31.5' y='41.5' width='57' height='2' fill='%23ffffff' opacity='.05'/%3E%3Crect x='31.5' y='76.5' width='57' height='2' fill='%23000' opacity='.18'/%3E%3Ccircle cx='36' cy='46' r='1.8' fill='%233a3431'/%3E%3Ccircle cx='35.5' cy='45.5' r='.7' fill='%235a524d'/%3E%3Ccircle cx='84' cy='46' r='1.8' fill='%233a3431'/%3E%3Ccircle cx='83.5' cy='45.5' r='.7' fill='%235a524d'/%3E%3Ccircle cx='36' cy='74' r='1.8' fill='%233a3431'/%3E%3Ccircle cx='35.5' cy='73.5' r='.7' fill='%235a524d'/%3E%3Ccircle cx='84' cy='74' r='1.8' fill='%233a3431'/%3E%3Ccircle cx='83.5' cy='73.5' r='.7' fill='%235a524d'/%3E%3Crect x='91.5' y='41.5' width='57' height='37' rx='2' fill='%232b2623'/%3E%3Crect x='91.5' y='41.5' width='57' height='2' fill='%23ffffff' opacity='.05'/%3E%3Crect x='91.5' y='76.5' width='57' height='2' fill='%23000' opacity='.18'/%3E%3Ccircle cx='96' cy='46' r='1.8' fill='%233a3431'/%3E%3Ccircle cx='95.5' cy='45.5' r='.7' fill='%235a524d'/%3E%3Ccircle cx='144' cy='46' r='1.8' fill='%233a3431'/%3E%3Ccircle cx='143.5' cy='45.5' r='.7' fill='%235a524d'/%3E%3Ccircle cx='96' cy='74' r='1.8' fill='%233a3431'/%3E%3Ccircle cx='95.5' cy='73.5' r='.7' fill='%235a524d'/%3E%3Ccircle cx='144' cy='74' r='1.8' fill='%233a3431'/%3E%3Ccircle cx='143.5' cy='73.5' r='.7' fill='%235a524d'/%3E%3Cpath d='M0 40H120M0 0.5H120' stroke='%23d9822b' stroke-width='1' opacity='0.28'/%3E%3Cpath d='M60 0V40' stroke='%23d9822b' stroke-width='1' opacity='0.28'/%3E%3Cpath d='M30 40V80M90 40V80' stroke='%23d9822b' stroke-width='1' opacity='0.28'/%3E%3Ccircle cx='60' cy='40' r='5' fill='%23d9822b' opacity='0.098'/%3E%3C/svg%3E")}
+body[data-stratum="forge"] .game,.wing.forge,.d-layer.forge{--wall:var(--wall-forge)}
 
 /* The dive (diveUI): this stratum's depths down the side of the monster's box. It scrolls, with
    the line drawn per row so it runs the whole way, and fades at the ends. */
@@ -584,10 +630,11 @@ body[data-stratum="mines"] .game,.wing.mines,.d-layer.mines{--wall:var(--wall-mi
 
 /* Each stratum's colors, to go with its wall: panels, borders, background and keys change;
    gold and coral stay the accents. Set by data-stratum on <body> (app.js newRun). */
-body[data-stratum="cellar"],.descent.cellar,.d-layer.cellar,.title-scene{--bg:#1c1411;--panel:#2a1e19;--line:#4a3328;--btn:#3b2a22;--btn2:#4a362c;--edge:#5d4536;--muted:#c9b4a6;--dark:#120c0a}
-body[data-stratum="hall"],.descent.hall,.d-layer.hall{--bg:#141a28;--panel:#1d2537;--line:#33405c;--btn:#2a3550;--btn2:#34415f;--edge:#46557a;--muted:#b0bcd6;--dark:#0d111b}
-body[data-stratum="mines"],.descent.mines,.d-layer.mines{--bg:#111330;--panel:#191c3e;--line:#2f3468;--btn:#222652;--btn2:#2b3062;--edge:#3f4688;--muted:#b6bbe2;--dark:#090a1d}
-body[data-stratum="tower"],.descent.tower,.d-layer.tower{--bg:#151c1e;--panel:#20292c;--line:#36454a;--btn:#2c393d;--btn2:#364549;--edge:#4a5b60;--muted:#b3c0c2;--dark:#0d1213}
+body[data-stratum="cellar"],.as-pg.cellar,.descent.cellar,.d-layer.cellar,.title-scene{--bg:#1c1411;--panel:#2a1e19;--line:#4a3328;--btn:#3b2a22;--btn2:#4a362c;--edge:#5d4536;--muted:#c9b4a6;--dark:#120c0a}
+body[data-stratum="hall"],.as-pg.hall,.descent.hall,.d-layer.hall{--bg:#141a28;--panel:#1d2537;--line:#33405c;--btn:#2a3550;--btn2:#34415f;--edge:#46557a;--muted:#b0bcd6;--dark:#0d111b}
+body[data-stratum="mines"],.as-pg.mines,.descent.mines,.d-layer.mines{--bg:#111330;--panel:#191c3e;--line:#2f3468;--btn:#222652;--btn2:#2b3062;--edge:#3f4688;--muted:#b6bbe2;--dark:#090a1d}
+body[data-stratum="tower"],.as-pg.tower,.descent.tower,.d-layer.tower{--bg:#151c1e;--panel:#20292c;--line:#36454a;--btn:#2c393d;--btn2:#364549;--edge:#4a5b60;--muted:#b3c0c2;--dark:#0d1213}
+body[data-stratum="forge"],.as-pg.forge,.descent.forge,.d-layer.forge{--bg:#171312;--panel:#231d1b;--line:#3e332e;--btn:#302825;--btn2:#3b312d;--edge:#54453e;--muted:#c4b6ae;--dark:#0e0b0a}
 body{transition:background-color .4s;--hint-empty:var(--edge);--hint-line:var(--edge)}
 
 /* Spell casting: the drawing pad takes the number pad's place, the same box, glowing. It's all
@@ -653,6 +700,34 @@ button.ach-row{cursor:pointer}
 .new-pill{font:400 11px/1 Bungee,sans-serif;font-style:normal;padding:2px 6px;border-radius:8px;background:var(--coral);color:var(--dark);vertical-align:2px}
 .ach-bar{display:block;height:8px;margin:4px 0 1px;border-radius:5px;background:var(--line);overflow:hidden}
 .ach-bar i{display:block;height:100%;background:var(--gold);border-radius:5px}
+/* A stratum secret (DESIGN.md §14.5): one card that swipes through the strata like a monster's
+   looks (scroll-snap, the looks' dots, ← and →). Each page in its stratum's palette (.as-pg.<id>,
+   with the palettes below) over its wall, darkened to stay calm. */
+.ach-strata{display:grid;gap:6px;padding:10px 0 2px}
+.ach-strata .as-head{display:flex;align-items:flex-start;gap:12px;padding:0 12px}
+.ach-strata .as-count{flex:none;align-self:center;padding:2px 8px;border-radius:10px;background:var(--line);color:var(--ink);font-weight:800;font-size:12px;white-space:nowrap}
+.ach-strata.earned .as-count{background:#ffc93c33;color:var(--gold)}
+.ach-strata.secret{opacity:1}
+.ach-strata.secret .as-head{opacity:.7}
+.as-strip{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch;scrollbar-width:none;margin:0 12px;border-radius:14px}
+.as-strip::-webkit-scrollbar{display:none}
+.as-strip:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+.as-pg{flex:0 0 100%;scroll-snap-align:center;scroll-snap-stop:always;display:grid;grid-template-columns:auto 1fr;grid-template-areas:"ico name" "ico when";align-items:center;column-gap:12px;
+  min-height:72px;padding:10px 14px;border-radius:14px;border:2px solid var(--edge);color:var(--ink);text-align:left;font:inherit;
+  background:linear-gradient(90deg,#0c171cd6,#0c171ca6),var(--ach-wall,var(--panel))}
+button.as-pg{cursor:pointer}
+.as-pg.earned{border-color:var(--gold);box-shadow:inset 0 0 18px #ffc93c33}
+.as-pg.new{border-color:var(--coral)}
+.as-pg .as-name{grid-area:name;align-self:end;font:400 15px/1.15 Bungee,sans-serif;color:var(--gold);text-shadow:0 2px 0 #0c171c}
+.as-pg.secret .as-name{color:var(--ink)}
+.as-pg .as-ico{grid-area:ico;width:48px;font-size:34px;line-height:48px;text-align:center;filter:drop-shadow(0 2px 0 #0008)}
+.as-pg.secret .as-ico{width:44px;height:44px;font:400 26px/40px Bungee,sans-serif;color:var(--muted);border:2px dashed var(--muted);border-radius:50%;filter:none}
+.as-pg small{grid-area:when;align-self:start;color:var(--muted);font-weight:800;font-size:13px}
+.as-pg.earned small{color:#f3efe4}
+.as-nav{display:flex;align-items:center;justify-content:center;gap:6px}
+.as-nav .icon-btn{font-size:18px}
+.as-nav .icon-btn:disabled{opacity:.35}
+.ach-title .ach-where{display:block;margin-top:4px;font-size:.52em;line-height:1.15}
 /* An achievement's card (app.js achievementCards), drawn like its share picture (sharecard.js):
    a wall darkened behind (the stratum's, or the one being played; the grand ones purple to
    slate), a warm gold glow, a gold frame with a dark outline set in from the edge, the title in
@@ -662,10 +737,11 @@ button.ach-row{cursor:pointer}
 .ach-card{--ach-wall:var(--wall-plain);position:relative;isolation:isolate;display:grid;justify-items:center;align-content:center;text-align:center;gap:6px;
   padding:22px 18px 20px;border-radius:24px;border:2px solid #0c171c;box-shadow:0 6px 24px #0008;
   background:radial-gradient(ellipse 80% 48% at 50% 42%,#ffd84d4d,#ffd84d00 100%),linear-gradient(#0c171c9e,#0c171c9e),var(--ach-wall)}
-.ach-card[data-stratum="cellar"]{--ach-wall:var(--wall-cellar)}
-.ach-card[data-stratum="hall"]{--ach-wall:var(--wall-hall)}
-.ach-card[data-stratum="mines"]{--ach-wall:var(--wall-mines)}
-.ach-card[data-stratum="tower"]{--ach-wall:var(--wall-tower)}
+.ach-card[data-stratum="cellar"],.as-pg[data-stratum="cellar"]{--ach-wall:var(--wall-cellar)}
+.ach-card[data-stratum="hall"],.as-pg[data-stratum="hall"]{--ach-wall:var(--wall-hall)}
+.ach-card[data-stratum="mines"],.as-pg[data-stratum="mines"]{--ach-wall:var(--wall-mines)}
+.ach-card[data-stratum="forge"],.as-pg[data-stratum="forge"]{--ach-wall:var(--wall-forge)}
+.ach-card[data-stratum="tower"],.as-pg[data-stratum="tower"]{--ach-wall:var(--wall-tower)}
 .ach-card.grand{background:radial-gradient(ellipse 80% 48% at 50% 42%,#ffd84d5c,#ffd84d00 100%),linear-gradient(150deg,#3a2a5a,#12242b)}
 /* The gold frame, set in from the card's edge as on the share picture, outlined dark both sides. */
 .ach-card::before{content:"";position:absolute;inset:7px;z-index:-1;border-radius:18px;border:3px solid var(--gold);pointer-events:none;
@@ -1349,6 +1425,7 @@ body.on-scene>.top,body.on-scene>.who,body.on-scene>.game,body.on-scene>.badges{
   background:radial-gradient(ellipse 70% 60% at 50% 55%,#ffd84d55,#0c171c00 70%),linear-gradient(#0c171c88,#0c171cc0),var(--wall-cellar)}
 .legend-win[data-stratum="hall"]{background:radial-gradient(ellipse 70% 60% at 50% 55%,#ffd84d55,#0c171c00 70%),linear-gradient(#0c171c88,#0c171cc0),var(--wall-hall)}
 .legend-win[data-stratum="mines"]{background:radial-gradient(ellipse 70% 60% at 50% 55%,#ffd84d55,#0c171c00 70%),linear-gradient(#0c171c88,#0c171cc0),var(--wall-mines)}
+.legend-win[data-stratum="forge"]{background:radial-gradient(ellipse 70% 60% at 50% 55%,#ffd84d55,#0c171c00 70%),linear-gradient(#0c171c88,#0c171cc0),var(--wall-forge)}
 .legend-win[data-stratum="tower"]{background:radial-gradient(ellipse 70% 60% at 50% 55%,#ffd84d55,#0c171c00 70%),linear-gradient(#0c171c88,#0c171cc0),var(--wall-tower)}
 .legend-title{margin:0;font:400 clamp(34px,11vw,56px)/1 Bungee,sans-serif;color:var(--gold);text-shadow:0 4px 0 var(--dark),0 0 24px #ffc93caa;animation:dslam .5s cubic-bezier(.2,1.4,.4,1)}
 .legend-wing{margin:6px 0 0;font:400 16px Bungee,sans-serif;color:var(--ink)}
@@ -1492,3 +1569,19 @@ body.on-scene>.top,body.on-scene>.who,body.on-scene>.game,body.on-scene>.badges{
 .wing b .endless-mark{font-style:normal;color:var(--gold);margin-left:4px}
 /* A ones-first answer typed backwards: its digits glow gold as they swap places (flipCells). */
 .prob .stacked .scell.flipglow{color:var(--gold);text-shadow:0 0 .3em #ffc93caa;z-index:2}
+
+/* A long typed answer (100,000) gets smaller type so it fits its box on every size (ansUI). */
+.game .ans.long{font-size:clamp(20px,6.4vw,30px)}
+.game .ans.longer{font-size:clamp(16px,5vw,24px)}
+.prob .blank.long{font-size:.74em}
+.prob .blank.longer{font-size:.6em}
+/* On a phone the Super Charge badge is one compact line, and while it shows the 🔊 and 💡 stack,
+   so the row keeps its width and nothing is pushed off the screen. */
+@media (max-width: 759px){
+  .supercharge{flex-direction:row;gap:2px;padding:2px 5px}
+  .supercharge b{font-size:12px}
+  .supercharge i{font-size:11px}
+  .probrow.badged{display:grid;grid-auto-flow:column;grid-template-rows:auto auto;align-items:center}
+  .probrow.badged > .icon-btn{grid-row:span 1}
+  .probrow.badged > :not(.icon-btn){grid-row:1 / span 2}
+}

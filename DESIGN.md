@@ -101,7 +101,7 @@ The dungeon is a map of **Wings**, shown in the game as **strata**. Each Wing ha
 ### 4.1 The grade strata (plan, 2026-11-25)
 One stratum per grade, in a **straight chain**: each opens only the next. The levels inside each follow the school's teaching order. The audience stops at 5th grade, but one **stretch stratum** of 6th-grade math, Pirate Cavern, sits under the Pyramid so a 5th grader who finishes it can keep going, and the game ends there. Its content follows the school's 6th-grade guide.
 
-**Left out of fights** (they don't fit a quick typed answer): naming shapes from a list (shapes are drawn and counted instead: Polly-Gon, below), angles and symmetry, the coordinate plane, inequalities, days and seasons (the K calendar), sorting, word problems, and measurement conversions (for now). Graphs and line plots were left out too, until Graphzilla (§4.4, a prototype); word problems and the K calendar are left out for good (decided 2026-11-27: recording every prompt isn't practical). Writing numerals is practiced by spell casting.
+**Left out of fights** (they don't fit a quick typed answer): naming shapes from a list (shapes are drawn and counted instead: Polly-Gon, below), angles and symmetry, the coordinate plane, inequalities, days and seasons (the K calendar), sorting, word problems, and measurement conversions (for now). Graphs and line plots were left out too, until Graphzilla (§4.5, a prototype); word problems and the K calendar are left out for good (decided 2026-11-27: recording every prompt isn't practical). Writing numerals is practiced by spell casting.
 
 | Stratum | Grade | Levels (in order) | Monsters | Boss |
 |---|---|---|---|---|
@@ -109,7 +109,7 @@ One stratum per grade, in a **straight chain**: each opens only the next. The le
 | **The Balance Hall** (built, by grade) | 1st | Within 20 without crossing 10 → crossing 10 (make a ten, use a ten, doubles) → missing numbers and the equal sign → ± tens (34 + 20, 10 more, 10 less); counting to 120 and by 5s throughout | Quizard (?), Chompers (< = >), Equal Twins (=, balancing and true or false), Doublet (doubles), Slimelipsis visiting (to 120, by 5s), Triceraplus (three numbers, 4 + 3 + 6: find the ten), Tick-Tockus (hours and half hours), Polly-Gon visiting (sides and corners; halves and fourths) | **Judo Judy** (replaced The Unknown) |
 | **The Crystal Mines** (built) | 2nd | Two-digit ± within 100, adding and subtracting mixed → with regrouping → three-digit place value (34 tens is 340) → ± 10 and 100 within 1000 → ± within 1000 without, then with regrouping (built); adding up to four two-digit numbers and comparing three-digit numbers as strands (built); odd and even | Haberhasher (tens and ones), Trollar (counting coins with ¢ and $), Slimelipsis (skip counting by 2s, 5s and 10s; odd and even), Squaresquatch (²: arrays up to 5 × 5 as 5 + 5 + 5), Margot-Rythm (¹+: carry the one, regrouping hits double; visiting), Tick-Tockus (to 5 minutes), Polly-Gon (⬡: sides, corners and faces, equal shares, rows and columns of squares) | **The Centipede** |
 | **The Tables Tower** (built, by grade) | 3rd | ×0, 1, 2, 5, 10 and their ÷ → ×3, 4, 6 and ÷ → ×7, 8, 9 and ÷ → × tens (4 × 30) → fractions: unit fractions, on a number line, simple equivalents, comparing (1/2 ○ 1/3) → rounding to the nearest 10 and 100 → area and perimeter → ×÷ 11 and 12, kept as an extra bottom level | Timesaur (×), Divvy (÷), Starbot (*), Halfling (½: the fractions), Tick-Tockus (to the minute, and elapsed time), Polly-Gon visiting (quadrilaterals, unit fractions), Chompers visiting (comparing fractions) | **Sigma Rex** |
-| **The Fraction Forge** | 4th | ×10, 100, 1000; 2-digit × 1-digit, then 2-digit × 2-digit (area model); multi-digit ± and rounding to any place; factors (6 × □ = 48); remainders (29 ÷ 4 = 7 R1); equivalent fractions (3/4 = □/8); adding and subtracting like denominators and mixed numbers (2 1/8 + 3/8); whole × fraction; decimals in tenths and hundredths, and comparing them; area and perimeter formulas | Quarterjack (¼), Dotty (.), Boomainder (R) | **The Denominator** |
+| **The Fraction Forge** (plan, §4.4; the order from the school's 4th grade guide) | 4th | Compare and round to a million → add and subtract to a million → × 10, 100 and 1000 → × by one digit → two-digit × two-digit (area model) → ÷ by one digit → remainders (29 ÷ 4 = □ R □) → multi-step problems and factors (6 × □ = 48) → equivalent fractions (3/4 = □/8) → comparing fractions → adding and subtracting like fractions and mixed numbers (2 1/8 + 3/8), building from unit fractions → a fraction times a whole → tenths and hundredths, comparing decimals → angles and classifying shapes → area and perimeter formulas → measurement conversions; patterns from a rule as a strand | Quarterjack (¼), Dotty (.), Boomainder (R); Timesaur, Divvy, Chompers, Margot-Rythm, Haberhasher, Slimelipsis, Polly-Gon, Squaresquatch and Tick-Tockus visiting | **The Denominator** |
 | **The Parenthesis Pyramid** (new) | 5th | In the school's unit order (its guide numbers the units): **Unit 1:** ★ volume of rectangular prisms in unit cubes, V = l × w × h → **Unit 2:** place value to billions and thousandths (word, standard and expanded form) → ★ fractions as decimals (3/4 = 0.□□) → comparing decimals → powers of ten (10³ = □) → rounding decimals → adding and subtracting decimals → ★ adding and subtracting fractions and mixed numbers with unlike denominators (1/2 + 1/4 = □/4) → **Unit 3:** multiplying decimals → dividing whole numbers and decimals, two-digit divisors → ★ multiplying fractions (3 × 2/5, 1/2 × 3/4, as area) → fractions as scaling (bigger or smaller?) → dividing unit fractions and whole numbers (3 ÷ 1/2, 1/2 ÷ 4) → **Unit 4:** ★ converting measurements within a system (2 L = □ mL) → classifying shapes in a hierarchy (a square is a rectangle) → line plots (★ median) → **Unit 5:** ★ patterns from two rules → ★ order of operations ((4 + 2) × 3) → the coordinate plane, first quadrant (ordered pairs) → line graphs. ★ = the guide's priority standards | Parenthesaurus (( ), order of operations), Exponent-tron (^, a cube-bodied robot: volume, "cubed"), a fraction monster (to design) | **Shoutandcomma** (!), the mummy in the deepest chamber |
 | **Pirate Cavern** (stretch) | 6th, for 5th graders who finish the Pyramid | In the school's unit order (with its weeks): GCF and LCM, and the distributive property (12 + 20 = 4 × (3 + □)) (2 wk) → dividing fractions and mixed numbers (3/4 ÷ 1/8) (1.5) → ratios and equivalent ratios (2:3 = □:12) (1.5) → rates and unit rates, unit prices (12 for $3, so □ for $1) (2) → percent, and fractions = decimals = percents (25% of 80; 3/4 = □%) (2) → rational numbers: on a number line, comparing, opposites and absolute value (|−7| = □; −3 ○ −8) (3) → the coordinate plane in all four quadrants (reflections, distances) (2) → algebraic expressions (evaluate 3x + 2 when x = 4; like terms; distributing) (3) → one-step equations (x + 7 = 15; 4x = 28) (2) → one-step inequalities (is 5 a solution of x > 3?) (1.5) → data: mean, median, mode, range (2) → area of triangles and composite shapes, and surface area from nets (3). The guide lists all 14 of its units as priority standards | Rootling (√: GCF and LCM, with factor trees for roots), Slashbuckler (/, dividing fractions), Colon-el Ratio (:, ratios and rates), % Gremlin (percent), Negasicle (−) and Absolutely (\|x\|) (negatives), an x monster for equations (to design, Quizard's grown-up cousin) | **The Dread Pi-rate Radian** (π), the cavern's captain |
 
@@ -183,7 +183,7 @@ Every Wing also has one **rescue floor** holding a cursed digit (§6.6). The pro
 - **Shoutandcomma (!)**: a mummy whose tall wrapped body is the !, with the dot as its feet. The name is a pun on Tutankhamun. The Parenthesis Pyramid's boss (5th grade): like every boss it mixes its stratum's problems, and its boss roars are the mummy rising from its tomb. *Unwrap*: at half HP its wrappings come off and its problems turn to big numbers, powers of ten and place value (10³ = □; how many zeros in 10⁵).
 - **Slimelipsis (…)**: three little slimes in a row, in the Crystal Mines (2nd grade). *What comes next*: skip counting by 2s, 5s and 10s (2, 4, 6, □; 15, 20, □).
 - **Doublet (+ + twins)**: two plus signs who do everything together, in the Balance Hall. *Doubles*: doubles facts and doubles to subtract (8 + 8, 16 − 8).
-- **Graphzilla (📊)**: a friendly kaiju standing upright, its back plates a bar chart rising behind it (the bars take each problem's data). *Chart Stomp*: reading charts, its stratum's grade of them (§4.4).
+- **Graphzilla (📊)**: a friendly kaiju standing upright, its back plates a bar chart rising behind it (the bars take each problem's data). *Chart Stomp*: reading charts, its stratum's grade of them (§4.5).
 - **Tick-Tockus**: a clock monster whose hands are its arms. *Tell the time*: hours and half hours in the Hall, 5 minutes in the Mines, the minute in the Tower; the answer is the minutes or the hour, typed.
 - **Judo Judy (⇄)**: the Balance Hall's boss, a judo fighter whose body is a big ⇄ (turnaround arrows): the top arrow (→) is the arms in a white gi sleeve, its head an open hand reaching to grab; the bottom arrow (←) is the legs in white gi pants, its head a bare foot sweeping in a throw; the black belt between them is a fraction bar; a round head with a red headband and a top-knot sits on top. *Flip*: an addition with the smaller number first (3 + 8) is thrown so it shows 8 + 3, the commutative property as a judo throw: same answer, the same fact. Everything else comes as the Hall's mix. Beaten, Judo Judy taps out and bows. Game text always uses the name, never a pronoun.
 - **The Unknown (x)** (retired): the Hall's first boss, *Shapeshift* (switching between comparing and balancing). Replaced by Judo Judy; its art stays in `RETIRED` for the gallery.
@@ -191,7 +191,10 @@ Every Wing also has one **rescue floor** holding a cursed digit (§6.6). The pro
 - **Parenthesaurus (( ))**: a dinosaur whose ribs are brackets, a regular monster in the Parenthesis Pyramid. *Order of operations*: 3 + 4 × 2, and (3 + 4) × 2.
 - **Trollar ($)**: a bridge troll with a $ on his belly who wants coins to let you pass. *Pocket change*: follows the stratum: find each coin and know its worth in the Cellar (K, as the K guide teaches), then count collections with ¢ and $ in the Crystal Mines (2nd grade).
 - **Starbot (*)**: a robot with a star-burst head, since * is how computers write ×. *Stripes*: favors the ×5 and ×10 tables.
-- **Boomainder (R)**: a ghost who haunts the leftovers. Division with remainders (17 ÷ 5 = 3 R2), which leads into mixed numbers (3⅖).
+- **Boomainder (R)**: a ghost who haunts the leftovers. Division with remainders (17 ÷ 5 = 3 R2), which leads into mixed numbers (3⅖). In the Fraction Forge (§4.4): a sheet ghost whose body is the R.
+- **Quarterjack (¼)**: a fraction football player (a quarterback), in the Fraction Forge: fractions.
+- **Dotty (.)**: the decimal point, a round freckled creature sitting on the line, in the Fraction Forge: tenths and hundredths.
+- **The Denominator**: the Fraction Forge's boss, an iron robot that is a fraction (its head the numerator, its shoulders the bar, its body the denominator).
 - **Slashbuckler (/)**: a swashbuckler whose sword is the slash. Writes division as 24 / 6, so kids learn the other notation.
 - **Exponent-tron (^)**: a robot whose antenna is the caret and whose body is a stack of cubes, in the Parenthesis Pyramid. *Cubed*: volume of boxes (l × w × h).
 - **Squaresquatch (²)**: a bigfoot made of grid squares, in the Crystal Mines. *Arrays*: rows and columns up to 5 × 5, as repeated addition (5 + 5 + 5), which leads into area.
@@ -219,7 +222,7 @@ _Decided with the user: each stratum follows its grade's teaching order, opened 
 - **Kindergarten:** the units are "ongoing", so the order below follows what builds on what.
 - **3rd grade:** the guide lists topics without lesson numbers. Its multiplication-before-division order is confirmed by the class (2026-11-26: no division yet this year, after the × facts).
 
-Left out everywhere, as before: graphs and data, measuring length (a prototype since 2026-11-27, §4.5), word problems, and the K calendar unit (days of the week, seasons, birthdays). None of them is a quick typed number.
+Left out everywhere, as before: graphs and data, measuring length (a prototype since 2026-11-27, §4.6), word problems, and the K calendar unit (days of the week, seasons, birthdays). None of them is a quick typed number.
 
 **The problem today.** A stratum has one ladder of levels (its band, which opens the next stratum at 60%) and strands beside it (coins, time, patterns, arrays, comparing…). Every strand is open from the first day, so a 2nd grader can meet arrays and odd and even (the year's last two lessons) before two-digit adding.
 
@@ -325,7 +328,148 @@ Three-digit numbers (2nd 5–9) and four addends are done (PR #111).
 - **Tests:** every fact is in exactly one step; every path's steps open in order; no monster appears before its step; and the balance sim per path.
 - **Order:** this plan first, then the progression itself, then the remaining gap batches (shapes, comparing fractions, the dot flash, the Hall changes) slotted into their steps.
 
-### 4.4 Reading charts: Graphzilla (prototype, 2026-11-27)
+### 4.4 The Fraction Forge: 4th grade (plan 2026-11-27, M6)
+
+_The fifth stratum, under the Tables Tower. Its curriculum follows the school's 4th grade guide (revised June 2025, aligned with the Missouri Learning Standards): the guide decides what is taught, in what order and how (its models and words); the standards decide what's expected. The school is never named in the repo._
+
+**Theme.** A forge deep under the Tower, where the dungeon's numbers are hammered out: iron plates riveted together, with a faint ember glow in the seams. Fractions are the big new idea of 4th grade and they're what gets forged (a whole hammered into equal parts, parts welded back into wholes); multi-digit multiplication and division are the heavy lifting around them.
+- **Wall** (`--wall-forge`, drawn by `design/walls/forge.mjs` like `mines.mjs`): dark iron plates in staggered rows, rivets at their corners, and thin amber seams that glow faintly, toned down to stay calm behind a fight. Amber, never coral-red, so a seam never reads as a button.
+- **Palette** (`body[data-stratum="forge"]`): soot and iron, warm-tinted, darker and greyer than the Cellar's browns. Gold and coral stay the accents.
+- **The descent**: one more layer under the Tower, with the forge's wall; the fall's timing rule (a little longer for each stratum above, at most 1.5 s) already covers it.
+
+**What's taught, in the guide's order.** The guide's units: number and base ten (identify, write and compare to a million; place value; adding and subtracting fluency; multiplication; division), algebraic thinking (multi-step problems with variables and remainders; factors and multiples; patterns), fractions (equivalence and ordering; building from unit fractions; adding, subtracting and multiplying; decimals), then geometry and measurement. Its **priority standards**: 4.NBT.A.6 (multiply up to four digits by one digit, and two two-digit numbers), 4.NBT.A.7 (quotients and remainders), 4.RA.A.2 (multi-step problems with variables), 4.RA.A.3 (remainders), 4.NF.A.2 (equivalent fractions), 4.NF.A.3 (comparing fractions), 4.NF.B.6 (adding and subtracting like fractions and mixed numbers), 4.NF.B.8 (a fraction times a whole number), 4.GM.A.2 (classifying shapes by sides and angles), 4.GM.B.4 (angles and their measure), 4.GM.C.7 (the four operations with measurement) and 4.GM.C.8 (area and perimeter formulas).
+
+**The band, `fourth`** (5 hearts; fluent at 8 s, plus 1 s a digit as always: 4th grade's answers are long and worked in steps; the levels worked on paper have their own time, §5.1: about 20 s for big sums, × one digit and ÷ one digit, 30 s for two-digit × two-digit). Every answer is typed, never chosen; every set is a fixed sample with stable keys, recorded on deploy.
+
+| Level | Examples | Answer | Key |
+|---|---|---|---|
+| Compare to a million | 45,312 ○ 45,231 | < = > keys | `○45312,45231` |
+| Round to any place | 4,672 ≈ □ (nearest 100); 38,415 ≈ □ (nearest 10,000) | typed | `≈4672,100` (3rd grade's rounding, any place) |
+| Add and subtract to a million | 3,482 + 2,519; 50,206 − 18,437, stacked half the time | typed (ones first when stacked) | `+2519,3482`, `-50206,18437` |
+| × 10, 100 and 1000 | 6 × 300, 40 × 70, 8 × 2,000 | typed | `×6,300`, `×40,70` |
+| Multiply by one digit ★ | 243 × 6, 1,526 × 4 | typed | `×6,243` |
+| Two-digit × two-digit ★ | 27 × 23 | typed | `×23,27` |
+| Divide by one digit ★ | 84 ÷ 4, 936 ÷ 3, 1,248 ÷ 6 | typed | `÷936,3` |
+| Remainders ★ | 29 ÷ 4 = □ R □ | **two slots**: the quotient, then the remainder | `R29,4` |
+| Multi-step and variables ★ | 6 × 4 + 5 = □; n − 15 = 27, n = □; 4 × n = 36 | typed | `E6×4+5`, `En-15=27` |
+| Factors and multiples | 72 = 8 × □; 96 = 4 × □ | typed | `F72,8` |
+| Prime or composite | 51: prime or composite? | **two big keys, Prime and Composite** (an A or B answer, like true or false) | `P51` |
+| Equivalent fractions ★ | 3/4 = □/8, 2/5 = □/10, 4/12 = □/3, 3/10 = □/100 | the hidden numerator, stacked | `/3,4,8` (3rd grade's keys, more denominators) |
+| Compare fractions ★ | 2/3 ○ 3/4, 5/8 ○ 1/2, 3/5 ○ 6/10 | < = > keys | `○2/3,3/4` (3rd grade's) |
+| Add and subtract fractions ★ | 3/8 + 2/8 = □/8; 7/10 − 4/10; 5/8 = 1/8 + 2/8 + □/8; 2 1/8 + 3/8 = □ □/8; 3 1/3 + 2 2/3 = □ □/3 | the numerator; a mixed number in **two slots** (the whole, then the numerator) | `ƒ3/8+2/8`, `ƒ2 1/8+3/8` |
+| A fraction times a whole ★ | 3 × 2/5 = □/5 | the numerator | `ƒ3×2/5` |
+| Tenths and hundredths | 0.7 = □/10; 0.47 = □/100; 7/10 = □/100; 3/10 + 4/100 = □/100 | a whole number | `d0.47/100`, `/7,10,100`, `ƒ3/10+4/100` |
+| Compare decimals | 0.5 ○ 0.45 | < = > keys | `○0.5,0.45` |
+| Angles ★ | an angle on a protractor (to the nearest 10°); 90° = 35° + □°; 180° = 120° + □° | typed | `∠r40`, `∠a90,35` |
+| Classify shapes ★ | How many right angles? How many pairs of parallel sides? How many lines of symmetry? (a drawn shape) | typed | `∠R:trap`, `∠P:para`, `∠S:rect` |
+| Area and perimeter ★ | a 12 by 7 rectangle's area; a perimeter; Area = 48, one side 6, the other □ | typed | `▭a12,7`, `▭p15,8`, `▭s48,6`, `▭q30,6` |
+| Measurement ★ | 3 ft = □ in; 4 hr = □ min; 5 kg = □ g; 3 gal = □ qt; 2 m = □ cm; $4 = □¢ | typed | `u3ft:in` |
+| Money with a decimal point ★ (4.GM.C.7) | $3.25 + $1.40 = $□.□□; $5.00 − $3.25 (change); $7.09 = □¢ | two slots, dollars then two-digit cents | `D3.25+1.40`, `D5.00-3.25`, `D7.09:c` |
+
+**The earlier plan against the guide.** §4.1's first row for the Forge was written before the school's 4th grade guide; the guide decides the order now, and the names (the Forge, Quarterjack, Dotty, Boomainder, The Denominator) and §7's answer ideas stay:
+
+| | Earlier plan (§4.1) | The school's guide (this plan) |
+|---|---|---|
+| Starts with | × 10, 100, 1000 | Numbers to a million: compare, round, place value; then adding and subtracting fluency |
+| Multi-digit ± and rounding | after × | before ×, in the base-ten unit |
+| Multiplication | 2-digit × 1-digit, then 2-digit × 2-digit | × 10/100/1000, then 1-digit × up to **4 digits** (4.NBT.A.6), then 2-digit × 2-digit |
+| Division | only remainders | ÷ by one digit, then remainders (4.NBT.A.7), up to 4-digit dividends |
+| Factors (6 × □ = 48) | before remainders | after division, with multi-step problems and variables (4.RA.A.2, new here) |
+| Patterns | none | patterns from a rule (Slimelipsis's strand) |
+| Fractions | equivalent → add and subtract → × a whole | equivalent → **comparing** (4.NF.A.3, new here) → adding and subtracting, unit fractions → × a whole |
+| Decimals | tenths and hundredths, comparing | the same, after fractions |
+| Geometry | area and perimeter only | angles and classifying shapes (4.GM.B.4, 4.GM.A.2, new here), then area and perimeter |
+| Measurement | none | conversions and the four operations with units (4.GM.C.7, new here), last |
+| Priority standards | not marked | marked ★ from the guide |
+
+What changed: the order follows the guide's units; four priority standards the row left out are in (comparing fractions, multi-step problems, angles and shapes, measurement); division by one digit and 4-digit multiplication are added. The guide marks its units "ongoing (see pacing guide)" and the pacing guide isn't at hand, so the path follows the units' order and each unit's topics in order.
+
+**New answer types** (§7.1's plan, kept small):
+- **Two slots, generalized** (§4.1's **R** key and §7.1's stacked fraction input, as one mechanism): Tick-Tockus's hour-then-minutes and Trollar's dollars-then-cents become one mechanism, each problem naming its slots. A remainder is "29 ÷ 4 = □ R □": the R is printed between the slots, so no R key is needed, and Hit! reads "Quotient ✓", then "Remainder!" (on a keyboard, R moves on too). A mixed number is "□ □/8", "Whole ✓", then "Numerator!", the stacked fraction input with its denominator given. The voice says "Now the remainder!" and "Now the numerator!" the first two times.
+- **Long numbers**: answers up to seven digits (the pad stopped at four), shown with commas from 10,000 (45,312), as the guide writes them. A long problem stays on one line on an iPhone SE.
+- **No decimal key yet.** Every decimal problem hides a whole number (0.47 = □/100) or compares (< = >), so a kid never types a point. The **.** key waits for 5th grade, where decimals are added.
+- **No slot for the denominator.** Like denominators stay (the size of the pieces doesn't change), so the denominator is shown and the numerator typed; a mixed number types its whole and its numerator. Answers aren't simplified (the guide's 3 1/3 + 2 2/3 = 5 3/3).
+- **Damage** stays the answer: a fraction hits for its numerator (its pieces), as in the Tower; a remainder problem for its quotient; a mixed number for its numerator; an angle for its degrees. §7.2's rule (a fraction or decimal answer hits for its value as a percent) waits for the first answer typed as a fraction or a decimal, in 5th grade: every 4th grade answer is a whole number.
+
+**Hints** (the guide's models, never the answer before answering; `scripts/hints.test.mjs` runs every one):
+- × 10, 100, 1000: "6 × 3 hundreds is 18 hundreds" (the Tower's tens, a place further).
+- × by one digit, and two-digit × two-digit: the **area model** with partial products, the guide's model: 243 × 6 as 200 × 6 + 40 × 6 + 3 × 6; 27 × 23 as four boxes, 20 × 20, 20 × 3, 7 × 20 and 7 × 3. Before answering, the parts but not their total.
+- ÷ by one digit: **partial quotients** on the area model with a missing side (936 ÷ 3: 900 ÷ 3, 30 ÷ 3, 6 ÷ 3).
+- Remainders: equal groups, as many as fit, and what's left: dots ringed in groups of 4 for small numbers ("How many 4s fit in 29? What's left?"); skip counting by the divisor partway for bigger ones. Never the quotient or the remainder before answering.
+- Adding and subtracting multi-digit numbers: the **standard algorithm** (4th grade's), column by column in place-value words ("Ones: 2 + 9 = 11. Write 1, regroup 1 ten."). Before answering, the first columns worked and the rest left "?".
+- Comparing big numbers: a place-value chart to the hundred thousands, the place that decides outlined. Rounding: the number line between the two, halfway marked (the Tower's, any place).
+- Equivalent fractions: "Multiply the top and the bottom by the same number" (4 × 2 = 8, so 3 × 2 = ?), with fraction bars to twelfths.
+- Comparing fractions: fraction bars of the same whole, or "Make the bottoms the same" (2/3 = 8/12, 3/4 = 9/12), or "Compare to 1/2".
+- Adding and subtracting fractions: fraction bars, the pieces counted ("Same size pieces: add the tops. 3 + 2 = ?"); mixed numbers "Add the wholes, then the pieces".
+- A fraction times a whole: unit fractions over and over, 3 × 2/5 = 2/5 + 2/5 + 2/5.
+- Decimals: tenths and hundredths in a place-value chart, and a hundred grid (a tenth is a column of ten).
+- Measurement: the guide's **conversion table** (1 ft = 12 in, 2 ft = 24 in, 3 ft = ?), filled partway.
+- Area and perimeter: the formulas, A = l × w and P = l + w + l + w, with the rectangle labeled; a missing side as "6 × □ = 48".
+- Angles: the protractor's scale counted by tens from 0, partway; a missing angle as a part-part-whole bar (90 = 35 + ?).
+- Classifying shapes: each right angle marked with its little square, parallel sides with arrow marks, lines of symmetry dashed, counted partway.
+- Multi-step: one step at a time ("First 6 × 4 = 24. Then 24 + 5 = ?"); a variable as its inverse ("n − 15 = 27: 27 + 15 = ?").
+- Factors: the area model with a missing side, "8 × □ = 72: how many 8s make 72?".
+
+**The path** (★ priority; the guide's unit order; 5 chapters of 3 or 4 new steps, a mega boss every 5 depths opening the next):
+
+| Chapter | Step | Levels | Monsters |
+|---|---|---|---|
+| 1 | Review: × and ÷ (review) | the Tower's × and ÷ 0–10 | Timesaur, Divvy |
+| 1 | Place value to a million | Compare to a million, Round to any place | Chompers, Haberhasher |
+| 1 | Add and subtract to a million | that level | Margot-Rythm |
+| 1 | × 10, 100 and 1000 | that level | Timesaur |
+| 1 | ★ Multiply by one digit | that level | Timesaur |
+| 2 | ★ Two-digit × two-digit | that level | Timesaur |
+| 2 | ★ Divide by one digit | that level | **Boomainder**, Divvy |
+| 2 | ★ Remainders | that level | **Boomainder** |
+| 2 | ★ Multi-step problems | Multi-step and variables | Divvy, Timesaur |
+| 2 | Patterns from a rule (Slimelipsis's strand, `patF`; ongoing) | "Add 6": 3, 9, 15, 21, □ | Slimelipsis |
+| 3 | Factors, prime or composite | Factors and multiples, Prime or composite | Squaresquatch, Divvy |
+| 3 | ★ Equivalent fractions | that level | **Quarterjack** |
+| 3 | ★ Compare fractions | that level | **Quarterjack**, Chompers |
+| 3 | ★ Add and subtract fractions | that level | **Quarterjack** |
+| 4 | ★ A fraction times a whole | that level | **Quarterjack** |
+| 4 | Decimals | Tenths and hundredths, Compare decimals | **Dotty**, Chompers |
+| 4 | ★ Angles and shapes | Angles, Classify shapes | Polly-Gon |
+| 5 | ★ Area and perimeter | that level | Squaresquatch |
+| 5 | ★ Measurement | that level | Tick-Tockus |
+| 5 | ★ Money with a decimal point | that level | Trollar |
+
+- Factors and multiples, and prime or composite, aren't priority standards, so they're a step of their own after the multi-step problems.
+- Patterns from a rule is Slimelipsis's strand, so it never holds up the Legend.
+- **Band levels vs strands:** everything the guide's priority standards cover is in the band, so it counts toward the Legend (and toward opening a 5th grade stratum, once there is one); patterns, being one monster's kind, are a strand, as in the Cellar, the Hall and the Mines. Comparing and decimals stay in the band (Chompers asks the band's < = > here, as in the Tower).
+
+**Monsters.** The three planned in §4.1, drawn in the house style (solid and line, reading at 26 px, 72 px and big), each with four looks, and returning ones visiting:
+- **Quarterjack (¼)**: a fraction football player, its name a pun on quarterback. A football standing up, in a little gold helmet, its front (where the laces would be) showing each problem's fraction (as Tick-Tockus shows the time asked). Redrawn 2026-11-27: a first drawing, the ¼ itself as a player in pads and a jersey, didn't land. 🏈 *Fourth Down*: every 4th problem on its floor is a fourth down (🏈 by the problem, "Fourth down!"); a right answer on it is a touchdown and hits double. Asks only fractions (equivalent, compare, add and subtract, × a whole).
+- **Dotty (.)**: the decimal point, a round little creature sitting on the line like a period, freckled with dots, a bow on top. 🔍 *On the Dot*: answers ending in 0 hit double (7/10 = 70/100). Asks only decimals.
+- **Boomainder (R)**: the ghost who haunts the leftovers (§4's notes): a sheet ghost whose body is the R, its leg the R's kick. 👻 *Leftovers*: the remainder hits too (29 ÷ 4 = 7 R 1 hits for 7 + 1). Asks only division, with and without remainders.
+- Visiting, as in the other strata: **Timesaur** (× by one and two digits), **Divvy** (÷, multi-step), **Chompers** (comparing big numbers, fractions and decimals: the band's < = >), **Margot-Rythm** (adding and subtracting to a million: regrouping hits double, always stacked), **Haberhasher** (place value and rounding), **Slimelipsis** (patterns from a rule, its strand), **Polly-Gon** (angles and classifying shapes: it asks them as well as its shapes), **Squaresquatch** (area and perimeter: its arrays grown into rectangles) and **Tick-Tockus** (measurement conversions: hours to minutes, and the rest of the guide's tables, which it asks as well as the time).
+- No other new monsters: the plan's three cover the guide's new ideas (fractions, decimals, remainders), and geometry and measurement go to the monsters who already teach them.
+- Depth-1 floors (the fallback without a path): Timesaur, Boomainder, rescue, Quarterjack, Dotty.
+
+**The boss: The Denominator.** A great iron robot that is a fraction: its head is the numerator (a riveted box with a dark visor band), the fraction bar its wide steel shoulders and arms ending in fists, and its body the denominator box, on piston legs. 🔨 *Heavy Metal*: answers of 1000 or more hit double (the Golem's 10 and the Centipede's 100, a place further). It mixes the Forge's problems, as every boss does.
+- **Mega form: The Megaminator** (every 5th depth, powering up on the two before): chrome armor plates, glowing eyes, steam vents, a crown; second trait ⚡ *Overload*: every 4th problem is charged, a miss costs 2 hearts (Minustaur's rule).
+- **Legend form: the Golden Denominator** (named like the other Legends, "Golden …"), after mastery (every priority fact at box 4), with the mega trait too.
+
+**Place in the chain and the grade picker.**
+- The Forge comes `after` the Tower: it opens when the Tower's boss is beaten and 60% of its priority steps are learned, as every stratum does.
+- A **new** player in grade 4 or 5 starts in the Forge, with every stratum above it open (`gradeBand`: 4 and 5 are `fourth`).
+- **Players already playing** (progress is locked: no dungeon version bump, no key changes, nothing reset): a grade 4 or 5 player started in the Tower before (`start: "third"`). On load their `start` is raised to `fourth`, so the Forge opens for them, but their current stratum (`band`), depths, stars, chapters and facts don't change: they keep playing the Tower until they tap the Forge on the depth map.
+- The grade picker keeps K and 1–5.
+
+**Achievements and clothing.** *Fraction Forge* **Champion** (beat the mega boss that opens the Forge's last chapter) with the Forge's champion badge (an ember-orange rosette with a ¼ emblem), and *Fraction Forge* **Legend** with its golden Legend crown, its band in the Forge's color. Champion of Champions and Legend of Legends count every stratum, the Forge too (an earned one stays earned). Mastery (secret): **Multiplier** (every × by one digit and two digits mastered), **Remainder Ranger** (remainders), **Fraction Smith** (adding, subtracting and times a whole), **Angle Ace** (angles and shapes), **Unit Converter** (measurement).
+
+**Added after the plan (the user's call, 2026-11-27):** prime or composite, as an A or B answer like true or false (two big keys, Prime and Composite; Squaresquatch asks it, its rectangles of squares the hint), in a step with factors (not a priority standard); and money with a decimal point (★ 4.GM.C.7, the four operations with money), typed as dollars and cents in two slots around the printed point, Trollar's. With them the path is 5 chapters.
+
+**Left out, and why:**
+- **Data** (frequency tables, line plots, bar and picture graphs, mode and range): reading a graph doesn't fit a quick typed answer in a fight; maybe a picture-graph kind later.
+- **Points, lines, segments and rays; naming parallel and perpendicular lines**: naming a figure is multiple choice by nature. Counting right angles and parallel sides in a shape is in.
+- **Measuring an angle to the nearest degree**: the protractor is read to the nearest 10° on a phone-sized drawing; single degrees would need a bigger picture.
+- **Word problems, and interpreting remainders in context** ("29 kids, 4 to a car: how many cars?"): long text to read, and the voice would carry most of it. The remainder itself is in.
+- **Reading and writing numbers in word form**: reading, not math typed on a pad.
+- **Multiplicative comparison** ("3 times as many"): word problems; the facts themselves are the multiplication levels.
+
+### 4.5 Reading charts: Graphzilla (prototype, 2026-11-27)
 Graphs and data were the one strand of every grade's standards with nothing in the game. Graphzilla fills it: **one monster for charts in every grade**, as Tick-Tockus is for time and Trollar for money, with charts of dungeon things. A prototype on the review page (`review/proto/`, 📊), not in the game yet; `js/charts.js`, tested by `scripts/charts.test.mjs`.
 
 **Decisions (the user, 2026-11-27):**
@@ -361,7 +505,7 @@ Graphs and data were the one strand of every grade's standards with nothing in t
 - **Graphzilla** (`NEW_MON` in `monsters.js`, in the gallery): its drawing takes the problem, as Tick-Tockus's clock does: its back plates are the chart's bars (up to four, `platesOf`), in the things' colors. The chart itself is drawn big in the monster's box (a plate is too small to read a value from); Graphzilla stands in the nameplate with the data on its back. It reads at 26 px as a green kaiju with colored plates. Its anchors are set for looks later.
 - **Where it goes, once approved:** a strand per stratum (`chartsH`, `chartsM`, `chartsT`, then the Forge's and the Pyramid's), Graphzilla visiting each stratum's pool; data isn't one of the guides' priority standards, so it doesn't count toward a stratum's 60%.
 
-### 4.5 Measuring length (prototype, 2026-11-27)
+### 4.6 Measuring length (prototype, 2026-11-27)
 
 _On the prototype page (review/proto/, 📏), not in the game yet: the user approves first. js/length.js, `scripts/length.test.mjs`._
 
@@ -419,12 +563,13 @@ This is the most important invisible system. Today problems are random. They sho
 - Each fact (e.g. `7×8`, `13−5`, `¾+¼`) has a record: `{seen, correct, lastSeen, avgMs, box}`.
 - `box` is a Leitner box from 0 to 4. A correct answer moves the fact up one box, and a miss sends it back to box 0. Answers that are correct and fast (under the band's fluency threshold) move it up faster.
 - A fact counts as **mastered** at box 4 with an average time under the threshold (≈ 3 s for Sprout and Apprentice facts).
+- **The threshold is per level where the work is long** (2026-11-28): a level can set its own fluent time over its band's (`fluentMs` on the level). A 5-digit sum worked in columns, 1,526 × 4 or 936 ÷ 3 gets about 20 s, 27 × 23 about 30 s; the Mines' three-digit sums 10–12 s. With the band's 8 s a fluent 4th grade worker almost never counted as fluent, so nothing placed, skipped ahead or jumped two boxes.
 
 ### 5.2 Problem selection
 For each problem slot, choose:
 - **~60% learning facts** (boxes 0–2), weighted toward box 0 and the longest-unseen,
 - **~25% review facts** (box 3–4, spaced by time since `lastSeen`),
-- **~15% fresh facts** never seen in this band.
+- **~15% fresh facts** never seen in this band, **from every open step in turn** (2026-11-28): the earliest open step with new facts gets half, the others share the rest, and a step's own levels still come in order. Taking them only from the first open level left a step that had joined unasked for runs (in the Forge, × 10s held back × one digit and two-digit × two-digit, all Timesaur's).
 
 The monster's preferred operation still applies (the 70% rule from the prototype), but selection happens *within* that operation's fact pool.
 
@@ -481,6 +626,8 @@ The game should **teach first, then fade the help out** as a fact gets learned, 
 
 ### 5.5 Monster HP stays fair
 The prototype rule, HP = mean answer × `hits`, still holds. Compute it from the **actual selected problem pool** rather than uniform random, so adaptive selection doesn't produce bullet-sponge or one-shot monsters.
+
+**The Super Charge** (prototype, 2026-11-28; `js/charge.js`): HP from the pool is fair on average, but a floor whose pool spans orders of magnitude (the Fraction Forge's 4 ÷ 1 = 4 beside 45,000 ≈ 50,000) still has hits that do nothing and hits that one-shot. Rather than narrow what's asked, each problem's hit is put on the floor's scale and announced as it appears: a problem whose *level* typically answers ten or more times below the floor's typical hit is **Super Charged ×N** ("Super charge, times one hundred!"), with N a friendly number (10, 20, 50, 100 …); one whose scale is three or more times above it finds the monster **Braced ÷N** (÷2, ÷5, ÷10 …). A problem's scale is the larger of its level's typical answer and the biggest number it shows (the numbers added or taken away, rounded, compared, in a pattern; never × or ÷'s, which would hint at a product), never the problem's own answer, so the badge tells nothing the problem doesn't show. The charge comes first; crits, traits, power hits, items and Hero Moments apply on top. **A one-shot takes help** (2026-11-28, after a 5-digit sum one-shot the Forge's Margot-Rythm at depth 10: her floor is mostly that level, so the level alone didn't brace it): a regular monster at full HP keeps 1 HP after a hit with no Hero Moment or item in it ("Hangs on!"), bosses have Boss Guard, and so Insta-banish needs a Hero Moment or an item. Braces come now and then in the Cellar and the Hall (÷2, ÷5); the Mines and the Tower see the charge on a fluent player's deep floors, where earlier grades' facts sit beside three-digit work.
 
 ---
 
@@ -578,7 +725,7 @@ _Settled with the user on 2026-11-27: not a separate high-score mode. Once a str
 - **Picking a captain** (the start screen, the end card's "who leads next", a free pick) the hero says a name line in the quip voice (§8.4) in place of their plain name: "Captain Twodini, reporting for duty!", "…at your service!", "Captain Twodini leads the charge!" or "Make way for Captain Twodini!". The style rotates across all picks, whichever hero, so tapping through the heroes varies; the very first captain a player picks reports for duty. Nothing is said after it.
 
 **The mechanic: your answer summons its digits.** On a correct answer, the digits of the answer burst out of the answer box and attack together. 56 sends the 5 and the 6, and 55 sends two High Fives, who high-five each other first.
-- **Rescued digits** appear as their hero, with their own move. Their bonus comes only in a Hero Moment (§8.4): **+25% for each rescued hero in it** (a team-up can have two). Until 2026-11-25 they added 10% to every answer with their digit, which nobody noticed.
+- **Rescued digits** appear as their hero, with their own move. Their bonus comes only in a Hero Moment (§8.4): **15% of the monster's full HP for each hero in it** (30% for a team-up) (the captain too; a team-up can have two; until 2026-11-28 it was +25% of the answer per rescued hero, less than a crit's 2×). Until 2026-11-25 they added 10% to every answer with their digit, which nobody noticed.
 - **Digits not yet rescued** fly as plain chalk numerals. Seeing a bare "3" fly every time is the pull to go rescue Threasure Hunter.
 - **Captain's digit in the answer means a power hit (+50%)**, with a bigger animation. This stacks with crits. It's luck, not strategy, but it gets kids noticing the digits inside a number.
 - Party bonuses make a player stronger as they rescue more. That is intended progress, and the cap keeps it modest. Monster HP (§5.5) does not scale with the party.
@@ -672,7 +819,7 @@ Now and then, a hero in your answer gets a slow-motion close-up and a quip befor
 - **A rest after each:** none in the next 6 problems, and at most 2 per floor.
 - **A different hero next time,** when the answer has more than one hero's digit.
 - **Always on two occasions:** a rescued hero's first answer after joining the team (their debut), and the blow that finishes a boss.
-- **Damage:** each rescued hero in a moment adds +25% (§6.6); that's where rescued heroes' bonus now lives. The captain's power hit is unchanged.
+- **Damage:** each hero in a moment adds 15% of the monster's full HP (30% for a team-up) (§6.6); that's where heroes' bonus now lives. The captain's power hit is unchanged.
 
 **The animation** (about 2 s, like a video editor's jog shuttle):
 1. **Wind-down:** the hit starts at normal speed, then time drags to a quarter speed, and the room dims a little.
@@ -748,8 +895,8 @@ _What players see is Settings → 📈 **Progress**; "grown-ups' corner" is only
 - **Progress only shows things.** It changes nothing, so it needs no lock either.
 - **Destructive actions only ever touch this device.** Removing a player asks for a second tap, and the **Remove button only exists on a device with two or more players**, never for the one playing. A kid's own device, with only them on it, has no delete at all. A shared device (a parent's phone) holds players linked from the kids' devices, so if a sibling removes the other there, their own device still has them and can send them back (§15.2).
 
-**Built (2026-11-26): the Progress tab** (`js/progress.js`, pure data tested in `scripts/progress.test.mjs`; drawn by `progressHTML` in app.js). A fourth Settings tab, for the player playing, only from the start screen (left out from the pause screen, like Players). Read-only.
-- **Where they are:** each open stratum (the one being played first and open; the others fold), its path's steps in teaching order under chapter headings: the step's name, ★ for a priority step, "ongoing" and "review" tags, a bar (learned, box 3+, with mastered, box 4, brighter), "12 of 40 learned · 3 mastered · 20 seen", and a state in words: Learned ✓ (70% of its facts learned, the share that counts a skip-ahead tier as known), In progress / Up now (open), or Not started (dimmed, dashed). Above it: "Chapter 2 of 3 · next mega boss at depth 10 (deepest so far: 7)", the next stratum ("42% of 60% learned, and beat the boss", or "open"), and the Legend (locked with the share mastered, open, or beaten).
+**Built (2026-11-26): the Progress tab** (`js/progress.js`, pure data tested in `scripts/progress.test.mjs`; drawn by `progressHTML` in app.js). A fourth Settings tab, for the player playing, from the start screen and (since 2026-11-28) the pause screen, since it's read-only; Players stays out mid-run. Facts are saved as they're answered, so mid-run it includes the run so far. Read-only.
+- **Where they are:** each open stratum (the one being played first and open; the others fold), its path's steps in teaching order under chapter headings: the step's name, ★ for a priority step, "ongoing" and "review" tags, a bar (learned, box 3+, with mastered, box 4, brighter), "12 of 40 learned · 3 mastered · 20 seen", and a state in words: Learned ✓ (70% of its facts learned, the share that counts a skip-ahead tier as known), Up now (open and asked), Up next (open, not asked yet), or Not started (dimmed, dashed). Above it: "Chapter 2 of 3 · next mega boss at depth 10 (deepest so far: 7)", the next stratum ("42% of 60% learned, and beat the boss", or "open"), and the Legend (locked with the share mastered, open, or beaten).
 - **Needs work:** up to 8 most-missed facts (by misses, then miss rate; leaving out the ones since mastered) and up to 8 slow ones (learned, but their average time over `fluentTime`), as chips with "missed 4 of 6" or "6.2 s".
 - **Fact maps:** grids of addition (a + b, 0–10 by 0–10), subtraction (laid out like its addition: a row for what's taken away, a column for the answer), times (0–12 × 0–12) and division (a row for the divisor, 1–12, a column for the answer), shown when an open stratum asks them or one has been seen. Turnarounds share a key, so both cells show one record. Every other kind (teen facts like 13 + 4, two- and three-digit ±, coins and money, time, patterns, shapes, fractions, place value, comparing, …) is a list with a bar; tapping one opens its facts as chips.
 - **Colors and marks:** not seen (an empty outline), learning (striped coral, lighter with each box 0–2), learned (gold), mastered (bright gold with a ★), fluent (a dot). A legend says so. State is never color alone.
@@ -826,7 +973,7 @@ Each milestone should be playable and shippable on its own. Revised 2026-11-25 f
    
    A spell reader that handles real handwriting, trained on recorded drawings from the spell check, belongs here too.
 6. **M6 — Grade strata, 4–6.** The new answer keys (−, ., R and the stacked fraction input) and fraction, decimal and percent answers hitting for their percent (§7.2), then:
-   - the Fraction Forge;
+   - the Fraction Forge (planned 2026-11-27, §4.4: it needs only two-slot answers and longer numbers; the **.** and **−** keys and percent damage wait for the Pyramid and the Cavern);
    - the Parenthesis Pyramid (Shoutandcomma with *Unwrap*);
    - Pirate Cavern (the Dread Pi-rate Radian, π).
 7. **M7 — Replay.** Hero Moments, the slow-motion hero close-ups with quips in a second voice (§8.4; small enough to build any time). Achievements (§14, revised 2026-11-25: mostly secret, each with coins or an item, shown before the next descent, with spoken and share cards), math-locked chests with money and items (§6.3, built 2026-11-25), then clothing and Trollar's shop. (Endless Descent and Daily Dungeon moved to *Maybe later*, below.)
@@ -940,7 +1087,7 @@ _Built 2026-11-27. Fluent facts are counted from the fact records (learned and q
 _Built 2026-11-27. The ones seen in play are recorded as they happen (no event map: straight into earned); Piggy Bank and Every Quip are worked out from the state. Palindromes count from two digits (44), since a kindergartner's answers rarely reach three. Double High Five is any team hero's digit twice in the answer, not only 5s. Lucky Seven is the finishing hit of the win that frees the cursed 7. Rewards are items._
 - 🎯 **Exactly Zero**: the finishing hit leaves the monster at exactly 0 HP.
 - 🪞 **Palindrome**: an answer that reads the same backward, like 121.
-- 💯 **Triple Digits**: a single hit of 100 or more.
+- 💯 **Triple Digits**: a single hit of 100 or more, before any bonus (a crit, a power hit, a Hero Moment, a trait or the totem): the answer itself.
 - 👀 **Seeing Double**: two of the same hero at once, like 55 or 77 (it was Double High Five, which only fit 55; same id).
 - 🎆 **All Hands**: an answer of three or more digits where every digit is a rescued hero.
 - 7️⃣ **Lucky Seven**: break Sevenstein's curse with an answer containing a 7.
@@ -951,6 +1098,10 @@ _Built 2026-11-27. The ones seen in play are recorded as they happen (no event m
 - 💬 **Quip Fan**: heard all of one hero's quips (it was called Every Quip at first; same id).
 - 🎙️ **Every Quip**: heard every quip of all ten heroes, a long goal counting up on the sheet ("Heroes heard in full: 3 of 10"); one of every item.
 - 🦃 **Gobble Gobble** / ⛄ **Snow Much Fun** / 🏖️ **Summer Sums**: holiday play, reusing Sound Box's `holidaysOn` dates.
+
+**Stratum secrets** (2026-11-28, asked for by the user: "secret stratum achievements… swipeable like monster looks"): the surprises that happen in a fight (Exactly Zero, Palindrome, Triple Digits, Seeing Double, All Hands, Lucky Seven, Ice Cold Boss, Never Gave Up; not Exact Change, since Trollar's shop is on the surface) can each be earned **once in every stratum**, each paying its reward again (items only, so nothing breaks the money rules). The title carries the stratum, one form everywhere (card, end of run, share card, voice): "Exactly Zero in the Counting Cellar". Each stratum's copy has its own id (`surprise:zero@cellar`); the surprise's own id stays as the achievement as a whole, earned with its first stratum. Piggy Bank, Quip Fan, Every Quip and the holidays aren't about where you play, so they stay one each. Every one of the nine is possible in every stratum (the Cellar's counting by 10s reaches 100, so even Triple Digits and All Hands), though Lucky Seven is rare (freeing Sevenstein again needs him cursed again).
+- On the 🏆 sheet each is one card that swipes through the strata, like a monster's looks in Monsters & Heroes: a page per stratum in its own palette over its wall, earned (the date; a tap plays its card) or a "?" with the stratum's name; the looks' dots, ← and → (and the arrow keys); "3 of 5 strata"; opening on the stratum earned last.
+- Saves from before had a surprise with no stratum: on load it's placed in the player's start stratum (once, keeping its time and whether its card was seen; nothing paid again). Rewards count max(1 for the surprise, its strata), so the two never pay twice, in any order a sync merges them (record version 5).
 
 ### 14.6 Left out (they repeat something the game already shows)
 Flawless floors (the ★ for no hearts lost), monsters met and heroes rescued (Monsters & Heroes fills up), total damage (a number with no learning behind it), and Monster Watcher, Show-Off and Weekend Warrior (filler).

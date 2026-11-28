@@ -1,6 +1,6 @@
 // Monster traits: each rule, and that every monster on a Wing has its badge (but Plusquito).
 import assert from "node:assert/strict";
-import { TRAITS, traitOf, charged, prefers, hitBy, atHalf } from "../js/traits.js";
+import { TRAITS, traitOf, charged, fourthDown, prefers, hitBy, atHalf } from "../js/traits.js";
 import { MON } from "../js/monsters.js";
 import { WINGS, cursedMonster } from "../js/wings.js";
 import { choose, pool } from "../js/learn.js";
@@ -200,3 +200,35 @@ import { lookOf, LOOKS } from "../js/monsters.js";
   assert.ok(asked("Haberhasher", "second").every((f) => "+-#".includes(f.op)));
 }
 console.log("✓ new monsters' traits");
+
+// The Fraction Forge's (4th grade): Quarterjack's fourth down, Dotty's answers ending in 0,
+// Boomainder's leftovers (the remainder hits too), The Denominator's 1000 or more, and the
+// Megaminator's Overload (every 4th problem charged). What each asks.
+{
+  const { MON: M } = await import("../js/monsters.js");
+  const { bossForm: bf } = await import("../js/monsters.js");
+  const { remFact } = await import("../js/fourth.js");
+  const by = (n) => M.find((m) => m.n === n);
+  // Quarterjack's fourth down: every 4th problem on its floor, and a right answer on it (the
+  // problem's down) is a touchdown, double; any other answer, multiple of 4 or not, is plain.
+  assert.deepEqual([0, 1, 2, 3, 4, 7].map((n) => fourthDown(by("Quarterjack"), n)), [false, false, false, true, false, true]);
+  assert.ok(!fourthDown(by("Dotty"), 3) && !charged(by("Quarterjack"), 3), "only Quarterjack has downs, and they aren't charged");
+  const td = hitBy(by("Quarterjack"), 3, "3", false, { op: "/", ans: 3, down: true });
+  assert.ok(td.mult === 2 && td.bark === "touchdown" && /^Touchdown!/.test(td.note), "a touchdown hits double");
+  assert.equal(hitBy(by("Quarterjack"), 12, "12", false, { op: "ƒ", ans: 12 }).mult, 1);
+  assert.equal(hitBy({ n: "Showtime Jack", base: "Quarterjack" }, 5, "5", false, { down: true }).mult, 2, "its looks score too");
+  assert.equal(hitBy(by("Dotty"), 70, "70", false).mult, 2);
+  assert.equal(hitBy(by("Dotty"), 47, "47", false).mult, 1);
+  const r = remFact(29, 4);
+  assert.equal(Math.round(r.ans * hitBy(by("Boomainder"), r.ans, "71", false, r).mult), 8, "7 R 1 hits for 8");
+  assert.equal(hitBy(by("The Denominator"), 1200, "1200", false).mult, 2);
+  assert.equal(hitBy(by("The Denominator"), 999, "999", false).mult, 1);
+  const mm = bf(by("The Denominator"), "mega");
+  assert.ok(charged(mm, 3) && !charged(mm, 2) && !charged(by("The Denominator"), 3), "Overload: every 4th problem");
+  const q = asks(by("Quarterjack")), d = asks(by("Dotty")), b = asks(by("Boomainder"));
+  assert.ok(q("/", "/3,4,8") && q("ƒ", "ƒ3/8+2/8") && q("○", "○2/3,3/4") && !q("ƒ", "ƒ3/10+4/100") && !q("○", "○0.5,0.45") && !q("×", "×6,243"));
+  assert.ok(d("d", "d0.47/100") && d("ƒ", "ƒ3/10+4/100") && d("○", "○0.5,0.45") && !d("/", "/3,4,8"));
+  assert.ok(b("R", "R29,4") && b("÷", "÷936,3") && !b("×", "×6,243"));
+  assert.ok(asks(by("Polly-Gon"))("∠", "∠r40") && asks(by("Tick-Tockus"))("u", "u3ft:in") && !asks(by("Timesaur"))("∠", "∠r40"));
+  console.log("✓ the Forge's traits");
+}

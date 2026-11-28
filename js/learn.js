@@ -21,6 +21,10 @@ import { dollarFacts, dollarFactOf, DOLLAR_GAME_LEVELS } from "./dollars.js";
 import { shapeFacts, shapeFactOf, SHAPE_STRANDS, isDrawKey } from "./shapes.js";
 import { flashFacts, flashFactOf, FLASH_LEVELS } from "./flash.js";
 import { asks as asksOf } from "./traits.js";
+import { bigCompareFacts, roundFacts4, addSub4, times10s, timesOne, timesTwo, divideOne, remFacts, remFactOf, exprFacts, exprFact, factorFacts, factorFactOf,
+  equivFacts4, fracCompare4, fracOpFacts, fracTimesFacts, fracOpFact, decimalFacts, decFact, decCompareFacts, unitFacts, unitFact, rect4Facts,
+  primeFacts, primeFactOf, moneyFacts, moneyFact } from "./fourth.js";
+import { angleFacts, shapeAngleFacts, angleFact } from "./angles.js";
 
 // One band per grade, K to 3rd (DESIGN.md §2, §4.1), each the facts of one stratum, with its
 // levels in the order the school teaches them (Missouri Learning Standards and the school's
@@ -98,10 +102,11 @@ export const BANDS = {
       { name: "Add and subtract, regrouping", has: twoLevel("Add and regroup", "Subtract and regroup") },
       ...PV_GAME_LEVELS.map((l) => ({ name: l.name, has: (f) => f.op === "#" && l.sets.includes(f.set) })),
       { name: "10 and 100 more or less", has: twoLevel("10 more, 10 less to 1000", "100 more, 100 less") },
-      { name: "Add within 1000", has: twoLevel("Add within 1000") },
-      { name: "Add within 1000, regrouping", has: twoLevel("Add and regroup within 1000") },
-      { name: "Subtract within 1000", has: twoLevel("Subtract within 1000") },
-      { name: "Subtract within 1000, regrouping", has: twoLevel("Subtract and regroup within 1000") }
+      // Three-digit work takes longer than the band's 6 s (fluentMs: the base before the digits).
+      { name: "Add within 1000", has: twoLevel("Add within 1000"), fluentMs: 8000 },
+      { name: "Add within 1000, regrouping", has: twoLevel("Add and regroup within 1000"), fluentMs: 10000 },
+      { name: "Subtract within 1000", has: twoLevel("Subtract within 1000"), fluentMs: 8000 },
+      { name: "Subtract within 1000, regrouping", has: twoLevel("Subtract and regroup within 1000"), fluentMs: 10000 }
     ]
   },
   // The Tables Tower: × and ÷ only, in the school's order (all of × before ÷, confirmed by the
@@ -126,9 +131,30 @@ export const BANDS = {
       // Comparing fractions (3.NF.A.3d, a priority standard): Chompers visiting the Tower, and
       // Halfling, on the < = > keys. The Tower's only comparisons.
       { name: "Compare fractions", has: is("○") },
-      { name: "Area and perimeter", has: is("▭") },
+      // Perimeter adds four sides: longer than a table fact.
+      { name: "Area and perimeter", has: is("▭"), fluentMs: 8000 },
       { name: "× and ÷ 11 and 12", has: big }
     ]
+  },
+  // The Fraction Forge (DESIGN.md §4.4): 4th grade, in the order of the school's 4th grade guide:
+  // numbers to a million (comparing, rounding, adding and subtracting), multiplying and dividing,
+  // multi-step problems and factors, fractions, decimals, then geometry and measurement. Fixed
+  // samples (fourth.js, angles.js); every answer a whole number, a remainder or a mixed number in
+  // two slots. Its answers are long and worked in steps: fluent at 8 s (and a second a digit), and
+  // the levels worked on paper have their own time (fluentMs, the base before the digits): a
+  // 5-digit sum in columns, 1,526 × 4 or 936 ÷ 3 about 20 s, 27 × 23 about 30 s.
+  fourth: {
+    label: "4th grade", grade: 4, hearts: 5, fluentMs: 8000,
+    facts: () => bigCompareFacts().concat(roundFacts4(), addSub4(), times10s(), timesOne(), timesTwo(), divideOne(), remFacts(), exprFacts(), factorFacts(),
+      equivFacts4(), fracCompare4(), fracOpFacts(), fracTimesFacts(), decimalFacts(), decCompareFacts(), angleFacts(), shapeAngleFacts(), rect4Facts(), unitFacts(), primeFacts(), moneyFacts()),
+    levels: [
+      ["Compare to a million", "cmp1m"], ["Round to any place", "round4"], ["Add and subtract to a million", "addsub4", 16000],
+      ["× 10, 100 and 1000", "x10"], ["Multiply by one digit", "x1", 16000], ["Two-digit × two-digit", "x2", 27000],
+      ["Divide by one digit", "div1", 18000], ["Remainders", "rem", 18000], ["Multi-step and variables", "expr", 15000], ["Factors and multiples", "factors"], ["Prime or composite", "prime"],
+      ["Equivalent fractions", "equiv4"], ["Compare fractions", "cmpfrac"], ["Add and subtract fractions", "fracops", 12000], ["A fraction times a whole", "fractimes"],
+      ["Tenths and hundredths", "dec"], ["Compare decimals", "cmpdec"],
+      ["Angles", "angles"], ["Classify shapes", "classify"], ["Area and perimeter", "rect4", 12000], ["Measurement", "units"], ["Money with a decimal point", "money4", 15000]
+    ].map(([name, set, fluentMs]) => Object.assign({ name, has: (f) => f.set === set }, fluentMs ? { fluentMs } : {}))
   },
   // Coins in the Cellar (K): find the coin, and what each is worth.
   coinsK: { label: "Coins", strand: true, hearts: 7, fluentMs: 5000, facts: coinFacts, levels: COIN_LEVELS.slice(0, 2) },
@@ -162,7 +188,7 @@ export const BANDS = {
   // Tables Tower, which is otherwise × and ÷ only. The Mines' three-digit facts (the same keys,
   // so what was learned there counts here), adding, then subtracting.
   addT: { label: "Add and subtract to 1000", strand: true, hearts: 5, fluentMs: 6000, facts: twoDigitFacts,
-    levels: [{ name: "Add within 1000", has: twoLevel("Add within 1000", "Add and regroup within 1000") }, { name: "Subtract within 1000", has: twoLevel("Subtract within 1000", "Subtract and regroup within 1000") }] },
+    levels: [{ name: "Add within 1000", has: twoLevel("Add within 1000", "Add and regroup within 1000"), fluentMs: 10000 }, { name: "Subtract within 1000", has: twoLevel("Subtract within 1000", "Subtract and regroup within 1000"), fluentMs: 10000 }] },
   // Arrays (2nd grade): Squaresquatch in the Mines, rows of dots added as equal rows.
   arrays: { label: "Arrays", strand: true, hearts: 5, fluentMs: 6000, facts: arrayFacts, levels: ARRAY_LEVELS },
   // Telling time (Tick-Tockus, js/clock.js), a strand in each stratum it visits: hours and half
@@ -175,6 +201,8 @@ export const BANDS = {
   // and by 5s in the Hall (1st), by 2s and 100s, what's missing, and odd and even in the Mines (2nd).
   patK: { label: "Patterns: count on", strand: true, hearts: 7, fluentMs: 5000, facts: patternFacts, levels: levelsOf(PATTERN_GAME_LEVELS, "cellar", ["ones", "back", "tens"]) },
   patH: { label: "Patterns: to 120", strand: true, hearts: 7, fluentMs: 5000, facts: patternFacts, levels: levelsOf(PATTERN_GAME_LEVELS, "hall") },
+  // Patterns from a rule (4th grade, 4.RA.C): Slimelipsis visiting the Fraction Forge.
+  patF: { label: "Patterns: rules", strand: true, hearts: 5, fluentMs: 6000, facts: patternFacts, levels: levelsOf(PATTERN_GAME_LEVELS, "forge") },
   patM: { label: "Patterns: skip counting", strand: true, hearts: 5, fluentMs: 6000, facts: patternFacts, levels: levelsOf(PATTERN_GAME_LEVELS, "mines", ["hundreds", "middle", "twos", "oddeven20", "oddeven100"]) },
   // Shapes (Polly-Gon, js/shapes.js), a strand in each stratum: drawing and naming circles,
   // squares, triangles, rectangles and hexagons, their sides and corners, in the Cellar (K);
@@ -224,7 +252,8 @@ export function keyOf(f) {
 }
 // A problem for a key, turned around half the time for + and ×.
 export function factOf(key, rnd) {
-  const own = { "¢": coinFactOf, "○": balanceFactOf, "=": balanceFactOf, "□": hiddenFactOf, "M": moreFactOf, "/": fractionFactOf, "≈": roundFactOf, "▭": rectFactOf, "Σ": threeFactOf, "▦": arrayFactOf, "⌚": clockFactOf, "…": patternFactOf, "◐": oddEvenFactOf, "✓": tfFactOf, "✎": tfFactOf, "↔": lineFactOf, "#": pvFactOf, "$": dollarFactOf, "◇": shapeFactOf, "⁙": flashFactOf }[key[0]];
+  const own = { "¢": coinFactOf, "○": balanceFactOf, "=": balanceFactOf, "□": hiddenFactOf, "M": moreFactOf, "/": fractionFactOf, "≈": roundFactOf, "▭": rectFactOf, "Σ": threeFactOf, "▦": arrayFactOf, "⌚": clockFactOf, "…": patternFactOf, "◐": oddEvenFactOf, "✓": tfFactOf, "✎": tfFactOf, "↔": lineFactOf, "#": pvFactOf, "$": dollarFactOf, "◇": shapeFactOf, "⁙": flashFactOf,
+    "R": remFactOf, "E": exprFact, "F": factorFactOf, "ƒ": fracOpFact, "d": decFact, "u": unitFact, "∠": angleFact, "P": primeFactOf, "D": moneyFact }[key[0]];
   if (own) return own(key, rnd);
   const op = key[0], [a, b] = key.slice(1).split(",").map(Number);
   const flip = (op === "+" || op === "×") && (rnd || Math.random)() < 0.5;
@@ -293,11 +322,16 @@ export function openSteps(path, recs, chapter = 1, had = 0) {
 // How many chapters a path has.
 export const chaptersOf = (path) => Math.max(...path.map((s) => s.chapter));
 // A band's levels open in these steps: { levels: [indexes], review: [the ones open only as a
-// review step's, whose facts are never new] }.
+// review step's, whose facts are never new], steps: [each open step's levels in this band, in the
+// path's order, review steps left out] (choose takes new facts from every one of them in turn) }.
 export function openLevels(path, open, band) {
-  const levels = new Set(), taught = new Set();
-  for (const i of open) for (const [b, L] of path[i].parts) if (b === band) { levels.add(L); if (!path[i].review) taught.add(L); }
-  return { levels: [...levels].sort((a, b) => a - b), review: [...levels].filter((L) => !taught.has(L)) };
+  const levels = new Set(), taught = new Set(), steps = [];
+  for (const i of [...open].sort((a, b) => a - b)) {
+    const mine = path[i].parts.filter(([b]) => b === band).map(([, L]) => L);
+    for (const L of mine) { levels.add(L); if (!path[i].review) taught.add(L); }
+    if (mine.length && !path[i].review) steps.push(mine.sort((a, b) => a - b));
+  }
+  return { levels: [...levels].sort((a, b) => a - b), review: [...levels].filter((L) => !taught.has(L)), steps };
 }
 // The last level of a band the player's chapter reaches (probes and skipping ahead go no further),
 // or -1.
@@ -373,7 +407,7 @@ export function examKey(path, recs, opts = {}) {
   const all = examFacts(path).filter((f) => !used.has(f.key) && (!opts.ok || opts.ok(f)));
   const seen = all.filter((f) => recs[f.key] && recs[f.key].n), list = seen.length ? seen : all;
   if (!list.length) return null;
-  const w = (f) => { const s = struggle(recs[f.key], BANDS[f.band].fluentMs); return 0.2 + s * s; };
+  const w = (f) => { const s = struggle(recs[f.key], fluentMsOf(f.band, f.key)); return 0.2 + s * s; };
   const times = (i) => asked.filter((x) => x === i).length;
   const steps = [...new Set(list.map((f) => f.step))], least = Math.min(...steps.map(times));
   // Among the steps asked least, the one with the hardest facts more often (by its hardest).
@@ -424,7 +458,7 @@ export function endlessKey(path, bandKey, recs, opts = {}) {
   // nor its operation, when there's another), the one with the hardest facts more often; inside
   // it, weight 0.2 + struggle², times ENDLESS_DUE for a fact that's come due.
   const due = (r) => r.b >= 3 && now - r.t >= (DUE_MS[Math.min(r.b, BOX_MAX)] || 0);
-  const w = (f) => { const r = recs[f.key], s = struggle(r, BANDS[f.band].fluentMs); return (0.2 + s * s) * (due(r) ? ENDLESS_DUE : 1); };
+  const w = (f) => { const r = recs[f.key], s = struggle(r, fluentMsOf(f.band, f.key)); return (0.2 + s * s) * (due(r) ? ENDLESS_DUE : 1); };
   const stepOf = new Map(pathFacts(path).map((f) => [f.key, f]));
   const last = stepOf.get(recent[0]) || {}, times = (i) => recent.filter((k) => (stepOf.get(k) || {}).step === i).length;
   const steps = [...new Set(list.map((f) => f.step))], least = Math.min(...steps.map(times));
@@ -496,6 +530,20 @@ export const SKIP_PROBES = 5, SKIP_WINDOW = 6, MAX_LEAP = 4;
 // How long a fluent answer may take: the band's time for thinking and one tap, plus a second
 // for each extra digit to tap. A two-digit answer gets 4 s in Sprout.
 export function fluentTime(bandMs, answer) { return bandMs + 1000 * Math.max(0, String(answer).length - 1); }
+// The time for a fact's level: its own fluentMs (long written work: the Forge's 5-digit sums,
+// 27 × 23, 936 ÷ 3; the Mines' three-digit sums) or else its band's. Placement, skipping ahead, box
+// jumps and the ★ all-fast star all go by it (fluentFor).
+const levelOfKey = {};
+export function fluentMsOf(bandKey, key) {
+  const b = BANDS[bandKey];
+  if (!b) return 4000;
+  if (!b.levels.some((l) => l.fluentMs)) return b.fluentMs;
+  const m = levelOfKey[bandKey] || (levelOfKey[bandKey] = new Map(pool(bandKey).map((f) => [f.key, f.level])));
+  const L = m.get(key);
+  return (L != null && b.levels[L].fluentMs) || b.fluentMs;
+}
+// How long a fluent answer to this fact may take in this band (fluentTime with its level's time).
+export const fluentFor = (bandKey, key, answer) => fluentTime(fluentMsOf(bandKey, key), answer);
 // How hard a fact is inside its level: its answer, and a bit more for crossing ten.
 function hardness(f) {
   if (!"+-×÷".includes(f.key[0])) return f.ans;
@@ -575,15 +623,39 @@ export function skipTo(bandKey, recs, upto, now, fluentMs) {
   return n;
 }
 
+// A new fact (choose): from every open step that has new ones, in turn, not only the first, so a
+// step that's open is actually asked (the Forge's × 10s held back multiplying by one digit and
+// two-digit × two-digit for runs). The earliest step with new facts gets FIRST_STEP of them, the
+// others share the rest evenly. Inside a step its levels still come in order: the first level with
+// new ones. steps: [each open step's levels] (openLevels); without it, one step (the first level).
+export const FIRST_STEP = 0.5;
+export function freshKey(fresh, steps, rnd = Math.random) {
+  const groups = [], left = new Set(fresh);
+  for (const ls of steps || []) {
+    const g = fresh.filter((f) => left.has(f) && ls.includes(f.level));
+    g.forEach((f) => left.delete(f));
+    if (g.length) groups.push(g);
+  }
+  if (left.size) groups.push([...left]);
+  let g = groups[0];
+  if (groups.length > 1) {
+    const r = rnd();
+    g = r < FIRST_STEP ? groups[0] : groups[1 + Math.min(groups.length - 2, Math.floor((r - FIRST_STEP) / (1 - FIRST_STEP) * (groups.length - 1)))];
+  }
+  const first = Math.min(...g.map((f) => f.level)), top = g.filter((f) => f.level === first);
+  return top[Math.floor(rnd() * top.length)].key;
+}
+
 // The next fact's key. opts: { now, rnd, recent: [keys] (not again so soon), retry: key due now
 // or null, asks: a test on a fact (its operation and key) for the kinds of problem the monster asks at all
 // (traits.js asks: Chompers only compares), op: the monster's operation, preferred 70% of the
 // time when it has facts here, like: a test on a key for facts the monster asks more often (a
 // trait), also 70%; open: the band's open levels (openLevels, every level when not given);
-// review: those of them open only as reviews (never new); reviews: facts from other bands'
+// review: those of them open only as reviews (never new); steps: the open steps' levels
+// (openLevels), new facts taken from each in turn (freshKey); reviews: facts from other bands'
 // review steps (stepFacts: the Hall's review of the Cellar), asked only once seen }.
 // About 60% learning facts (seen, box 0–2, weighted to box 0 and the longest unseen), 25%
-// review facts that are due, 15% new ones (from the first open level that has any).
+// review facts that are due, 15% new ones (from each open step in turn, its levels in order).
 export function choose(bandKey, recs, opts) {
   const rnd = opts.rnd || Math.random, now = opts.now, recent = opts.recent || [];
   if (opts.retry) return opts.retry;
@@ -630,13 +702,7 @@ export function choose(bandKey, recs, opts) {
   if (!groups.length) return open[Math.floor(rnd() * open.length)].key; // all learned and not due: anything open
   let roll = rnd() * groups.reduce((s, [, w]) => s + w, 0), pick = groups[0][0];
   for (const [g, w] of groups) { if (roll < w) { pick = g; break; } roll -= w; }
-  if (pick === fresh) {
-    // From the first level that has new ones: a step's levels, and the window's steps in one band,
-    // arrive in the path's order (the variety comes from the monsters, each asking its own kind).
-    const first = Math.min(...fresh.map((f) => f.level));
-    const top = fresh.filter((f) => f.level === first);
-    return top[Math.floor(rnd() * top.length)].key;
-  }
+  if (pick === fresh) return freshKey(fresh, opts.steps, rnd);
   if (pick === learning) {
     // Weighted: box 0 counts 3, box 1 counts 2, box 2 counts 1; then the longest unseen.
     // A little randomness keeps equal facts from always coming in the same order.
@@ -673,14 +739,40 @@ export function monsterHP(m, bandKey, recs, levels) {
 }
 // The HP from the facts a monster asks (open: [{ key, op, ans }]).
 export function hpOf(m, open, bandKey) {
-  const mine = open.filter((f) => f.op === m.op);
-  // A monster that hides a number (m.blank, Quizard) is hit by the hidden number: on average,
-  // the mean of the fact's two numbers.
-  // A drawn shape hits for its strand's typical answer (drawHit).
-  const val = (f) => { if (isDrawKey(f.key)) return drawHit(bandKey); if (!m.blank || !"+-×÷".includes(f.key[0])) return f.ans; const [a, b] = f.key.slice(1).split(",").map(Number); return (a + b) / 2; };
+  return Math.max(10, Math.round(typicalHit(m, open, bandKey) * m.hits));
+}
+// What a hit on this monster is worth, typically: the average of what it asks (open), each answer
+// counted at most 3 times the middle one, its operation weighted 70%. Monster HP is this × its
+// hits; the Super Charge (charge.js) puts each problem's hit on this scale.
+export function typicalHit(m, open, bandKey) {
+  const mine = open.filter((f) => f.op === m.op), val = hitValue(m, bandKey);
   const avg = (fs) => { const v = fs.map(val).sort((a, b) => a - b), cap = Math.max(10, 3 * v[v.length >> 1]); return v.reduce((s, x) => s + Math.min(x, cap), 0) / v.length; };
-  const mean = mine.length ? avg(mine) * 0.7 + avg(open) * 0.3 : avg(open);
-  return Math.max(10, Math.round(mean * m.hits));
+  return mine.length ? avg(mine) * 0.7 + avg(open) * 0.3 : avg(open);
+}
+// What a fact hits this monster for. A monster that hides a number (m.blank, Quizard) is hit by
+// the hidden number: on average, the mean of the fact's two numbers. A drawn shape hits for its
+// strand's typical answer (drawHit).
+function hitValue(m, bandKey) {
+  return (f) => { if (isDrawKey(f.key)) return drawHit(bandKey); if (!m.blank || !"+-×÷".includes(f.key[0])) return f.ans; const [a, b] = f.key.slice(1).split(",").map(Number); return (a + b) / 2; };
+}
+// The floor's typical hit (typicalHit) from the open levels, as monsterHP counts it.
+export function floorTypical(m, bandKey, recs, levels) {
+  return typicalHit(m, asked(bandKey, recs, levels, asksOf(m)), bandKey);
+}
+// A problem's level's typical hit: the median of what its level's facts hit this monster for (a
+// strand's level: that kind's), in the band asking it (or, for a review from another band, the
+// first band that has the key). Never this problem's own answer, so the Super Charge it sets
+// (charge.js) shows nothing about the answer that the problem itself doesn't. Null for an unknown key.
+const levelMemo = {}, keyIndex = {};
+export function levelTypical(bandKey, key, m) {
+  const find = (b) => { if (!keyIndex[b]) keyIndex[b] = new Map(pool(b).map((x) => [x.key, x])); return keyIndex[b].get(key); };
+  const band = [bandKey].concat(Object.keys(BANDS)).find((b) => BANDS[b] && find(b));
+  if (!band) return null;
+  const f = find(band), blank = !!(m && m.blank), id = [band, f.level, blank].join("|");
+  if (id in levelMemo) return levelMemo[id];
+  const val = hitValue({ blank }, band), v = pool(band).filter((x) => x.level === f.level).map(val).sort((a, b) => a - b);
+  const mid = v.length % 2 ? v[v.length >> 1] : (v[v.length / 2 - 1] + v[v.length / 2]) / 2;
+  return (levelMemo[id] = Math.max(1, mid));
 }
 // The facts open to a monster: the open levels' facts of the kinds it asks (a review level's only
 // once seen: never new). With none open (a monster put on a floor for testing, ?monster=), its

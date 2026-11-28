@@ -1,4 +1,4 @@
-// Reading charts, for Graphzilla (DESIGN.md §4.4): tally charts, picture graphs, bar graphs, line
+// Reading charts, for Graphzilla (DESIGN.md §4.5): tally charts, picture graphs, bar graphs, line
 // plots, frequency tables and line graphs, each grade's kind, drawn with dungeon things (torches,
 // potions, keys…). A prototype for the review page (review/proto/); nothing in the game reads it
 // yet. No DOM: the drawings are SVG strings, so the tests run in Node.

@@ -30,7 +30,12 @@ export const TRAITS = {
   "Halfling": { icon: "½", name: "Halves", text: "Fractions on a line, equal, compared" },
   // Batch 1 of the strands (time and patterns): each asks only its own strand.
   "Tick-Tockus": { icon: "🕒", name: "Tick Tock", text: "Asks the time" },
-  "Slimelipsis": { icon: "🫧", name: "What's Next", text: "Counts in patterns" }
+  "Slimelipsis": { icon: "🫧", name: "What's Next", text: "Counts in patterns" },
+  // The Fraction Forge's (4th grade, DESIGN.md §4.4).
+  "Quarterjack": { icon: "🏈", name: "Fourth Down", text: "4th down: a touchdown hits double" },
+  "Dotty": { icon: "🔍", name: "On the Dot", text: "Answers ending in 0 hit double" },
+  "Boomainder": { icon: "👻", name: "Leftovers", text: "The remainder hits too" },
+  "The Denominator": { icon: "🔨", name: "Heavy Metal", text: "Answers of 1000 or more hit double" }
   // Polly-Gon (shapes) has none: it only squawks the shape it wants (app.js pollySquawk).
 };
 
@@ -68,13 +73,26 @@ export function asks(m) {
   // its place value.
   if (k === "Margot-Rythm") return (op) => op === "+" || op === "-";
   // Tick-Tockus tells time, Slimelipsis counts in patterns (and odd and even): their strands'.
-  if (k === "Tick-Tockus") return (op) => op === "⌚";
+  // In the Forge, Tick-Tockus asks 4th grade's measurement too (hours to minutes and the guide's
+  // other tables), and Polly-Gon its angles and classifying shapes.
+  if (k === "Tick-Tockus") return (op) => op === "⌚" || op === "u";
   if (k === "Slimelipsis") return (op) => op === "…" || op === "◐";
   // Polly-Gon: shapes, drawn and counted (its strand in each stratum).
-  if (k === "Polly-Gon") return (op) => op === "◇";
+  if (k === "Polly-Gon") return (op) => op === "◇" || op === "∠";
+  // The Fraction Forge's (4th grade): Quarterjack fractions (equivalent, compared, added and
+  // subtracted, times a whole), Dotty decimals (tenths and hundredths, 3/10 + 4/100, compared),
+  // Boomainder division, with and without remainders.
+  if (k === "Quarterjack") return (op, key) => op === "/" || (op === "ƒ" && !/\/10\+/.test(String(key))) || (op === "○" && String(key).includes("/"));
+  if (k === "Dotty") return (op, key) => op === "d" || (op === "ƒ" && /\/10\+/.test(String(key))) || (op === "○" && String(key).includes("."));
+  if (k === "Boomainder") return (op) => op === "÷" || op === "R";
   // True or false and fix it are the Equal Twins' (and Judo Judy's, who asks the Hall's whole mix).
-  if (k === "Quizard") return (op) => !"○Σ⌚…◐✓✎◇⁙".includes(op);
-  return (op) => !"○=Σ⌚…◐✓✎◇⁙".includes(op);
+  // Angles and shapes are Polly-Gon's, measurement Tick-Tockus's (the Forge's: see above).
+  // Prime or composite is Squaresquatch's (its rectangles of squares), and money with a decimal
+  // point Trollar's.
+  if (k === "Trollar") return (op) => op === "¢" || op === "$" || op === "D";
+  if (k === "Squaresquatch") return (op) => op === "▦" || op === "▭" || op === "P";
+  if (k === "Quizard") return (op) => !"○Σ⌚…◐✓✎◇⁙∠uPD".includes(op);
+  return (op) => !"○=Σ⌚…◐✓✎◇⁙∠uPD".includes(op);
 }
 
 // A monster's trait, or null. Cursed digits have Lucky Number (DESIGN.md §6.6). A boss's forms
@@ -123,7 +141,11 @@ export function dieSvg(n) {
 
 // Whether this problem is charged (Minustaur; Mega Judy's big throw, ⚡ Black Belt): every 4th on
 // the floor, a miss costing 2 hearts. n counts from 0.
-export function charged(m, n) { return (kind(m) === "Minustaur" || (kind(m) === "Judo Judy" && mega(m))) && n % 4 === 3; }
+// The Megaminator's ⚡ Overload is the same rule.
+export function charged(m, n) { return (kind(m) === "Minustaur" || ((kind(m) === "Judo Judy" || kind(m) === "The Denominator") && mega(m))) && n % 4 === 3; }
+// Whether this problem is a fourth down (Quarterjack, 🏈 Fourth Down): every 4th on the floor,
+// counted as a charge is. A right answer on it is a touchdown and hits double (hitBy, p.down).
+export function fourthDown(m, n) { return kind(m) === "Quarterjack" && n % 4 === 3; }
 
 // Facts a monster asks more often (Starbot: anything with a 5 or 10), as a test on a fact key.
 export function prefers(m) {
@@ -151,6 +173,11 @@ export function hitBy(m, ans, typed, low, p) {
   if (k === "Make-Ten Golem" && ans >= 10) return { mult: 2, note: "Ten Smash! Double damage" };
   if (k === "The Centipede" && ans >= 100) return { mult: 2, note: "Hundred Legs! Double damage" };
   if (k === "Margot-Rythm" && regroups(p)) return { mult: 2, note: "Regrouped! Double damage" };
+  if (k === "The Denominator" && ans >= 1000) return { mult: 2, note: "Heavy Metal! Double damage" };
+  if (k === "Quarterjack" && p && p.down) return { mult: 2, note: "Touchdown! Double damage", bark: "touchdown" };
+  if (k === "Dotty" && ans > 0 && ans % 10 === 0) return { mult: 2, note: "On the Dot! Double damage" };
+  // Boomainder: 29 ÷ 4 = 7 R 1 hits for 7 + 1.
+  if (k === "Boomainder" && p && p.op === "R" && p.rem > 0 && ans > 0) return { mult: (ans + p.rem) / ans, note: `Leftovers! +${p.rem}` };
   if (k === "Timesaur" && ans < 10) return { mult: 0.5, note: "Armor! Half damage" };
   if ((k === "Sigma Rex" || (k === "Make-Ten Golem" && mega(m))) && low && ans < 10) return { mult: 0.5, note: "Armor! Half damage" };
   if (k === "The Centipede" && mega(m) && low && ans < 20) return { mult: 0.5, note: "Curled up! Half damage" };

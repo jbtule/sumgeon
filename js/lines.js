@@ -22,6 +22,9 @@ import { dollarFacts } from "./dollars.js";
 import { shapeFacts, squawkLine } from "./shapes.js";
 import { flashFacts, spokenFlash } from "./flash.js";
 import { traitOf } from "./traits.js";
+import { bigCompareFacts, roundFacts4, addSub4, times10s, timesOne, timesTwo, divideOne, remFacts, exprFacts, factorFacts, equivFacts4, fracCompare4, fracOpFacts, fracTimesFacts, decimalFacts, decCompareFacts, unitFacts, rect4Facts, primeFacts, moneyFacts } from "./fourth.js";
+import { angleFacts, shapeAngleFacts } from "./angles.js";
+import { FRIENDLY, CHARGE_AT, friendly } from "./charge.js";
 import { QUIPS, FINALS, CRIT, TEAM_LINES, TEAM_NUMBERS, CAPTAIN_LINES, captainNames } from "./moments.js";
 import { fewest, ITEMS } from "./loot.js";
 import { clothesById, findable } from "./clothes.js";
@@ -50,8 +53,14 @@ export var PHRASE = {
   nowMinutes: "Now the minutes!",
   // Bills and coins (Trollar) are typed the same way: the dollars, then the cents.
   nowCents: "Now the cents!",
+  // 4th grade (the Fraction Forge) the same way: a remainder after the quotient, a mixed
+  // number's numerator after its whole (fourth.js).
+  nowRemainder: "Now the remainder!",
+  nowNumerator: "Now the numerator!",
   // True or false (the Equal Twins): the two big keys, the first couple of times.
   tfHow: "Is it true? Tap True or False!",
+  // Prime or composite (4th grade), the first couple of times.
+  primeHow: "Only one rectangle? Prime! More than one? Composite!",
   // Drawing a shape (Polly-Gon), the first few times; and when a drawing can't be read twice,
   // a counting problem takes its place.
   drawHow: "Draw the shape with your finger, then tap Cast!",
@@ -62,6 +71,11 @@ export var PHRASE = {
   hintNudge: "Stuck? Tap the light bulb!",
   // An answer typed ones first (a stacked problem, or anything on Margot-Rythm's floor), the first 3 times.
   onesFirst: "Start with the ones!",
+  // Marking regrouping on stacked problems with three-digit numbers or bigger (twodigit.js markable), the first time each.
+  carryHow: "Tap above a column to carry a one!",
+  regroupHow: "Tap a digit to regroup it!",
+  // A tap on a 0 that has nothing to give yet (regrouping goes one place at a time), the first 2 times.
+  regroupEmpty: "Nothing to regroup yet. Look to the left!",
   // Pipsqueak's dice sums: read as they appear and by 🔊 (a pre-reader can't read the dots as
   // "3 + 5"); the first 2 times, how.
   diceAll: "How many dots in all?",
@@ -74,6 +88,18 @@ export var PHRASE = {
   // Events: a charged problem (Minustaur), a miss on one, the curse's cracks, a floor cleared.
   charged: "Lightning problem!",
   chargedMiss: "Lightning! You lost two hearts.",
+  // Quarterjack's fourth down (every 4th problem on its floor): a right answer is a touchdown.
+  fourthDown: "Fourth down!",
+  // The Super Charge (charge.js): a problem whose answers run far bigger than the floor's finds
+  // the monster braced; the first Super Charge ever, why (chargeLine says each one).
+  braced: "The monster braces!",
+  // A boss's Guard held a big hit back (app.js BOSS_GUARD), the first 2 times.
+  guarded: "Guarded! A boss takes at least three hits.",
+  // A monster taken from full HP to nothing in one hit, said first with an echo (app.js).
+  // Spelled for the voice: Kokoro says "Insta-banish" in-STAH; "Inst a" is IN-stuh (espeak:
+  // ˈɪnst ə bˈænɪʃ). The pop shows "Insta-banish!" (app.js).
+  banish: "Inst a banish!",
+  chargeHow: "Small numbers get a super charge to hit big monsters!",
   crackTwo: "Two more to go!",
   heart: "You found a heart!",
   nextBoss: "Next: the boss!",
@@ -167,14 +193,19 @@ export var TRAIT_LINE = {
   "Arrays": "Count the rows! Every row is the same.",
   "Halves": "Fractions! Find the one that's the same size.",
   "Tick Tock": "What time is it? Read the clock!",
-  "What's Next": "What comes next? Count the pattern!"
+  "What's Next": "What comes next? Count the pattern!",
+  "Fourth Down": "Every fourth problem, a right answer scores a touchdown!",
+  "On the Dot": "Answers that end in zero hit double!",
+  "Leftovers": "Leftovers! The remainder hits too.",
+  "Heavy Metal": "A thousand or more hits double!"
 };
 // A mega boss's second trait (traits.js mega), said after its name the first times you meet it.
 export var TRAIT2_LINE = {
   "Make-Ten Golem": "Halfway down, this boss puts on armor!",
   "Judo Judy": "Big throws! Every fourth problem, a miss costs two hearts.",
   "The Centipede": "Halfway down, it curls up! Answers under twenty do half damage.",
-  "Sigma Rex": "Watch out! It flips your times facts. Same answer!"
+  "Sigma Rex": "Watch out! It flips your times facts. Same answer!",
+  "The Denominator": "Overload! Every fourth problem, a miss costs two hearts."
 };
 export function trait2Line(m) { return (m && m.trait2 && TRAIT2_LINE[m.base || m.n]) || null; }
 // Polly-Gon's squawk before each problem (shapes.js squawkLine): "Squawk! Polly
@@ -195,6 +226,7 @@ export var BARK = {
   level: "New level!",
   power: "Power hit!",
   double: "Double damage!",
+  touchdown: "Touchdown!",
   half: "Half damage!",
   split: "Split in two!",
   second: "Second wind!",
@@ -204,7 +236,7 @@ export function wingCleared(w) { return "You cleared " + w.name + "!"; }
 // A monster arriving as its step of the path opens (DESIGN.md §4.3), said on the floor-cleared or
 // end card: "A new monster appears in the Mines: Squaresquatch!" One per monster per stratum it
 // arrives in, in the monster's own sprite.
-var SHORT = { cellar: "the Cellar", hall: "the Hall", mines: "the Mines", tower: "the Tower" };
+var SHORT = { cellar: "the Cellar", hall: "the Hall", mines: "the Mines", tower: "the Tower", forge: "the Forge" };
 export function newMonsterLine(m, w) { return sayAs("A new monster appears in " + SHORT[w.id] + ": " + (m.base || m.n) + "!"); }
 // Every monster that arrives with a step, per stratum: [{ m, w }].
 export function arrivals() {
@@ -230,6 +262,10 @@ export function howToWriteLine(d) { return "Here's how to write " + aDigit(d) + 
 // ("depths"), so a deep run's line plays at once from memory.
 export var DEPTH_MAX_SPOKEN = 100;
 export function depthLine(d) { return "Depth " + spoken(d) + "!"; }
+// "Super charge, times one hundred!", as a Super Charged problem appears (charge.js), the first few
+// times for each N; recorded for every N a charge can be (chargeLines).
+export function chargeLine(n) { return "Super charge, times " + spoken(n) + "!"; }
+export function chargeLines() { var least = friendly(CHARGE_AT); return FRIENDLY.filter(function (n) { return n >= least; }); }
 
 // The bosses' mega and Legend forms, as monsters (monsters.js bossForm): Mega-Ten Golem, Golden
 // Golem, and so on. Drawn and recorded, not in the game yet (DESIGN.md §14.2).
@@ -348,7 +384,7 @@ export function achievementLine(a, k) { return cardLines(a)[k]; }
 
 // [{ kind, text }], each once.
 // The groups the listen check (review/listen/) plays lines in.
-export var GROUPS = ["Phrases", "Monsters & heroes", "Add & subtract", "Times & divide", "Missing numbers", "Which is more", "Coins", "Two-digit", "Three-digit", "Balance Hall", "Compare to 1000", "Three numbers", "Up to four numbers", "Arrays", "Time", "Patterns", "True or false", "Place value", "Dollars", "Number line", "Shapes", "Fractions", "Compare fractions", "Rounding", "Area & perimeter", "Dot flash", "Hero quips", "Team-ups", "Captain lines", "Boss forms", "Chests & items", "Money", "Shop", "Clothing", "Plushies", "Achievements"];
+export var GROUPS = ["Phrases", "Monsters & heroes", "Add & subtract", "Times & divide", "Missing numbers", "Which is more", "Coins", "Two-digit", "Three-digit", "Balance Hall", "Compare to 1000", "Three numbers", "Up to four numbers", "Arrays", "Time", "Patterns", "True or false", "Place value", "Dollars", "Number line", "Shapes", "Fractions", "Compare fractions", "Rounding", "Area & perimeter", "Dot flash", "Big numbers", "Big × and ÷", "Remainders", "Steps & factors", "Fraction work", "Decimals", "Angles & shapes", "Measurement", "Prime or composite", "Hero quips", "Team-ups", "Captain lines", "Boss forms", "Chests & items", "Money", "Shop", "Clothing", "Plushies", "Achievements"];
 
 // [{ kind, text, group, sprite? }], each once.
 export function spokenLines() {
@@ -384,6 +420,7 @@ export function spokenLines() {
   Object.keys(TRAIT2_LINE).forEach(function (k) { add("p", TRAIT2_LINE[k], "Phrases"); });
   Object.keys(BARK).forEach(function (k) { add("p", BARK[k], "Phrases"); });
   for (var d = 2; d <= DEPTH_MAX_SPOKEN; d++) add("p", depthLine(d), "Phrases", "depths");
+  chargeLines().forEach(function (n) { add("p", chargeLine(n), "Phrases"); });
   REVERSIBLE.forEach(function (n) { add("p", reversedLine(n), "Phrases"); });
   for (var w = 0; w <= 9; w++) add("p", howToWriteLine(w), "Phrases");
   WINGS.forEach(function (w, i) {
@@ -417,7 +454,7 @@ export function spokenLines() {
   // Time (Tick-Tockus) and patterns (Slimelipsis), asked and answered, each in a small audio
   // sprite for its strand ("time-h", "time-m", "time-t"; "pat-k", "pat-h", "pat-m"), since a
   // fight asks them one after another. A line two strands share is in the first one's.
-  var SPRITE_AT = { cellar: "k", hall: "h", mines: "m", tower: "t" };
+  var SPRITE_AT = { cellar: "k", hall: "h", mines: "m", tower: "t", forge: "f" };
   var stratumOf = function (list, set) { return list.find(function (l) { return l.id === set; }).stratum; };
   clockFacts().forEach(function (f) { var sp = "time-" + SPRITE_AT[stratumOf(TIME_LEVELS, f.set)]; add("q", spokenProblem(f), "Time", sp); add("q", spokenFact(f), "Time", sp); });
   patternFacts().forEach(function (f) { var sp = "pat-" + SPRITE_AT[stratumOf(PATTERN_GAME_LEVELS, f.set)]; add("q", spokenProblem(f), "Patterns", sp); add("q", spokenFact(f), "Patterns", sp); });
@@ -451,6 +488,14 @@ export function spokenLines() {
   sumFacts().forEach(function (f) { add("q", spokenProblem(f), "Up to four numbers"); add("q", spokenFact(f), "Up to four numbers"); });
   // The Balance Hall: "Compare three plus four and eight.", "three plus four is less than eight".
   balanceFacts().forEach(function (f) { add("q", spokenProblem(f), "Balance Hall"); add("q", spokenFact(f), "Balance Hall"); });
+  // 4th grade (the Fraction Forge, fourth.js and angles.js), asked and answered, a sum or a product
+  // either way round. Their sprites go by band and level (spriteFor), like every problem's.
+  var turn = function (f) { return (f.op === "+" || f.op === "×") && f.x !== f.y ? [f, { op: f.op, x: f.y, y: f.x, ans: f.ans }] : [f]; };
+  [[bigCompareFacts, "Big numbers"], [roundFacts4, "Rounding"], [addSub4, "Big numbers"], [times10s, "Big × and ÷"], [timesOne, "Big × and ÷"], [timesTwo, "Big × and ÷"], [divideOne, "Big × and ÷"],
+    [remFacts, "Remainders"], [exprFacts, "Steps & factors"], [factorFacts, "Steps & factors"], [equivFacts4, "Fractions"], [fracCompare4, "Compare fractions"], [fracOpFacts, "Fraction work"],
+    [fracTimesFacts, "Fraction work"], [decimalFacts, "Decimals"], [decCompareFacts, "Decimals"], [angleFacts, "Angles & shapes"], [shapeAngleFacts, "Angles & shapes"], [rect4Facts, "Area & perimeter"], [unitFacts, "Measurement"], [primeFacts, "Prime or composite"], [moneyFacts, "Money"]].forEach(function (set) {
+    set[0]().forEach(function (f) { turn(f).forEach(function (g) { add("q", spokenProblem(g), set[1]); add("q", spokenFact(g), set[1]); }); });
+  });
   // Hero Moments (moments.js): every hero's quips, and the two for the big moments.
   Object.keys(QUIPS).forEach(function (d) { QUIPS[d].forEach(function (q) { add("h", quipLine(q), "Hero quips"); }); });
   FINALS.forEach((q) => add("h", quipLine(q), "Hero quips"));
@@ -503,7 +548,7 @@ export function estSeconds(text) { return text.length / CHARS_PER_S + SPRITE_GAP
 // (runSprites).
 export var ALWAYS = ["phrases-start", "phrases-fight", "phrases-explain", "heroes", "quips", "captains", "bosses", "loot", "money", "depths", "shop", "change", "clothes", "achievements"];
 var slug = function (t) { return t.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, ""); };
-var KIND = { "+": "add", "-": "sub", "×": "mul", "÷": "div", "□": "bonds", "○": "cmp", "=": "bal", "¢": "coins", "M": "more", "/": "frac", "≈": "round", "▭": "rect", "Σ": "three", "▦": "arrays", "✓": "tf", "✎": "fix", "↔": "line", "#": "pv", "$": "dollars", "◇": "shapes", "⁙": "flash" };
+var KIND = { "+": "add", "-": "sub", "×": "mul", "÷": "div", "□": "bonds", "○": "cmp", "=": "bal", "¢": "coins", "M": "more", "/": "frac", "≈": "round", "▭": "rect", "Σ": "three", "▦": "arrays", "✓": "tf", "✎": "fix", "↔": "line", "#": "pv", "$": "dollars", "◇": "shapes", "⁙": "flash", "R": "rem", "E": "steps", "F": "factors", "ƒ": "fracops", "d": "dec", "u": "units", "∠": "angles", "P": "prime", "D": "money4" };
 var memo = null;
 function index() {
   if (memo) return memo;
@@ -518,7 +563,7 @@ function index() {
   // Phrases by when they're said: the start screen and a run's end, explanations, and the fight.
   [PHRASE.enter, PHRASE.pickGrade, PHRASE.pickHero, PHRASE.keepGoing, PHRASE.heroFirst, PHRASE.deeper, PHRASE.exitSure, PHRASE.unlocked, PHRASE.win, PHRASE.legend]
     .concat(WINGS.map(wingCleared), WINGS.map(wingOpened), WINGS.map(wingEnter)).forEach(function (t) { phrases[t] = "phrases-start"; });
-  [PHRASE.hitHow, PHRASE.cmpHow, PHRASE.cmpSame, PHRASE.spellHow, PHRASE.paused, PHRASE.tfHow, PHRASE.drawHow, PHRASE.flashHow, PHRASE.hintNudge, PHRASE.diceHow, PHRASE.onesFirst]
+  [PHRASE.hitHow, PHRASE.cmpHow, PHRASE.cmpSame, PHRASE.spellHow, PHRASE.paused, PHRASE.tfHow, PHRASE.drawHow, PHRASE.flashHow, PHRASE.hintNudge, PHRASE.diceHow, PHRASE.onesFirst, PHRASE.carryHow, PHRASE.regroupHow, PHRASE.regroupEmpty, PHRASE.chargeHow, PHRASE.guarded]
     .concat(Object.values(TRAIT_LINE), Object.values(TRAIT2_LINE), HEROES.map(function (h) { return luckyLine(h.d); }), REVERSIBLE.map(reversedLine), [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map(howToWriteLine))
     .forEach(function (t) { phrases[t] = "phrases-explain"; });
   // Problems: every line a band can say, found from its facts the way the game asks them (both

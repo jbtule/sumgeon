@@ -19,7 +19,7 @@
 
 export const DEFAULT_LEVEL = 0.5;
 export const DUCK = 0.32; // about −10 dB under a voice
-export const IDS = ["cellar", "hall", "mines", "tower"];
+export const IDS = ["cellar", "hall", "mines", "tower", "forge"];
 
 // A small seeded RNG (mulberry32): r() is in [0, 1).
 export function rng(seed) {
@@ -96,6 +96,17 @@ export const MUSIC = {
       { kind: "pulse", first: [1, 1], gap: [2.4, 2.4], state: function () { return { n: 0 }; }, make: function (r, s) { return { low: s.n++ % 8 === 7, level: between(r, 0.85, 1) }; } },
       { kind: "bell", first: [8, 14], gap: [22, 40], make: function (r) { return { note: pick(r, [55, 50, 52]), level: between(r, 0.7, 1), pan: between(r, -0.3, 0.3) }; } }
     ]
+  },
+  forge: {
+    name: "The Fraction Forge", trim: 1.2, verb: 2.8,
+    about: "A warm low roar of the fire that swells now and then (the bellows), and a far-off anvil: one to three ringing metal strikes, A and E, in a dark stone room.",
+    streams: [
+      { kind: "bellows", first: [0, 0], gap: [7, 14], make: function (r) { return { cut: between(r, 220, 700), level: between(r, 0.4, 1) }; } },
+      { kind: "anvil", first: [4, 9], gap: [14, 28], make: function (r) {
+        var n = 1 + Math.floor(r() * 3);
+        return { n: n, note: pick(r, [69, 76, 72]), step: between(r, 0.5, 0.75), pan: between(r, -0.5, 0.5), level: between(r, 0.6, 1) };
+      } }
+    ]
   }
 };
 
@@ -107,7 +118,8 @@ export var ACCENTS = {
   cellar: { drip: null, box: [9, 18] },
   hall: { echo: [5, 11] },
   mines: { chime: null },
-  tower: { bell: [9, 17] }
+  tower: { bell: [9, 17] },
+  forge: { anvil: [8, 16] }
 };
 function streamsOf(id, seed, accents) {
   var m = MUSIC[id], acc = accents ? ACCENTS[id] : null;
@@ -304,6 +316,23 @@ var SOUND = {
         var far = lowpass(ctx, 1700, 0.5); // far away: its highs gone
         far.connect(panIn(ctx, bus, ev.pan, 2.2));
         struck(ctx, far, t, hz(ev.note), 0.03 * ev.level, 7, [[0.5, 0.5, 1.2], [1, 0.9, 1], [1.19, 0.45, 0.7], [1.5, 0.3, 0.6], [2, 0.5, 0.5], [2.5, 0.18, 0.35], [3, 0.12, 0.3]]);
+      }
+    };
+  },
+  forge: function (ctx, bus, r, bed) {
+    // The fire: a low roar (two low sines and a triangle, slightly apart) through a lowpass that
+    // opens when the bellows blow.
+    var f = lowpass(ctx, 300, 0.6), g = ctx.createGain();
+    g.gain.value = 0.05;
+    osc(ctx, bed, "sine", hz(31), f); osc(ctx, bed, "triangle", hz(43), f, 4); osc(ctx, bed, "sine", hz(38), f, -5);
+    f.connect(g); g.connect(panIn(ctx, bus, 0, 0.3));
+    return {
+      bellows: function (ev, t) { f.frequency.setTargetAtTime(ev.cut, t, 1.8); g.gain.setTargetAtTime(0.05 * ev.level, t, 2); },
+      // The anvil, far off: a struck bar's inharmonic partials, its highs softened by distance.
+      anvil: function (ev, t) {
+        var far = lowpass(ctx, 2600, 0.5);
+        far.connect(panIn(ctx, bus, ev.pan, 1));
+        for (var i = 0; i < ev.n; i++) struck(ctx, far, t + i * ev.step, hz(ev.note), 0.028 * ev.level * (i === ev.n - 1 ? 1 : 0.7), 2.2, [[1, 1, 1], [2.76, 0.5, 0.5], [5.4, 0.25, 0.3], [8.9, 0.12, 0.15]]);
       }
     };
   }

@@ -4,7 +4,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { toRecord, merge, adopt, fromRecord, canon, pack, unpack, walletOf, RECORD_VERSION, SYNCED_KEYS, LOCAL_KEYS } from "../js/merge.js";
 import { OWN_KEYS, DUNGEON_VERSION } from "../js/store.js";
-import { rewardOf } from "../js/achievements.js";
+import { rewardOf, noteEvent, placeOldSurprises, freshAchievements } from "../js/achievements.js";
 import { purseOf, empty as emptyCounter, TOKENS, enough, putDown, payMany } from "../js/shop.js";
 import { busyRecord, busyPlayer, DEVICES } from "./sync-size.mjs";
 
@@ -40,10 +40,12 @@ const SHAPE = {
   1: ["best", "bestiary", "dungeon", "facts", "items", "moments", "owned", "reg", "spells", "told", "v", "wallet", "wings"],
   2: ["ach", "best", "bestiary", "dungeon", "facts", "items", "moments", "owned", "reg", "spells", "told", "v", "wallet", "wings"],
   3: ["ach", "best", "bestiary", "dungeon", "facts", "items", "moments", "owned", "reg", "spells", "told", "v", "wallet", "wings"],
-  4: ["ach", "best", "bestiary", "dungeon", "facts", "items", "moments", "owned", "plush", "reg", "spells", "told", "v", "wallet", "wings"]
+  4: ["ach", "best", "bestiary", "dungeon", "facts", "items", "moments", "owned", "plush", "reg", "spells", "told", "v", "wallet", "wings"],
+  // 5: the same keys; ach.e holds the stratum secrets' ids ("surprise:zero@cellar").
+  5: ["ach", "best", "bestiary", "dungeon", "facts", "items", "moments", "owned", "plush", "reg", "spells", "told", "v", "wallet", "wings"]
 };
 // Inside the record's achievements, by version (3 added the practice days and comebacks).
-const ACH_SHAPE = { 2: ["e", "s"], 3: ["c", "d", "e", "s"], 4: ["c", "d", "e", "s"] };
+const ACH_SHAPE = { 2: ["e", "s"], 3: ["c", "d", "e", "s"], 4: ["c", "d", "e", "s"], 5: ["c", "d", "e", "s"] };
 test("the record's shape matches its version", () => {
   const rec = busyRecord();
   assert.equal(rec.v, RECORD_VERSION);
@@ -350,6 +352,53 @@ test("surprises seen in play: earned like any achievement, paid once", () => {
     assert.ok(d.data.achievements.earned["holiday:thanksgiving"]);
     assert.deepEqual(d.data.items.have, { totem: 1, pie: 1 }, "the totem paid once");
   }
+});
+
+// The stratum secrets (achievements.js STRATUM_SURPRISES): a surprise earned in each stratum pays
+// again, but the surprise as a whole and its first stratum pay once, and an old save's surprise
+// (no stratum) placed in its start stratum on one device isn't paid again when it meets the
+// other's, in any order.
+function earnIn(dev, id, wing, t = now) {
+  const ach = dev.data.achievements = dev.data.achievements || { earned: {}, seen: [] };
+  const sid = noteEvent(ach.earned, id, t, wing);
+  if (!sid) return;
+  for (const [k, n] of Object.entries(rewardOf(sid).items)) dev.data.items.have[k] = (dev.data.items.have[k] || 0) + n;
+}
+test("stratum secrets: each stratum's copy only grows and pays once, an old save's surprise is never paid twice", () => {
+  const a = device("a"), b = device("b");
+  // An old save: Exactly Zero earned (and paid) before strata were counted, on both devices.
+  earn(a, "surprise:zero", now); earn(b, "surprise:zero", now + 5);
+  let server = sync(a, null); server = sync(b, server); server = sync(a, server);
+  for (const d of [a, b]) assert.deepEqual(d.data.items.have, { totem: 1 });
+  // a updates and places it in its start stratum (the Cellar); b hasn't loaded since.
+  const fa = freshAchievements(a.data.achievements);
+  assert.ok(placeOldSurprises(fa, "cellar"));
+  assert.ok(!placeOldSurprises(fa, "hall"), "once only");
+  a.data.achievements = fa;
+  server = sync(a, server); server = sync(b, server); server = sync(a, server);
+  for (const d of [a, b]) {
+    assert.ok(d.data.achievements.earned["surprise:zero@cellar"]);
+    assert.deepEqual(d.data.items.have, { totem: 1 }, "placing it pays nothing");
+  }
+  // Then each earns it in another stratum while apart: the Hall on a, the Mines on b, and the
+  // Hall again on b (the same stratum's copy: paid once).
+  earnIn(a, "surprise:zero", "hall", now + 100); earnIn(b, "surprise:zero", "mines", now + 200); earnIn(b, "surprise:zero", "hall", now + 300);
+  server = sync(a, server); server = sync(b, server); server = sync(a, server);
+  for (const d of [a, b]) {
+    assert.deepEqual(Object.keys(d.data.achievements.earned).filter((k) => k.startsWith("surprise:zero")).sort(), ["surprise:zero", "surprise:zero@cellar", "surprise:zero@hall", "surprise:zero@mines"]);
+    assert.equal(d.data.achievements.earned["surprise:zero@hall"], now + 100, "the earliest");
+    assert.equal(d.data.achievements.earned["surprise:zero"], now, "the whole keeps its first time");
+    assert.deepEqual(d.data.items.have, { totem: 3 }, "one totem for each stratum");
+  }
+  // A new player: the surprise and its first stratum together pay once.
+  const c = device("c");
+  earnIn(c, "surprise:palindrome", "tower");
+  assert.deepEqual(c.data.items.have, { shield: 1 });
+  const rc = sync(c, null);
+  assert.deepEqual(Object.keys(rc.ach.e).sort(), ["surprise:palindrome", "surprise:palindrome@tower"]);
+  const m1 = merge(rc, server), m2 = merge(server, rc);
+  assert.deepEqual(canon(m1), canon(m2), "in either order");
+  assert.deepEqual(canon(merge(m1, rc)), canon(m1), "and again changes nothing");
 });
 
 test("a dungeon bump: the newer record's dungeon progress wins, and old shares don't come back", () => {

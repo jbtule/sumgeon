@@ -1,5 +1,5 @@
 // Measuring length, for Rulerpillar (a prototype on the review page, review/proto/; not in the
-// game yet). No DOM: runs in Node. DESIGN.md §4.5 has the plan per grade.
+// game yet). No DOM: runs in Node. DESIGN.md §4.6 has the plan per grade.
 //
 // The object is always drawn against what measures it, so the answer comes from looking:
 // - K (K.GM.A.2): two things lined up at one end, "Is the pencil longer or shorter than the

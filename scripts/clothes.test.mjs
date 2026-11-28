@@ -34,7 +34,7 @@ for (const id of ["partyhat", "tophat", "crown", "wizardhat", "piratehat", "bean
   "glasses", "sunglasses", "starglasses", "monocle", "eyepatch", "mask", "mustache", "bowtie", "scarf", "medal", "necktie", "bandana", "cape"]) assert.ok(clothesById[id], id);
 // The special pieces, from achievements only: per stratum a champion badge and a Legend crown,
 // and the Champion of Champions cape.
-assert.deepEqual(STRATA.map((s) => s.id), ["cellar", "hall", "mines", "tower"]);
+assert.deepEqual(STRATA.map((s) => s.id), ["cellar", "hall", "mines", "tower", "forge"]);
 for (const s of STRATA) {
   const badge = clothesById["badge-" + s.id], crown = clothesById["legend-" + s.id];
   assert.ok(badge && badge.tier === "special" && badge.spot === "neck" && badge.stratum === s.id, "badge " + s.id);

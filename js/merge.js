@@ -72,7 +72,10 @@ import { rewardsOf, freshAchievements, keepDays } from "./achievements.js";
 // 2 (2026-11-27): achievements (ach), and their rewards in the wallet and items (REWARDS).
 // 3 (2026-11-27): the achievements' practice days (ach.d) and comebacks (ach.c).
 // 4 (2026-11-27): the plushies owned (plush), from the wardrobe's plush.
-export const RECORD_VERSION = 4;
+// 5 (2026-11-28): the stratum secrets: a surprise earned in each stratum ("surprise:zero@cellar")
+//    in ach.e, each paying its reward (achievements.js rewardsOf). The shape is the same, but an
+//    older app would drop those ids and pay for them once, so it waits for its update.
+export const RECORD_VERSION = 5;
 // The keys a record carries (store.js OWN_KEYS minus the device's own). The test checks every
 // saved key is here or in LOCAL_KEYS.
 export const SYNCED_KEYS = ["settings", "best", "facts", "heroes", "wings", "bestiary", "dungeon", "spells", "told", "moments", "wallet", "items", "wardrobe", "shop", "achievements"];

@@ -64,14 +64,17 @@ export const STRATA = [
   { id: "cellar", name: "Counting Cellar", c: "#b97a4a", dark: "#6e4127" },
   { id: "hall", name: "Balance Hall", c: "#5f86c8", dark: "#33497a" },
   { id: "mines", name: "Crystal Mines", c: "#9a5cff", dark: "#56309a" },
-  { id: "tower", name: "Tables Tower", c: "#97a5aa", dark: "#566468" }
+  { id: "tower", name: "Tables Tower", c: "#97a5aa", dark: "#566468" },
+  { id: "forge", name: "Fraction Forge", c: "#e0782e", dark: "#7a3a14" }
 ];
-// Each stratum's emblem on its badge: the Cellar's +, the Hall's =, a Mines crystal, the Tower's ×.
+// Each stratum's emblem on its badge: the Cellar's +, the Hall's =, a Mines crystal, the Tower's ×,
+// the Forge's ¼ (a circle in quarters, one gold).
 const EMBLEM = {
   cellar: `<path d="M0 -6 V6 M-6 0 H6" stroke="${DK}" stroke-width="7" stroke-linecap="round"/><path d="M0 -6 V6 M-6 0 H6" stroke="${W}" stroke-width="3.5" stroke-linecap="round"/>`,
   hall: `<path d="M-6 -3 H6 M-6 3.5 H6" stroke="${DK}" stroke-width="6.5" stroke-linecap="round"/><path d="M-6 -3 H6 M-6 3.5 H6" stroke="${W}" stroke-width="3" stroke-linecap="round"/>`,
   mines: `<path d="M0 -8 L6 -2 L0 8 L-6 -2Z" fill="#ff7ad9" stroke="${DK}" stroke-width="2.5" stroke-linejoin="round"/><path d="M-6 -2 H6" stroke="${DK}" stroke-width="1.5"/>`,
-  tower: `<path d="M-5 -5 L5 5 M5 -5 L-5 5" stroke="${DK}" stroke-width="7" stroke-linecap="round"/><path d="M-5 -5 L5 5 M5 -5 L-5 5" stroke="${W}" stroke-width="3.5" stroke-linecap="round"/>`
+  tower: `<path d="M-5 -5 L5 5 M5 -5 L-5 5" stroke="${DK}" stroke-width="7" stroke-linecap="round"/><path d="M-5 -5 L5 5 M5 -5 L-5 5" stroke="${W}" stroke-width="3.5" stroke-linecap="round"/>`,
+  forge: `<circle r="6.5" fill="${W}" stroke="${DK}" stroke-width="2"/><path d="M0 0 V-6.5 A6.5 6.5 0 0 1 6.5 0 Z" fill="${GOLD}"/><path d="M0 -6.5 V6.5 M-6.5 0 H6.5" stroke="${DK}" stroke-width="1.5"/>`
 };
 
 const crown = (gems, band) => {
