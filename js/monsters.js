@@ -247,6 +247,31 @@ MON.push(
   const real = NEW_MON.find((m) => m.n === "The Centipede"), i = MON.findIndex((m) => m.n === "The Centipede");
   if (real && i >= 0) { MON[i] = Object.assign({}, MON[i], { c: real.c, d: real.d, quip: real.quip }); NEW_MON.splice(NEW_MON.indexOf(real), 1); }
 }
+// Rulerpillar (NEW_MON, a prototype: measuring length, js/length.js, review/proto/): an inchworm
+// humped up mid-inch, a ruler's yellow edge and its tick marks down its back (a long tick every
+// fourth, as an inch has its quarters). Its head is the front end, down on the ground.
+{
+  const ARCH = [[28, 186], [28, 34], [150, 34], [150, 152]];
+  const bez = (t) => { const u = 1 - t, k = [u * u * u, 3 * u * u * t, 3 * u * t * t, t * t * t]; return [0, 1].map((j) => ARCH.reduce((a, p, i) => a + k[i] * p[j], 0)); };
+  // The ticks cross the ruler stripe, square to the arch.
+  const ticks = Array.from({ length: 17 }, (_, i) => {
+    const t = 0.08 + i * 0.05, [x, y] = bez(t), [x2, y2] = bez(t + 0.001), d = Math.hypot(x2 - x, y2 - y), nx = (y2 - y) / d, ny = -(x2 - x) / d, l = i % 4 === 0 ? 14 : 8;
+    return `M${f1(x - nx * 7)} ${f1(y - ny * 7)} L${f1(x - nx * (7 - l))} ${f1(y - ny * (7 - l))}`;
+  }).join(' ');
+  const arch = `M${ARCH[0].join(' ')} C${ARCH.slice(1).map((p) => p.join(' ')).join(', ')}`;
+  NEW_MON.push(
+ {n:'Rulerpillar',op:'ℓ',sym:'📏',stratum:'cellar, hall, mines, tower',c:'#8fd14f',hits:3,
+  trait:{icon:'📏',name:'Inch by Inch',text:'Asks how long things are: longer or shorter, units end to end, then a ruler'},
+  quip:'inches away, one hump at a time.',
+  d:c=>`${foot(30,194,15)}${foot(148,194,12)}${foot(178,194,12)}`
+   +line(`<path d="${arch}"/>`,c,34)
+   +`<path d="${arch}" fill="none" stroke="${GOLD}" stroke-width="13" stroke-linecap="round" opacity=".95"/>`
+   +`<path d="${ticks}" stroke="${DK}" stroke-width="2.6" stroke-linecap="round"/>`
+   +line(`<path d="M152 124 Q144 104 134 98 M172 124 Q180 104 192 100"/>`,c,4)+solid(`<circle cx="133" cy="97" r="6"/><circle cx="193" cy="99" r="6"/>`,GOLD)
+   +solid(`<circle cx="162" cy="150" r="30"/>`,c)
+   +`<ellipse cx="143" cy="156" rx="5.5" ry="3.5" fill="#ff7a6e" opacity=".7"/><ellipse cx="181" cy="156" rx="5.5" ry="3.5" fill="#ff7a6e" opacity=".7"/>`
+   +eye(151,136,9)+eye(173,136,9)+`<path d="M153 156 Q162 165 171 156" ${ds} stroke-width="3.5"/>`});
+}
 
 // Batch 1 of the strands (DESIGN.md §4.1): Tick-Tockus (time, js/clock.js) and Slimelipsis (what
 // comes next, js/patterns.js) leave NEW_MON. Tick-Tockus is the prototype's clock with its
@@ -321,7 +346,9 @@ export const ANCHOR = {
   // Margot-Rythm's mouth is the gap above its keyboard jaw; its neck is the keyboard.
   "Margot-Rythm": { eyes: [[82, 41, 10], [118, 41, 10]], mouth: [100, 129], top: [100, 1], neck: [100, 148], ground: 193 },
   // Polly-Gon (NEW_MON): its mouth is the beak, its top the head under the crest.
-  "Polly-Gon": { eyes: [[86, 40, 11], [114, 40, 11]], mouth: [100, 62], top: [100, 12], neck: [100, 80], ground: 196 }
+  "Polly-Gon": { eyes: [[86, 40, 11], [114, 40, 11]], mouth: [100, 62], top: [100, 12], neck: [100, 80], ground: 196 },
+  // Rulerpillar (NEW_MON): its head is the front end of the arch.
+  Rulerpillar: { eyes: [[151, 136, 9], [173, 136, 9]], mouth: [162, 156], top: [162, 118], neck: [162, 178], ground: 196 }
 };
 const st = `stroke="${DK}" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"`;
 // Each accessory: (anchor, color) → SVG drawn over the monster.

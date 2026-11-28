@@ -15,6 +15,7 @@ import { TF_LEVELS, tfProblem, tfSvg, tiltOf, tfHint, spokenTF, spokenTFAnswer, 
 import { LINE_LEVELS, lineProblem, lineSvg, lineHint, spokenLine, spokenLineAnswer } from "../../js/numberline.js";
 import { PV_LEVELS, pvProblem, pvSvg, pvLine, pvHint, spokenPV, spokenPVAnswer } from "../../js/placevalue.js";
 import { DOLLAR_LEVELS, dollarProblem, dollarSvg, dollarHint, spokenDollars, sayMoney } from "../../js/dollars.js";
+import { LENGTH_LEVELS, lengthProblem, lengthFactOf, lengthSvg, lengthLine, lengthHint, lengthRight, spokenLength, spokenLengthAnswer, keysOf, KEYS, UNITS } from "../../js/length.js";
 import { SHAPE_LEVELS, shapeLevel, isDraw, countProblem, countSvg, countHint, spokenCount, spokenDraw, readShape, judgeShape, cleanShape, article, CORNERS, COUNT_LINE } from "../../js/shapes.js";
 
 const $ = (id) => document.getElementById(id);
@@ -123,8 +124,37 @@ const TYPES = {
     hint: dollarHint, spoken: spokenDollars,
     missed: (p) => (p.kind === "bills" ? sayMoney(p.ans) : sayMoney(p.ans[0], p.ans[1])),
     answer: (p) => (p.kind === "bills" ? `$${p.ans}` : `$${p.ans[0]} and ${p.ans[1]}¢`)
+  },
+  length: {
+    // Measuring length (js/length.js), with Rulerpillar: the thing drawn against what measures it.
+    // Longer or shorter, yes or no, more or fewer: two big keys (as true or false); the rest typed.
+    // To the half or quarter inch: two slots, the inches, then the part ("3 □/4 in").
+    icon: "📏", label: "Length", mon: "Rulerpillar", levels: LENGTH_LEVELS,
+    problem: (lv, rnd) => lengthProblem(lv.id, rnd),
+    picture: (p, st) => lengthSvg(p, { hint: !!st.hint, worked: !!(st.hint && st.worked) }),
+    line: (p, slot) => {
+      if (p.kind === "frac") return `${slot(0)} <span class="frac"><span>${slot(1)}</span><span>${p.den}</span></span> <small>in</small>`;
+      const words = !!keysOf(p) || p.kind === "units";
+      let i = 0;
+      return lengthLine(p).map((x) => (x === null ? slot(i++) : words ? esc(x) : `<small>${esc(x.trim())}</small>`)).join(words ? "" : " ");
+    },
+    words: (p) => !!keysOf(p) || p.kind === "units",
+    pad: (p) => (keysOf(p) ? (S.done ? "tfnext" : "ab:" + keysOf(p).map((k) => k[0]).join("")) : "num"),
+    keys: (p) => keysOf(p),
+    // An estimate within 1 inch (2 centimeters) is right, and shows what was typed.
+    right: (p, typed) => lengthRight(p, typed),
+    shown: (p, i) => (keysOf(p) ? keyWord(p.ans) : p.kind === "estimate" && S.done === "right" ? S.typed[0] : [].concat(p.ans)[i]),
+    typedShown: (v) => keyWord(v),
+    nextLabel: "Inches ✓", lastLabel: "Hit!", nextSay: "Now the part of an inch!",
+    hint: lengthHint, spoken: spokenLength, missed: spokenLengthAnswer,
+    answer: (p) => (p.kind === "order" ? `${p.ans === "Y" ? "" : "not "}the ${p.most}` : p.kind === "gaps" ? `${p.ans === "Y" ? "" : "not "}measured right` : keysOf(p) ? keyWord(p.ans).toLowerCase() : p.kind === "frac" ? `${p.whole} ${p.num}/${p.den} in` : p.kind === "estimate" ? `about ${p.ans} ${UNITS[p.unit].ab}`
+      : p.kind === "units" ? `${p.ans} ${UNITS[p.unit].many}` : `${p.ans} ${UNITS[p.unit].ab}`)
   }
 };
+// The two keys' words (L is Longer).
+const keyWord = (v) => (Object.values(KEYS).flat().find((k) => k[0] === v) || [v, v])[1];
+// The keys' pictures: a long bar and a short one, a tick and a cross, many little bars and one.
+const KEY_ICON = { L: "▬▬▬", S: "▬", Y: "✓", N: "✗", M: "▮▮▮▮", F: "▮" };
 const cap = (t) => t[0].toUpperCase() + t.slice(1);
 
 /* ---------- what's picked ---------- */
@@ -237,7 +267,12 @@ function padUI(mode) {
   if (pad.dataset.mode === mode) return;
   pad.dataset.mode = mode;
   pad.classList.toggle("spell", mode === "spell");
-  pad.classList.toggle("tfpad", mode === "tf" || mode === "tfnext");
+  pad.classList.toggle("tfpad", mode === "tf" || mode === "tfnext" || mode.startsWith("ab:"));
+  // Two keys of the kind's own (Longer and Shorter, Yes and No, More and Fewer), like True and False.
+  if (mode.startsWith("ab:")) {
+    pad.innerHTML = T().keys(S.p).map(([k, word]) => `<button type="button" data-k="${k}" class="tfk ${k === "Y" ? "yes" : k === "N" ? "no" : "ab"}" aria-label="${word}"><b>${KEY_ICON[k]}</b>${word}</button>`).join("");
+    return;
+  }
   // True or false: two big keys filling the pad, so nothing moves; after the answer, one gold
   // Next › in their place.
   if (mode === "tf") {
@@ -328,6 +363,8 @@ function next(speak) {
   // ?frac=5/8 puts the number line's dot there first.
   const fr = !S && view.type === "numberline" && p.kind === "where" && /^(\d+)\/(\d+)$/.exec(q.get("frac") || "");
   if (fr) { p.n = Number(fr[1]); p.d = Number(fr[2]); p.ans = p.n; }
+  // ?fact=<key> (URL-encoded, e.g. a length fact) puts that fact first.
+  if (!S && view.type === "length" && q.get("fact") && lengthFactOf(q.get("fact"))) p = lengthFactOf(q.get("fact"));
   S = { p, typed: Array.from({ length: [].concat(p.ans).length }, () => ""), at: 0, done: null, hint: null, note: "" };
   strokes = []; drawing = null; overlay = null;
   // Fix it: the swap, after a second (at once with reduced motion, or once anything's typed).
@@ -347,10 +384,10 @@ function press(k) {
     else if (k === "go" && strokes.length) cast();
     return;
   }
-  const cur = S.typed[S.at], tf = $("pad").dataset.mode === "tf";
+  const cur = S.typed[S.at], tf = $("pad").dataset.mode === "tf" || $("pad").dataset.mode.startsWith("ab:");
   // True or false: a tap answers at once, after a brief press on the key (no Hit!, no delete).
   if (tf) {
-    if (k !== "T" && k !== "F") return;
+    if (!$("pad").querySelector(`[data-k="${k}"]`)) return;
     S.typed[S.at] = k;
     const key = $("pad").querySelector(`[data-k="${k}"]`);
     if (key) key.classList.add("pressed");
@@ -381,7 +418,8 @@ function answer() {
   // Where the scale was, so it can swing from there (true or false: tipped only if the hint was open).
   if (p.kind === "tf") S.fromTilt = S.hint ? tiltOf(p.eq) : 0;
   if (p.kind === "fix") S.fromTilt = tiltOf(p.eq);
-  if (ans.every((a, i) => (typeof a === "string" ? S.typed[i] === a : Number(S.typed[i]) === a))) { S.done = "right"; S.hint = null; }
+  const t = T(), right = t.right ? t.right(p, S.typed) : ans.every((a, i) => (typeof a === "string" ? S.typed[i] === a : Number(S.typed[i]) === a));
+  if (right) { S.done = "right"; S.hint = null; }
   else {
     S.done = "wrong"; S.hint = "worked"; say("Oops! " + T().missed(p));
     // Fix it, missed: first the scale weighs the typed number, then the right one goes in.
@@ -404,7 +442,8 @@ document.addEventListener("keydown", (e) => {
   else if (e.key === "Enter") { e.preventDefault(); press("go"); }
   else if (e.key === "?") toggleHint();
   // True or false on a keyboard: T and F.
-  else if (/^[tf]$/i.test(e.key)) press(e.key.toUpperCase());
+  // Length's two keys: L and S, Y and N, M and F.
+  else if (/^[tflsynm]$/i.test(e.key)) press(e.key.toUpperCase());
 });
 function toggleHint() {
   if (S.done) return;
