@@ -17,7 +17,7 @@ for (const m of MON) {
 }
 // The new monsters, drawn but not in the game yet: the same checks, numbers that are numbers,
 // and anchors so looks can dress them later.
-const KIT = ["crown", "bow", "lashes", "blush", "mustache", "glasses", "monocle", "sunglasses", "eyepatch", "bandana", "tophat", "nightcap", "headband", "lids", "spiral", "sparkles", "scarf", "bowtie", "medal", "eyeblack", "mini"];
+const KIT = ["crown", "bow", "lashes", "blush", "mustache", "glasses", "monocle", "sunglasses", "eyepatch", "bandana", "tophat", "nightcap", "headband", "lids", "spiral", "sparkles", "scarf", "bowtie", "medal", "eyeblack", "visor", "antenna", "skyline", "mini"];
 assert.equal(new Set([...MON, ...NEW_MON].map((m) => m.n)).size, MON.length + NEW_MON.length, "new monsters have their own names");
 for (const m of NEW_MON) {
   assert.ok(m.sym && m.stratum && m.trait && m.trait.icon && m.trait.name && m.trait.text, m.n);
@@ -48,9 +48,9 @@ assert.deepEqual(NEW_MON.map((m) => m.n), [], "every monster drawn is in the gam
 for (const n of SIX) {
   const m = MON.find((x) => x.n === n);
   assert.ok(m && m.sym && m.stratum && !m.trait && !m.boss, `${n} is in the game, its trait in traits.js`);
-  assert.equal(LOOKS[n].length, 4, `${n} has four looks`);
+  assert.equal(LOOKS[n].length, n === "Graphzilla" ? 5 : 4, `${n} has four looks (Graphzilla, the chart kaiju, five)`);
   for (const [name, kit, who] of LOOKS[n]) {
-    assert.ok(name && kit.length && kit.every((k) => KIT.includes(k)) && [undefined, "he", "she"].includes(who), `${n}: ${name}`);
+    assert.ok(name && kit.length && kit.every((k) => KIT.includes(k) || k === "metal") && [undefined, "he", "she"].includes(who), `${n}: ${name}`);
     const s = svg({ ...m, n: name, base: n, look: kit });
     assert.ok(!/NaN|undefined/.test(s) && !/<text\b/.test(s), `${name} draws`);
   }

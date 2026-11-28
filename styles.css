@@ -173,6 +173,17 @@ h1 b{color:var(--coral);font-weight:400}
 .unlocked.chapter{margin-bottom:8px}
 @keyframes roar{15%{transform:translateY(-10px) scale(1.12)}25%{transform:translateY(-10px) scale(1.12) rotate(-3deg)}35%{transform:translateY(-10px) scale(1.12) rotate(3deg)}45%{transform:translateY(-10px) scale(1.12) rotate(-3deg)}55%{transform:translateY(-8px) scale(1.1) rotate(2deg)}75%{transform:none}}
 .game:has(.arena.rumble)::before,.arena.rumble{animation:rumble 1.2s ease-in-out}
+/* Graphzilla, the chart kaiju (app.js kaijuArrives, kaijuStomp, kaijuRoarSoon): it lands with a
+   stomp, its back plates (the chart's bars) flash in their colors one after another as each chart
+   lands, and now and then it rears up a little for its light roar. */
+.mon.gzstomp{animation:gzstomp .9s ease-out}
+@keyframes gzstomp{0%{transform:translateY(-8px)}12%{transform:translateY(2px) scaleY(.97)}30%{transform:translateY(-5px)}46%{transform:translateY(3px) scaleY(.95)}62%,100%{transform:none}}
+.mon.gzflash .gzg{animation:gzglow 1s ease-out var(--gzd,0ms) both}
+.mon.gzflash .gzw{animation:gzwhite .7s ease-out var(--gzd,0ms) both}
+@keyframes gzglow{0%{opacity:0}22%{opacity:.8}100%{opacity:0}}
+@keyframes gzwhite{0%{opacity:0}18%{opacity:.6}100%{opacity:0}}
+.mon.gzroar{animation:gzroar .9s ease-in-out}
+@keyframes gzroar{20%{transform:translateY(-5px) scale(1.05)}35%{transform:translateY(-5px) scale(1.05) rotate(-2deg)}50%{transform:translateY(-5px) scale(1.05) rotate(2deg)}75%{transform:none}}
 @keyframes rumble{10%,50%{filter:brightness(.55)}20%{transform:translate(-3px,1px)}30%{transform:translate(3px,-1px)}40%{transform:translate(-2px,1px)}70%{filter:none;transform:none}}
 @keyframes lunge{35%{transform:translateY(26px) scale(1.14)}55%{transform:translateY(22px) scale(1.12) rotate(-3deg)}}
 .hearts .crack{display:inline-block;animation:crack .7s ease-in forwards}
@@ -406,7 +417,7 @@ h1 b{color:var(--coral);font-weight:400}
 .cardmon.rescued{animation:freed .8s ease-out}
 @keyframes freed{0%{filter:grayscale(1) brightness(.5);transform:scale(.8)}60%{filter:none;transform:scale(1.1)}100%{transform:none}}
 @media(prefers-reduced-motion:reduce){.cardmon.rescued{animation:none}}
-@media(prefers-reduced-motion:reduce){.mon,.mon.hit,.mon.dead,.mon.lunge,.arena.shake,.flame svg{animation:none}.mon.dead{opacity:0}.pop{animation-duration:.01s}.hearts .crack{animation:none;opacity:0}}
+@media(prefers-reduced-motion:reduce){.mon.gzflash .gzg,.mon.gzflash .gzw{animation:none}.mon,.mon.hit,.mon.dead,.mon.lunge,.arena.shake,.flame svg{animation:none}.mon.dead{opacity:0}.pop{animation-duration:.01s}.hearts .crack{animation:none;opacity:0}}
 
 /* Missing-number problems (Quizard): the □ glows and fills as you type, so the answer box hides */
 .blank{display:inline-block;min-width:1.1em;padding:0 .12em;border-radius:12px;border:3px dashed var(--gold);color:var(--gold);text-align:center;line-height:1.05;animation:blankglow 1.2s ease-in-out infinite alternate}

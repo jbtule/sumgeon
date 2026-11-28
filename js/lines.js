@@ -163,6 +163,12 @@ function sayAs(t) { return SAY_AS.reduce(function (s, r) { return s.replace(r[0]
 // A Hero Moment's quip (moments.js), as the voice says it.
 export function quipLine(q) { return sayAs(q); }
 export function monsterName(m) { return sayAs(m.n + "!"); }
+// Graphzilla (and its looks) arrives as the chart kaiju, in place of its plain name line:
+// "Graphzilla, the chart kaiju, rises from the data!" ("kaiju" is kˈIʤu to Kokoro, as it should be).
+export const isKaiju = (m) => (m.base || m.n) === "Graphzilla";
+export function kaijuLine(m) { return sayAs(m.n + ", the chart kaiju, rises from the data!"); }
+// What a monster says as it arrives on its floor: its name, or the kaiju's line.
+export function monsterArrives(m) { return isKaiju(m) ? kaijuLine(m) : monsterName(m); }
 export function monsterCleared(m) { return sayAs(m.n + " " + m.quip); }
 export function monsterWon(m) { return sayAs(m.n + " won this round."); }
 export function heroName(h) { return sayAs(h.n + "!"); }
@@ -406,6 +412,7 @@ export function spokenLines() {
   var S = "names", N = "Monsters & heroes";
   MON.concat(allLooks()).forEach(function (m) {
     add("m", monsterName(m), N, S);
+    if (isKaiju(m)) add("m", kaijuLine(m), N, S);
     add("p", monsterCleared(m), N, S); // a boss's is said on the win, before the stratum cleared
     add("p", monsterWon(m), N, S);
   });
@@ -575,7 +582,7 @@ function index() {
   var names = {}, phrases = {}, q = {}, uses = {};
   // A monster's lines (and its looks') in a sprite of its own, "m-minustaur", loaded by the strata
   // it's in; the heroes' (and the cursed digits') in "heroes", which every stratum can need.
-  MON.concat(allLooks()).forEach(function (m) { [monsterName(m), monsterCleared(m), monsterWon(m)].forEach(function (t) { names[t] = names[t] || "m-" + slug(m.base || m.n); }); });
+  MON.concat(allLooks()).forEach(function (m) { [monsterName(m), monsterArrives(m), monsterCleared(m), monsterWon(m)].forEach(function (t) { names[t] = names[t] || "m-" + slug(m.base || m.n); }); });
   arrivals().forEach(function (a) { names[newMonsterLine(a.m, a.w)] = "m-" + slug(a.m.n); });
   HEROES.forEach(function (h) { [heroName(h), monsterName(cursedMonster(h.d)), heroJoins(h), heroCursed(h), heroRescue(h), heroAlmost(h), heroHelps(h)].forEach(function (t) { names[t] = "heroes"; }); });
   // Polly-Gon's squawks are only said on its floor, so they're in its sprite.
