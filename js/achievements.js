@@ -211,7 +211,8 @@ const SURPRISE = [
    strata were counted keep their meaning. Those have no stratum: placeOldSurprises puts each in
    the stratum the player most likely earned it in (their start), once, on load. Piggy Bank, the
    quips and the holidays aren't tied to a stratum, so they stay one achievement each. */
-export const STRATUM_SURPRISES = ["surprise:zero", "surprise:palindrome", "surprise:triple", "surprise:double", "surprise:allhands", "surprise:seven", "surprise:iceboss", "surprise:lastheart", "surprise:exact"];
+// Not Exact Change: Trollar's shop is on the surface, outside every stratum.
+export const STRATUM_SURPRISES = ["surprise:zero", "surprise:palindrome", "surprise:triple", "surprise:double", "surprise:allhands", "surprise:seven", "surprise:iceboss", "surprise:lastheart"];
 // "in the Counting Cellar": the stratum's part of the title, said and shown the same way.
 export const whereIn = (wingId) => "in " + WINGS.find((w) => w.id === wingId).name.replace(/^The /, "the ");
 // The id of a surprise in a stratum, and the other way round.

@@ -247,7 +247,7 @@ console.log(`✓ achievements (${ACHIEVEMENT_IDS.length})`);
   const { STRATUM_SURPRISES, placeOldSurprises, inStratum, surpriseOf, whereIn, CARD_IDS } = await import("../js/achievements.js");
   // Which: the ones that happen in a fight or at Trollar's stall. Piggy Bank, the quips and the
   // holidays aren't tied to a stratum.
-  assert.deepEqual(STRATUM_SURPRISES, ["surprise:zero", "surprise:palindrome", "surprise:triple", "surprise:double", "surprise:allhands", "surprise:seven", "surprise:iceboss", "surprise:lastheart", "surprise:exact"]);
+  assert.deepEqual(STRATUM_SURPRISES, ["surprise:zero", "surprise:palindrome", "surprise:triple", "surprise:double", "surprise:allhands", "surprise:seven", "surprise:iceboss", "surprise:lastheart"]);
   for (const id of ["surprise:piggy", "surprise:quips", "surprise:allquips", "holiday:thanksgiving", "holiday:winter", "holiday:summer"]) {
     assert.ok(!STRATUM_SURPRISES.includes(id), id);
     assert.ok(!ids.has(id + "@cellar"), id);
@@ -278,7 +278,8 @@ console.log(`✓ achievements (${ACHIEVEMENT_IDS.length})`);
   assert.equal(e["surprise:zero"], 10);
   assert.equal(noteEvent(e, "holiday:winter", 40, "tower"), "holiday:winter", "a holiday is one achievement");
   assert.equal(noteEvent(e, "holiday:winter", 50, "hall"), null);
-  assert.equal(noteEvent(e, "surprise:exact", 60), "surprise:exact@cellar", "no stratum given: the Cellar");
+  assert.equal(noteEvent(e, "surprise:lastheart", 60), "surprise:lastheart@cellar", "no stratum given: the Cellar");
+  assert.equal(noteEvent(e, "surprise:exact", 70, "hall"), "surprise:exact", "Exact Change is one achievement: the shop is on the surface");
   // The catalog: the surprise with each stratum, and a count.
   const z = catalog({ ach: { earned: e } }).find((a) => a.id === "surprise:zero");
   assert.ok(z.met && z.strata.length === WINGS.length);
@@ -287,7 +288,7 @@ console.log(`✓ achievements (${ACHIEVEMENT_IDS.length})`);
   assert.deepEqual(z.strata.map((x) => x.name), WINGS.map((w) => w.name.replace(/^The /, "")));
   // Cards: each stratum's copy, never the surprise as a whole.
   assert.ok(!CARD_IDS.includes("surprise:zero") && CARD_IDS.includes("surprise:zero@hall"));
-  assert.deepEqual(unseen({ earned: e, seen: [] }), ["surprise:zero@hall", "surprise:zero@tower", "surprise:exact@cellar", "holiday:winter"].sort((x, y) => CARD_IDS.indexOf(x) - CARD_IDS.indexOf(y)));
+  assert.deepEqual(unseen({ earned: e, seen: [] }), ["surprise:zero@hall", "surprise:zero@tower", "surprise:lastheart@cellar", "holiday:winter", "surprise:exact"].sort((x, y) => CARD_IDS.indexOf(x) - CARD_IDS.indexOf(y)));
   // Rewards: once a stratum; the surprise and its first stratum together pay once.
   assert.deepEqual(rewardsOf(["surprise:zero"]).items, { totem: 1 }, "an old save");
   assert.deepEqual(rewardsOf(["surprise:zero", "surprise:zero@cellar"]).items, { totem: 1 });
