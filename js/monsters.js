@@ -571,9 +571,9 @@ export const LOOKS = {
   // its looks keep to the face and neck (no hats to hide a plate), and the names are chart puns.
   // Measuring length: an inchworm's looks, named for its units (no yards).
   Rulerpillar: [["Inchling", ["mini"]], ["Sir Measures-a-Lot", ["tophat", "monocle"], "he"], ["Centi-Belle", ["bow", "lashes"], "she"], ["Snoozepillar", ["nightcap", "lids"]]],
-  // Five, as the chart kaiju: a robot (Graph-o-Tron, a visor and an antenna in a gap between the
+  // Five, as the chart kaiju: a robot all in steel (Graph-o-Tron: "metal", a visor and an antenna in a gap between the
   // plates) and one stomping a tiny bar-chart city (Skyline Stomper).
-  Graphzilla: [["Tiny Tally", ["mini"]], ["Graph-o-Tron", ["visor", "antenna"]], ["Bar-oness Graphzilla", ["lashes", "blush", "medal"], "she"], ["Snoozilla", ["lids", "scarf"]], ["Skyline Stomper", ["skyline"]]]
+  Graphzilla: [["Tiny Tally", ["mini"]], ["Graph-o-Tron", ["metal", "visor", "antenna"]], ["Bar-oness Graphzilla", ["lashes", "blush", "medal"], "she"], ["Snoozilla", ["lids", "scarf"]], ["Skyline Stomper", ["skyline"]]]
 };
 // A monster in look i (0 is itself): the same monster, renamed, with its base name kept for its
 // trait and kind of math.
@@ -586,8 +586,13 @@ export function lookOf(m, i) {
 }
 export const allLooks = () => MON.flatMap((m) => (LOOKS[m.n] || []).map((_, i) => lookOf(m, i + 1)));
 const NECK = ["scarf", "bowtie", "medal"];
+// "metal" in a look's list isn't drawn over the monster: it remakes the monster in steel (its own
+// color, its belly and cheeks), keeping everything else (Graphzilla's plates keep the chart's colors).
+const STEEL = '#93a1ad', STEEL_LIGHT = '#d9e1e8';
+const metalize = (art, c) => art.split(c).join(STEEL).split('#c8f0dc').join(STEEL_LIGHT).replace(/<ellipse[^>]*fill="#ff7a6e"[^>]*\/>/g, "");
 function dress(m) {
   const a = ANCHOR[m.base], kit = m.look.filter((k) => KIT[k]);
+  if (m.look.includes("metal")) return metalArt(m, a, kit);
   // A monster whose head moves (Chompers' top jaw, a.jaw) wears what's on its head on it; what's
   // on its neck stays put.
   const onHead = (k) => a.jaw && !NECK.includes(k), draw = (ks) => ks.map((k) => KIT[k](a, m.c)).join("");
@@ -595,6 +600,12 @@ function dress(m) {
   if (!m.look.includes("mini")) return art + extras;
   // Smaller, standing on the same ground.
   return `<g transform="translate(100 ${a.ground}) scale(.72) translate(-100 ${-a.ground})">${art}${extras}</g>`;
+}
+// A metal look: the monster in steel, rivets down its body and on its belly, then its extras.
+function metalArt(m, a, kit) {
+  const art = metalize(m.d(m.c, m), m.c), [gx, gy] = [a.neck[0], a.neck[1]];
+  const rivets = [[-22, 8], [22, 8], [-26, 30], [26, 30], [-22, 52], [22, 52]].map(([dx, dy]) => `<circle cx="${gx + dx}" cy="${gy + dy}" r="2.6" fill="#eef3f7" stroke="${DK}" stroke-width="1.6"/>`).join("");
+  return art + rivets + kit.map((k) => KIT[k](a, STEEL)).join("");
 }
 export const svg=(m,cls='')=>`<svg viewBox="-10 -10 220 220" class="${cls}" role="img" aria-label="${m.n}">${defs}${m.look ? dress(m) : m.d(m.c, m)}</svg>`;
 

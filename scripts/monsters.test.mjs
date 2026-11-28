@@ -50,7 +50,7 @@ for (const n of SIX) {
   assert.ok(m && m.sym && m.stratum && !m.trait && !m.boss, `${n} is in the game, its trait in traits.js`);
   assert.equal(LOOKS[n].length, n === "Graphzilla" ? 5 : 4, `${n} has four looks (Graphzilla, the chart kaiju, five)`);
   for (const [name, kit, who] of LOOKS[n]) {
-    assert.ok(name && kit.length && kit.every((k) => KIT.includes(k)) && [undefined, "he", "she"].includes(who), `${n}: ${name}`);
+    assert.ok(name && kit.length && kit.every((k) => KIT.includes(k) || k === "metal") && [undefined, "he", "she"].includes(who), `${n}: ${name}`);
     const s = svg({ ...m, n: name, base: n, look: kit });
     assert.ok(!/NaN|undefined/.test(s) && !/<text\b/.test(s), `${name} draws`);
   }
