@@ -97,11 +97,17 @@
   .c-small span{display:flex;align-items:flex-end;gap:4px}
   .c-small i{display:block}.c-small i svg{width:100%;height:100%}
   .c-small .s72{width:72px;height:77px}.c-small .s40{width:40px;height:43px}
-  .p-plush{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
-  .p-plush>div{display:grid;place-items:center;border-radius:18px;border:2px solid var(--line);padding:12px 6px;background:var(--wall);color:#fff;font-weight:800;font-size:12px;text-shadow:0 1px 0 #000}
-  .p-plush .p-big{width:100%;max-width:170px;aspect-ratio:1}
+  .p-plush{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px}
+  .p-card{display:grid;gap:6px;border-radius:18px;border:2px solid var(--gold);padding:8px;background:var(--panel);font-size:12px}
+  .p-card.p-not{border-color:var(--line);opacity:.9}
+  .p-card small{color:var(--muted)}.p-card .p-why{color:#f3efe4}
+  .p-wall{display:grid;place-items:center;border-radius:12px;padding:10px}
+  .p-plush .p-big{width:100%;max-width:150px;aspect-ratio:1;display:block}
   .p-plush svg{width:100%;height:100%;display:block;overflow:visible}
-  .p-plush .p-smalls{display:flex;align-items:flex-end;gap:10px;background:var(--panel)}
+  .p-plush .p-smalls{display:flex;align-items:flex-end;gap:10px}.p-smalls i{display:block}
+  .p-heroes{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px}
+  .p-heroes>div{display:grid;justify-items:center;background:var(--panel);border-radius:14px;padding:6px;font-size:12px}
+  .p-pair{display:flex;align-items:flex-end}.p-pair>svg{width:72px;height:auto;overflow:visible}.p-pair i{width:36px;height:36px;margin-left:-14px}.p-pair i svg{width:100%;height:100%;overflow:visible}
   .p-smalls i{display:block}
   @media(max-width:520px){.p-plush{grid-template-columns:1fr 1fr}}
   @media(max-width:520px){.c-dress{gap:2px;padding:6px}.c-dress div{font-size:9px}}
@@ -162,9 +168,14 @@
   <div class="c-dress" id="dressGrid"></div>
   <p class="g-meta">Small: 72 px (Monsters &amp; Heroes, the hero chooser) and 40 px (the hearts row).</p>
   <div class="c-dress c-small" id="dressSmall"></div>
-  <h2>Pluffy, the plushie</h2>
-  <p class="g-meta">A plus plushie (js/plushie.js): a toy, not a monster, so it has plush tells (a stitched seam, button eyes, a sewn smile, felt specks, a heart patch, a tag) and never moves on its own. It sits by the captain on the start scene and squeaks when tapped. On each wall, then at 72, 40 and 26 px.</p>
+  <h2>Plushies</h2>
+  <p class="g-meta">Soft toys of the monsters (js/plushie.js): toys, not monsters, so they have plush tells (a stitched seam, button eyes, a sewn smile, felt specks, a tag) and never move on their own. Each is one hero's favorite and sits at that hero's feet on the start scene, squeaking when tapped. Found in chests (rarely) and sold by Trollar; everyone has Pluffy. Each on a wall, then at 72, 40 and 26 px.</p>
   <div class="p-plush" id="plushGrid"></div>
+  <h3>The heroes and their favorites</h3>
+  <div class="p-heroes" id="plushHeroes"></div>
+  <h3>Tried, not picked</h3>
+  <p class="g-meta">Other monsters drawn as plushies, and why they weren't picked.</p>
+  <div class="p-plush" id="plushTried"></div>
   <h2>Retired</h2>
   <p class="g-meta">Out of the game, kept for the record.</p>
   <div class="g-grid" id="retiredGrid"></div>

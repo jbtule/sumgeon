@@ -32,7 +32,7 @@
 //   told         how many times each thing was explained: the larger
 //   wallet       a ledger (below), so coins are never made or lost by syncing
 //   items        each item a ledger like the wallet; the quick-use slots: the latest edit wins
-//   wardrobe     pieces owned only grow; what each hero wears: the latest edit wins
+//   wardrobe     pieces owned and plushies owned only grow; what each hero wears: the latest edit wins
 //   shop         the stock on sale: the latest edit wins
 //   achievements earned ones only grow, each keeping its earliest time; seen (shown on a card)
 //                only grows. Their rewards (achievements.js rewardOf) are credited to the wallet
@@ -71,7 +71,8 @@ import { rewardsOf, freshAchievements, keepDays } from "./achievements.js";
 // alone until they update: NewerRecord in sync.js) and its shape in SHAPE in the test.
 // 2 (2026-11-27): achievements (ach), and their rewards in the wallet and items (REWARDS).
 // 3 (2026-11-27): the achievements' practice days (ach.d) and comebacks (ach.c).
-export const RECORD_VERSION = 3;
+// 4 (2026-11-27): the plushies owned (plush), from the wardrobe's plush.
+export const RECORD_VERSION = 4;
 // The keys a record carries (store.js OWN_KEYS minus the device's own). The test checks every
 // saved key is here or in LOCAL_KEYS.
 export const SYNCED_KEYS = ["settings", "best", "facts", "heroes", "wings", "bestiary", "dungeon", "spells", "told", "moments", "wallet", "items", "wardrobe", "shop", "achievements"];
@@ -347,6 +348,7 @@ export function toRecord(data, base, me) {
     wallet: ledger(d.wallet, withRewards(b.wallet, paid.cents), me),
     items,
     owned: sortU([...arr(obj(d.wardrobe).owned), ...arr(b.owned)]),
+    plush: sortU([...arr(obj(d.wardrobe).plush), ...arr(b.plush)]),
     ach
   };
 }
@@ -410,6 +412,7 @@ export function merge(a, b) {
     wallet: null,
     items: null,
     owned: sortU([...arr(a.owned), ...arr(b.owned)]),
+    plush: sortU([...arr(a.plush), ...arr(b.plush)]),
     ach: mergeAch(a.ach, b.ach)
   };
   // The rewards are what the achievements earned (on either side) pay, counted once.
@@ -511,7 +514,7 @@ export function fromRecord(rec, data) {
     moments,
     wallet: Math.max(0, balance(r.wallet)),
     items: { have, slots: reg["items.slots"] ? arr(reg["items.slots"].v) : arr(obj(d.items).slots) },
-    wardrobe: { owned: ordered(obj(d.wardrobe).owned, arr(r.owned)), wear: Object.fromEntries(Object.entries(wear).filter(([, v]) => v)) },
+    wardrobe: { owned: ordered(obj(d.wardrobe).owned, arr(r.owned)), wear: Object.fromEntries(Object.entries(wear).filter(([, v]) => v)), plush: ordered(obj(d.wardrobe).plush, arr(r.plush)) },
     shop: { ...obj(d.shop), stock: reg["shop.stock"] ? arr(reg["shop.stock"].v) : arr(obj(d.shop).stock) },
     achievements: { earned: { ...obj(obj(r.ach).e) }, seen: ordered(obj(d.achievements).seen, arr(obj(r.ach).s)), days: keepDays(arr(obj(r.ach).d)), comebacks: sum(obj(r.ach).c) }
   };
@@ -523,7 +526,7 @@ export function fromRecord(rec, data) {
   if (!has("heroes")) delete out.heroes;
   if (!has("moments") && !Object.keys(obj(rm.heard)).length && !arr(rm.captains).length && !arr(rm.named).length) delete out.moments;
   if (!has("items") && !Object.keys(have).length) delete out.items;
-  if (!has("wardrobe") && !arr(r.owned).length) delete out.wardrobe;
+  if (!has("wardrobe") && !arr(r.owned).length && !arr(r.plush).length) delete out.wardrobe;
   if (!has("shop")) delete out.shop;
   if (d.achievements == null && !Object.keys(obj(obj(r.ach).e)).length && !arr(obj(r.ach).d).length && !sum(obj(r.ach).c)) delete out.achievements;
   if (d.spells == null && !Object.keys(obj(rs.reversed)).length && !sum(rs.cast)) delete out.spells;
