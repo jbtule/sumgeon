@@ -566,7 +566,8 @@ function sumsHint(f, worked) {
 function timesTensHint(f, worked) {
   const a = Math.min(f.x, f.y), T = Math.max(f.x, f.y), t = T / 10, rods = blocks(T, 4, C.a);
   return { model: svg(rods.w + 54, 58, rods.s + txt(rods.w + 10, 37, `× ${a}`, 22, C.b, "start"), `${t} tens, ${a} times`),
-    say: `${a} × ${t} tens is ${a * t} tens${worked ? ", " + f.ans : ""}. ${f.x} × ${f.y} = ${worked ? f.ans : "?"}`,
+    // Before answering, the fact to use and its place, not its product ("12 tens" is the answer).
+    say: worked ? `${a} × ${t} tens is ${a * t} tens, ${f.ans}. ${f.x} × ${f.y} = ${f.ans}` : `Think ${a} × ${t}, in tens. ${f.x} × ${f.y} = ?`,
     grownups: "Times tens: 4 × 30 is 4 groups of 3 tens, which is 12 tens, 120. It's the fact 4 × 3 in tens, place value rather than \"add a zero\"." };
 }
 

@@ -29,11 +29,13 @@ function timesPlaceHint(f, worked) {
   const [a, b] = [f.x, f.y].sort((p, q) => String(p).replace(/0+$/, "").length - String(q).replace(/0+$/, "").length || p - q);
   const zeros = (n) => (String(n).match(/0+$/) || [""])[0].length, za = zeros(a), zb = zeros(b), da = a / 10 ** za, db = b / 10 ** zb, z = za + zb, unit = 10 ** z;
   const end = worked ? f.ans : "?";
-  // Tens × tens (40 × 70): 4 × 7 = 28, and tens × tens are hundreds.
+  // Tens × tens (40 × 70): 4 × 7, and tens × tens are hundreds. Before answering, only the fact to
+  // use and the place it's in, never its product: "28 hundreds" would be the answer in words.
+  const P = PLACE[unit] || "", prod = worked ? da * db : "?";
   const say = za && zb
-    ? `${da} × ${db} = ${da * db}. Tens × tens are hundreds: ${da * db} hundreds. ${f.x} × ${f.y} = ${end}`
-    : `${da} × ${db} ${PLACE[unit] || ""} is ${da * db} ${PLACE[unit] || ""}. ${f.x} × ${f.y} = ${end}`;
-  let s = txt(10, 22, `${da} × ${db}`, 18, C.a, "start") + txt(10, 48, `${da * db} ${PLACE[unit] || ""}`, 16, C.b, "start");
+    ? (worked ? `${da} × ${db} = ${da * db}. Tens × tens are hundreds: ${da * db} hundreds. ${f.x} × ${f.y} = ${end}` : `Use ${da} × ${db}. Tens × tens are hundreds. ${f.x} × ${f.y} = ${end}`)
+    : (worked ? `${da} × ${db} ${P} is ${da * db} ${P}. ${f.x} × ${f.y} = ${end}` : `Use ${da} × ${db}, in ${P}. ${f.x} × ${f.y} = ${end}`);
+  let s = txt(10, 22, `${da} × ${db}`, 18, C.a, "start") + txt(10, 48, `${prod} ${P}`, 16, C.b, "start");
   const model = svg(150, 56, s, `${da} times ${db}, in ${PLACE[unit] || "ones"}`);
   return { model, say: say.replace(/\s+/g, " "), grownups: "Multiplying by 10, 100 and 1000: kids use the fact they know (6 × 3 = 18) and the place: 6 × 3 hundreds is 18 hundreds, 1800. It's place value, not \"add zeros\"." };
 }

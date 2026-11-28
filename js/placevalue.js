@@ -153,6 +153,8 @@ export function pvHint(p, worked) {
   }
   if (p.kind === "odd") {
     const H = p.h + Math.floor(p.t / 10), T = p.t % 10;
+    // Before answering, how to regroup, not the regrouped number (2 hundreds, 0 tens, 0 ones is 200).
+    if (!worked) return { say: `Every 10 tens make a hundred. How many hundreds in ${p.t} tens? Then the rest. ${p.h ? `${p.h} hundred${p.h === 1 ? "" : "s"}, ` : ""}${p.t} tens, ${p.o} one${p.o === 1 ? "" : "s"} = ?` };
     return { say: `Every 10 tens make a hundred: ${p.t} tens is ${Math.floor(p.t / 10)} hundred${Math.floor(p.t / 10) === 1 ? "" : "s"} and ${T} ten${T === 1 ? "" : "s"}. ${place(H, T, p.o)} = ${end}` };
   }
   if (p.kind === "expanded") return { say: `Each part is a place: ${place(p.h, p.t, p.o)} = ${end}` };

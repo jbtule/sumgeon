@@ -41,6 +41,16 @@ for (const band of Object.keys(BANDS)) {
   for (const p of pool(band)) {
     const f = factOf(p.key, () => 0.9), before = hintFor(f, false), after = hintFor(f, true);
     assert.ok(before.model.startsWith("<svg") && before.grownups, p.key);
+    // Nor the answer in place-value words ("14 hundreds" for 20 × 70 = 1400), in the words or the
+    // drawing, before answering (unless it's one of the problem's own numbers: 60 − 30's "3 tens").
+    if (typeof f.ans === "number" && f.ans >= 10 && f.ans !== f.x && f.ans !== f.y) {
+      const text = before.say + " " + (before.model.match(/>[^<]+</g) || []).join(" ");
+      const own = new Set((String(p.key).match(/\d+/g) || []).map(Number));
+      for (const m of text.matchAll(/(\d[\d,]*) (tens|hundreds|thousands)\b/g)) {
+        const n = Number(m[1].replace(/,/g, ""));
+        assert.ok(own.has(n) || n * { tens: 10, hundreds: 100, thousands: 1000 }[m[2]] !== f.ans, `${p.key}: "${m[0]}" is the answer in words: ${before.say}`);
+      }
+    }
     // Telling time and odd and even talk it through in words ("The short hand shows the hour.",
     // "Pair up the dots."); worked, they say the answer: the time, or the count.
     if (TALKS.includes(f.op)) {
