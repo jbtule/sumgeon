@@ -1186,6 +1186,8 @@ function heroBonus(typed) {
 // rescued hero, which a crit's 2× beat every time, and was nothing against a 4th grade monster's
 // tens of thousands of HP). The captain's power hit (+50%) is separate and unchanged.
 const MOMENT_HP = 0.15;
+// Boss Guard: the most of a boss's full HP one hit can take (submit).
+const BOSS_GUARD = 1 / 3;
 function momentBoost(mo) {
   if (!mo) return 0;
   return [mo.hero, mo.partner].filter((d) => d != null).length;
@@ -1379,6 +1381,11 @@ function submit() {
     const totem = totemMult(G.fx);
     // The Super Charge first (× or ÷ the answer, charge.js), then crits, traits, power hits and the totem.
     let dmg = Math.max(1, Math.round(chargedHit(G.cur.ans, G.cur.charge) * (crit ? 2 : 1) * trait.mult * bonus.mult * totem * (G.cur.reversed ? 0.5 : 1)));
+    // Boss Guard: a boss (a mega boss and the Legend too) loses at most BOSS_GUARD of its full HP
+    // to one hit, crits and Hero Moments included, so it always takes at least three hits.
+    const guardCap = m.boss ? Math.ceil(G.max * BOSS_GUARD) : Infinity;
+    let guarded = dmg > guardCap;
+    dmg = Math.min(dmg, guardCap);
     if (totem > 1) slotsUI();
     const level = learnFrom(true);
     // Chompers (🐊) acts it out first: he chomps the bigger side (chompAct). A comparison keeps its
@@ -1392,6 +1399,7 @@ function submit() {
     // Each hero in it adds MOMENT_HP of the monster's full HP (momentBoost).
     const mo = momentFor(typed, critsNow, !!m.boss && G.hp - dmg <= 0), boost = momentBoost(mo);
     if (boost) dmg += Math.round(G.max * MOMENT_HP * boost);
+    if (dmg > guardCap) { dmg = guardCap; guarded = true; }
     const momentName = mo ? HEROES[mo.hero].n + (mo.partner != null ? " & " + HEROES[mo.partner].n : "") : "";
     // The run as it will be once this hit lands, in case the app is closed mid-attack: the next
     // problem, or the monster beaten.
@@ -1411,7 +1419,8 @@ function submit() {
       G.lastTyped = typed;
       surprise(...hitSurprises({ ans: G.cur.sym || G.cur.draw || G.cur.slots || G.cur.spell ? null : G.cur.ans, typed, dmg, base: Math.round(G.cur.ans * (G.cur.reversed ? 0.5 : 1)) || 0, hpLeft: G.hp, team: [...new Set([team.captain, ...team.rescued])].filter((d) => d != null) }));
       // A charge goes on its own line over the hit ("×100!" over "−400").
-      pop((G.cur.charge ? chargePop(G.cur.charge).trim() + "\n" : "") + (boost ? "Hero! " : bonus.power ? "Power! " : crit ? "Crit! " : "") + "−" + dmg, crit || bonus.power || !!boost);
+      if (guarded) { sfx.clang(); if (once("guarded", 2)) say("p", PHRASE.guarded); }
+      pop((guarded ? "Guarded!\n" : G.cur.charge ? chargePop(G.cur.charge).trim() + "\n" : "") + (boost ? "Hero! " : bonus.power ? "Power! " : crit ? "Crit! " : "") + "−" + dmg, crit || bonus.power || !!boost);
       restartAnim($("mon"), "hit");
       if (crit && !mo) restartAnim($("arena"), "shake");
       setMsg(totem > 1 ? `Times Two Totem! Double hit for ${dmg}!` : G.cur.reversed ? `Your ${G.cur.ans} is facing backwards. It faces this way → Half damage: ${dmg}` : G.cur.howTo ? `Here's how to write it. Hit for ${dmg}!` : level ? level : trait.note ? `${trait.note}: ${dmg}!` : boost ? `${momentName} hero hit for ${dmg}!` : bonus.power ? `${HEROES[team.captain].n} power hit for ${dmg}!` : crit ? `Critical hit for ${dmg}!` : G.cur.charge ? (G.cur.charge.up ? `Super charge! Hit for ${dmg}!` : `Braced! Hit for ${dmg}.`) : `Hit for ${dmg}!`, "good");

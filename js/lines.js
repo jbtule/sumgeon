@@ -93,6 +93,8 @@ export var PHRASE = {
   // The Super Charge (charge.js): a problem whose answers run far bigger than the floor's finds
   // the monster braced; the first Super Charge ever, why (chargeLine says each one).
   braced: "The monster braces!",
+  // A boss's Guard held a big hit back (app.js BOSS_GUARD), the first 2 times.
+  guarded: "Guarded! A boss takes at least three hits.",
   chargeHow: "Small numbers get a super charge to hit big monsters!",
   crackTwo: "Two more to go!",
   heart: "You found a heart!",
@@ -557,7 +559,7 @@ function index() {
   // Phrases by when they're said: the start screen and a run's end, explanations, and the fight.
   [PHRASE.enter, PHRASE.pickGrade, PHRASE.pickHero, PHRASE.keepGoing, PHRASE.heroFirst, PHRASE.deeper, PHRASE.exitSure, PHRASE.unlocked, PHRASE.win, PHRASE.legend]
     .concat(WINGS.map(wingCleared), WINGS.map(wingOpened), WINGS.map(wingEnter)).forEach(function (t) { phrases[t] = "phrases-start"; });
-  [PHRASE.hitHow, PHRASE.cmpHow, PHRASE.cmpSame, PHRASE.spellHow, PHRASE.paused, PHRASE.tfHow, PHRASE.drawHow, PHRASE.flashHow, PHRASE.hintNudge, PHRASE.diceHow, PHRASE.onesFirst, PHRASE.carryHow, PHRASE.regroupHow, PHRASE.regroupEmpty, PHRASE.chargeHow]
+  [PHRASE.hitHow, PHRASE.cmpHow, PHRASE.cmpSame, PHRASE.spellHow, PHRASE.paused, PHRASE.tfHow, PHRASE.drawHow, PHRASE.flashHow, PHRASE.hintNudge, PHRASE.diceHow, PHRASE.onesFirst, PHRASE.carryHow, PHRASE.regroupHow, PHRASE.regroupEmpty, PHRASE.chargeHow, PHRASE.guarded]
     .concat(Object.values(TRAIT_LINE), Object.values(TRAIT2_LINE), HEROES.map(function (h) { return luckyLine(h.d); }), REVERSIBLE.map(reversedLine), [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map(howToWriteLine))
     .forEach(function (t) { phrases[t] = "phrases-explain"; });
   // Problems: every line a band can say, found from its facts the way the game asks them (both
