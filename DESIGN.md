@@ -626,6 +626,8 @@ The game should **teach first, then fade the help out** as a fact gets learned, 
 ### 5.5 Monster HP stays fair
 The prototype rule, HP = mean answer × `hits`, still holds. Compute it from the **actual selected problem pool** rather than uniform random, so adaptive selection doesn't produce bullet-sponge or one-shot monsters.
 
+**The Super Charge** (prototype, 2026-11-28; `js/charge.js`): HP from the pool is fair on average, but a floor whose pool spans orders of magnitude (the Fraction Forge's 4 ÷ 1 = 4 beside 45,000 ≈ 50,000) still has hits that do nothing and hits that one-shot. Rather than narrow what's asked, each problem's hit is put on the floor's scale and announced as it appears: a problem whose *level* typically answers ten or more times below the floor's typical hit is **Super Charged ×N** ("Super charge, times one hundred!"), one whose level answers ten or more times above it finds the monster **Braced ÷N**, with N a friendly number (10, 20, 50, 100 …). The scale comes from the level, never the problem's own answer, so the badge tells nothing the problem doesn't show. The charge comes first; crits, traits, power hits, items and Hero Moments apply on top, so a giant answer still needs one of those to one-shot. It almost never triggers in the Cellar and the Hall; the Mines and the Tower see it on a fluent player's deep floors, where earlier grades' facts sit beside three-digit work.
+
 ---
 
 ## 6. Progression and replay

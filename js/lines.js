@@ -24,6 +24,7 @@ import { flashFacts, spokenFlash } from "./flash.js";
 import { traitOf } from "./traits.js";
 import { bigCompareFacts, roundFacts4, addSub4, times10s, timesOne, timesTwo, divideOne, remFacts, exprFacts, factorFacts, equivFacts4, fracCompare4, fracOpFacts, fracTimesFacts, decimalFacts, decCompareFacts, unitFacts, rect4Facts, primeFacts, moneyFacts } from "./fourth.js";
 import { angleFacts, shapeAngleFacts } from "./angles.js";
+import { FRIENDLY, CHARGE_AT, friendly } from "./charge.js";
 import { QUIPS, FINALS, CRIT, TEAM_LINES, TEAM_NUMBERS, CAPTAIN_LINES, captainNames } from "./moments.js";
 import { fewest, ITEMS } from "./loot.js";
 import { clothesById, findable } from "./clothes.js";
@@ -89,6 +90,10 @@ export var PHRASE = {
   chargedMiss: "Lightning! You lost two hearts.",
   // Quarterjack's fourth down (every 4th problem on its floor): a right answer is a touchdown.
   fourthDown: "Fourth down!",
+  // The Super Charge (charge.js): a problem whose answers run far bigger than the floor's finds
+  // the monster braced; the first Super Charge ever, why (chargeLine says each one).
+  braced: "The monster braces!",
+  chargeHow: "Small numbers get a super charge to hit big monsters!",
   crackTwo: "Two more to go!",
   heart: "You found a heart!",
   nextBoss: "Next: the boss!",
@@ -251,6 +256,10 @@ export function howToWriteLine(d) { return "Here's how to write " + aDigit(d) + 
 // ("depths"), so a deep run's line plays at once from memory.
 export var DEPTH_MAX_SPOKEN = 100;
 export function depthLine(d) { return "Depth " + spoken(d) + "!"; }
+// "Super charge, times one hundred!", as a Super Charged problem appears (charge.js), the first few
+// times for each N; recorded for every N a charge can be (chargeLines).
+export function chargeLine(n) { return "Super charge, times " + spoken(n) + "!"; }
+export function chargeLines() { var least = friendly(CHARGE_AT); return FRIENDLY.filter(function (n) { return n >= least; }); }
 
 // The bosses' mega and Legend forms, as monsters (monsters.js bossForm): Mega-Ten Golem, Golden
 // Golem, and so on. Drawn and recorded, not in the game yet (DESIGN.md §14.2).
@@ -405,6 +414,7 @@ export function spokenLines() {
   Object.keys(TRAIT2_LINE).forEach(function (k) { add("p", TRAIT2_LINE[k], "Phrases"); });
   Object.keys(BARK).forEach(function (k) { add("p", BARK[k], "Phrases"); });
   for (var d = 2; d <= DEPTH_MAX_SPOKEN; d++) add("p", depthLine(d), "Phrases", "depths");
+  chargeLines().forEach(function (n) { add("p", chargeLine(n), "Phrases"); });
   REVERSIBLE.forEach(function (n) { add("p", reversedLine(n), "Phrases"); });
   for (var w = 0; w <= 9; w++) add("p", howToWriteLine(w), "Phrases");
   WINGS.forEach(function (w, i) {
@@ -547,7 +557,7 @@ function index() {
   // Phrases by when they're said: the start screen and a run's end, explanations, and the fight.
   [PHRASE.enter, PHRASE.pickGrade, PHRASE.pickHero, PHRASE.keepGoing, PHRASE.heroFirst, PHRASE.deeper, PHRASE.exitSure, PHRASE.unlocked, PHRASE.win, PHRASE.legend]
     .concat(WINGS.map(wingCleared), WINGS.map(wingOpened), WINGS.map(wingEnter)).forEach(function (t) { phrases[t] = "phrases-start"; });
-  [PHRASE.hitHow, PHRASE.cmpHow, PHRASE.cmpSame, PHRASE.spellHow, PHRASE.paused, PHRASE.tfHow, PHRASE.drawHow, PHRASE.flashHow, PHRASE.hintNudge, PHRASE.diceHow, PHRASE.onesFirst, PHRASE.carryHow, PHRASE.regroupHow, PHRASE.regroupEmpty]
+  [PHRASE.hitHow, PHRASE.cmpHow, PHRASE.cmpSame, PHRASE.spellHow, PHRASE.paused, PHRASE.tfHow, PHRASE.drawHow, PHRASE.flashHow, PHRASE.hintNudge, PHRASE.diceHow, PHRASE.onesFirst, PHRASE.carryHow, PHRASE.regroupHow, PHRASE.regroupEmpty, PHRASE.chargeHow]
     .concat(Object.values(TRAIT_LINE), Object.values(TRAIT2_LINE), HEROES.map(function (h) { return luckyLine(h.d); }), REVERSIBLE.map(reversedLine), [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map(howToWriteLine))
     .forEach(function (t) { phrases[t] = "phrases-explain"; });
   // Problems: every line a band can say, found from its facts the way the game asks them (both

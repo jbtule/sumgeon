@@ -194,7 +194,7 @@ assert.ok(app0.includes('say("h", quipLine(mo.quip), true)'), "a quip is said in
 
 // app.js says only lines from lines.js: every say() takes a PHRASE, a lines.js helper, or a problem.
 const app = readFileSync(new URL("../js/app.js", import.meta.url), "utf8");
-const HELPERS = ["heroName", "heroJoins", "heroCursed", "heroRescue", "heroAlmost", "heroHelps", "traitLine", "trait2Line"].join("|");
+const HELPERS = ["heroName", "heroJoins", "heroCursed", "heroRescue", "heroAlmost", "heroHelps", "traitLine", "trait2Line", "chargeLine"].join("|");
 for (const [call] of app.matchAll(/say\([^)]*\)/g)) {
   assert.match(call, new RegExp(String.raw`say\("(p|m|q|h)", (quipLine\(mo\.quip\)|PHRASE\.\w+|BARK\.\w+|BARK\[\w+\]|monsterName\(m\)|monsterCleared\(m\)|monsterWon\(m\)|(${HELPERS})\((HEROES\[[\w.]+\]|\w+)\)|wingCleared\(\w+(\(\))?\)|wingOpened\(\w+\)|wingEnter\(w\)|depthLine\((G\.depth|d)\)|reversedLine\(\w+\)|howToWriteLine\(\w+\)|spokenProblem\(G\.cur\)|spokenFact\(said\)|squawk\(p\)|spokenMissing\(G\.cur\)|LOOT\.\w+|(itemName|itemWhat|itemUse)\([\w.]+\)|moneyLine\(\w+\)|purseLine\(wallet\)|askLine\(C\.p\)|SHOP\.\w+|clothingName\([\w.]+\)|(plushName|plushFavLine)\([\w.]+\)|priceLine\(t, c\)|manyLine\(t, m, c, dollars\)|affordLine\(most\)|changeLine\(r\.change\)|newMonsterLine\(m, w\)|achievementLine\(a, k\))`), `${call} says a line that isn't in js/lines.js`);
 }

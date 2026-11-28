@@ -52,7 +52,7 @@ h1 b{color:var(--coral);font-weight:400}
 @keyframes hit{20%{transform:translateX(-12px) rotate(-4deg);filter:brightness(2)}60%{transform:translateX(9px) rotate(3deg)}}
 @keyframes dead{to{transform:translateY(40px) rotate(25deg) scale(.6);opacity:0}}
 #fx{position:absolute;inset:0;pointer-events:none;z-index:2}
-.pop{position:absolute;left:50%;top:38%;transform:translateX(-50%);font:400 clamp(30px,7vw,46px) Bungee,sans-serif;color:var(--gold);-webkit-text-stroke:2px var(--dark);animation:pop .9s ease-out forwards;white-space:nowrap}
+.pop{position:absolute;left:50%;top:38%;transform:translateX(-50%);font:400 clamp(30px,7vw,46px) Bungee,sans-serif;color:var(--gold);-webkit-text-stroke:2px var(--dark);animation:pop .9s ease-out forwards;white-space:pre;text-align:center}
 .pop.crit{color:var(--coral)}
 @keyframes pop{0%{opacity:0;transform:translate(-50%,10px) scale(.6)}20%{opacity:1;transform:translate(-50%,-6px) scale(1.15)}100%{opacity:0;transform:translate(-50%,-60px)}}
 .you{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-weight:900}
@@ -253,6 +253,16 @@ h1 b{color:var(--coral);font-weight:400}
 .split svg{width:100%;height:auto}
 .split svg:last-child{transform:translateY(-12%)}
 @media(prefers-reduced-motion:reduce){.charge{animation:none}}
+/* The Super Charge (charge.js): "⚡ ×100" by a problem whose answers run far below the floor's,
+   "🛡️ ÷10" (the monster braced) by one far above; the icon over the number, to stay narrow */
+.supercharge{display:inline-flex;flex-direction:column;align-items:center;flex:none;gap:1px;padding:2px 5px;border-radius:10px;background:var(--dark);border:2px solid var(--gold);box-shadow:0 0 10px #ffc93c88;line-height:1;animation:superin .35s ease-out}
+.supercharge[hidden]{display:none}
+.supercharge b{font-size:15px;font-weight:400}
+.supercharge i{font:400 12px/1 Bungee,sans-serif;font-style:normal;color:var(--gold);white-space:nowrap}
+.supercharge.braced{border-color:var(--muted);box-shadow:none}
+.supercharge.braced i{color:var(--ink)}
+@keyframes superin{from{transform:scale(1.6);opacity:0}}
+@media(prefers-reduced-motion:reduce){.supercharge{animation:none}}
 /* Floor stars (wings.js floorStars): earned stars pop in one after another */
 .stars{display:flex;justify-content:center;gap:14px}
 .star{display:grid;justify-items:center;gap:2px;width:86px;text-align:center}

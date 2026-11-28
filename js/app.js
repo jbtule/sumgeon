@@ -3,11 +3,12 @@
 import { MON, svg, LOOKS, lookOf, allLooks, CHOMP_SHUT, bossForm, jerseyFrac } from "./monsters.js";
 import { chompPose, morePose, mouthOf, SNAP, FLIP_MS, SNAP_MS, EAT_MS } from "./chomp.js";
 import { spokenProblem, spokenFact } from "./problems.js";
-import { BANDS, choose, factOf, record as recordAnswer, helpFor, monsterHP, probeKey, tierOf, skipTo, SKIP_PROBES, SKIP_WINDOW, MAX_LEAP, fluentTime, spellKey, RECENT, pool, drawHit, openLevels, reachOf, chaptersOf, pathBands, reviewFacts, placeReviews, examKey, examFacts, examRound, hpOf, endlessKey } from "./learn.js";
+import { BANDS, choose, factOf, record as recordAnswer, helpFor, monsterHP, probeKey, tierOf, skipTo, SKIP_PROBES, SKIP_WINDOW, MAX_LEAP, fluentTime, spellKey, RECENT, pool, drawHit, openLevels, reachOf, chaptersOf, pathBands, reviewFacts, placeReviews, examKey, examFacts, examRound, hpOf, endlessKey, floorTypical, typicalHit, levelTypical } from "./learn.js";
+import { chargeFor, chargedHit, chargeBadge, chargePop } from "./charge.js";
 import { countSvg, readShape, judgeShape, cleanFor, isDrawKey, SHAPE_LINE, SHAPE_CODE, article } from "./shapes.js";
 import { hintFor, STRATEGIES } from "./hints.js";
 import { openStore, displayName, DUNGEON_VERSION, DUNGEON_KEYS, LEARNING_RESETS } from "./store.js";
-import { PHRASE, monsterName, monsterCleared, monsterWon, heroJoins, heroCursed, heroRescue, heroAlmost, heroHelps, traitLine, BARK, wingCleared, wingOpened, wingEnter, depthLine, DEPTH_MAX_SPOKEN, reversedLine, howToWriteLine, quipLine, squawk, trait2Line, newMonsterLine } from "./lines.js";
+import { PHRASE, monsterName, monsterCleared, monsterWon, heroJoins, heroCursed, heroRescue, heroAlmost, heroHelps, traitLine, BARK, wingCleared, wingOpened, wingEnter, depthLine, DEPTH_MAX_SPOKEN, reversedLine, howToWriteLine, quipLine, squawk, trait2Line, newMonsterLine, chargeLine } from "./lines.js";
 import { WINGS, wingOf, runFloors, bossAt, cursedMonster, openWings, toOpen, floorStars, wingStars, depthScale, depthHP, deepest, MAP_DEPTHS, GRADES, gradeLabel, gradeName, withGrade, bandOf, gradeBand, OLD_BANDS, PATHS, chapterOf, stepsOpen, bossStage, isMega, BOSS_HP, MEGA_EVERY, megasOf, stepMonsters, legendDue, openLegend, beatLegend, legendBeaten, legendProgress, LEGEND_HP } from "./wings.js";
 import { missingOf, pickBlank, filled, spokenMissing, MISSING_SHARE, canHide } from "./missing.js";
 import { rectSvg } from "./third.js";
@@ -837,6 +838,9 @@ function loadMonster(i, quiet) {
   // A boss powering up has a little more HP, a mega boss more (wings.js BOSS_HP).
   const stage = m.boss ? bossStage(G.depth) : 0;
   G.max = G.hp = Math.round(monsterHP(m, strandOf(m), recs, levelsFor(strandOf(m)).levels) * depthScale(i, G.floors.length) * depthHP(G.depth) * BOSS_HP[stage]);
+  // The floor's typical hit, what its HP is built on: each problem's Super Charge puts its hit on
+  // this scale (charge.js, superCharge).
+  G.typical = floorTypical(m, strandOf(m), recs, levelsFor(strandOf(m)).levels);
   // The Legend's exam (learn.js examKey): its HP from every fact the exam can ask (those seen),
   // as much as a mega boss's, or up to twice that to last about one answer of every kind
   // (examRound); no fact twice, so nothing missed comes back on its floor.
@@ -845,6 +849,7 @@ function loadMonster(i, quiet) {
     const path = PATHS[wing().id], all = examFacts(path), seenF = all.filter((f) => recs[f.key] && recs[f.key].n), scale = depthScale(i, G.floors.length) * depthHP(G.depth);
     const megaHP = hpOf(m, seenF.length ? seenF : all, wing().band) * LEGEND_HP;
     G.max = G.hp = Math.round(Math.max(megaHP, Math.min(2 * megaHP, examRound(path, recs))) * scale);
+    G.typical = typicalHit(m, seenF.length ? seenF : all, wing().band);
     G.exam = { used: [], steps: [] }; G.retry = [];
   }
   const el = $("mon");
@@ -895,6 +900,28 @@ function fitName(m) {
   const tight = () => row.clientWidth > 0 && matchMedia("(max-width: 759px)").matches && (row.scrollWidth > row.clientWidth + 1 || bar.offsetTop > nm.offsetTop + nm.offsetHeight / 2 || bar.clientWidth < HP_ROOM);
   if (m.n.length > 13 || nm.scrollWidth > nm.clientWidth + 1 || tight()) nm.classList.add("long");
   if (tight()) nm.classList.add("wrap");
+}
+// The Super Charge's badge by the problem ("⚡ ×100", "🛡️ ÷10"), and as it appears (fresh) its
+// sound and line: "Super charge, times one hundred!" the first 3 times for each N (the very first
+// time, why), "The monster braces!" the first 3 times; after that the badge and the sound.
+function superCharge(fresh) {
+  const c = G.cur && G.cur.charge, el = $("superCharge");
+  el.hidden = !c;
+  if (!c) return;
+  el.classList.toggle("braced", !!c.down);
+  el.innerHTML = c.up ? `<b>⚡</b><i>×${c.up.toLocaleString("en-US")}</i>` : `<b>🛡️</b><i>÷${c.down.toLocaleString("en-US")}</i>`;
+  el.title = chargeBadge(c);
+  el.setAttribute("aria-label", chargeBadge(c));
+  if (!fresh) return;
+  if (c.up) {
+    sfx.powerUp();
+    if (once("chargeHow")) say("p", PHRASE.chargeHow, false, asked(G.cur));
+    const n = c.up;
+    if (once("charge:" + n, 3)) say("p", chargeLine(n), false, asked(G.cur));
+  } else {
+    sfx.clang();
+    if (once("braced", 3)) say("p", PHRASE.braced, false, asked(G.cur));
+  }
 }
 // The next problem, chosen by the learning engine (learn.js): a missed fact when it's due back,
 // otherwise learning, review or new facts, with the monster's operation preferred.
@@ -977,6 +1004,11 @@ function newProblem() {
   G.cur = stackOf(G.cur, STACK_ALWAYS || (m.base || m.n) === "Margot-Rythm");
   if (down) { G.cur.down = true; say("p", PHRASE.fourthDown, false, () => G.cur && G.cur.down && !G.busy); }
   $("down").hidden = !down;
+  // The Super Charge: a problem whose level answers far below the floor's typical hit is charged
+  // (×N), one far above it finds the monster braced (÷N), from its level, never its own answer.
+  const c = chargeFor(levelTypical(bk, G.cur.key || key, m), G.typical);
+  if (c) G.cur.charge = c;
+  superCharge(true);
   G.recent = [key].concat(G.recent).slice(0, RECENT);
   presentProblem(key, !!flipped);
 }
@@ -1344,7 +1376,8 @@ function submit() {
     // A spell drawn backwards fizzles at half damage.
     // The Times Two Totem (an item, loot.js): the next right answer hits double, once.
     const totem = totemMult(G.fx);
-    let dmg = Math.max(1, Math.round(G.cur.ans * (crit ? 2 : 1) * trait.mult * bonus.mult * totem * (G.cur.reversed ? 0.5 : 1)));
+    // The Super Charge first (× or ÷ the answer, charge.js), then crits, traits, power hits and the totem.
+    let dmg = Math.max(1, Math.round(chargedHit(G.cur.ans, G.cur.charge) * (crit ? 2 : 1) * trait.mult * bonus.mult * totem * (G.cur.reversed ? 0.5 : 1)));
     if (totem > 1) slotsUI();
     const level = learnFrom(true);
     // Chompers (🐊) acts it out first: he chomps the bigger side (chompAct). A comparison keeps its
@@ -1376,10 +1409,11 @@ function submit() {
       // hit of 100 or more, two of one hero, every digit a hero. Recorded quietly.
       G.lastTyped = typed;
       surprise(...hitSurprises({ ans: G.cur.sym || G.cur.draw || G.cur.slots || G.cur.spell ? null : G.cur.ans, typed, dmg, base: Math.round(G.cur.ans * (G.cur.reversed ? 0.5 : 1)) || 0, hpLeft: G.hp, team: [...new Set([team.captain, ...team.rescued])].filter((d) => d != null) }));
-      pop((boost ? "Hero! " : bonus.power ? "Power! " : crit ? "Crit! " : "") + "−" + dmg, crit || bonus.power || !!boost);
+      // A charge goes on its own line over the hit ("×100!" over "−400").
+      pop((G.cur.charge ? chargePop(G.cur.charge).trim() + "\n" : "") + (boost ? "Hero! " : bonus.power ? "Power! " : crit ? "Crit! " : "") + "−" + dmg, crit || bonus.power || !!boost);
       restartAnim($("mon"), "hit");
       if (crit && !mo) restartAnim($("arena"), "shake");
-      setMsg(totem > 1 ? `Times Two Totem! Double hit for ${dmg}!` : G.cur.reversed ? `Your ${G.cur.ans} is facing backwards. It faces this way → Half damage: ${dmg}` : G.cur.howTo ? `Here's how to write it. Hit for ${dmg}!` : level ? level : trait.note ? `${trait.note}: ${dmg}!` : boost ? `${momentName} hero hit for ${dmg}!` : bonus.power ? `${HEROES[team.captain].n} power hit for ${dmg}!` : crit ? `Critical hit for ${dmg}!` : `Hit for ${dmg}!`, "good");
+      setMsg(totem > 1 ? `Times Two Totem! Double hit for ${dmg}!` : G.cur.reversed ? `Your ${G.cur.ans} is facing backwards. It faces this way → Half damage: ${dmg}` : G.cur.howTo ? `Here's how to write it. Hit for ${dmg}!` : level ? level : trait.note ? `${trait.note}: ${dmg}!` : boost ? `${momentName} hero hit for ${dmg}!` : bonus.power ? `${HEROES[team.captain].n} power hit for ${dmg}!` : crit ? `Critical hit for ${dmg}!` : G.cur.charge ? (G.cur.charge.up ? `Super charge! Hit for ${dmg}!` : `Braced! Hit for ${dmg}.`) : `Hit for ${dmg}!`, "good");
       hpUI(); streakUI();
       // Half HP: Divvy splits in two, Sigma Rex armors up (traits.js).
       const half = !G.halved && G.hp > 0 && G.hp <= G.max / 2 ? atHalf(m) : null;
@@ -2357,6 +2391,7 @@ function keepGoing(R) {
   setMsg("Welcome back! Keep fighting.", "good");
   if (s.stage === "next") { newProblem(); return; }
   G.cur = s.cur; G.charged = s.charged; $("charge").hidden = !G.charged; $("down").hidden = !s.cur.down;
+  const sc = s.cur.charge; if (sc && !(sc.up > 0 || sc.down > 0)) delete s.cur.charge; superCharge(false);
   G.spellFails = 0; G.drawFails = 0; G.drawn = null;
   presentProblem(s.cur.key, false, true, s.elapsed);
   if (s.hinted && !$("hintBtn").hidden) openHint(); else if (s.hinted) G.hinted = true;

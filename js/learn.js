@@ -698,14 +698,40 @@ export function monsterHP(m, bandKey, recs, levels) {
 }
 // The HP from the facts a monster asks (open: [{ key, op, ans }]).
 export function hpOf(m, open, bandKey) {
-  const mine = open.filter((f) => f.op === m.op);
-  // A monster that hides a number (m.blank, Quizard) is hit by the hidden number: on average,
-  // the mean of the fact's two numbers.
-  // A drawn shape hits for its strand's typical answer (drawHit).
-  const val = (f) => { if (isDrawKey(f.key)) return drawHit(bandKey); if (!m.blank || !"+-×÷".includes(f.key[0])) return f.ans; const [a, b] = f.key.slice(1).split(",").map(Number); return (a + b) / 2; };
+  return Math.max(10, Math.round(typicalHit(m, open, bandKey) * m.hits));
+}
+// What a hit on this monster is worth, typically: the average of what it asks (open), each answer
+// counted at most 3 times the middle one, its operation weighted 70%. Monster HP is this × its
+// hits; the Super Charge (charge.js) puts each problem's hit on this scale.
+export function typicalHit(m, open, bandKey) {
+  const mine = open.filter((f) => f.op === m.op), val = hitValue(m, bandKey);
   const avg = (fs) => { const v = fs.map(val).sort((a, b) => a - b), cap = Math.max(10, 3 * v[v.length >> 1]); return v.reduce((s, x) => s + Math.min(x, cap), 0) / v.length; };
-  const mean = mine.length ? avg(mine) * 0.7 + avg(open) * 0.3 : avg(open);
-  return Math.max(10, Math.round(mean * m.hits));
+  return mine.length ? avg(mine) * 0.7 + avg(open) * 0.3 : avg(open);
+}
+// What a fact hits this monster for. A monster that hides a number (m.blank, Quizard) is hit by
+// the hidden number: on average, the mean of the fact's two numbers. A drawn shape hits for its
+// strand's typical answer (drawHit).
+function hitValue(m, bandKey) {
+  return (f) => { if (isDrawKey(f.key)) return drawHit(bandKey); if (!m.blank || !"+-×÷".includes(f.key[0])) return f.ans; const [a, b] = f.key.slice(1).split(",").map(Number); return (a + b) / 2; };
+}
+// The floor's typical hit (typicalHit) from the open levels, as monsterHP counts it.
+export function floorTypical(m, bandKey, recs, levels) {
+  return typicalHit(m, asked(bandKey, recs, levels, asksOf(m)), bandKey);
+}
+// A problem's level's typical hit: the median of what its level's facts hit this monster for (a
+// strand's level: that kind's), in the band asking it (or, for a review from another band, the
+// first band that has the key). Never this problem's own answer, so the Super Charge it sets
+// (charge.js) shows nothing about the answer that the problem itself doesn't. Null for an unknown key.
+const levelMemo = {}, keyIndex = {};
+export function levelTypical(bandKey, key, m) {
+  const find = (b) => { if (!keyIndex[b]) keyIndex[b] = new Map(pool(b).map((x) => [x.key, x])); return keyIndex[b].get(key); };
+  const band = [bandKey].concat(Object.keys(BANDS)).find((b) => BANDS[b] && find(b));
+  if (!band) return null;
+  const f = find(band), blank = !!(m && m.blank), id = [band, f.level, blank].join("|");
+  if (id in levelMemo) return levelMemo[id];
+  const val = hitValue({ blank }, band), v = pool(band).filter((x) => x.level === f.level).map(val).sort((a, b) => a - b);
+  const mid = v.length % 2 ? v[v.length >> 1] : (v[v.length / 2 - 1] + v[v.length / 2]) / 2;
+  return (levelMemo[id] = Math.max(1, mid));
 }
 // The facts open to a monster: the open levels' facts of the kinds it asks (a review level's only
 // once seen: never new). With none open (a monster put on a floor for testing, ?monster=), its
