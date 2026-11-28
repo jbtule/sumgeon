@@ -1954,6 +1954,9 @@ function shopCard(view) {
   const many = n > 1 ? `<b class="smult">×${n}</b>` : "";
   const thing = `<div class="sthing${n > 1 ? " many" : ""}"><span class="sart lg">${thingArt(t)}${many}</span><span class="sname"><b>${esc(thingName(t))}</b>${n > 1 ? math(n) : priceTag(c)}</span></div>`;
   const toShop = () => { S.thing = null; shopCard("stock"); };
+  // The purse, its coins and its total: shown while choosing how many (so the count can be
+  // checked against it) and when there isn't enough.
+  const purseRow = () => `<div class="spurse"><span class="slabel">Your purse</span><div class="scoins">${tokensOf(S.purse).map((x) => `<span class="stoken">${tokenArt(x.k)}</span>`).join("") || "<small>Empty</small>"}</div><b class="stotal">${moneyAmt(wallet, billsOn())}</b></div>`;
   if (view === "many") {
     // How many: big 1 to MANY buttons, the item drawn that many times, and the total as math.
     // A count the purse can't pay for stays picked (the math shows why), with Pay off.
@@ -1965,6 +1968,7 @@ function shopCard(view) {
     <div class="snums" role="group" aria-label="How many">${nums}</div>
     <div class="scopies n${n}" aria-hidden="true">${Array.from({ length: n }, () => `<span class="scopy"><span class="sart">${thingArt(t)}</span>${k ? priceTag(c) : ""}</span>`).join("")}</div>
     <div class="smathbox${ok ? "" : " short"}">${math(n)}</div>
+    ${purseRow()}
     <div class="btns"><button class="big alt" id="shopBack">Back</button><button class="big buy" id="shopPay" ${ok ? "" : "disabled"}>Pay</button></div>`, "page shop");
     $("card").querySelectorAll(".snum").forEach((b) => b.onclick = () => {
       const m = Number(b.dataset.n);
@@ -1983,7 +1987,7 @@ function shopCard(view) {
   }
   if (view === "need") {
     show(`${head("You need more coins. Open chests to find some!")}${thing}
-    <div class="spurse"><span class="slabel">Your purse</span><div class="scoins">${tokensOf(S.purse).map((x) => `<span class="stoken">${tokenArt(x.k)}</span>`).join("") || "<small>Empty</small>"}</div><b class="stotal">${moneyAmt(wallet, billsOn())}</b></div>
+    ${purseRow()}
     <div class="btns"><button class="big" id="shopBack">Back</button></div>`, "page shop");
     $("shopBack").onclick = toShop;
     return;
