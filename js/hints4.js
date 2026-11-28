@@ -109,8 +109,10 @@ function remHint(f, worked) {
 }
 
 /* ---------- adding and subtracting to a million: the standard algorithm ---------- */
-// Column by column from the ones, in place-value words, regrouping as it goes. Before answering the
-// first two columns and then "?"; worked, every column.
+// Column by column from the ones, in place-value words, regrouping as it goes. Before answering,
+// only how to start: the ones column ringed, its sum or difference as "= ?" and the rule for
+// regrouping, with no digit of the answer written (the answer is typed ones first, so even the
+// ones digit would give it away); worked, every column.
 const NAMES = ["ones", "tens", "hundreds", "thousands", "ten thousands", "hundred thousands"];
 const one = (n) => n.replace(/s$/, "").replace(/ thousand$/, " thousand");
 function algorithmHint(f, worked) {
@@ -137,7 +139,11 @@ function algorithmHint(f, worked) {
     }
     if (i + 1 >= String(a).length && !carry && (sub || i + 1 >= String(b).length)) break;
   }
-  const shown = worked ? steps : steps.slice(0, 2);
+  // Before answering: the ones only, as a question, and what to do when a place makes ten or more
+  // (adding) or hasn't enough (taking away).
+  const start = sub
+    ? `Start with the ones: ${A[0] < B[0] ? `${A[0]} is less than ${B[0]}, so regroup 1 ten and take ${B[0]} from ${A[0] + 10}` : `take ${B[0]} from ${A[0]}`}. Then each place to the left. ${f.x} − ${f.y} = ?`
+    : `Start with the ones: add ${A[0]} and ${B[0]}. Ten or more? Write the ones, regroup 1 to the next place. Then each place to the left. ${f.x} + ${f.y} = ?`;
   // The drawing: the two numbers in columns, the place names over them, and the answer row filled
   // only as far as the steps shown.
   const cw = 22, w = n * cw + 40, x = (i) => w - 14 - i * cw;
@@ -146,13 +152,15 @@ function algorithmHint(f, worked) {
     s += txt(x(i), 12, ["1", "10", "100", "1k", "10k", "100k"][i] || "", 8, C.muted);
     if (i < String(a).length) s += txt(x(i), 32, A[i], 17);
     if (i < String(b).length) s += txt(x(i), 52, B[i], 17);
-    if (!sub && marks[i]) s += txt(x(i), 20, "1", 10, C.b);
-    if (worked || i < 2) s += txt(x(i), 80, String(f.ans).split("").reverse()[i] ?? "", 17, C.a);
-    else if (i < String(f.ans).length) s += txt(x(i), 80, "?", 15, C.b);
+    if (worked && !sub && marks[i]) s += txt(x(i), 20, "1", 10, C.b);
+    if (worked) s += txt(x(i), 80, String(f.ans).split("").reverse()[i] ?? "", 17, C.a);
+    else if (i === 0) s += txt(x(i), 80, "?", 15, C.b);
   }
+  // Before answering, the ones column ringed: where to start.
+  if (!worked) s += `<rect x="${f1(x(0) - 11)}" y="16" width="22" height="70" rx="8" fill="none" stroke="${C.a}" stroke-width="2.5"/>`;
   s += txt(12, 52, sub ? "−" : "+", 17) + `<line x1="8" y1="60" x2="${w - 4}" y2="60" stroke="${C.ink}" stroke-width="2"/>`;
   return { model: svg(w, 88, s, `${a} ${sub ? "minus" : "plus"} ${b}, in columns`),
-    say: `${shown.join(" ")} ${worked ? "" : "Keep going! "}${f.x} ${sub ? "−" : "+"} ${f.y} = ${worked ? f.ans : "?"}`.replace(/\s+/g, " "),
+    say: (worked ? `${steps.join(" ")} ${f.x} ${sub ? "−" : "+"} ${f.y} = ${f.ans}` : start).replace(/\s+/g, " "),
     grownups: "The standard algorithm (4th grade): add or subtract place by place from the ones. Ten in a place regroups to one of the next place; not enough in a place regroups one from the next place into ten. The words are the place values, not \"carry\" and \"borrow\"." };
 }
 const cap = (t) => (t ? t[0].toUpperCase() + t.slice(1) : t);

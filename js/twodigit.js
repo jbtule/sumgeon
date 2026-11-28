@@ -143,5 +143,8 @@ export const stackable = (p) => !!p && !p.spell && (sums(p) || (p.op === "+" || 
 // How often a problem is stacked: half the time for three-digit numbers and for sums of several
 // numbers, a quarter for two-digit ones.
 export const stackShare = (p) => (sums(p) || Math.max(p.x || 0, p.y || 0, p.ans || 0) >= 100 ? STACK_SHARE3 : STACK_SHARE);
-// The problem stacked, or as it was: always when `always` (Margot-Rythm, ?stacked), else its share.
-export function stackOf(p, always, rnd) { return stackable(p) && (always || (rnd || Math.random)() < stackShare(p)) ? Object.assign({}, p, { stacked: true }) : p; }
+// The problem stacked, or as it was: always when `always` (Margot-Rythm, ?stacked) or for numbers
+// of 1000 or more (4th grade adds and subtracts them with the standard algorithm, in columns: not
+// across one line), else its share.
+export const BIG_STACK = 1000;
+export function stackOf(p, always, rnd) { return stackable(p) && (always || Math.max(p.x || 0, p.y || 0, p.ans || 0) >= BIG_STACK || (rnd || Math.random)() < stackShare(p)) ? Object.assign({}, p, { stacked: true }) : p; }

@@ -60,3 +60,19 @@ assert.equal(factOf("○0.7,0.70").sym, "=");
   assert.ok(p2("coins").filter((f) => f.key[0] === "$").every((f) => !f.key.includes(".")), "the Mines' dollar keys are untouched");
 }
 console.log("✓ 4th grade facts");
+
+// The standard algorithm's hint, before answering, says how to start with the ones and writes no
+// digit of the answer (it's typed ones first, so even the ones digit would give it away).
+{
+  const { hintFor } = await import("../js/hints.js");
+  for (const p of [{ op: "+", x: 32957, y: 16603, ans: 49560 }, { op: "-", x: 52031, y: 18467, ans: 33564 }, { op: "+", x: 20342, y: 23774, ans: 44116 }]) {
+    const f = Object.assign({ key: `${p.op}${p.x},${p.y}`, band: "fourth" }, p), h = hintFor(f, false), w = hintFor(f, true);
+    assert.ok(h && /^Start with the ones/.test(h.say || ""), `${p.x} ${p.op} ${p.y}: the hint starts with the ones`);
+    const ansDigits = String(p.ans).split("").reverse();
+    const row = (h.model || "").match(/y="80"[^>]*>([^<]*)</g) || [];
+    assert.ok(row.every((t) => />\?</.test(t)), `${p.x} ${p.op} ${p.y}: no answer digit drawn before answering`);
+    assert.ok(!(h.say || "").includes(String(p.ans)), "the answer isn't said");
+    assert.ok(new RegExp(`= ${p.ans}`).test(w.say), "worked, it ends with the answer");
+    assert.ok(ansDigits.length > 0);
+  }
+}

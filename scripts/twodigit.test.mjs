@@ -99,5 +99,7 @@ assert.equal(hintFor({ op: "-", x: 405, y: 10, ans: 395 }, true).say, "10 less: 
   assert.ok(Math.abs(n / 4000 - STACK_SHARE) < 0.03, `about a quarter stacked: ${n}`);
   assert.ok(STACK_SHARE3 === 0.5 && Math.abs(n3 / 4000 - STACK_SHARE3) < 0.03 && Math.abs(n4 / 4000 - STACK_SHARE3) < 0.03, `three-digit and four numbers about half: ${n3} ${n4}`);
   assert.ok(!stackable(threeFact(4, 3, 6)), "the Hall's 4 + 3 + 6 stays on one line");
+  // 4th grade's numbers of 1000 or more are always stacked: the standard algorithm is in columns.
+  for (const p of [{ op: "+", x: 32957, y: 16603, ans: 49560 }, { op: "-", x: 4012, y: 1587, ans: 2425 }]) assert.ok(stackOf(p, false, () => 0.99).stacked, `${p.x} ${p.op} ${p.y} is stacked`);
 }
 console.log("✓ two-digit");
