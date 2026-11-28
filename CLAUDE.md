@@ -309,9 +309,10 @@ Runs happen in Wings (`js/wings.js`, DESIGN.md §4), called **strata** (one **st
     - **Hook:** `document` gets a `legendBeaten` event (`detail: { wing, boss, depth, player }`) for the achievement and its golden crown (DESIGN.md §14.1–14.2), still to build. `?legend` saves nothing and sends no event.
     - `scripts/legend.test.mjs` tests when it's due, the exam (every kind, mixed, weighted, no repeats, running out), the HP floor and the saving.
   - **Endless** (DESIGN.md §6.4; `endlessKey` in `learn.js`, `endlessOn` in `app.js`): once a stratum's Legend is beaten, it just keeps going as normal runs (floors, bosses, mega bosses, chests, depths, Go deeper), asking the facts already learned there so they stay sharp. Not a separate mode, and no score.
+    - **On the depth map:** the stratum's name gets a gold ∞, its note reads "🌟 Legend beaten", and its chapter line becomes "∞ Endless: mastered facts" (`levelLine`), since chapters don't mean much once it's mastered.
     - **What it asks** (`endlessKey(path, band, recs, opts)`): the path's own facts (`pathFacts`: not the review steps; drawn shapes kept, so `drawable` still leaves them to touch screens) in the monster's band or strand (`bandOf`) that the player has seen, of the kinds it `asks`. A missed fact that slipped back to learning (box 0–2) gets half the problems (`ENDLESS_LEARNING`) while there are any, box 0 most; otherwise every kind in turn, as the Legend's exam does (the step asked least among the fight's recent problems, not the last one's step or operation when there's another), and inside it weight 0.2 + `struggle`², × 3 for a fact that's come due (`ENDLESS_DUE`). `notRecent`, the "op ans" variety, a trait's `like` and the captain's digit lean apply as in `choose`; the retry queue comes first.
     - **Left out:** new facts, probing and skipping ahead. A miss records as always (box 0), comes back as a retry 2–4 problems later, then as learning until it's learned again. With no seen fact of its kind there, a monster falls back to `choose`. Spells, Hero Moments, achievements and everything else are as in any run.
-    - The depth map's note says "🌟 Legend beaten · mastered facts". `scripts/endless.test.mjs`.
+    - The depth map's note says "🌟 Legend beaten". `scripts/endless.test.mjs`.
   - Every floor but the rescue floor and the boss is drawn from the pool, never the same monster twice in a row.
   - More of the newest problems: `choose`'s fresh share goes from 15% to 35%.
   - The room darkens (`--murk`, 8% per depth up to 48%).
@@ -511,7 +512,7 @@ Voice, achievements, players and linking copy the sibling project `../sound-box-
 
 ## Roadmap ideas (original seed list, expanded in DESIGN.md)
 - More floors and monsters (π pirate, √ root creature, % gremlin, = twins)
-- Endless mode with scaling HP and a high score
+- ~~Endless mode with scaling HP and a high score~~ (built instead as Endless: a mastered stratum keeps going, DESIGN.md §6.4)
 - Fractions, decimals and negative numbers
 - Monster collection / bestiary screen showing defeated glyphs
 - Sound effects and attack animations

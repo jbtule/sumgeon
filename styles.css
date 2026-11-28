@@ -1454,3 +1454,5 @@ body.on-scene>.top,body.on-scene>.who,body.on-scene>.game,body.on-scene>.badges{
 /* An iPhone SE: two buttons side by side under a full-width one (Menu, Play again under Go deeper)
    keep their words inside them. */
 @media (max-width: 380px){.card .btns .big{padding-inline:12px}.card .btns.deeper .big.alt{font-size:16px}}
+/* A stratum in Endless (its Legend beaten): ∞ after its name on the depth map. */
+.wing b .endless-mark{font-style:normal;color:var(--gold);margin-left:4px}

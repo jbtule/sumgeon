@@ -2223,6 +2223,8 @@ function wireGrades(after) {
 // "Chapter 1 of 2: Within 10, Coins", the path's new steps open now (DESIGN.md §4.3), from the
 // player's own fact records.
 function levelLine() {
+  // Endless (a stratum whose Legend is beaten): chapters don't mean much any more.
+  if (endlessOn()) return "∞ Endless: mastered facts";
   const w = wing(), path = PATHS[w.id], s = stepsNow(w), now = (s.window.length ? s.window : s.open.slice(-1)).map((i) => path[i].name);
   return `Chapter ${chapterNow(w)} of ${chaptersOf(path)}: ${now.join(", ")}`;
 }
@@ -2261,13 +2263,13 @@ function wingsHTML() {
     const d = deepest(w, progress);
     // A stratum whose Legend is beaten (DESIGN.md §14.2) gets a gold edge; one whose Legend awaits says so.
     // Its runs are Endless now (DESIGN.md §6.4): the facts already mastered there.
-    if (isOpen && endlessOn(w)) note = "🌟 Legend beaten · mastered facts · " + note;
+    if (isOpen && endlessOn(w)) note = "🌟 Legend beaten · " + note;
     else if (isOpen && legendNow(w)) note = "🌟 A legend awaits! · " + note;
     // How far along to the Legend: rounded down, so 100% only when it's ready.
     const pct = isOpen && !legendBeaten(w, progress) && !legendNow(w) ? Math.floor(legendProgress(w, recs) * 100) : null;
     const toLegend = pct == null ? "" : `<em class="to-legend">Legendary depths · ${pct}%</em>`;
     return `<label class="wing ${w.id}${here ? " here" : ""}${isOpen ? "" : " locked"}${isOpen && legendBeaten(w, progress) ? " golden" : ""}"><input type="radio" name="wing" value="${w.id}" ${here ? "checked" : ""} ${isOpen ? "" : "disabled"}>
-      <span><b>${w.name}</b><small>${b.label}</small><em>${note}</em>${here ? `<em class="level" id="levelLine">${levelLine()}</em>` : ""}
+      <span><b>${w.name}${isOpen && endlessOn(w) ? ' <i class="endless-mark" title="Endless" aria-label="Endless">∞</i>' : ""}</b><small>${b.label}</small><em>${note}</em>${here ? `<em class="level" id="levelLine">${levelLine()}</em>` : ""}
       ${isOpen ? depthTrack(w, d) : ""}${toLegend}</span></label>`;
   }).join("");
 }
