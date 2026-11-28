@@ -133,7 +133,9 @@ assert.ok(PLUSHIES.every((p) => p.picked) && CANDIDATES.filter((p) => !p.picked)
     const l = lines.find((x) => x.text === t);
     assert.ok(l && spriteFor(l) === "loot", t);
   }
-  assert.equal(plushName("evenstevens"), "An Even Stevens plushie!");
-  assert.equal(plushFavLine("evenstevens"), "It's Toodini's favorite!");
+  assert.equal(plushName("trolly"), "A Trolly plushie!");
+  assert.equal(plushFavLine("trolly"), "It's Toodini's favorite!");
+  assert.equal(plushFavLine("pebbles"), "It's Nineja's favorite!");
+  for (const gone of ["ticktock", "evenstevens"]) assert.ok(!isPlush(gone) && !lines.some((l) => l.text.includes(plushById[gone].name + " plushie")), `${gone} isn't one of the ten`);
 }
 console.log("plushie: ok");

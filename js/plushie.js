@@ -183,23 +183,23 @@ export const WHY = {
   chompy: "The < mouth stays readable, and felt teeth on a soft croc are classic plush.",
   squeakers: "A soft die with mouse ears: a squishy cube is a natural toy, and the pips read at 26 px.",
   squishy: "One fat slime: the simplest silhouette of all, a squish begging to be hugged.",
-  ticktock: "A round pink alarm clock with bells and nubby tentacles: like a bedside toy.",
+  ticktock: "A round pink alarm clock with bells and nubby tentacles; swapped out for Trolly on review.",
   pillowgon: "A hexagon pillow with a parrot's head: bright, chunky, and reads as Polly-Gon from far off.",
   snugsquatch: "A fuzzy square with a tummy patch: the most teddy-like of them all.",
   tricerafluff: "Every kid's plush dinosaur, with three soft + horns.",
-  evenstevens: "Two stacked pillows with faces: clearly the Twins, and soft by nature.",
+  evenstevens: "Two stacked pillows with faces; swapped out for Pebbles on review.",
   divvydoo: "Reads as ÷, but at 26 px it's three blobs, and too close to the Twins' stack.",
   doubles: "Two thin pluses: at 26 px a muddle, and too much like Pluffy beside it.",
   halfpint: "The ½ breaks into thin pieces that don't look stuffed; hard to read small.",
-  trolly: "A soft ¢ reads as a letter C, not a creature.",
+  trolly: "A troll doll: a soft ¢ with a tuft of pink hair, picked on review.",
   timesy: "A turned Pluffy: too much like the first plushie.",
-  pebbles: "Sweet, but a soft block with a ten-frame reads as a robot, not a monster."
+  pebbles: "A boss gone cuddly: a soft stone block with a felt ten-frame, picked on review."
 };
-const PICKED = ["pluffy", "mootaur", "chompy", "squeakers", "squishy", "ticktock", "pillowgon", "snugsquatch", "tricerafluff", "evenstevens"];
+const PICKED = ["pluffy", "mootaur", "chompy", "squeakers", "squishy", "trolly", "pillowgon", "snugsquatch", "tricerafluff", "pebbles"];
 // Trollar's price for an older player, in cents (shop.js priceOf; a K player pays a quarter). Under
 // a dollar, so the price line is recorded and one coin or bill takes the counter over. Pluffy has
 // none: everyone has it.
-const PRICE = { mootaur: 85, chompy: 90, squeakers: 75, squishy: 75, ticktock: 95, pillowgon: 90, snugsquatch: 95, tricerafluff: 85, evenstevens: 80 };
+const PRICE = { mootaur: 85, chompy: 90, squeakers: 75, squishy: 75, trolly: 80, pillowgon: 90, snugsquatch: 95, tricerafluff: 85, pebbles: 95 };
 CANDIDATES.forEach((p) => { p.picked = PICKED.includes(p.id); p.why = WHY[p.id]; if (PRICE[p.id]) p.price = PRICE[p.id]; });
 export const PLUSHIES = PICKED.map((id) => CANDIDATES.find((p) => p.id === id));
 export const plushById = Object.fromEntries(CANDIDATES.map((p) => [p.id, p]));
@@ -209,14 +209,14 @@ export const isPlush = (id) => PLUSHIES.includes(plushById[id]);
 export const FAVORITE = {
   0: "chompy",       // Zeroic: a superhero's sidekick, all teeth and loyalty
   1: "pluffy",       // Onesie: a bedtime cuddle, and "plus one"
-  2: "evenstevens",  // Twodini: the twins, a magician's two-for-one trick
+  2: "trolly",       // Twodini: a magician's coin tricks, and a troll who loves coins
   3: "pillowgon",    // Threasure Hunter: every treasure hunter needs a parrot
   4: "tricerafluff", // Sir Fourtress: a knight and his (very soft) dragon
   5: "mootaur",      // High Five: the team's bull mascot
   6: "squishy",      // Sixlock Holmes: follows the slime trail; what comes next is a clue
   7: "snugsquatch",  // Sevenstein: two gentle giants
   8: "squeakers",    // Chef Eight: every chef's kitchen has a little mouse
-  9: "ticktock"      // Nine-ja: a ninja strikes right on time
+  9: "pebbles"      // Nine-ja: a ninja's sparring partner, solid as a rock
 };
 export const favoriteOf = (d) => plushById[FAVORITE[d]];
 export const heroOfPlush = (id) => { const k = Object.keys(FAVORITE).find((d) => FAVORITE[d] === id); return k == null ? null : Number(k); };
