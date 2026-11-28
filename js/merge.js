@@ -19,8 +19,9 @@
 //                (last seen) and the rest come from the copy with the latest t, so the most
 //                recent practice wins
 //   wings        per stratum: boss wins are a tally; best, depth, megas, steps and each floor's
-//                and depth's stars only grow; legend (when beaten) keeps the earliest; unlocked
-//                stays; legendOpen stays until the Legend is beaten
+//                and depth's stars only grow; the runs each step waited (waits) only grow;
+//                legend (when beaten) keeps the earliest; unlocked stays; legendOpen stays until
+//                the Legend is beaten
 //   bestiary     met keeps the earliest; beaten is a tally
 //   best         only grows
 //   heroes       captain, color, each digit on the team and each curse's cracks: the latest edit
@@ -252,7 +253,8 @@ function factOut(r) {
 
 /* ---------- wings: per stratum ---------- */
 // Numbers that only grow, lists of numbers that only grow (each floor's best stars), maps that
-// only grow (each depth's best stars), the boss wins (a tally), the Legend (earliest), flags.
+// only grow (each depth's best stars, the runs each path step waited for its monsters), the boss
+// wins (a tally), the Legend (earliest), flags.
 const W_MAX = ["best", "depth", "megas", "steps"], W_FLAGS = ["unlocked", "legendOpen"];
 function maxList(a, b) {
   const x = arr(a), y = arr(b), out = [];
@@ -268,12 +270,13 @@ function wingRecord(p, base, me) {
   if (Object.keys(boss).length) out.boss = boss;
   if (arr(p.stars).length || arr(b.stars).length) out.stars = maxList(p.stars, b.stars);
   if (Object.keys(obj(p.depthStars)).length || Object.keys(obj(b.depthStars)).length) out.depthStars = maxMap(p.depthStars, b.depthStars);
+  if (Object.keys(obj(p.waits)).length || Object.keys(obj(b.waits)).length) out.waits = maxMap(p.waits, b.waits);
   const legend = earliest(p.legend, b.legend);
   if (legend) out.legend = legend;
   for (const k of W_FLAGS) if (p[k] || b[k]) out[k] = true;
   if (out.legend) delete out.legendOpen;
   // Anything newer this version doesn't know: kept as this device has it.
-  for (const k of Object.keys(p)) if (!own(out, k) && ![...W_MAX, ...W_FLAGS, "boss", "stars", "depthStars", "legend"].includes(k)) out[k] = p[k];
+  for (const k of Object.keys(p)) if (!own(out, k) && ![...W_MAX, ...W_FLAGS, "boss", "stars", "depthStars", "waits", "legend"].includes(k)) out[k] = p[k];
   return out;
 }
 function mergeWing(a, b) {
@@ -284,11 +287,12 @@ function mergeWing(a, b) {
   if (Object.keys(boss).length) out.boss = boss;
   if (a.stars || b.stars) out.stars = maxList(a.stars, b.stars);
   if (a.depthStars || b.depthStars) out.depthStars = maxMap(a.depthStars, b.depthStars);
+  if (a.waits || b.waits) out.waits = maxMap(a.waits, b.waits);
   const legend = earliest(a.legend, b.legend);
   if (legend) out.legend = legend;
   for (const k of W_FLAGS) if (a[k] || b[k]) out[k] = true;
   if (out.legend) delete out.legendOpen;
-  for (const k of keys(a, b)) if (!own(out, k) && ![...W_MAX, ...W_FLAGS, "boss", "stars", "depthStars", "legend"].includes(k)) out[k] = canon(a[k]) >= canon(b[k]) ? a[k] : b[k];
+  for (const k of keys(a, b)) if (!own(out, k) && ![...W_MAX, ...W_FLAGS, "boss", "stars", "depthStars", "waits", "legend"].includes(k)) out[k] = canon(a[k]) >= canon(b[k]) ? a[k] : b[k];
   return out;
 }
 function wingOut(r) {

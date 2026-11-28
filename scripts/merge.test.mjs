@@ -95,16 +95,18 @@ test("settings: the latest edit wins, by the edit counter, not the clock", () =>
   assert.equal(a.data.settings.voice, true);
 });
 
-test("wings: stars, depths and chapters only grow; boss wins add up; the Legend keeps the earliest", () => {
+test("wings: stars, depths, chapters and steps' waits only grow; boss wins add up; the Legend keeps the earliest", () => {
   const a = device("a"), b = device("b");
-  a.data.wings.cellar = { boss: 2, best: 5, stars: [3, 1, 2], depth: 3, depthStars: { 1: 9, 2: 6 }, megas: 0, steps: 4 };
-  b.data.wings.cellar = { boss: 1, best: 6, stars: [1, 3], depth: 2, depthStars: { 1: 12 }, megas: 1, steps: 3, legendOpen: true };
+  a.data.wings.cellar = { boss: 2, best: 5, stars: [3, 1, 2], depth: 3, depthStars: { 1: 9, 2: 6 }, megas: 0, steps: 4, waits: { "Make 10": 1, "Coins": 3 } };
+  b.data.wings.cellar = { boss: 1, best: 6, stars: [1, 3], depth: 2, depthStars: { 1: 12 }, megas: 1, steps: 3, legendOpen: true, waits: { "Make 10": 2, "Shapes": 1 } };
   b.data.wings.hall = { boss: 0, best: 1, unlocked: true };
   let server = sync(a, null); server = sync(b, server); server = sync(a, server);
   const w = a.data.wings.cellar;
   assert.deepEqual([w.boss, w.best, w.depth, w.megas, w.steps], [3, 6, 3, 1, 4]);
   assert.deepEqual(w.stars, [3, 3, 2]);
   assert.deepEqual(w.depthStars, { 1: 12, 2: 6 });
+  assert.deepEqual(w.waits, { "Make 10": 2, "Coins": 3, "Shapes": 1 }, "the runs each step waited only grow");
+  assert.deepEqual(b.data.wings.cellar.waits, w.waits, "both devices agree");
   assert.equal(w.legendOpen, true);
   assert.equal(a.data.wings.hall.unlocked, true);
   a.data.wings.cellar.legend = now + 5; delete a.data.wings.cellar.legendOpen;

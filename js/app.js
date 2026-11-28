@@ -3,13 +3,13 @@
 import { MON, svg, LOOKS, lookOf, allLooks, CHOMP_SHUT, bossForm, jerseyFrac } from "./monsters.js";
 import { chompPose, morePose, mouthOf, SNAP, FLIP_MS, SNAP_MS, EAT_MS } from "./chomp.js";
 import { spokenProblem, spokenFact } from "./problems.js";
-import { BANDS, choose, factOf, record as recordAnswer, helpFor, monsterHP, probeKey, tierOf, skipTo, SKIP_PROBES, SKIP_WINDOW, MAX_LEAP, fluentTime, fluentFor, spellKey, RECENT, pool, scratchable, drawHit, openLevels, reachOf, chaptersOf, pathBands, reviewFacts, placeReviews, examKey, examFacts, examRound, hpOf, endlessKey, floorTypical, typicalHit, levelTypical } from "./learn.js";
+import { BANDS, choose, factOf, record as recordAnswer, helpFor, monsterHP, probeKey, tierOf, skipTo, SKIP_PROBES, SKIP_WINDOW, MAX_LEAP, fluentTime, fluentFor, spellKey, RECENT, pool, scratchable, drawHit, openLevels, waitFrom, waitRun, reachOf, chaptersOf, pathBands, reviewFacts, placeReviews, examKey, examFacts, examRound, hpOf, endlessKey, floorTypical, typicalHit, levelTypical } from "./learn.js";
 import { chargeFor, chargeIn, chargedHit, chargeBadge, chargePop, problemScale, oneHit } from "./charge.js";
 import { countSvg, readShape, judgeShape, cleanFor, isDrawKey, SHAPE_LINE, SHAPE_CODE, article } from "./shapes.js";
 import { hintFor, STRATEGIES } from "./hints.js";
 import { openStore, displayName, DUNGEON_VERSION, DUNGEON_KEYS, LEARNING_RESETS } from "./store.js";
 import { PHRASE, monsterName, monsterArrives, isKaiju, monsterCleared, monsterWon, heroJoins, heroCursed, heroRescue, heroAlmost, heroHelps, traitLine, BARK, wingCleared, wingOpened, wingEnter, depthLine, DEPTH_MAX_SPOKEN, reversedLine, howToWriteLine, quipLine, squawk, trait2Line, newMonsterLine, chargeLine } from "./lines.js";
-import { WINGS, wingOf, runFloors, bossAt, cursedMonster, openWings, toOpen, floorStars, wingStars, depthScale, depthHP, deepest, MAP_DEPTHS, GRADES, gradeLabel, gradeName, withGrade, bandOf, gradeBand, OLD_BANDS, PATHS, chapterOf, stepsOpen, bossStage, isMega, BOSS_HP, MEGA_EVERY, megasOf, stepMonsters, legendDue, openLegend, beatLegend, legendBeaten, legendProgress, LEGEND_HP } from "./wings.js";
+import { WINGS, wingOf, runFloors, bossAt, cursedMonster, openWings, toOpen, floorStars, wingStars, depthScale, depthHP, deepest, MAP_DEPTHS, GRADES, gradeLabel, gradeName, withGrade, bandOf, gradeBand, OLD_BANDS, PATHS, chapterOf, stepsOpen, bossStage, isMega, BOSS_HP, MEGA_EVERY, megasOf, stepMonsters, newMonsters, legendDue, openLegend, beatLegend, legendBeaten, legendProgress, LEGEND_HP } from "./wings.js";
 import { missingOf, pickBlank, filled, spokenMissing, MISSING_SHARE, canHide } from "./missing.js";
 import { rectSvg } from "./third.js";
 import { bigText, fourthLine, commas } from "./fourth.js";
@@ -810,13 +810,17 @@ $("dive").addEventListener("click", (e) => {
 function newRun(depth) {
   document.body.dataset.stratum = wing().id; // its wall and colors (styles.css)
   // The floors' monsters are the ones whose step is open (DESIGN.md §4.3): the newest steps' at
-  // depth 1, any of them deeper.
+  // depth 1, any of them deeper, the new steps' monsters more often (wings.js NEW_WEIGHT).
   // (A first run in the stratum meets them in the path's order.)
   G.depth = depth || deepest(wing(), progress);
   // The Legend, once it's due, ends this run (and every run here until it's beaten: saved).
   const legend = legendNow();
   if (legend && !LEGEND_TEST && !(progress[wing().id] || {}).legendOpen) { openLegend(progress, wing().id); store.player(PID).set("wings", progress); }
-  G.floors = runFloors(wing(), team, null, G.depth, stepMonsters(PATHS[wing().id], stepsNow().open, !(progress[wing().id] || {}).best), legend);
+  const path = PATHS[wing().id], s = stepsNow();
+  G.floors = runFloors(wing(), team, null, G.depth, stepMonsters(path, s.open, !(progress[wing().id] || {}).best), legend, newMonsters(path, s));
+  // The steps new when the run began: at its end, one whose monsters didn't come up has waited a
+  // run (learn.js waitRun). Set by start(), not a menu's preview of the floors.
+  G.waitFrom = null;
   diveUI();
   spritesFor(wing(), legend);
   // The room darkens as you go deeper: 8% per depth, up to 48% at depth 7.
@@ -1679,6 +1683,17 @@ function end(win) {
   refundArmed();
   const w = wing(), before = openWings(progress, recs, st.start), chBefore = chapterNow(w), stepsBefore = stepsNow(w).open;
   if (win) { progress[w.id] = progress[w.id] || { boss: 0, best: 0 }; progress[w.id].boss++; }
+  // Won or lost, the new steps whose monsters didn't come up in this run (the floors reached) have
+  // waited one more (learn.js waitRun); one that has waited too long lets the next step join (it
+  // stays open), announced on this card.
+  if (G.waitFrom && !LEGEND_TEST) {
+    const p = progress[w.id] || (progress[w.id] = { boss: 0, best: 0 });
+    p.waits = waitRun(PATHS[w.id], G.waitFrom, G.floors.slice(0, G.floor + 1).map((m) => m.base || m.n), recs, Object.assign({}, p.waits));
+    store.player(PID).set("wings", progress);
+    const now = stepsNow(w).open;
+    if (now.length > stepsBefore.length) { keepSteps(w); arrived(stepsBefore, now); }
+  }
+  G.waitFrom = null;
   // A mega boss beaten (DESIGN.md §4.3): the next chapter is reached. Counted by the depths whose
   // mega boss is beaten, so beating the same one again doesn't count twice.
   // The Legend at a mega boss's depth counts as that mega boss too.
@@ -2441,7 +2456,7 @@ function saveRun(stage, o = {}) {
     floors: G.floors.map(floorRef), floor: G.floor, hp: o.hp != null ? o.hp : G.hp, max: G.max, hearts: G.hearts,
     streak: G.streak, solved: G.solved, tries: G.tries, runStars: G.runStars || 0, retry: G.retry, recent: G.recent, recentAns: G.recentAns || [],
     fx: G.fx || {}, exam: G.exam || null, examBand: G.examBand || null, onFloor: G.onFloor || 0, halved: !!G.halved, floorLost: G.floorLost || 0,
-    floorStreak: G.floorStreak || 0, floorSlow: !!G.floorSlow, barked: G.barked || {}, charged: !!G.charged, mr: MR,
+    floorStreak: G.floorStreak || 0, floorSlow: !!G.floorSlow, barked: G.barked || {}, charged: !!G.charged, mr: MR, waitFrom: G.waitFrom || null,
     cur: working ? G.cur : null, hinted: working ? !!G.hinted : false,
     elapsed: working ? Math.max(0, Math.round((G.paused ? G.paused.at : performance.now()) - G.t0)) : 0 };
   try { store.player(PID).set("run", JSON.parse(JSON.stringify(s))); } catch (e) { /* not saved: the run still plays */ }
@@ -2506,6 +2521,7 @@ function keepGoing(R) {
   Object.assign(G, { hearts: s.hearts, streak: s.streak, solved: s.solved, tries: s.tries, running: true, retry: s.retry, recent: s.recent, recentAns: s.recentAns || [],
     next: false, paused: null, runStars: s.runStars, fx: s.fx && typeof s.fx === "object" ? s.fx : {}, chest: null, news: [], pauseWanted: false });
   MR = Object.assign(freshRun(), s.mr && typeof s.mr === "object" ? s.mr : {});
+  G.waitFrom = Array.isArray(s.waitFrom) ? s.waitFrom : null;
   if (s.stage === "floor") { loadMonster(s.floor + 1); newProblem(); return; }
   loadMonster(s.floor, true);
   Object.assign(G, { max: s.max, hp: s.hp, onFloor: s.onFloor, halved: s.halved, floorLost: s.floorLost, floorStreak: s.floorStreak, floorSlow: s.floorSlow,
@@ -2600,7 +2616,7 @@ function wireGrades(after) {
 function levelLine() {
   // Endless (a stratum whose Legend is beaten): chapters don't mean much any more.
   if (endlessOn()) return "∞ Endless: mastered facts";
-  const w = wing(), path = PATHS[w.id], s = stepsNow(w), now = (s.window.length ? s.window : s.open.slice(-1)).map((i) => path[i].name);
+  const w = wing(), path = PATHS[w.id], s = stepsNow(w), fresh = s.window.concat(s.stuck).sort((a, b) => a - b), now = (fresh.length ? fresh : s.open.slice(-1)).map((i) => path[i].name);
   return `Chapter ${chapterNow(w)} of ${chaptersOf(path)}: ${now.join(", ")}`;
 }
 // A stratum's depths on the map, as a shaft going down: depths cleared (filled), the deepest
@@ -3957,6 +3973,7 @@ function start(depth, enter, voiced, pause) {
   if (old) dropRun(old); // a run left behind isn't picked up: its armed items go back in the bag
   hide(); hideScene();
   newRun(depth);
+  G.waitFrom = waitFrom(PATHS[wing().id], stepsNow().window);
   shopRestock(); // Trollar's clothing changes after each run
   G.shopping = null;
   Object.assign(G, { hearts: band().hearts, streak: 0, solved: 0, tries: 0, running: true, retry: [], recent: [], next: false, paused: null, runStars: 0,

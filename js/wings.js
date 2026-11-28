@@ -192,10 +192,11 @@ export const pathOf = (wing) => PATHS[wing.id];
 export const megasOf = (p) => (p && p.megas) || 0;
 export function chapterOf(wing, progress) { return Math.min(chaptersOf(PATHS[wing.id]), 1 + megasOf((progress || {})[wing.id])); }
 // The steps open to a player in a stratum (learn.js openSteps), with the most that ever joined
-// (saved as wings[id].steps) kept open.
+// (saved as wings[id].steps) kept open, and the runs each step has waited for its problems
+// (wings[id].waits, learn.js waitRun) taken out of the window once they're stuck.
 export function stepsOpen(wing, progress, recs, chapter) {
   const p = (progress || {})[wing.id] || {};
-  return openSteps(PATHS[wing.id], recs, chapter || chapterOf(wing, progress), p.steps || 0);
+  return openSteps(PATHS[wing.id], recs, chapter || chapterOf(wing, progress), p.steps || 0, p.waits);
 }
 
 // The band a monster asks in a Wing: its strand there, or the Wing's band.
@@ -231,19 +232,28 @@ export function stepMonsters(path, open, first) {
   return out;
 }
 
+// The monsters of the steps still new (stepsOpen's window and its stuck steps): runFloors' favor.
+export const newMonsters = (path, o) => stepMonsters(path, [...o.window, ...(o.stuck || [])]);
+// On floors drawn at random (depth 2 and deeper), a monster of a new step comes up this many times
+// as often as the others. Drawn evenly, a step with one monster among many (Chompers' comparing in
+// the Hall) was barely asked.
+export const NEW_WEIGHT = 2;
 // One run's floors, as monsters. avail (the path's open steps' monsters, newest first,
 // stepMonsters): at depth 1 the floors are the newest steps' monsters in that order, so a new
 // monster takes a depth-1 floor from the next run; at depth 2 and deeper (DESIGN.md §6.3) every
-// floor but the rescue floor and the boss is drawn from them. Without avail, the Wing's own floors
-// and pool. Variety: never the same monster twice in a row, and none twice in a run while there
-// are others, so each run down mixes them differently.
-export function runFloors(wing, team, rnd, depth, avail, legend) {
+// floor but the rescue floor and the boss is drawn from them, the monsters of new steps (favor,
+// newMonsters) NEW_WEIGHT times as often. Without avail, the Wing's own floors and pool. Variety:
+// never the same monster twice in a row, and none twice in a run while there are others, so each
+// run down mixes them differently.
+export function runFloors(wing, team, rnd, depth, avail, legend, favor) {
   const r = rnd || Math.random, list = avail && avail.length ? avail : null, all = list || wing.pool, used = new Set();
+  const weight = (n) => (favor && favor.includes(n) ? NEW_WEIGHT : 1);
   let last = null, next = 0;
   const pick = () => {
     let options = all.filter((n) => n !== last && !used.has(n));
     if (!options.length) options = all.length > 1 ? all.filter((n) => n !== last) : all;
-    last = options[Math.floor(r() * options.length)];
+    let x = r() * options.reduce((t, n) => t + weight(n), 0);
+    last = options.find((n) => (x -= weight(n)) < 0) || options[options.length - 1];
     used.add(last);
     return mon(last);
   };

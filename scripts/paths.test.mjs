@@ -1,7 +1,7 @@
 // Paths (DESIGN.md §4.3): each stratum's steps, the window of new steps, and chapters.
 import assert from "node:assert/strict";
-import { BANDS, pool, openSteps, openLevels, reachOf, stepFacts, stepShare, chaptersOf, WINDOW, JOIN_AT, choose, probeKey, reviewFacts, placeReviews } from "../js/learn.js";
-import { WINGS, PATHS, chapterOf, megasOf, stepsOpen, stepMonsters, runFloors, openWings } from "../js/wings.js";
+import { BANDS, pool, openSteps, openLevels, reachOf, stepFacts, stepShare, chaptersOf, WINDOW, JOIN_AT, choose, probeKey, reviewFacts, placeReviews, STUCK_RUNS, STUCK_SEEN, waitFrom, waitRun } from "../js/learn.js";
+import { WINGS, PATHS, chapterOf, megasOf, stepsOpen, stepMonsters, newMonsters, runFloors, openWings, NEW_WEIGHT } from "../js/wings.js";
 import { MON } from "../js/monsters.js";
 
 const learnedRec = { b: 3, n: 1, c: 1, ms: 1000, t: 0 };
@@ -183,5 +183,81 @@ const cellar = PATHS.cellar;
   const placed = placeReviews(hall, fresh, 5, 4000);
   assert.equal(placed, rv.length - 1, "every unseen one, not one already seen");
   assert.ok(fresh["+3,4"].b === 3 && fresh["+3,4"].placed && fresh["+1,2"].b === 0);
+}
+// A step can't hold its place in the window for ever (learn.js waitRun, STUCK_RUNS). Saved by
+// name, so each path's window steps have names of their own.
+for (const [id, path] of Object.entries(PATHS)) {
+  const names = path.filter((s) => !s.ongoing && !s.review).map((s) => s.name);
+  assert.equal(new Set(names).size, names.length, `${id}: step names are unique`);
+}
+{
+  // The Hall at chapter 3, as a player saw it: chapter 1 and the equal sign learned, and three new
+  // steps in the window: comparing (Chompers only), tens and two-digit adding.
+  const hall = PATHS.hall, at = (n) => hall.findIndex((s) => s.name === n), r = {};
+  for (const s of hall) if (s.chapter === 1 || s.name === "The equal sign") for (const f of stepFacts(s)) r[f.key] = learnedRec;
+  const cmp = at("Compare with < = >"), tens = at("Add and subtract tens"), two = at("Add two-digit numbers"), shapes = at("Shapes");
+  const o = openSteps(hall, r, 3);
+  assert.deepEqual(o.window, [cmp, tens, two], "comparing holds a place");
+  assert.ok(!o.open.includes(shapes) && o.stuck.length === 0, "chapter 3 waits");
+  assert.deepEqual(openSteps(hall, r, 3, 0, { [hall[cmp].name]: STUCK_RUNS - 1 }).window, [cmp, tens, two], "not yet stuck");
+  const u = openSteps(hall, r, 3, 0, { [hall[cmp].name]: STUCK_RUNS });
+  assert.deepEqual(u.window, [tens, two, shapes], "stuck: it stops counting, and the next step joins");
+  assert.deepEqual(u.stuck, [cmp], "the stuck step is listed");
+  assert.ok(u.open.includes(cmp), "and stays open");
+  assert.equal(u.joined, o.joined + 1);
+  assert.ok(newMonsters(hall, u).includes("Chompers") && newMonsters(hall, u).includes("Polly-Gon"), "a stuck step's monsters still come up more");
+  // Once it's JOIN_AT learned it's simply done, stuck or not.
+  const r2 = Object.assign({}, r);
+  for (const f of stepFacts(hall[cmp])) r2[f.key] = learnedRec;
+  const d = openSteps(hall, r2, 3, 0, { [hall[cmp].name]: STUCK_RUNS });
+  assert.deepEqual(d.stuck, [], "learned: not stuck");
+  // A step that has had its chances (STUCK_SEEN of its facts seen) isn't stuck, however long its
+  // monster has been away: it's being learned, slowly, and keeps its place.
+  const r3 = Object.assign({}, r), cf = stepFacts(hall[cmp]);
+  cf.slice(0, Math.ceil(cf.length * STUCK_SEEN)).forEach((f) => (r3[f.key] = { b: 1, n: 2, c: 1, ms: 3000, t: 0 }));
+  assert.deepEqual(openSteps(hall, r3, 3, 0, { [hall[cmp].name]: STUCK_RUNS + 5 }).window, [cmp, tens, two], "practised: not stuck");
+  cf.slice(1, Math.ceil(cf.length * STUCK_SEEN)).forEach((f) => delete r3[f.key]);
+  assert.deepEqual(openSteps(hall, r3, 3, 0, { [hall[cmp].name]: STUCK_RUNS }).stuck, [cmp], "one fact seen: still hardly had a chance");
+  // The window never holds more than WINDOW that count, and a stuck one never closes.
+  assert.ok(u.window.length <= WINDOW);
+  // waitRun: a new step none of whose monsters came up in the run has waited a run; one whose
+  // monster came, or one learned since, hasn't.
+  const from = waitFrom(hall, o.window);
+  assert.deepEqual(from, [hall[cmp].name, hall[tens].name, hall[two].name]);
+  const met = ["Quizard", "Equal Twins", "Cursed Onesie", "Plusquito", "Triceraplus", "Judo Judy"];
+  const w = waitRun(hall, from, met, r, { [hall[cmp].name]: 1 });
+  assert.deepEqual(w, { [hall[cmp].name]: 2, [hall[tens].name]: 1 }, "no Chompers, no Haberhasher: comparing and tens waited; Plusquito asks two-digit adding");
+  assert.deepEqual(waitRun(hall, from, met, r2, {}), { [hall[tens].name]: 1 }, "a learned step never waits");
+  assert.deepEqual(waitRun(hall, from, met.concat("Chompers", "Haberhasher"), r, {}), {}, "all their monsters came");
+  // In the saved progress, through stepsOpen.
+  assert.deepEqual(stepsOpen(WINGS.find((x) => x.id === "hall"), { hall: { megas: 2, waits: { [hall[cmp].name]: STUCK_RUNS } } }, r).stuck, [cmp]);
+}
+// Deeper floors draw the new steps' monsters NEW_WEIGHT times as often (runFloors' favor), with the
+// variety rules kept, the rescue floor and the boss untouched, and depth 1 as it was.
+{
+  const hall = WINGS.find((w) => w.id === "hall"), path = PATHS.hall, team = { captain: 5, rescued: [] };
+  const avail = stepMonsters(path, path.map((_, i) => i)), favor = ["Chompers"];
+  // (mulberry32: a seeded generator good enough for counting)
+  let seed = 11; const rnd = () => { let t = (seed = (seed + 0x6d2b79f5) | 0); t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+  // Counted on the first floor (each floor's draw is weighted; a monster can't come twice in a run,
+  // so over a whole run it's less than double).
+  const count = (fav) => {
+    let n = 0, runs = 0;
+    for (let t = 0; t < 10000; t++) {
+      const fl = runFloors(hall, team, rnd, 3, avail, false, fav), names = fl.map((m) => m.base || m.n);
+      assert.ok(fl[2].cursed != null, "the rescue floor");
+      assert.ok(fl[fl.length - 1].boss, "the boss");
+      const drawn = names.slice(0, -1).filter((_, i) => i !== 2);
+      assert.equal(new Set(drawn).size, drawn.length, "none twice in a run while there are others");
+      n += drawn[0] === "Chompers"; runs += drawn.includes("Chompers");
+    }
+    return [n, runs];
+  };
+  const [plain, plainRuns] = count(null), [more, moreRuns] = count(favor);
+  assert.ok(more > plain * 1.6 && more < plain * 2.2, `Chompers weighs ${NEW_WEIGHT} to the others' 1 on a floor (2/15 against 1/14 of the Hall's 14): ${plain} → ${more}`);
+  assert.ok(moreRuns > plainRuns * 1.3, `and in more runs: ${plainRuns} → ${moreRuns}`);
+  // Without favor the draw is exactly as before (an even draw), and depth 1 ignores it.
+  assert.deepEqual(runFloors(hall, team, () => 0.5, 3, avail, false, []).map((m) => m.n), runFloors(hall, team, () => 0.5, 3, avail).map((m) => m.n));
+  assert.deepEqual(runFloors(hall, team, () => 0.5, 1, avail, false, favor).map((m) => m.n), runFloors(hall, team, () => 0.5, 1, avail).map((m) => m.n));
 }
 console.log(`✓ paths (${Object.entries(PATHS).map(([id, p]) => `${id} ${p.length} steps in ${chaptersOf(p)} chapters`).join(", ")})`);
