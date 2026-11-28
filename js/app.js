@@ -3,7 +3,7 @@
 import { MON, svg, LOOKS, lookOf, allLooks, CHOMP_SHUT, bossForm, jerseyFrac } from "./monsters.js";
 import { chompPose, morePose, mouthOf, SNAP, FLIP_MS, SNAP_MS, EAT_MS } from "./chomp.js";
 import { spokenProblem, spokenFact } from "./problems.js";
-import { BANDS, choose, factOf, record as recordAnswer, helpFor, monsterHP, probeKey, tierOf, skipTo, SKIP_PROBES, SKIP_WINDOW, MAX_LEAP, fluentTime, fluentFor, spellKey, RECENT, pool, drawHit, openLevels, reachOf, chaptersOf, pathBands, reviewFacts, placeReviews, examKey, examFacts, examRound, hpOf, endlessKey, floorTypical, typicalHit, levelTypical } from "./learn.js";
+import { BANDS, choose, factOf, record as recordAnswer, helpFor, monsterHP, probeKey, tierOf, skipTo, SKIP_PROBES, SKIP_WINDOW, MAX_LEAP, fluentTime, fluentFor, spellKey, RECENT, pool, scratchable, drawHit, openLevels, reachOf, chaptersOf, pathBands, reviewFacts, placeReviews, examKey, examFacts, examRound, hpOf, endlessKey, floorTypical, typicalHit, levelTypical } from "./learn.js";
 import { chargeFor, chargedHit, chargeBadge, chargePop, problemScale, oneHit } from "./charge.js";
 import { countSvg, readShape, judgeShape, cleanFor, isDrawKey, SHAPE_LINE, SHAPE_CODE, article } from "./shapes.js";
 import { hintFor, STRATEGIES } from "./hints.js";
@@ -447,7 +447,9 @@ function fitLine() {
   const box = $("prob"), el = box && box.querySelector(".fline, .cmp4, .wide4"), pad = document.querySelector(".pad");
   if (!el || !pad) return;
   el.style.fontSize = "";
-  const base = parseFloat(getComputedStyle(el).fontSize), right = pad.getBoundingClientRect().right + 1, left = pad.getBoundingClientRect().left - 1;
+  // Nor under the answer box beside it (the 4th grade's ✏️ makes the row a button wider).
+  const ans = $("ans"), ar = ans && ans.offsetWidth ? ans.getBoundingClientRect() : null, pr = pad.getBoundingClientRect();
+  const base = parseFloat(getComputedStyle(el).fontSize), right = Math.min(pr.right, ar && ar.left > el.getBoundingClientRect().left ? ar.left - 2 : Infinity) + 1, left = pr.left - 1;
   const out = () => { const r = el.getBoundingClientRect(); return r.right > right || r.left < left; };
   for (let k = 0.95; out() && k >= 0.5; k -= 0.05) el.style.fontSize = (base * k).toFixed(1) + "px";
 }
@@ -592,7 +594,7 @@ function stackHTML(p) {
   // ones line up under ones whatever the font: Bungee's digits aren't all the same width, and
   // long numbers drifted out of their columns.
   const cols = (n) => `<span class="scols">${[...String(n)].map((d) => `<span class="scell">${d}</span>`).join("")}</span>`;
-  // Marking regrouping (three-digit numbers and bigger, twodigit.js markable): a row above the numbers,
+  // Marking regrouping (two-digit numbers and bigger, twodigit.js markable): a row above the numbers,
   // always there so a mark never moves anything, and the top number's digits tappable to regroup.
   const mk = markable(p), M = G.marks || { carry: [], gives: [] };
   const view = mk && p.op === "-" ? regroupView(p.x, M.gives) : null;
@@ -1089,6 +1091,7 @@ function presentProblem(key, flipped, restored, elapsed) {
   G.fix = G.cur.op === "✎" ? { swapped: reduced(), done: false } : null;
   if (G.fix && !G.fix.swapped) { const cur = G.cur; setTimeout(() => { if (G.cur === cur && G.fix && !G.fix.swapped) fixSwap(); }, FIX_SWAP_MS); }
   probUI();
+  scratchClose(true); scratchUI(); // a fresh scratch pad, with its ✏️ for paper-work problems
   clockArt();
   jerseyArt();
   kaijuStomp(restored);
@@ -1332,7 +1335,7 @@ function hintNudge(cur) {
     if (G.cur !== cur || G.hinted || $("hintBtn").hidden || !G.running) return;
     // Waits out an attack, a card or the pause (G.t0 moves on by the pause), and doesn't nudge
     // while they're typing or drawing: they aren't stuck.
-    if (G.busy || G.paused || document.hidden || !$("ov").hidden || G.input !== "" || strokes.length || performance.now() - G.t0 < NUDGE_MS) return hintNudge(cur);
+    if (G.busy || G.paused || document.hidden || !$("ov").hidden || G.input !== "" || strokes.length || scratch.strokes.length || performance.now() - G.t0 < NUDGE_MS) return hintNudge(cur);
     $("hintBtn").classList.add("nudge");
     if (once("hintNudge", 3)) say("p", PHRASE.hintNudge, false, () => G.cur === cur && !G.busy && !G.hinted);
   }, Math.max(500, left));
@@ -1463,6 +1466,7 @@ function submit() {
     const pose = chompFor(G.cur, G.input);
     if (!pose) { G.input = ""; ansUI(); }
     $("hint").hidden = true; $("hintBtn").hidden = true;
+    scratchClose(true); $("scratchBtn").hidden = true;
     const critsNow = G.streak === 3 && !G.hinted;
     if (critsNow) say("p", PHRASE.crits);
     // Now and then a Hero Moment: a slow-motion close-up and a quip before the hit (moments.js).
@@ -1538,6 +1542,7 @@ function submit() {
 // and said with the worked example, and the fact comes back 2–4 problems later.
 function miss(why) {
   G.busy = true; G.streak = 0;
+  scratchClose(true); $("scratchBtn").hidden = true;
   // A charged problem (Minustaur) costs 2 hearts.
   // The Shield (an item, loot.js) blocks it: no heart lost, even on a charged miss. The fact still
   // counts as missed for learning, and still comes back.
@@ -1809,13 +1814,38 @@ function openChest(m, done) {
 function nextLock(C) {
   C.key = lockKey(st.band, recs, { recent: G.recent, not: C.key });
   C.p = lockOf(C.key); C.input = ""; C.busy = false;
+  C.scratch = { open: false, strokes: [], drawing: null }; // a fresh scratch pad for each lock
   chestShow(C, "locked");
   C.t0 = performance.now();
   say("q", askLine(C.p));
 }
+// A chest lock's scratch pad (the fight's, in the card): the board covers the title and the chest,
+// from the card's top to the pad, so the pad and Open! never move; the problem is copied at its top.
+function chestScratch(C) {
+  const b = C.scratch, box = $("chestScratch"), c = $("chestScratchPad");
+  wireBoard(c, b, () => b.open && G.chest === C && !C.busy);
+  $("chestScratchBtn").onclick = () => {
+    if (C.busy) return;
+    b.open = true; box.hidden = false; $("chestScratchBtn").setAttribute("aria-pressed", "true");
+    const pad = $("chestPad");
+    if (pad) box.style.height = Math.max(120, pad.offsetTop - 8) + "px";
+    paintBoard(c, b);
+    if (once("scratch")) say("p", PHRASE.scratchHow);
+  };
+  $("chestScratchClear").onclick = () => { b.strokes = []; b.drawing = null; paintBoard(c, b); };
+  $("chestScratchClose").onclick = () => chestScratchClose(C);
+}
+function chestScratchClose(C, wipe) {
+  const b = C.scratch;
+  if (!b) return;
+  b.open = false; b.drawing = null;
+  if (wipe) b.strokes = [];
+  if ($("chestScratch")) $("chestScratch").hidden = true;
+  if ($("chestScratchBtn")) $("chestScratchBtn").setAttribute("aria-pressed", "false");
+}
 // The lock's problem: "4 + 3 = ?", or with the glowing ? in place of the □ ("7 + ? = 10").
 function lockHTML(p) {
-  const B = '<span class="blank" id="lockAns">?</span>';
+  const B = '<span class="blank" id="lockAns" data-lockans>?</span>';
   let t = p.op === "more" ? `${p.x} <small class="or">or</small> ${p.y}` : p.op === "/" || p.frac ? stacked(esc(p.q)) : esc(bigText(p.q));
   if (t.includes("□")) t = t.replace("□", B);
   else t += (p.op === "more" ? "<br>" : " = ") + B;
@@ -1827,12 +1857,17 @@ function chestShow(C, state, msg) {
   const cmp = !!(C.p && C.p.sym), art = state === "open" ? "open" : "locked";
   const inside = state === "open" ? `<div class="loot-pop">${C.lootHTML}</div>`
     : `<div class="lock${state === "shut" ? " shut" : ""}" id="lock"><div class="lockq">${lockHTML(C.p)}</div></div>`;
+  // A lock whose problem gets the scratch pad in a fight gets it here too: ✏️ beside the lock, and
+  // a board over the chest (its own copy of the problem at the top), never over the pad.
+  const scr = state === "locked" && scratchable(C.p);
   show(`<div class="chest-card c-${state}">
     <h2>${state === "locked" && C.big ? "A big treasure chest!" : CHEST_TITLE[state]}</h2>
-    <div class="chest-box${C.big ? " big" : ""}">${chestSvg(art)}${inside}</div>
+    <div class="chest-box${C.big ? " big" : ""}">${chestSvg(art)}${inside}${scr ? '<button class="icon-btn scratch-btn chest-scratch-btn" id="chestScratchBtn" type="button" aria-label="Scratch pad" aria-pressed="false">✏️</button>' : ""}</div>
     <p class="chest-msg" id="chestMsg">${msg || (state === "locked" ? (C.tries ? "Try this lock." : "Answer the lock to open it.") : "")}</p>
     ${state === "locked" ? `<div class="pad chest-pad${cmp ? " cmp" : ""}" id="chestPad">${padKeysHTML(cmp ? "cmp" : "num", "Open!")}</div>`
-      : `<div class="btns">${state === "open" && C.piece ? '<button class="big alt" id="chestWear">👕 Put it on</button>' : ""}<button class="big" id="chestNext">Next</button></div>`}</div>`, "float chest");
+      : `<div class="btns">${state === "open" && C.piece ? '<button class="big alt" id="chestWear">👕 Put it on</button>' : ""}<button class="big" id="chestNext">Next</button></div>`}
+    ${scr ? `<div class="scratch chest-scratch" id="chestScratch" hidden><canvas id="chestScratchPad" aria-label="Scratch pad: work it out here"></canvas><div class="scratch-q" aria-hidden="true">${lockHTML(C.p).replace(' id="lockAns"', "")}</div><div class="scratch-tools"><button type="button" id="chestScratchClear" aria-label="Clear the scratch pad">Clear</button><button type="button" class="scratch-close" id="chestScratchClose" aria-label="Close the scratch pad">✕</button></div></div>` : ""}</div>`, "float chest");
+  if (scr) chestScratch(C);
   if ($("chestPad")) $("chestPad").onclick = (e) => { const b = e.target.closest("button"); if (b) chestPress(b.dataset.k); };
   // Clothing found: put it on the captain now (it shows on the hearts row at once), then Next.
   if ($("chestWear")) $("chestWear").onclick = () => {
@@ -1851,13 +1886,14 @@ function chestPress(k) {
   if (k === "del") C.input = C.input.slice(0, -1);
   else if (sym) C.input = k;
   else if (C.input.length < digitsMax(C.p)) C.input = (C.input === "0" ? "" : C.input) + k;
-  const a = $("lockAns");
-  if (a) { a.textContent = C.input || "?"; a.classList.toggle("typed", !!C.input); }
+  // The lock's □, and its copy on the scratch pad.
+  document.querySelectorAll("[data-lockans]").forEach((a) => { a.textContent = C.input || "?"; a.classList.toggle("typed", !!C.input); });
 }
 function chestSubmit(C) {
   if (C.input === "") return;
   const p = C.p, ok = p.sym ? C.input === p.sym : Number(C.input) === p.ans;
   C.busy = true;
+  chestScratchClose(C, true); // opened or jammed, the scratch work goes
   // Recorded like any answer (learn.js record), with no damage.
   const ms = performance.now() - C.t0, limit = fluentFor(st.band, C.key, p.sym || p.ans);
   recs[C.key] = recordAnswer(recs[C.key], { ok, ms, hinted: false, now: Date.now(), fluentMs: limit });
@@ -2226,6 +2262,7 @@ function pause(auto) {
     G.paused = { at: performance.now() };
     saveRun("problem"); // with the answer time so far
     musicNow(MUSIC_PAUSE_FADE);
+    $("scratch").hidden = true; // the scratch pad waits, strokes and all, for Keep fighting
   }
   stopSpeech();
   if (justPaused && !(auto === true && document.hidden) && once("pause", 3)) say("p", PHRASE.paused);
@@ -2244,7 +2281,7 @@ function pause(auto) {
   $("pExit").onclick = () => {
     const b = $("pExit");
     if (b.dataset.sure !== "1") { b.dataset.sure = "1"; b.textContent = "Exit? This run ends"; say("p", PHRASE.exitSure, true); return; }
-    G.paused = null; G.running = false; clearRun(); record(); refundArmed(); musicNow();
+    G.paused = null; G.running = false; clearRun(); record(); refundArmed(); musicNow(); scratchClose(true);
     newRun(); loadMonster(0, true);
     menu();
   };
@@ -2256,6 +2293,7 @@ function resume() {
   G.t0 += performance.now() - p.at;
   musicNow();
   slotsUI(); // slots set from the pause screen's 🎒 Items
+  if (scratch.open) { $("scratch").hidden = false; paintScratch(); }
   // The dot flash's dots waited through the pause: their whole look again.
   if (G.flash && G.flash.held) { G.flash.held = false; flashHide(G.cur); }
 }
@@ -4412,6 +4450,77 @@ function pollySquawk(p, quiet) {
   sfx.squawk();
   if (!quiet) say("m", squawk(p), false, asked(p));
 }
+
+/* ---------- the scratch pad ----------
+   Paper-work problems (learn.js scratchable: 4th grade's big + and −, × and ÷, remainders and
+   multi-step problems; any + or − of numbers of 10 or more that regroups; several two-digit numbers
+   added up) get a ✏️ by the problem. It turns the monster's box into a chalkboard to write on with
+   a finger (or a mouse) in the player's chalk color, while the problem, the answer and the number
+   pad stay where they are. A chest's lock gets one too (chestScratch). The game never reads it: it
+   isn't a hint, and changes no timing, record, damage or star. Never saved. It clears and closes
+   with the problem (the next one, a hit or a miss); the pause hides it, and Keep fighting brings it
+   back as it was. Its strokes are kept in CSS px, so a resize (a hint opening on a phone) repaints. */
+const scratch = { open: false, strokes: [], drawing: null };
+const SCRATCH_CHALK = "#f3efe4";
+// The strokes of a board (b: { strokes }) on its canvas, in chalk.
+function paintBoard(c, b) {
+  if (!c || !c.isConnected) return;
+  const r = c.getBoundingClientRect(), dpr = devicePixelRatio || 1;
+  if (!r.width || !r.height) return;
+  if (c.width !== Math.round(r.width * dpr) || c.height !== Math.round(r.height * dpr)) { c.width = Math.round(r.width * dpr); c.height = Math.round(r.height * dpr); }
+  const g = c.getContext("2d");
+  g.setTransform(dpr, 0, 0, dpr, 0, 0);
+  g.clearRect(0, 0, r.width, r.height);
+  // Chalk: the player's color, a soft edge, a little see-through.
+  const ink = team.color || SCRATCH_CHALK;
+  g.lineCap = g.lineJoin = "round"; g.lineWidth = 4; g.strokeStyle = ink; g.shadowColor = ink; g.shadowBlur = 2; g.globalAlpha = 0.92;
+  for (const s of b.strokes) {
+    g.beginPath();
+    s.forEach(([x, y], i) => (i ? g.lineTo(x, y) : g.moveTo(x, y)));
+    if (s.length === 1) g.lineTo(s[0][0] + 0.5, s[0][1]);
+    g.stroke();
+  }
+}
+// Drawing on a board's canvas with one finger, a pen or a mouse; can() says whether it may now.
+// A second finger adds no stroke (two fingers are the pinch blocking's).
+function wireBoard(c, b, can) {
+  const at = (e) => { const r = c.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; };
+  c.addEventListener("pointerdown", (e) => {
+    if (!can() || (e.pointerType === "mouse" && e.button !== 0) || (b.drawing && e.isPrimary === false)) return;
+    e.preventDefault(); c.setPointerCapture(e.pointerId);
+    b.drawing = { id: e.pointerId, pts: [at(e)] }; b.strokes.push(b.drawing.pts); paintBoard(c, b);
+  });
+  c.addEventListener("pointermove", (e) => { if (!b.drawing || b.drawing.id !== e.pointerId) return; b.drawing.pts.push(at(e)); paintBoard(c, b); });
+  const up = (e) => { if (b.drawing && b.drawing.id === e.pointerId) b.drawing = null; };
+  c.addEventListener("pointerup", up); c.addEventListener("pointercancel", up);
+  if (window.ResizeObserver) new ResizeObserver(() => paintBoard(c, b)).observe(c);
+}
+function scratchUI() {
+  const can = !!G.cur && scratchable(G.cur) && !G.cur.spell && !G.cur.draw;
+  $("scratchBtn").hidden = !can;
+  $("scratchBtn").parentElement.classList.toggle("scratchy", can); // the buttons stack (styles.css)
+  if (!can) scratchClose(true);
+  requestAnimationFrame(fitLine);
+}
+function scratchOpen() {
+  if (G.busy || !G.running || scratch.open) return;
+  scratch.open = true;
+  $("scratch").hidden = false; $("scratchBtn").setAttribute("aria-pressed", "true");
+  paintScratch();
+  if (once("scratch")) say("p", PHRASE.scratchHow, false, asked(G.cur));
+}
+// ✕ (or ✏️ again) puts it away, the work kept for this problem; wipe also clears it (the next
+// problem, a hit or a miss).
+function scratchClose(wipe) {
+  scratch.open = false; scratch.drawing = null;
+  if (wipe) scratch.strokes = [];
+  $("scratch").hidden = true; $("scratchBtn").setAttribute("aria-pressed", "false");
+}
+function paintScratch() { if (!$("scratch").hidden) paintBoard($("scratchPad"), scratch); }
+wireBoard($("scratchPad"), scratch, () => scratch.open && !G.paused);
+$("scratchBtn").onclick = () => (scratch.open ? scratchClose() : scratchOpen());
+$("scratchClear").onclick = () => { scratch.strokes = []; scratch.drawing = null; paintScratch(); };
+$("scratchClose").onclick = () => scratchClose();
 
 // The number pad, or for a comparison (Chompers) the < = > keys, filling the same space.
 // Delete is drawn (a ⌫ from a font came out far smaller than the Bungee digits), sized in em so

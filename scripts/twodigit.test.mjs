@@ -106,11 +106,13 @@ assert.equal(hintFor({ op: "-", x: 405, y: 10, ans: 395 }, true).say, "10 less: 
 // regroups that always add up to the top number.
 {
   const { markable, MARK_AT, toggleCarry, regroup, regroupMove, regroupView } = await import("../js/twodigit.js"), { sumFact } = await import("../js/three.js");
-  assert.equal(MARK_AT, 100);
+  assert.equal(MARK_AT, 10);
   assert.ok(markable({ op: "+", x: 287, y: 359, ans: 646, stacked: true }) && markable({ op: "-", x: 4012, y: 1587, ans: 2425, stacked: true }));
   assert.ok(!markable({ op: "+", x: 287, y: 359, ans: 646 }), "only stacked");
-  assert.ok(!markable({ op: "+", x: 68, y: 45, ans: 113, stacked: true }), "two-digit numbers have no marks, even past 100");
-  assert.ok(!markable(Object.assign(sumFact([23, 14, 31, 12]), { stacked: true })), "two-digit numbers added up: none");
+  assert.ok(markable({ op: "+", x: 68, y: 45, ans: 113, stacked: true }), "two-digit numbers have marks");
+  assert.ok(markable({ op: "-", x: 52, y: 28, ans: 24, stacked: true }), "two-digit taking away has marks");
+  assert.ok(markable(Object.assign(sumFact([23, 14, 31, 12]), { stacked: true })), "two-digit numbers added up: marks");
+  assert.ok(!markable(Object.assign(sumFact([4, 6, 3]), { stacked: true })), "one-digit numbers added up: none");
   assert.ok(markable(Object.assign(sumFact([123, 214, 331]), { stacked: true })), "three-digit numbers added up: marks");
   assert.ok(!markable({ op: "×", x: 4, y: 300, ans: 1200, stacked: true }));
   // Carries: toggled, never into the ones or past the widest column.
