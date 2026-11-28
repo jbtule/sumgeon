@@ -27,6 +27,7 @@ import { angleFacts, shapeAngleFacts } from "./angles.js";
 import { QUIPS, FINALS, CRIT, TEAM_LINES, TEAM_NUMBERS, CAPTAIN_LINES, captainNames } from "./moments.js";
 import { fewest, ITEMS } from "./loot.js";
 import { clothesById, findable } from "./clothes.js";
+import { PLUSHIES, plushById, heroOfPlush } from "./plushie.js";
 import { allPrices, allTotals, MANY } from "./shop.js";
 import { coinWords } from "./coins.js";
 import { BANDS, pool, factOf, pathBands } from "./learn.js";
@@ -130,7 +131,9 @@ var SAY_AS = [[/\bTwodini\b/g, "Toodini"], [/\bJr\./g, "Junior"], [/\bMr\./g, "M
   // "bows" (bending, the bosses' and Doublet's beaten lines) is BOZE to Kokoro, as in bow and arrow;
   // "bowse" is baʊz, rhyming with cows.
   [/\bbows\b/g, "bowse"],
-  [/\bTriceraplus\b/g, "Trisaira-plus"], [/\bTriceracool\b/g, "Trisaira-cool"], [/\bTricera-tot\b/g, "Trisaira-tot"]];
+  [/\bTriceraplus\b/g, "Trisaira-plus"], [/\bTriceracool\b/g, "Trisaira-cool"], [/\bTricera-tot\b/g, "Trisaira-tot"],
+  // The plushie Tricerafluff, the same way.
+  [/\bTricerafluff\b/g, "Trisaira-fluff"]];
 function sayAs(t) { return SAY_AS.reduce(function (s, r) { return s.replace(r[0], r[1]); }, t); }
 // A Hero Moment's quip (moments.js), as the voice says it.
 export function quipLine(q) { return sayAs(q); }
@@ -309,6 +312,11 @@ export function clothingName(id) {
   var w = pieceWords(id), low = w[0].toLowerCase() + w.slice(1);
   return PAIRS[id] ? w + "!" : (/^[aeiou]/i.test(w) ? "An " : "A ") + low + "!";
 }
+// Plushies (plushie.js): a plushie's name, said when it's found in a chest or tapped in the shop
+// ("A Mootaur plushie!"), and whose favorite it is ("It's High Five's favorite!"). In the "loot"
+// sprite; their prices are in "shop" (priceLine).
+export function plushName(id) { var n = plushById[id].name; return sayAs((/^[aeiou]/i.test(n) ? "An " : "A ") + n + " plushie!"); }
+export function plushFavLine(id) { var d = heroOfPlush(id); return sayAs("It's " + HEROES[d].n + "'s favorite!"); }
 // Trollar's shop: what he says, in the "shop" sprite with the prices. Short, for a pre-reader.
 export var SHOP = {
   hello: "Welcome to my shop!",
@@ -331,7 +339,7 @@ export var SHOP = {
 // the number matches the tag. thing: { kind: "item" | "clothing", id }.
 var ITEM_THE = { pie: "The pie", shield: "The shield", totem: "The Times Two Totem", magnet: "The Hero Magnet" };
 export function priceLine(thing, c) {
-  var what = thing.kind === "item" ? ITEM_THE[thing.id] : "The " + pieceWords(thing.id).toLowerCase();
+  var what = thing.kind === "item" ? ITEM_THE[thing.id] : thing.kind === "plush" ? "The " + sayAs(plushById[thing.id].name) + " plushie" : "The " + pieceWords(thing.id).toLowerCase();
   return what + (thing.kind === "clothing" && PAIRS[thing.id] ? " cost " : " costs ") + cents(c) + ".";
 }
 // More than one item (shop.js MANY): "Three pies cost one hundred five cents.", or in dollars once
@@ -356,7 +364,7 @@ export function achievementLine(a, k) { return cardLines(a)[k]; }
 
 // [{ kind, text }], each once.
 // The groups the listen check (review/listen/) plays lines in.
-export var GROUPS = ["Phrases", "Monsters & heroes", "Add & subtract", "Times & divide", "Missing numbers", "Which is more", "Coins", "Two-digit", "Three-digit", "Balance Hall", "Compare to 1000", "Three numbers", "Up to four numbers", "Arrays", "Time", "Patterns", "True or false", "Place value", "Dollars", "Number line", "Shapes", "Fractions", "Compare fractions", "Rounding", "Area & perimeter", "Dot flash", "Big numbers", "Big × and ÷", "Remainders", "Steps & factors", "Fraction work", "Decimals", "Angles & shapes", "Measurement", "Prime or composite", "Hero quips", "Team-ups", "Captain lines", "Boss forms", "Chests & items", "Money", "Shop", "Clothing", "Achievements"];
+export var GROUPS = ["Phrases", "Monsters & heroes", "Add & subtract", "Times & divide", "Missing numbers", "Which is more", "Coins", "Two-digit", "Three-digit", "Balance Hall", "Compare to 1000", "Three numbers", "Up to four numbers", "Arrays", "Time", "Patterns", "True or false", "Place value", "Dollars", "Number line", "Shapes", "Fractions", "Compare fractions", "Rounding", "Area & perimeter", "Dot flash", "Big numbers", "Big × and ÷", "Remainders", "Steps & factors", "Fraction work", "Decimals", "Angles & shapes", "Measurement", "Prime or composite", "Hero quips", "Team-ups", "Captain lines", "Boss forms", "Chests & items", "Money", "Shop", "Clothing", "Plushies", "Achievements"];
 
 // [{ kind, text, group, sprite? }], each once.
 export function spokenLines() {
@@ -492,6 +500,9 @@ export function spokenLines() {
   allTotals().forEach(function (t) { [false, true].forEach(function (d) { add("p", manyLine(t, t.n, t.c, d), "Shop", "shop"); }); });
   for (c = 1; c < MANY; c++) add("p", affordLine(c), "Shop", "shop");
   findable().forEach(function (p) { add("p", clothingName(p.id), "Clothing", "clothes"); });
+  // Plushies: each one's name and whose favorite it is, in the "loot" sprite (found in a chest,
+  // tapped in the shop or on the start scene's hero card).
+  PLUSHIES.forEach(function (p) { add("p", plushName(p.id), "Plushies", "loot"); add("p", plushFavLine(p.id), "Plushies", "loot"); });
   // Achievement cards (achievements.js, DESIGN.md §14): "New achievement!", each one's title,
   // what it took and its reward, in their own sprite, "achievements".
   achievementLines().forEach(function (t) { add("p", t, "Achievements", "achievements"); });

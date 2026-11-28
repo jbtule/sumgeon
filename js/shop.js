@@ -4,7 +4,8 @@
 // It sells the four items, always in stock, and a rotating handful of clothing the player doesn't
 // own (STOCK pieces, new after each run, never the special ones). Prices are in cents. A K player's
 // are single coins (a nickel, a dime, a quarter); older players' are like 35¢ or 60¢, and clothing
-// uses each piece's price hint (clothes.js).
+// uses each piece's price hint (clothes.js). A plushie (plushie.js) is in stock with the clothing,
+// a quarter for a K player and its own price (75–95¢) for older ones.
 //
 // Paying is the math: the purse is the wallet as the fewest bills and coins (loot.js fewest), and
 // the player taps them onto the counter, one at a time, until there's enough. The game never pays:
@@ -12,6 +13,7 @@
 // wallet stays cents: the coins shown are always derived from it.
 import { ITEMS, fewest } from "./loot.js";
 import { clothesById, findable } from "./clothes.js";
+import { PLUSHIES, isPlush, plushById } from "./plushie.js";
 
 export const ITEM_PRICE = { pie: 35, shield: 45, totem: 60, magnet: 50 };
 export const K_ITEM_PRICE = { pie: 5, shield: 10, totem: 10, magnet: 25 };
@@ -19,8 +21,10 @@ export const K_CLOTHING_PRICE = 25;
 // K prices for a kindergartner (grade 0, or no grade picked yet).
 export const kPrices = (grade) => grade == null || grade === 0;
 // A thing for sale: { kind: "item" | "clothing", id }. Its price in cents.
+export const K_PLUSH_PRICE = 25;
 export function priceOf(thing, k) {
   if (thing.kind === "item") return (k ? K_ITEM_PRICE : ITEM_PRICE)[thing.id];
+  if (thing.kind === "plush") { const p = plushById[thing.id]; return p && isPlush(p.id) && p.price ? (k ? K_PLUSH_PRICE : p.price) : null; }
   const p = clothesById[thing.id];
   if (!p || p.tier === "special" || p.price == null) return null;
   return k ? K_CLOTHING_PRICE : p.price;
@@ -31,20 +35,25 @@ export function allPrices() {
   for (const k of [true, false]) {
     ITEMS.forEach((i) => out.push({ kind: "item", id: i.id, k, c: priceOf({ kind: "item", id: i.id }, k) }));
     findable().forEach((p) => out.push({ kind: "clothing", id: p.id, k, c: priceOf({ kind: "clothing", id: p.id }, k) }));
+    PLUSHIES.filter((p) => p.price).forEach((p) => out.push({ kind: "plush", id: p.id, k, c: priceOf({ kind: "plush", id: p.id }, k) }));
   }
   return out;
 }
 
 /* ---------- the stock ---------- */
-export const STOCK = 4;
-// Saved per player as shop: { stock: [piece ids] }.
+export const STOCK = 4, PLUSH_STOCK = 1;
+// Saved per player as shop: { stock: [piece ids, then plushie ids] }.
 export function freshShop(saved) {
-  const s = saved && typeof saved === "object" ? saved : {};
-  return { stock: Array.isArray(s.stock) ? s.stock.filter((id) => clothesById[id] && clothesById[id].tier !== "special").slice(0, STOCK) : [] };
+  const s = saved && typeof saved === "object" ? saved : {}, all = Array.isArray(s.stock) ? s.stock : [];
+  const cloth = all.filter((id) => clothesById[id] && clothesById[id].tier !== "special").slice(0, STOCK);
+  const plush = [...new Set(all.filter((id) => isPlush(id) && plushById[id].price))].slice(0, PLUSH_STOCK);
+  return { stock: cloth.concat(plush) };
 }
 // A new handful of clothing (after each run): STOCK pieces the player doesn't own, picked at
 // random, unlike the last handful when there are enough others.
-export function restock(owned, rnd, prev) {
+// plush (the plushies owned), when given, adds PLUSH_STOCK plushies not owned yet (one bought is
+// sold out until the next handful), unlike the last when it can.
+export function restock(owned, rnd, prev, plush) {
   const r = rnd || Math.random, left = findable().filter((p) => !(owned || []).includes(p.id)).map((p) => p.id);
   const fresh = left.filter((id) => !(prev || []).includes(id)), from = fresh.length >= STOCK ? fresh : left.slice();
   const out = [];
@@ -52,13 +61,20 @@ export function restock(owned, rnd, prev) {
   // Topped up from the last handful when there weren't enough new ones.
   const rest = left.filter((id) => !out.includes(id));
   while (out.length < STOCK && rest.length) out.push(rest.splice(Math.floor(r() * rest.length), 1)[0]);
+  if (plush) {
+    const pl = PLUSHIES.filter((p) => p.price && !plush.includes(p.id)).map((p) => p.id), pf = pl.filter((id) => !(prev || []).includes(id));
+    const pfrom = pf.length >= PLUSH_STOCK ? pf : pl;
+    for (let i = 0; i < PLUSH_STOCK && pfrom.length; i++) out.push(pfrom.splice(Math.floor(r() * pfrom.length), 1)[0]);
+  }
   return out;
 }
 // What's on sale now: the four items, then the stock's pieces not owned yet (one bought is sold
 // out until the next run's handful).
-export function forSale(shop, owned) {
+// plush: the plushies owned, so one bought is sold out too.
+export function forSale(shop, owned, plush) {
   return ITEMS.map((i) => ({ kind: "item", id: i.id }))
-    .concat(shop.stock.filter((id) => !(owned || []).includes(id)).map((id) => ({ kind: "clothing", id })));
+    .concat(shop.stock.filter((id) => clothesById[id] && !(owned || []).includes(id)).map((id) => ({ kind: "clothing", id })))
+    .concat(shop.stock.filter((id) => isPlush(id) && !(plush || []).includes(id)).map((id) => ({ kind: "plush", id })));
 }
 
 /* ---------- paying ----------

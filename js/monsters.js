@@ -248,6 +248,31 @@ MON.push(
   const real = NEW_MON.find((m) => m.n === "The Centipede"), i = MON.findIndex((m) => m.n === "The Centipede");
   if (real && i >= 0) { MON[i] = Object.assign({}, MON[i], { c: real.c, d: real.d, quip: real.quip }); NEW_MON.splice(NEW_MON.indexOf(real), 1); }
 }
+// Rulerpillar (NEW_MON, a prototype: measuring length, js/length.js, review/proto/): an inchworm
+// humped up mid-inch, a ruler's yellow edge and its tick marks down its back (a long tick every
+// fourth, as an inch has its quarters). Its head is the front end, down on the ground.
+{
+  const ARCH = [[28, 186], [28, 34], [150, 34], [150, 152]];
+  const bez = (t) => { const u = 1 - t, k = [u * u * u, 3 * u * u * t, 3 * u * t * t, t * t * t]; return [0, 1].map((j) => ARCH.reduce((a, p, i) => a + k[i] * p[j], 0)); };
+  // The ticks cross the ruler stripe, square to the arch.
+  const ticks = Array.from({ length: 17 }, (_, i) => {
+    const t = 0.08 + i * 0.05, [x, y] = bez(t), [x2, y2] = bez(t + 0.001), d = Math.hypot(x2 - x, y2 - y), nx = (y2 - y) / d, ny = -(x2 - x) / d, l = i % 4 === 0 ? 14 : 8;
+    return `M${f1(x - nx * 7)} ${f1(y - ny * 7)} L${f1(x - nx * (7 - l))} ${f1(y - ny * (7 - l))}`;
+  }).join(' ');
+  const arch = `M${ARCH[0].join(' ')} C${ARCH.slice(1).map((p) => p.join(' ')).join(', ')}`;
+  NEW_MON.push(
+ {n:'Rulerpillar',op:'ℓ',sym:'📏',stratum:'cellar, hall, mines, tower',c:'#8fd14f',hits:3,
+  trait:{icon:'📏',name:'Inch by Inch',text:'Asks how long things are: longer or shorter, units end to end, then a ruler'},
+  quip:'inches away, one hump at a time.',
+  d:c=>`${foot(30,194,15)}${foot(148,194,12)}${foot(178,194,12)}`
+   +line(`<path d="${arch}"/>`,c,34)
+   +`<path d="${arch}" fill="none" stroke="${GOLD}" stroke-width="13" stroke-linecap="round" opacity=".95"/>`
+   +`<path d="${ticks}" stroke="${DK}" stroke-width="2.6" stroke-linecap="round"/>`
+   +line(`<path d="M152 124 Q144 104 134 98 M172 124 Q180 104 192 100"/>`,c,4)+solid(`<circle cx="133" cy="97" r="6"/><circle cx="193" cy="99" r="6"/>`,GOLD)
+   +solid(`<circle cx="162" cy="150" r="30"/>`,c)
+   +`<ellipse cx="143" cy="156" rx="5.5" ry="3.5" fill="#ff7a6e" opacity=".7"/><ellipse cx="181" cy="156" rx="5.5" ry="3.5" fill="#ff7a6e" opacity=".7"/>`
+   +eye(151,136,9)+eye(173,136,9)+`<path d="M153 156 Q162 165 171 156" ${ds} stroke-width="3.5"/>`});
+}
 
 // Batch 1 of the strands (DESIGN.md §4.1): Tick-Tockus (time, js/clock.js) and Slimelipsis (what
 // comes next, js/patterns.js) leave NEW_MON. Tick-Tockus is the prototype's clock with its
@@ -374,6 +399,35 @@ function denominator(c, eyes = EMBER) {
    +rivets([[67,29],[133,29],[67,76],[133,76]]);
 }
 MON.push({n:'The Denominator',op:'mix',sym:'▭/▭',stratum:'forge',c:'#8e9aa6',hits:6,boss:1,quip:'clanks to pieces, every piece the same size.',d:(c)=>denominator(c)});
+// Graphzilla (reading charts, js/charts.js; on the prototype page, not in the game yet): a friendly
+// kaiju standing upright, its back plates a bar chart rising behind it, in the colors of the chart's
+// things. The plates take the problem's data (m.plates, [{ v, c }], up to four; charts.js platesOf),
+// as Tick-Tockus's clock shows the time asked. A round body, a striped belly, a short tail, round feet.
+const GZ_PLATES = [{ v: 3, c: GOLD }, { v: 5, c: CORAL }, { v: 2, c: '#45d6e6' }, { v: 4, c: '#9a7bff' }];
+function graphzilla(c, plates) {
+  const ps = (plates && plates.length ? plates : GZ_PLATES).slice(0, 4), most = Math.max(1, ...ps.map((p) => p.v));
+  const x0 = 40, span = 120, slot = span / ps.length, w = Math.min(24, slot - 4), BASE = 110;
+  const bars = ps.map((p, i) => { const h = 40 + 58 * Math.max(0, p.v) / most; return solid(`<rect x="${f1(x0 + slot * i + (slot - w) / 2)}" y="${f1(BASE - h)}" width="${f1(w)}" height="${f1(h + 14)}" rx="5"/>`, p.c); }).join('');
+  const BELLY = '#c8f0dc';
+  return bars
+  // A short tail, then the body and its striped belly.
+  +solid(`<path d="M150 170 Q186 176 190 160 Q172 168 150 156 Z"/>`,c)
+  +solid(`<path d="M56 170 Q50 92 100 86 Q150 92 144 170 Q144 196 100 196 Q56 196 56 170 Z"/>`,c)
+  +solid(`<ellipse cx="100" cy="166" rx="28" ry="25"/>`,BELLY)
+  +`<path d="M82 156 H118 M78 168 H122 M84 180 H116" ${thin(2.5)} opacity=".25"/>`
+  // Round feet and little arms.
+  +solid(`<ellipse cx="74" cy="198" rx="20" ry="9"/><ellipse cx="126" cy="198" rx="20" ry="9"/>`,c)
+  +solid(`<ellipse cx="54" cy="160" rx="9" ry="15" transform="rotate(25 54 160)"/><ellipse cx="146" cy="160" rx="9" ry="15" transform="rotate(-25 146 160)"/>`,c)
+  // The face: round eyes, cheeks, a smile.
+  +eye(86,114,10)+eye(114,114,10)
+  +`<ellipse cx="74" cy="130" rx="7" ry="4" fill="#ff7a6e" opacity=".6"/><ellipse cx="126" cy="130" rx="7" ry="4" fill="#ff7a6e" opacity=".6"/>`
+  +`<path d="M90 130 Q100 138 110 130" ${ds}/>`;
+}
+NEW_MON.push(
+ {n:'Graphzilla',op:'▥',sym:'📊',stratum:"every stratum, its grade's charts",c:'#2fa37a',hits:3,
+  trait:{icon:'📊',name:'Chart Stomp',text:"Asks reading charts, its stratum's grade of them; its back plates are the chart's bars"},
+  quip:'stomps off to draw a bigger chart.',
+  d:(c,m)=>graphzilla(c,m&&m.plates)});
 
 /* ---------- Chompers' jaws ----------
    Chompers' mouth is the < symbol: two jaws hinged at (44, 100). jaw.o is how open they are (1,
@@ -436,7 +490,11 @@ export const ANCHOR = {
   Dotty: { eyes: [[84, 102, 11], [116, 102, 11]], mouth: [100, 128], top: [100, 58], neck: [100, 150], ground: 182 },
   Boomainder: { eyes: [[94, 54, 9], [124, 54, 9]], mouth: [110, 82], top: [100, 12], neck: [100, 104], ground: 192 },
   // Polly-Gon (NEW_MON): its mouth is the beak, its top the head under the crest.
-  "Polly-Gon": { eyes: [[86, 40, 11], [114, 40, 11]], mouth: [100, 62], top: [100, 12], neck: [100, 80], ground: 196 }
+  "Polly-Gon": { eyes: [[86, 40, 11], [114, 40, 11]], mouth: [100, 62], top: [100, 12], neck: [100, 80], ground: 196 },
+  // Graphzilla (NEW_MON): upright, its head the top of its round body; no neck, so it's under the smile.
+  Graphzilla: { eyes: [[86, 114, 10], [114, 114, 10]], mouth: [100, 132], top: [100, 88], neck: [100, 144], ground: 205 },
+  // Rulerpillar (NEW_MON): its head is the front end of the arch.
+  Rulerpillar: { eyes: [[151, 136, 9], [173, 136, 9]], mouth: [162, 156], top: [162, 118], neck: [162, 178], ground: 196 }
 };
 const st = `stroke="${DK}" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"`;
 // Each accessory: (anchor, color) → SVG drawn over the monster.

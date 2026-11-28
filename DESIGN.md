@@ -101,7 +101,7 @@ The dungeon is a map of **Wings**, shown in the game as **strata**. Each Wing ha
 ### 4.1 The grade strata (plan, 2026-11-25)
 One stratum per grade, in a **straight chain**: each opens only the next. The levels inside each follow the school's teaching order. The audience stops at 5th grade, but one **stretch stratum** of 6th-grade math, Pirate Cavern, sits under the Pyramid so a 5th grader who finishes it can keep going, and the game ends there. Its content follows the school's 6th-grade guide.
 
-**Left out of fights** (they don't fit a quick typed answer): naming shapes from a list (shapes are drawn and counted instead: Polly-Gon, below), angles and symmetry, graphs and line plots, the coordinate plane, inequalities, days and seasons, sorting, word problems, and measurement conversions (for now). Writing numerals is practiced by spell casting.
+**Left out of fights** (they don't fit a quick typed answer): naming shapes from a list (shapes are drawn and counted instead: Polly-Gon, below), angles and symmetry, the coordinate plane, inequalities, days and seasons (the K calendar), sorting, word problems, and measurement conversions (for now). Graphs and line plots were left out too, until Graphzilla (§4.5, a prototype); word problems and the K calendar are left out for good (decided 2026-11-27: recording every prompt isn't practical). Writing numerals is practiced by spell casting.
 
 | Stratum | Grade | Levels (in order) | Monsters | Boss |
 |---|---|---|---|---|
@@ -183,6 +183,7 @@ Every Wing also has one **rescue floor** holding a cursed digit (§6.6). The pro
 - **Shoutandcomma (!)**: a mummy whose tall wrapped body is the !, with the dot as its feet. The name is a pun on Tutankhamun. The Parenthesis Pyramid's boss (5th grade): like every boss it mixes its stratum's problems, and its boss roars are the mummy rising from its tomb. *Unwrap*: at half HP its wrappings come off and its problems turn to big numbers, powers of ten and place value (10³ = □; how many zeros in 10⁵).
 - **Slimelipsis (…)**: three little slimes in a row, in the Crystal Mines (2nd grade). *What comes next*: skip counting by 2s, 5s and 10s (2, 4, 6, □; 15, 20, □).
 - **Doublet (+ + twins)**: two plus signs who do everything together, in the Balance Hall. *Doubles*: doubles facts and doubles to subtract (8 + 8, 16 − 8).
+- **Graphzilla (📊)**: a friendly kaiju standing upright, its back plates a bar chart rising behind it (the bars take each problem's data). *Chart Stomp*: reading charts, its stratum's grade of them (§4.5).
 - **Tick-Tockus**: a clock monster whose hands are its arms. *Tell the time*: hours and half hours in the Hall, 5 minutes in the Mines, the minute in the Tower; the answer is the minutes or the hour, typed.
 - **Judo Judy (⇄)**: the Balance Hall's boss, a judo fighter whose body is a big ⇄ (turnaround arrows): the top arrow (→) is the arms in a white gi sleeve, its head an open hand reaching to grab; the bottom arrow (←) is the legs in white gi pants, its head a bare foot sweeping in a throw; the black belt between them is a fraction bar; a round head with a red headband and a top-knot sits on top. *Flip*: an addition with the smaller number first (3 + 8) is thrown so it shows 8 + 3, the commutative property as a judo throw: same answer, the same fact. Everything else comes as the Hall's mix. Beaten, Judo Judy taps out and bows. Game text always uses the name, never a pronoun.
 - **The Unknown (x)** (retired): the Hall's first boss, *Shapeshift* (switching between comparing and balancing). Replaced by Judo Judy; its art stays in `RETIRED` for the gallery.
@@ -221,7 +222,7 @@ _Decided with the user: each stratum follows its grade's teaching order, opened 
 - **Kindergarten:** the units are "ongoing", so the order below follows what builds on what.
 - **3rd grade:** the guide lists topics without lesson numbers. Its multiplication-before-division order is confirmed by the class (2026-11-26: no division yet this year, after the × facts).
 
-Left out everywhere, as before: graphs and data, measuring length, word problems, and the K calendar unit (days of the week, seasons, birthdays). None of them is a quick typed number.
+Left out everywhere, as before: graphs and data, measuring length (a prototype since 2026-11-27, §4.6), word problems, and the K calendar unit (days of the week, seasons, birthdays). None of them is a quick typed number.
 
 **The problem today.** A stratum has one ladder of levels (its band, which opens the next stratum at 60%) and strands beside it (coins, time, patterns, arrays, comparing…). Every strand is open from the first day, so a 2nd grader can meet arrays and odd and even (the year's last two lessons) before two-digit adding.
 
@@ -467,6 +468,92 @@ What changed: the order follows the guide's units; four priority standards the r
 - **Word problems, and interpreting remainders in context** ("29 kids, 4 to a car: how many cars?"): long text to read, and the voice would carry most of it. The remainder itself is in.
 - **Reading and writing numbers in word form**: reading, not math typed on a pad.
 - **Multiplicative comparison** ("3 times as many"): word problems; the facts themselves are the multiplication levels.
+
+### 4.5 Reading charts: Graphzilla (prototype, 2026-11-27)
+Graphs and data were the one strand of every grade's standards with nothing in the game. Graphzilla fills it: **one monster for charts in every grade**, as Tick-Tockus is for time and Trollar for money, with charts of dungeon things. A prototype on the review page (`review/proto/`, 📊), not in the game yet; `js/charts.js`, tested by `scripts/charts.test.mjs`.
+
+**Decisions (the user, 2026-11-27):**
+- Word problems and the K calendar (days, months, seasons) are **left out for good**: every prompt would have to be recorded, and there are too many of them.
+- Measuring length is prototyped separately (`js/length.js`, another branch).
+- Graphzilla is **one monster for charts in every grade**, with dungeon things, not a monster per kind of chart.
+
+**The things** (`OBJECTS`): torches, potions, keys, gems, bats, slimes, mushrooms, shields and bones, nine small icons in the house style (outline, color, sheen), each its own color, so a bar is its thing's color. Coins are left out (Trollar's), and candles and scrolls (a candle reads as a torch at icon size). Lengths are measured on bones, keys and torches; counts are things in a place (gems in each chest, bats in each cave); a line graph's things are found each day.
+
+**The charts by grade** (Missouri's data standards), a strand per stratum like Tick-Tockus's time, in the stratum of its grade:
+
+| Grade (stratum) | Charts | Questions |
+|---|---|---|
+| 1st (the Balance Hall) | Tally charts and picture charts, three things, totals within 20 | How many potions? How many more (or fewer) potions than keys? How many in all? |
+| 2nd (the Crystal Mines) | Picture graphs and bar graphs, four things, scale 1 | How many? Torches and keys together; how many more, how many fewer; in all |
+| 3rd (the Tables Tower) | Scaled picture graphs (each picture = 2, with halves, or 5), scaled bar graphs (by 2s, 5s) | How many; how many more or fewer; two together |
+| 4th (the Fraction Forge) | Frequency tables (value, tally, how many), line plots of counts, bar and picture graphs by 10s | The mode, the range, how many in all, how many at a value; more, fewer, together |
+| 5th (the Parenthesis Pyramid) | Line plots with an odd number of values; line graphs over six days, by 2s, 5s or 10s | The median; a day's value; how many more (or fewer) on one day than another |
+
+- **Answers** are always a whole number typed on the pad: a count, a difference, a total, the mode, range or median, or a value read off a line graph. No multiple choice. (A 3rd grade length is only ever asked as a count of Xs, never as the answer.)
+- **Damage:** the answer, as everywhere. Fights stay even because a monster's HP comes from its facts' answers.
+- **Decided (2026-11-27):** its trait is 📊 Chart Stomp, only what it asks (as Tick-Tockus's 🕒 Tick Tock), since its plates already show the data; 2nd grade's take apart ("how many are not keys?") stays out, needing word-problem phrasing; 3rd grade's line plots in halves and fourths of an inch are left out for now (the school's 3rd grade guide doesn't ask for them, as with Rulerpillar's half inches; the keys and drawing still take them, for 4th grade).
+- **Fixed facts** (245 in 11 levels, from a fixed seed): a few data sets per level, each asked a few ways, so every line can be recorded. Keys are the problem: `▥T1:torch5,potion7,key3:m.potion.key` (a tally chart, scale 1, how many more potions than keys), `▥P2:…` and `▥B5:…` (picture and bar graphs at a scale), `▥L2:bone:2-8:…:at.5` (a line plot in halves: how many at 2½), `▥F:gem:1x2,3x4:mo` (a frequency table's mode), `▥G5:gem:10,15,…:c.2.5` (a line graph's change from day 2 to day 5).
+- **Spoken for a pre-reader:** the things in the chart first, since the labels can't be read, then the question in 12 words or fewer: "Torches, potions, keys. How many more potions than keys?", "Each picture is two. Bats, keys, gems. How many gems?", "Bone lengths, in inches. How many bones are two and a half inches long?", "Potions on each shelf. What is the mode?", "Gems found each day. How many more gems on day five than day two?". After a miss: "Four more potions.", "The median is seven."
+- **Hints**, drawn on the chart, never the answer before answering (tested):
+  - Reading a bar or a line graph's dot: a guide line from its top across to the axis, and the axis counted up by the scale partway (dots on the ticks), then "?".
+  - Pictures and tallies: counted along the row partway (tallies by 5s, then 1s; pictures by their worth, half a picture by half), then "?" on the last.
+  - How many more or fewer: lined up. Rows: a line where the smaller row stops, the extra pictures shaded and counted partway. Bars: a guide from the shorter bar's top to the taller one, the gap shaded and bracketed, counted partway by the scale.
+  - Together and in all: count one row, then count on (bars: read each bar, then add).
+  - Line plots: the column at the value outlined, or the part longer than the value shaded, its Xs counted partway; the mode, each stack outlined ("find the tallest stack"); the range, both ends ringed with an arrow between, "?"; the median, Xs crossed off one from each end, halfway, then worked to the last one, ringed.
+  - Frequency tables: the column to read outlined; the range's smallest and biggest rows ringed; in all, the first numbers to add.
+  - Worked: the whole count, and the answer in words ("9 − 3 = 6. 6 more shields.").
+- **Graphzilla** (`NEW_MON` in `monsters.js`, in the gallery): its drawing takes the problem, as Tick-Tockus's clock does: its back plates are the chart's bars (up to four, `platesOf`), in the things' colors. The chart itself is drawn big in the monster's box (a plate is too small to read a value from); Graphzilla stands in the nameplate with the data on its back. It reads at 26 px as a green kaiju with colored plates. Its anchors are set for looks later.
+- **Where it goes, once approved:** a strand per stratum (`chartsH`, `chartsM`, `chartsT`, then the Forge's and the Pyramid's), Graphzilla visiting each stratum's pool; data isn't one of the guides' priority standards, so it doesn't count toward a stratum's 60%.
+
+### 4.6 Measuring length (prototype, 2026-11-27)
+
+_On the prototype page (review/proto/, 📏), not in the game yet: the user approves first. js/length.js, `scripts/length.test.mjs`._
+
+Measuring length was left out (§4.1, §4.3) as "not a quick typed number". Drawn right, it is: the thing lies against the ruler or the units, and the answer is a count or a reading, typed on the pad, or one of two big keys (as true or false is: Longer and Shorter, Yes and No, More and Fewer). Line plots stay out (a chart prototype is planned separately).
+
+**What the school's guides say** (checked 2026-11-27):
+- **K:** no length lesson. K.GM.A.1–2 (describe and compare measurable attributes) sit in the ongoing shapes unit. Not a priority standard.
+- **1st:** a **priority standard**, 1.GM.B "Measure lengths in non-standard units": order three or more objects by length (1.GM.B.5), compare two indirectly with a third (1.GM.B.6), measure with objects (1.GM.B.7). Late in the year, with shapes, time and coins (lessons 22–27).
+- **2nd:** **priority standards** 2.GM.B.4 (measure with the right tool) and 2.GM.B.5 (the same object in different units); also estimating (B.6), how much longer (B.7), adding and subtracting lengths (C.8) and sums on a number line (C.9). Lessons 20–26, after the three-digit work and before shapes and arrays: inches and centimeters, feet and meters, different units, estimate, compare, add and subtract, on the number line. Tools named: ruler, yardstick, meter stick, number line.
+- **3rd:** 3.GM.B.7 "measure or estimate length" and B.8 (the four operations with lengths), in the data unit with line plots. Not a priority standard. **The guide doesn't mention the half or quarter inch** (the Common Core's 3.MD.B.4 does). They were in the prototype at first and are out now (decided 2026-11-27); they could come back with the 4th grade stratum, beside its fractions and measurement.
+- **4th:** conversions (1 ft = 12 in) are already in the Fraction Forge's measurement level (`u3ft:in`, Tick-Tockus, §4.4). Not here.
+
+**The kinds, per grade, with their keys** (ℓ for length; every fact fixed, 200 in all):
+
+| Grade | Level | The problem | Answer | Key |
+|---|---|---|---|---|
+| K | Longer or shorter? | two things lined up at one end | Longer / Shorter | `ℓc:pencil8,toothbrush6` |
+| 1st | The longest? The shortest? | three, lined up: "Is the toothbrush the shortest?" | Yes / No | `ℓo-1:snake9,pencil5,ribbon11` (asks about the 2nd drawn) |
+| 1st | Compare with a string | two things apart, the same string against each | Longer / Shorter | `ℓi:ribbon9,marker3,5` |
+| 1st | How many cubes long? / paper clips | the thing, its units end to end under it | typed | `ℓu:cube,marker5`, `ℓu:clip,toothbrush5` |
+| 1st | Measured the right way? | units with a gap, an overlap, not from the end, or right | Yes / No | `ℓg:clip,toothbrush6,gap2` (a gap after the 2nd) |
+| 2nd | Inches; centimeters on a ruler | from 0 | typed, "□ in" | `ℓin:pencil7`, `ℓcm:pencil7` |
+| 2nd | Feet and meters | a tape measure; a sword, a bench, a ladder | typed | `ℓft:sword6`, `ℓm:sword3` |
+| 2nd | Not from 0 | from 1 to 6 | typed | `ℓin:toothbrush1-6` |
+| 2nd | More or fewer units? | "The ladder is 4 feet. In inches, more or fewer?", the two units drawn at their true sizes | More / Fewer | `ℓw:ft>in:ladder4` |
+| 2nd | About how long? | no ruler, one inch (or centimeter) shown | typed, right within 1 in (2 cm) | `ℓe:in:ribbon6` |
+| 2nd | How much longer? | two things on one ruler | typed, "□ in longer" | `ℓd:in:marker9,toothbrush5` |
+| 2nd | Add and subtract lengths | a bar of two pieces ("In all"), or a ribbon with a piece cut off ("Left") | typed | `ℓ+:cm:11,7`, `ℓ−:in:20,2` |
+
+**The things** (2026-11-27, from the user: "I can't tell which is the crayon"): each has a silhouette and color of its own at a phone's size: the pencil yellow and faceted with a pink eraser, a metal band and a sharpened cone; the crayon bright red with a zigzag paper wrapper and a stepped tip; the marker uncapped, its blue cap posted on the back, a big blue label and a blue felt tip; the toothbrush pink with its bristles standing up (it replaced a straw: a bent straw would not measure true, and a straight one read as a stick); the ribbon wavy and forked; the snake with a face and forked tongue; the sword with its crossguard and the ladder with its rungs (they replaced a rope and a rug, which the user couldn't recognize: a twisted rope read as a striped stick, a rug from above as a red bar); the bench on legs. Two or three shown together never include two of the sticks (pencil, crayon, marker), and each has its name in small words under it (secondary: the drawing and the voice are for the pre-reader).
+
+**Hints** (drawn on the picture; `scripts/length.test.mjs` checks none gives the answer before answering): compare and order, a dashed line at the lined-up ends and one at the other end ("Does the pencil go past the toothbrush?"); the string's end marked on both; units, numbered about halfway, the last "?"; rulers, hops from the start counted about halfway, the last "?" (not from 0: "It starts at 1, not 0. Count the jumps from 1, or 6 − 1 = ?"); how much longer, hops from the shorter end, "or 9 − 5 = ?"; estimating, two copies of the unit laid along it, "1, 2, …"; adding and subtracting, the number line jumping to "?". Worked, every count and the answer.
+
+**Voice:** every problem is read as it appears ("How many inches long is the snake?", "Is the toothbrush the shortest?", "Are the cubes laid the right way to measure?") and every answer said ("The toothbrush is five inches long.", "No. There's a gap.", "Seven inches longer.").
+
+**The monster: Rulerpillar** (📏, `NEW_MON`, in the gallery): an inchworm humped up mid-inch, a ruler's yellow edge and tick marks down its back. Trait (proposed), 📏 *Inch by Inch*: asks how long things are. No pronoun in its lines. One strand per stratum, as Polly-Gon and Tick-Tockus have (decided 2026-11-27):
+- **Cellar** (`lengthK`): longer or shorter, a strand; Rulerpillar visits from the pool only. Not a priority in K, so it doesn't count toward the 60%.
+- **Hall** (`lengthH`): longest and shortest, the string, cubes and paper clips, laid right? 1.GM.B is a **priority standard**, so a priority step in the Hall's last chapter (with shapes, time and coin values, where the guide puts it), counting toward the 60%, and Rulerpillar gets a **depth-1 floor** in the Hall.
+- **Mines** (`lengthM`): rulers and tapes (inches, centimeters, feet, meters), not from 0, more or fewer, estimating, how much longer, adding and subtracting: a priority step after the three-digit work (2.GM.B.4–5 are priority standards). Rulerpillar **only visits** the Mines from the pool.
+- **Tower:** none for now (the half and quarter inch are out; above).
+
+**Decided (2026-11-27, with the user):**
+- K's longer or shorter is a Cellar strand, Rulerpillar visiting only, not toward the 60%.
+- The half and quarter inch are out of the Tower for now; they could return with the 4th grade stratum. (If a half answer ever comes back, it takes a ½ key on the pad, not a second slot.)
+- No yards: inches, feet, centimeters and meters.
+- An estimate is right within 1 in (2 cm).
+- A depth-1 floor for Rulerpillar in the Hall; the Mines, visiting only.
+- **Damage** (`lengthHit`): a count or a reading hits for itself; the two-key kinds hit for the longest thing's length, as Chompers hits for the bigger number (more or fewer, the length given; laid right, how many fit under it).
 
 ## 5. The learning engine (how the game teaches)
 

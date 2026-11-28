@@ -314,6 +314,12 @@ h1 b{color:var(--coral);font-weight:400}
 .hero-card svg{width:64px;height:auto;overflow:visible}
 .hero-card.captain-card{border-color:var(--gold)}
 .beast.unmet b,.hero-card.unmet b{color:var(--muted)}
+/* A hero's favorite plushie (app.js favHTML): found, or a silhouette and ??? */
+.hero-fav{display:flex;align-items:center;gap:6px;margin-top:4px;padding:4px 8px 4px 4px;border-radius:12px;background:var(--panel);border:1px dashed var(--line);text-align:left}
+.hero-card .hero-fav svg{width:40px;height:40px;display:block}
+.hero-fav small{display:grid;line-height:1.2}.hero-fav small:not(.x){color:var(--ink,#f3efe4);font-weight:800}
+.hero-fav .fav-tag{color:var(--muted);font-weight:600;font-size:11px}
+.hero-fav.unfound small{color:var(--muted)}
 /* The worked example after a miss, as a card over the game */
 .worked{display:grid;justify-items:center;gap:10px;text-align:center}
 .worked h2{color:var(--coral)}
@@ -536,6 +542,10 @@ h1 b{color:var(--coral);font-weight:400}
 .prob .stacked .sans .blank{min-width:calc(var(--w) * .82em);text-align:right;padding:0 .08em;border-radius:10px}
 /* Typed right to left (ones first): a cell per column, and a blinking cursor in the next one. */
 .prob .stacked .scells{display:inline-flex;justify-content:flex-end}
+.prob .stacked .scols{display:inline-flex;justify-content:flex-end}
+/* The answer's cells sit in the dashed box: pull it out by its border and padding so its columns
+   line up with the numbers' above. */
+.prob .stacked .sans .blank{margin-right:calc(-3px - .08em);font-size:1em}
 .prob .stacked .scell{display:inline-block;width:.82em;text-align:center;position:relative;min-height:1em}
 .prob .stacked .scell.cur::after{content:"";position:absolute;left:.12em;right:.12em;bottom:.04em;height:.09em;border-radius:.05em;background:var(--gold,#ffc93c);animation:scaret 1s steps(1) infinite}
 @keyframes scaret{50%{opacity:0}}
@@ -1224,8 +1234,8 @@ body.on-scene>.top,body.on-scene>.who,body.on-scene>.game,body.on-scene>.badges{
 .scene-gap{position:relative}
 .stall-tap{position:absolute;padding:0;border:0;background:transparent;border-radius:16px;cursor:pointer;-webkit-tap-highlight-color:transparent}
 .stall-tap:active{background:#ffc93c22}
-/* Pluffy, the plus plushie (js/plushie.js), sitting in the grass at the captain's feet (descent.js
-   surfaceHTML): a toy, so it doesn't bob; a tap (.plush-tap, like the stall's) squishes it down
+/* The plushies (js/plushie.js), each sitting in the grass at its hero's feet (descent.js
+   surfaceHTML): toys, so they don't bob; a tap (.plush-tap, like the stall's) squishes one down
    and pops a heart up (app.js squeezePlush). */
 .d-plush{position:absolute;display:block;z-index:6;transform:rotate(-9deg);transform-origin:50% 92%}
 .d-plush svg{display:block;width:100%;height:100%;overflow:visible;filter:drop-shadow(0 3px 0 #0c171c80)}
@@ -1257,6 +1267,7 @@ body.on-scene>.top,body.on-scene>.who,body.on-scene>.game,body.on-scene>.badges{
 .wempty{text-align:center;font-weight:800;color:var(--muted)}
 /* Clothing out of a chest: the captain wearing it. */
 .loot-cloth svg{width:min(130px,34vw);height:auto;overflow:visible;filter:drop-shadow(0 4px 0 #0008)}
+.loot-plush svg{width:min(110px,30vw);height:auto;overflow:visible;filter:drop-shadow(0 4px 0 #0008)}
 /* The shop card: Trollar with what he says, the tiles (items, then clothing), then paying. */
 .shop-top{display:flex;align-items:center;gap:10px}
 .shop-troll{width:64px;height:64px;flex:none}
@@ -1265,7 +1276,7 @@ body.on-scene>.top,body.on-scene>.who,body.on-scene>.game,body.on-scene>.badges{
 .bubble::before{content:"";position:absolute;left:-8px;top:50%;translate:0 -50%;border:8px solid transparent;border-left:0;border-right-color:var(--ink)}
 .sgrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
 .stile{display:grid;justify-items:center;align-content:start;gap:4px;padding:6px 2px 8px;border-radius:16px;border:2px solid var(--edge);background:var(--btn);color:var(--ink);min-width:0}
-.stile.cloth{background:var(--btn2)}
+.stile.cloth,.stile.plush{background:var(--btn2)}
 .stile.dear{opacity:.72}
 .sart{position:relative;display:grid;place-items:center;width:56px;height:56px}
 .sart svg{width:100%;height:100%;overflow:visible}

@@ -41,9 +41,9 @@ assert.ok(!LOOKS["Judo Judy"], "bosses have no looks");
 assert.ok(!/\b(she|her|hers|he|him|his)\b/i.test(judy.quip), "Judo Judy's lines use the name, never a pronoun");
 // The six new monsters in the game (M5 step 3): in MON with a symbol, a stratum for the gallery,
 // anchors and four looks each; batch 1's two (time and patterns), and Polly-Gon (shapes). NEW_MON
-// is empty until the next ones are drawn.
+// holds the next ones drawn, for the prototype page: Graphzilla (charts) and Rulerpillar (measuring length).
 const SIX = ["Pipsqueak", "Doublet", "Triceraplus", "Margot-Rythm", "Squaresquatch", "Halfling", "Tick-Tockus", "Slimelipsis", "Polly-Gon", "Quarterjack", "Dotty", "Boomainder"];
-assert.deepEqual(NEW_MON.map((m) => m.n), []);
+assert.deepEqual(NEW_MON.map((m) => m.n).sort(), ["Graphzilla", "Rulerpillar"], "Graphzilla (charts) and Rulerpillar (length) are drawn, on the prototype page");
 for (const n of SIX) {
   const m = MON.find((x) => x.n === n);
   assert.ok(m && m.sym && m.stratum && !m.trait && !m.boss, `${n} is in the game, its trait in traits.js`);
