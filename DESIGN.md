@@ -222,7 +222,7 @@ _Decided with the user: each stratum follows its grade's teaching order, opened 
 - **Kindergarten:** the units are "ongoing", so the order below follows what builds on what.
 - **3rd grade:** the guide lists topics without lesson numbers. Its multiplication-before-division order is confirmed by the class (2026-11-26: no division yet this year, after the × facts).
 
-Left out everywhere, as before: measuring length (a prototype since 2026-11-27, §4.6), word problems, and the K calendar unit (days of the week, seasons, birthdays). None of them is a quick typed number.
+Left out everywhere, as before: word problems, and the K calendar unit (days of the week, seasons, birthdays). None of them is a quick typed number.
 
 **The problem today.** A stratum has one ladder of levels (its band, which opens the next stratum at 60%) and strands beside it (coins, time, patterns, arrays, comparing…). Every strand is open from the first day, so a 2nd grader can meet arrays and odd and even (the year's last two lessons) before two-digit adding.
 
@@ -510,9 +510,9 @@ Graphs and data were the one strand of every grade's standards with nothing in t
   - **Looks** (chart puns, kept off its head so no plate is hidden): Tiny Tally (smaller), Professor Plot (glasses, bow tie), Bar-oness Graphzilla (lashes, blush, medal; said "Baroness"), Snoozilla (sleepy lids, scarf).
   - **In a fight:** the chart over its line ("More potions than keys: □"), read aloud as it appears; the 💡 hint drawn on the chart with only its words opening; the Oops card shows the worked chart. Listen check group "Charts"; Settings → Progress lists them as "Reading charts".
 
-### 4.6 Measuring length (prototype, 2026-11-27)
+### 4.6 Measuring length (prototype 2026-11-27; in the game, batch 3, 2026-11-28)
 
-_On the prototype page (review/proto/, 📏), not in the game yet: the user approves first. js/length.js, `scripts/length.test.mjs`._
+_In the game since batch 3 (below), and on the prototype page (review/proto/, 📏). js/length.js, `scripts/length.test.mjs`._
 
 Measuring length was left out (§4.1, §4.3) as "not a quick typed number". Drawn right, it is: the thing lies against the ruler or the units, and the answer is a count or a reading, typed on the pad, or one of two big keys (as true or false is: Longer and Shorter, Yes and No, More and Fewer). Line plots stay out (a chart prototype is planned separately).
 
@@ -546,7 +546,7 @@ Measuring length was left out (§4.1, §4.3) as "not a quick typed number". Draw
 
 **Voice:** every problem is read as it appears ("How many inches long is the snake?", "Is the toothbrush the shortest?", "Are the cubes laid the right way to measure?") and every answer said ("The toothbrush is five inches long.", "No. There's a gap.", "Seven inches longer.").
 
-**The monster: Rulerpillar** (📏, `NEW_MON`, in the gallery): an inchworm humped up mid-inch, a ruler's yellow edge and tick marks down its back. Trait (proposed), 📏 *Inch by Inch*: asks how long things are. No pronoun in its lines. One strand per stratum, as Polly-Gon and Tick-Tockus have (decided 2026-11-27):
+**The monster: Rulerpillar** (📏, `MON`): an inchworm humped up mid-inch, a ruler's yellow edge and tick marks down its back. Trait (proposed), 📏 *Inch by Inch*: asks how long things are. No pronoun in its lines. One strand per stratum, as Polly-Gon and Tick-Tockus have (decided 2026-11-27):
 - **Cellar** (`lengthK`): longer or shorter, a strand; Rulerpillar visits from the pool only. Not a priority in K, so it doesn't count toward the 60%.
 - **Hall** (`lengthH`): longest and shortest, the string, cubes and paper clips, laid right? 1.GM.B is a **priority standard**, so a priority step in the Hall's last chapter (with shapes, time and coin values, where the guide puts it), counting toward the 60%, and Rulerpillar gets a **depth-1 floor** in the Hall.
 - **Mines** (`lengthM`): rulers and tapes (inches, centimeters, feet, meters), not from 0, more or fewer, estimating, how much longer, adding and subtracting: a priority step after the three-digit work (2.GM.B.4–5 are priority standards). Rulerpillar **only visits** the Mines from the pool.
@@ -559,6 +559,13 @@ Measuring length was left out (§4.1, §4.3) as "not a quick typed number". Draw
 - An estimate is right within 1 in (2 cm).
 - A depth-1 floor for Rulerpillar in the Hall; the Mines, visiting only.
 - **Damage** (`lengthHit`): a count or a reading hits for itself; the two-key kinds hit for the longest thing's length, as Chompers hits for the bigger number (more or fewer, the length given; laid right, how many fit under it).
+
+**Built (batch 3, 2026-11-28):**
+- **Strands**: `lengthK` (the Cellar: longer or shorter, 20 facts), `lengthH` (the Hall: the longest or shortest, the string, cubes, paper clips, measured right?, 62), `lengthM` (the Mines: inches, centimeters, feet and meters, not from 0, more or fewer units, estimating, how much longer, adding and subtracting, 118). The game's form of a fact (`gameFact`): a two-key answer is its `sym` (as true or false's), `ans` is what it hits for (`lengthHit`), an estimate carries `near` (1 in, 2 cm), and `q` is its line.
+- **Steps**: each is one **ongoing** step, opening with its chapter beside the window (so no saved count of joined steps moves): the Cellar's "Longer or shorter" (chapter 2, not a priority, visiting), the Hall's "Measure with units" (chapter 3, **priority**, the path's last step, so the newest once chapter 3 opens: Rulerpillar's depth-1 floor; it also replaces Triceraplus in the Hall's fallback floors), and the Mines' "Measure with rulers" (chapter 3, after the three-digit work, **priority**, placed first in its chapter so the newer steps' monsters come first: visiting).
+- **Trait**: 📏 Inch by Inch, "How long? The longest is your hit": in the house style of Chompers' Big Bite, its one rule is the hit (`lengthHit`); it asks only length.
+- **Looks**: Inchling (smaller), Sir Measures-a-Lot (top hat, monocle), Centi-Belle (bow, lashes), Snoozepillar (nightcap, sleepy lids).
+- **Answers**: Longer/Shorter, Yes/No and More/Fewer on the two big keys in the pad's place (L/S, Y/N, M/F on a keyboard), said "Tap Longer or Shorter!" (and the others) the first two times; the rest typed. The picture over its line, read aloud as it appears, its hint drawn on it. Listen check group "Length"; Progress "Measuring length".
 
 ## 5. The learning engine (how the game teaches)
 

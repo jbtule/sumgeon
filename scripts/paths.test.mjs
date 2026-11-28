@@ -46,11 +46,14 @@ const cellar = PATHS.cellar;
   // The next step joins once the oldest new one is JOIN_AT learned, and not before.
   const r = {}, s1 = stepFacts(cellar[1]);
   s1.slice(0, Math.ceil(s1.length * JOIN_AT) - 1).forEach((f) => (r[f.key] = learnedRec));
-  assert.equal(openSteps(cellar, r, 2).open.length, 5, "not yet");
+  // (Chapter 2's ongoing step, Rulerpillar's longer or shorter, opens with it.)
+  const ten = cellar.findIndex((s) => s.name === "10 and some more"), len = cellar.findIndex((s) => s.name === "Longer or shorter");
+  assert.equal(openSteps(cellar, r, 2).open.length, 6, "not yet");
+  assert.ok(openSteps(cellar, r, 2).open.includes(len) && !openSteps(cellar, r, 1).open.includes(len), "an ongoing step opens with its chapter");
   r[s1[s1.length - 1].key] = learnedRec;
-  assert.ok(openSteps(cellar, r, 2).open.includes(5), "Make 10 joins");
-  // ...but only in its chapter: chapter 1 stops before Make 10.
-  assert.ok(!openSteps(cellar, r, 1).open.includes(5), "a step past the chapter never opens");
+  assert.ok(openSteps(cellar, r, 2).open.includes(ten), "10 and some more joins");
+  // ...but only in its chapter: chapter 1 stops before it.
+  assert.ok(!openSteps(cellar, r, 1).open.includes(ten), "a step past the chapter never opens");
   assert.equal(stepShare(cellar[1], r) >= JOIN_AT, true);
 }
 // Never more than WINDOW new steps, whatever's learned, in any stratum; steps open in order.

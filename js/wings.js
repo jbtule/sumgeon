@@ -29,12 +29,12 @@ const mon = (n) => MON.find((m) => m.n === n);
 // Chompers visits the Tower's pool too, with no strand there: he asks the band's comparisons, which
 // in the Tower are comparing fractions (3/8 ○ 5/8), and eats the bigger fraction.
 export const WINGS = [
-  { id: "cellar", name: "The Counting Cellar", band: "kinder", strands: { Trollar: "coinsK", Chompers: "more", Slimelipsis: "patK", "Polly-Gon": "shapesK", Pipsqueak: "flashK" },
-    pool: ["Plusquito", "Minustaur", "Pipsqueak", "Chompers", "Trollar", "Slimelipsis", "Polly-Gon"], floors: ["Plusquito", "Pipsqueak", "rescue", "Chompers", "Trollar"], boss: "Make-Ten Golem" },
-  { id: "hall", name: "The Balance Hall", band: "first", after: "cellar", strands: { Triceraplus: "three", "Tick-Tockus": "timeH", Slimelipsis: "patH", "Polly-Gon": "shapesH", Trollar: "coinsH", Graphzilla: "chartsH" },
-    pool: ["Plusquito", "Minustaur", "Quizard", "Chompers", "Equal Twins", "Doublet", "Triceraplus", "Haberhasher", "Tick-Tockus", "Slimelipsis", "Polly-Gon", "Trollar", "Graphzilla"], floors: ["Quizard", "Equal Twins", "rescue", "Tick-Tockus", "Triceraplus"], boss: "Judo Judy" },
-  { id: "mines", name: "The Crystal Mines", band: "second", after: "hall", strands: { Trollar: "coins", Squaresquatch: "arrays", Slimelipsis: "patM", "Tick-Tockus": "timeM", Chompers: "cmpM", Triceraplus: "sumsM", "Polly-Gon": "shapesM", Graphzilla: "chartsM" },
-    pool: ["Haberhasher", "Margot-Rythm", "Trollar", "Squaresquatch", "Slimelipsis", "Tick-Tockus", "Chompers", "Triceraplus", "Polly-Gon", "Graphzilla"], floors: ["Haberhasher", "Squaresquatch", "rescue", "Trollar", "Polly-Gon"], boss: "The Centipede" },
+  { id: "cellar", name: "The Counting Cellar", band: "kinder", strands: { Trollar: "coinsK", Chompers: "more", Slimelipsis: "patK", "Polly-Gon": "shapesK", Pipsqueak: "flashK", Rulerpillar: "lengthK" },
+    pool: ["Plusquito", "Minustaur", "Pipsqueak", "Chompers", "Trollar", "Slimelipsis", "Polly-Gon", "Rulerpillar"], floors: ["Plusquito", "Pipsqueak", "rescue", "Chompers", "Trollar"], boss: "Make-Ten Golem" },
+  { id: "hall", name: "The Balance Hall", band: "first", after: "cellar", strands: { Triceraplus: "three", "Tick-Tockus": "timeH", Slimelipsis: "patH", "Polly-Gon": "shapesH", Trollar: "coinsH", Graphzilla: "chartsH", Rulerpillar: "lengthH" },
+    pool: ["Plusquito", "Minustaur", "Quizard", "Chompers", "Equal Twins", "Doublet", "Triceraplus", "Haberhasher", "Tick-Tockus", "Slimelipsis", "Polly-Gon", "Trollar", "Graphzilla", "Rulerpillar"], floors: ["Quizard", "Equal Twins", "rescue", "Tick-Tockus", "Rulerpillar"], boss: "Judo Judy" },
+  { id: "mines", name: "The Crystal Mines", band: "second", after: "hall", strands: { Trollar: "coins", Squaresquatch: "arrays", Slimelipsis: "patM", "Tick-Tockus": "timeM", Chompers: "cmpM", Triceraplus: "sumsM", "Polly-Gon": "shapesM", Graphzilla: "chartsM", Rulerpillar: "lengthM" },
+    pool: ["Haberhasher", "Margot-Rythm", "Trollar", "Squaresquatch", "Slimelipsis", "Tick-Tockus", "Chompers", "Triceraplus", "Polly-Gon", "Graphzilla", "Rulerpillar"], floors: ["Haberhasher", "Squaresquatch", "rescue", "Trollar", "Polly-Gon"], boss: "The Centipede" },
   { id: "tower", name: "The Tables Tower", band: "third", after: "mines", strands: { "Tick-Tockus": "timeT", "Margot-Rythm": "addT", "Polly-Gon": "shapesT", Graphzilla: "chartsT" },
     pool: ["Timesaur", "Divvy", "Starbot", "Halfling", "Tick-Tockus", "Margot-Rythm", "Polly-Gon", "Chompers", "Graphzilla"], floors: ["Timesaur", "Divvy", "rescue", "Tick-Tockus", "Halfling"], boss: "Sigma Rex" },
   // The Fraction Forge (4th grade, DESIGN.md §4.4), under the Tower: its three new monsters
@@ -65,6 +65,12 @@ const P = { priority: true };
 // count toward opening the next stratum. Ongoing, so it opens with its chapter beside the window
 // of new steps rather than taking a place in it: the steps a player has joined (saved as a count,
 // wings[id].steps) stay the same steps.
+// Measuring length (Rulerpillar, batch 3, DESIGN.md §4.6): longer or shorter in the Cellar (not a
+// priority in K: visiting, not toward the 60%); 1st grade's measuring with units in the Hall, a
+// priority standard, with a depth-1 floor (the path's newest step once chapter 3 opens); 2nd
+// grade's rulers in the Mines, priority standards after the three-digit work, visiting. Ongoing,
+// as the charts are, so no saved count of joined steps moves.
+const LENGTH = (name, band, levels, chapter, priority) => step(name, levels.map((l) => [band, l]), ["Rulerpillar"], chapter, { ongoing: true, priority });
 const CHARTS = (band, levels, chapter) => step("Reading charts", levels.map((l) => [band, l]), ["Graphzilla"], chapter, { ongoing: true });
 export const PATHS = {
   cellar: [
@@ -74,6 +80,7 @@ export const PATHS = {
     step("Within 10", [["kinder", "Within 10"], ["flashK", "Dice sums"], ["more", "Which is more, to 10"]], ["Plusquito", "Minustaur", "Pipsqueak", "Chompers"], 1, P),
     // Make 10 moved up to chapter 1 when Coins went last (each chapter keeps 3 to 4 new steps).
     step("Make 10", [["kinder", "Make 10 and number bonds"]], ["Plusquito"], 1, P),
+    LENGTH("Longer or shorter", "lengthK", ["Longer or shorter?"], 2, false),
     step("10 and some more", [["kinder", "10 and some more"], ["patK", "Count by 10s"]], ["Minustaur", "Slimelipsis"], 2, P),
     step("Shapes", [["shapesK", "Circles, squares, triangles, rectangles"], ["shapesK", "Hexagons, sides and corners"]], ["Polly-Gon"], 2, P),
     // Coins last (moved from chapter 1, 2026-11-27): kindergarten learns the coins near the end of
@@ -101,7 +108,8 @@ export const PATHS = {
     step("Time to the hour and half hour", [["timeH", "Hours"], ["timeH", "Half hours"]], ["Tick-Tockus"], 3, P),
     // Coin values (1.GM.C.9, new in the Hall): Trollar visits with the Cellar's "each coin".
     step("Coin values", [["coinsH", "Each coin"]], ["Trollar"], 3, P),
-    step("Count by 5s", [["patH", "Count by 5s"]], ["Slimelipsis"], 3)
+    step("Count by 5s", [["patH", "Count by 5s"]], ["Slimelipsis"], 3),
+    LENGTH("Measure with units", "lengthH", ["The longest? The shortest?", "Compare with a string", "How many cubes long?", "How many paper clips long?", "Measured the right way?"], 3, true)
   ],
   mines: [
     // Fluency within 20 (2nd grade's priority, i-Ready lessons 1–2): the Hall's facts as reviews.
@@ -114,6 +122,7 @@ export const PATHS = {
     step("10 and 100 more or less", [["second", "10 and 100 more or less"]], ["Haberhasher"], 2, P),
     step("Add and subtract within 1000", [["second", "Add within 1000"], ["second", "Add within 1000, regrouping"], ["second", "Subtract within 1000"], ["second", "Subtract within 1000, regrouping"]], ["Margot-Rythm", "Haberhasher"], 2, P),
     step("Up to four numbers", [["sumsM", "Three two-digit numbers"], ["sumsM", "Four two-digit numbers"]], ["Triceraplus"], 2),
+    LENGTH("Measure with rulers", "lengthM", ["Inches on a ruler", "Centimeters on a ruler", "Feet and meters", "Not from 0", "More or fewer units?", "About how long?", "How much longer?", "Add and subtract lengths"], 3, true),
     CHARTS("chartsM", ["Picture graphs", "Bar graphs"], 3),
     step("Shapes and equal shares", [["shapesM", "Sides, corners and faces"], ["shapesM", "Equal shares"], ["shapesM", "Rows and columns of squares"]], ["Polly-Gon"], 3, P),
     step("Arrays", [["arrays", "Arrays of 2 and 3 rows"], ["arrays", "Arrays of 4 and 5 rows"]], ["Squaresquatch"], 3, P),

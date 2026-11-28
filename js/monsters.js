@@ -248,7 +248,7 @@ MON.push(
   const real = NEW_MON.find((m) => m.n === "The Centipede"), i = MON.findIndex((m) => m.n === "The Centipede");
   if (real && i >= 0) { MON[i] = Object.assign({}, MON[i], { c: real.c, d: real.d, quip: real.quip }); NEW_MON.splice(NEW_MON.indexOf(real), 1); }
 }
-// Rulerpillar (NEW_MON, a prototype: measuring length, js/length.js, review/proto/): an inchworm
+// Rulerpillar (measuring length, js/length.js; in the game since batch 3, its trait in traits.js): an inchworm
 // humped up mid-inch, a ruler's yellow edge and its tick marks down its back (a long tick every
 // fourth, as an inch has its quarters). Its head is the front end, down on the ground.
 {
@@ -260,9 +260,8 @@ MON.push(
     return `M${f1(x - nx * 7)} ${f1(y - ny * 7)} L${f1(x - nx * (7 - l))} ${f1(y - ny * (7 - l))}`;
   }).join(' ');
   const arch = `M${ARCH[0].join(' ')} C${ARCH.slice(1).map((p) => p.join(' ')).join(', ')}`;
-  NEW_MON.push(
- {n:'Rulerpillar',op:'ℓ',sym:'📏',stratum:'cellar, hall, mines, tower',c:'#8fd14f',hits:3,
-  trait:{icon:'📏',name:'Inch by Inch',text:'Asks how long things are: longer or shorter, units end to end, then a ruler'},
+  MON.push(
+ {n:'Rulerpillar',op:'ℓ',sym:'📏',stratum:'cellar, hall, mines',c:'#8fd14f',hits:3,
   quip:'inches away, one hump at a time.',
   d:c=>`${foot(30,194,15)}${foot(148,194,12)}${foot(178,194,12)}`
    +line(`<path d="${arch}"/>`,c,34)
@@ -492,8 +491,8 @@ export const ANCHOR = {
   "Polly-Gon": { eyes: [[86, 40, 11], [114, 40, 11]], mouth: [100, 62], top: [100, 12], neck: [100, 80], ground: 196 },
   // Graphzilla: upright, its head the top of its round body; no neck, so it's under the smile.
   Graphzilla: { eyes: [[86, 114, 10], [114, 114, 10]], mouth: [100, 132], top: [100, 88], neck: [100, 149], ground: 205 },
-  // Rulerpillar (NEW_MON): its head is the front end of the arch.
-  Rulerpillar: { eyes: [[151, 136, 9], [173, 136, 9]], mouth: [162, 156], top: [162, 118], neck: [162, 178], ground: 196 }
+  // Rulerpillar: its head is the front end of the arch.
+  Rulerpillar: { eyes: [[151, 136, 9], [173, 136, 9]], mouth: [162, 156], top: [164, 113], neck: [162, 178], ground: 196 }
 };
 const st = `stroke="${DK}" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"`;
 // Each accessory: (anchor, color) → SVG drawn over the monster.
@@ -555,6 +554,8 @@ export const LOOKS = {
   "Polly-Gon": [["Captain Squawkbeard", ["bandana", "eyepatch"], "he"], ["Baby Polly", ["mini"]], ["Queen Polly-Gon", ["crown", "lashes"], "she"], ["Disco Polly", ["sunglasses", "sparkles"]]],
   // Reading charts (batch 3). Its back plates rise behind its head and are the chart's bars, so
   // its looks keep to the face and neck (no hats to hide a plate), and the names are chart puns.
+  // Measuring length: an inchworm's looks, named for its units (no yards).
+  Rulerpillar: [["Inchling", ["mini"]], ["Sir Measures-a-Lot", ["tophat", "monocle"], "he"], ["Centi-Belle", ["bow", "lashes"], "she"], ["Snoozepillar", ["nightcap", "lids"]]],
   Graphzilla: [["Tiny Tally", ["mini"]], ["Professor Plot", ["glasses", "bowtie"], "he"], ["Bar-oness Graphzilla", ["lashes", "blush", "medal"], "she"], ["Snoozilla", ["lids", "scarf"]]]
 };
 // A monster in look i (0 is itself): the same monster, renamed, with its base name kept for its

@@ -24,13 +24,13 @@
 // saved in 90 days is deleted (profile.js): devices keep their own copies and send them again.
 
 // The biggest realistic player (every fact of every band, K to 4th, seen over three school years
-// on two devices) seals to about 36.6 KB (scripts/sync-size.mjs bigRecord; it was 24 KB before
-// the Fraction Forge's 599 4th grade facts, and 32.4 KB before batch 3's 212 chart facts); a
-// school year on two devices to about 11.5 KB. 44 KB is the smallest whole size that keeps the
-// test's 15% of room (scripts/sync.test.mjs: 43 KB would be about 40 bytes short), still three
+// on two devices) seals to about 39.1 KB (scripts/sync-size.mjs bigRecord; it was 24 KB before
+// the Fraction Forge's 599 4th grade facts, and 32.4 KB before batch 3's 212 chart facts and 200
+// length facts); a school year on two devices to about 11.5 KB. 47 KB is the smallest whole size
+// that keeps the test's 15% of room (scripts/sync.test.mjs: 46 KB would be about 40 bytes short), still three
 // 16 KB blocks, without letting the service hold much else. (Every fact seen at random times on three devices, more
 // than anyone will play, is over it: that player stays on each device and shows "too big to sync".)
-export const MAX_BYTES = 44 * 1024;
+export const MAX_BYTES = 47 * 1024;
 const MIN_BYTES = 1 + 12 + 16; // format byte, IV, GCM tag
 const ORIGINS = [/^https:\/\/tools\.tuley\.name$/, /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/];
 const LOOKUP = /^[A-Za-z0-9_-]{43}$/;

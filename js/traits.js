@@ -34,6 +34,9 @@ export const TRAITS = {
   // Batch 3: reading charts. Like Tick Tock, the trait is what it asks; its back plates show the
   // chart's data (monsters.js, charts.js platesOf).
   "Graphzilla": { icon: "📊", name: "Chart Stomp", text: "Asks what its chart shows" },
+  // Measuring length. Like Chompers' Big Bite, its rule is the hit: a Longer, Yes or More hits
+  // for the longest thing's length (length.js lengthHit), a measurement for itself.
+  "Rulerpillar": { icon: "📏", name: "Inch by Inch", text: "How long? The longest is your hit" },
   // The Fraction Forge's (4th grade, DESIGN.md §4.4).
   "Quarterjack": { icon: "🏈", name: "Fourth Down", text: "4th down: a touchdown hits double" },
   "Dotty": { icon: "🔍", name: "On the Dot", text: "Answers ending in 0 hit double" },
@@ -82,6 +85,8 @@ export function asks(m) {
   if (k === "Slimelipsis") return (op) => op === "…" || op === "◐";
   // Graphzilla reads charts (its strand in each stratum of its grade), and no one else does.
   if (k === "Graphzilla") return (op) => op === "▥";
+  // Rulerpillar measures length (its strand in the Cellar, the Hall and the Mines), and no one else does.
+  if (k === "Rulerpillar") return (op) => op === "ℓ";
   // Polly-Gon: shapes, drawn and counted (its strand in each stratum).
   if (k === "Polly-Gon") return (op) => op === "◇" || op === "∠";
   // The Fraction Forge's (4th grade): Quarterjack fractions (equivalent, compared, added and
@@ -96,8 +101,8 @@ export function asks(m) {
   // point Trollar's.
   if (k === "Trollar") return (op) => op === "¢" || op === "$" || op === "D";
   if (k === "Squaresquatch") return (op) => op === "▦" || op === "▭" || op === "P";
-  if (k === "Quizard") return (op) => !"○Σ⌚…◐✓✎◇⁙∠uPD▥".includes(op);
-  return (op) => !"○=Σ⌚…◐✓✎◇⁙∠uPD▥".includes(op);
+  if (k === "Quizard") return (op) => !"○Σ⌚…◐✓✎◇⁙∠uPD▥ℓ".includes(op);
+  return (op) => !"○=Σ⌚…◐✓✎◇⁙∠uPD▥ℓ".includes(op);
 }
 
 // A monster's trait, or null. Cursed digits have Lucky Number (DESIGN.md §6.6). A boss's forms

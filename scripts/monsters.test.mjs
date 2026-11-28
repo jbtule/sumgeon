@@ -8,7 +8,7 @@ import { spokenLines, monsterName, monsterCleared, monsterWon } from "../js/line
 assert.equal(new Set(MON.map((m) => m.n)).size, MON.length, "every monster has its own name");
 assert.deepEqual(MON.filter((m) => m.boss).map((m) => m.n).sort(), ["Judo Judy", "Make-Ten Golem", "Sigma Rex", "The Centipede", "The Denominator"], "one boss per Wing");
 for (const m of MON) {
-  assert.ok(["+", "-", "×", "÷", "¢", "○", "=", "Σ", "▦", "/", "⌚", "…", "◇", "R", "▥", "mix"].includes(m.op), m.n);
+  assert.ok(["+", "-", "×", "÷", "¢", "○", "=", "Σ", "▦", "/", "⌚", "…", "◇", "R", "▥", "ℓ", "mix"].includes(m.op), m.n);
   assert.ok(m.hits >= 3 && m.quip && m.c, m.n);
   const s = svg(m);
   assert.ok(s.startsWith("<svg") && s.endsWith("</svg>"), m.n);
@@ -43,8 +43,8 @@ assert.ok(!/\b(she|her|hers|he|him|his)\b/i.test(judy.quip), "Judo Judy's lines 
 // anchors and four looks each; batch 1's two (time and patterns), and Polly-Gon (shapes). NEW_MON
 // holds the next ones drawn, for the prototype page: Rulerpillar (measuring length). Batch 3's
 // Graphzilla (charts) is in the game.
-const SIX = ["Pipsqueak", "Doublet", "Triceraplus", "Margot-Rythm", "Squaresquatch", "Halfling", "Tick-Tockus", "Slimelipsis", "Polly-Gon", "Quarterjack", "Dotty", "Boomainder", "Graphzilla"];
-assert.deepEqual(NEW_MON.map((m) => m.n).sort(), ["Rulerpillar"], "Rulerpillar (length) is drawn, on the prototype page");
+const SIX = ["Pipsqueak", "Doublet", "Triceraplus", "Margot-Rythm", "Squaresquatch", "Halfling", "Tick-Tockus", "Slimelipsis", "Polly-Gon", "Quarterjack", "Dotty", "Boomainder", "Graphzilla", "Rulerpillar"];
+assert.deepEqual(NEW_MON.map((m) => m.n), [], "every monster drawn is in the game (batch 3: Graphzilla and Rulerpillar)");
 for (const n of SIX) {
   const m = MON.find((x) => x.n === n);
   assert.ok(m && m.sym && m.stratum && !m.trait && !m.boss, `${n} is in the game, its trait in traits.js`);

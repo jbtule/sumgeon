@@ -11,6 +11,7 @@ import { spokenFlash, spokenFlashAnswer } from "./flash.js";
 import { spokenFourth, spokenFourthAnswer } from "./fourth.js";
 import { spokenAngle, spokenAngleAnswer } from "./angles.js";
 import { spokenChart, spokenChartAnswer } from "./charts.js";
+import { spokenLength, spokenLengthAnswer } from "./length.js";
 
 // Problem generation and spoken text. No DOM: runs in Node for the tests and, later, the
 // audio build (which records the same spoken text the app asks for).
@@ -93,6 +94,7 @@ export function spokenProblem(p) {
   // "Two, four, six. What comes next?", "How many even numbers?".
   if (p.op === "⌚") return spokenClockFact(p);
   if (p.op === "▥") return spokenChart(p);
+  if (p.op === "ℓ") return spokenLength(p);
   if (p.op === "…" || p.op === "◐") return spokenPatternFact(p);
   // True or false (the Equal Twins): "Four plus two equals seven. True or false?", "Fix it! Four
   // plus two equals what?"; the number line (Halfling): "Where is the dot? What fourths?"; place
@@ -135,6 +137,7 @@ export function spokenFact(p) {
   if (four) return four;
   if (p.op === "⌚") return spokenClockAnswer(p);
   if (p.op === "▥") return spokenChartAnswer(p);
+  if (p.op === "ℓ") return spokenLengthAnswer(p);
   if (p.op === "…" || p.op === "◐") return spokenPatternFactAnswer(p);
   if (p.op === "✓" || p.op === "✎") return spokenTFAnswer(p);
   if (p.op === "↔") return spokenLineAnswer(p);
