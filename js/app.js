@@ -22,7 +22,7 @@ import { lineSvg } from "./numberline.js";
 import { pvSvg, pvLine } from "./placevalue.js";
 import { dollarSvg, dollarLine, moneyText } from "./dollars.js";
 import { coinsSvg, pileOf, coinOf } from "./coins.js";
-import { stackOf, markable, toggleCarry, regroup, regroupView } from "./twodigit.js";
+import { stackOf, markable, toggleCarry, regroup, regroupMove, regroupView } from "./twodigit.js";
 import { read as readSigil, judge as judgeSigil, offEdge } from "./sigil.js";
 import { HANDWRITING } from "./handwriting.js";
 import { traitOf, charged, fourthDown, prefers, hitBy, atHalf, asks, flipOf, flashOf, dieSvg, mega } from "./traits.js";
@@ -603,7 +603,18 @@ function markTap(e) {
   const col = Number(cell.dataset.col), M = G.marks || (G.marks = { carry: [], gives: [] });
   const before = JSON.stringify(M);
   if (p.op !== "-") M.carry = toggleCarry(M.carry, col, stackWidth(p));
-  else M.gives = regroup(p.x, M.gives, col);
+  else {
+    // One place at a time: a 0 with nothing to give yet, or a regroup the next column has built on,
+    // stays as it is, with a little shake (and, the first 2 times, where to look).
+    const move = regroupMove(p.x, M.gives, col);
+    if (move === "empty" || move === "blocked") {
+      const d = $("prob").querySelector(`.stop .scell[data-col="${col}"]`);
+      if (d && !reduced()) restartAnim(d, "nope");
+      if (move === "empty" && once("regroupEmpty", 2)) say("p", PHRASE.regroupEmpty, true);
+      return;
+    }
+    M.gives = regroup(p.x, M.gives, col);
+  }
   if (JSON.stringify(M) === before) return;
   sfx.tick();
   $("prob").innerHTML = stackHTML(p);

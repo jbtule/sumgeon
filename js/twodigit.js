@@ -176,25 +176,25 @@ export function toggleCarry(carries, col, width) {
 const digitsOf = (top) => [...String(top)].reverse().map(Number);
 const valueAt = (ds, gives, c) => ds[c] + (gives.includes(c + 1) ? 10 : 0) - (gives.includes(c) ? 1 : 0);
 const sorted = (g) => [...new Set(g)].sort((a, b) => a - b);
-// Tapping column `col` of the top number: undo its regroup if it has one (and any regroup to its
-// right that only worked because of it), or regroup it. A column at 0 can't give a ten by itself, so
-// the regroup passes through it from the nearest column to its left that can: 5006 − 2758, tapping
-// the tens, takes the thousands to 4 and each 0 on the way to 9 (10, less the one it gave). Never
-// the ones (nothing to their right). With nothing to the left to take from, nothing changes.
-export function regroup(top, gives, col) {
+// What a tap on column `col` of the top number does, one place at a time, as on paper:
+//   "give"    it regroups: one less here, 10 more in the column to its right;
+//   "undo"    it had regrouped, and the column to its right hasn't regrouped since, so it's taken back;
+//   "empty"   it's at 0 with nothing to give yet (a 0 gives only once it has taken 10 from its left:
+//             4000 − 1368 is three taps, the 4, then the hundreds, then the tens);
+//   "blocked" it had regrouped, but the column to its right has since regrouped too: undo that first;
+//   "none"    the ones, or not a column (nothing to their right).
+// Never anything else, so the columns always add up to the top number and none goes below 0.
+export function regroupMove(top, gives, col) {
   const ds = digitsOf(top);
-  let g = gives.filter((c) => Number.isInteger(c) && c >= 1 && c < ds.length);
-  if (!Number.isInteger(col) || col < 1 || col >= ds.length) return sorted(g);
-  if (g.includes(col)) {
-    g = g.filter((c) => c !== col);
-    for (let c = col - 1; c >= 1; c--) if (g.includes(c) && valueAt(ds, g, c) < 0) g = g.filter((x) => x !== c);
-    return sorted(g);
-  }
-  let k = col;
-  while (k < ds.length && valueAt(ds, g, k) < 1) { if (g.includes(k)) return sorted(g); k++; }
-  if (k >= ds.length) return sorted(g);
-  for (let c = col; c <= k; c++) g.push(c);
-  return sorted(g);
+  if (!Number.isInteger(col) || col < 1 || col >= ds.length) return "none";
+  if (gives.includes(col)) return gives.includes(col - 1) ? "blocked" : "undo";
+  return valueAt(ds, gives, col) >= 1 ? "give" : "empty";
+}
+// The regroups after that tap (the same list when it does nothing).
+export function regroup(top, gives, col) {
+  const ds = digitsOf(top), g = sorted(gives.filter((c) => Number.isInteger(c) && c >= 1 && c < ds.length));
+  const move = regroupMove(top, g, col);
+  return move === "give" ? sorted(g.concat(col)) : move === "undo" ? g.filter((c) => c !== col) : g;
 }
 // How the top number reads with its regroups, column by column from the right: its digit, crossed
 // out with its new value above when it gave, or a small 1 in front when it only took a ten (2 reads
