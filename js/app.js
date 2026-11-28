@@ -424,6 +424,18 @@ const BLANK = '<span class="blank" id="blank">?</span>';
 const side = (lr, t) => `<span class="side" data-side="${lr}">${t}</span>`;
 // A fraction stacked, numerator over denominator: "1/2" → ½ drawn as two rows.
 const stacked = (t) => t.replace(/(\d+|□)\/(\d+)/g, '<span class="frac"><span>$1</span><span>$2</span></span>');
+// A long line (4th grade's big numbers, a remainder's two slots, a mixed number) shrinks until it
+// fits beside its 🔊 and 💡, inside the pad's width: on an iPad in landscape the right column is
+// narrow, and "2736 ÷ 7 = □ R □" ran past it.
+function fitLine() {
+  const box = $("prob"), el = box && box.querySelector(".fline, .cmp4, .wide4"), pad = document.querySelector(".pad");
+  if (!el || !pad) return;
+  el.style.fontSize = "";
+  const base = parseFloat(getComputedStyle(el).fontSize), right = pad.getBoundingClientRect().right + 1, left = pad.getBoundingClientRect().left - 1;
+  const out = () => { const r = el.getBoundingClientRect(); return r.right > right || r.left < left; };
+  for (let k = 0.95; out() && k >= 0.5; k -= 0.05) el.style.fontSize = (base * k).toFixed(1) + "px";
+}
+addEventListener("resize", () => requestAnimationFrame(fitLine));
 function probUI() {
   const p = G.cur, box = $("prob");
   // Batch 2 (DESIGN.md §4.1): each with its picture over the line, the hint drawn on the picture.
@@ -494,6 +506,7 @@ function probUI() {
   else box.textContent = p.q + " =";
   document.querySelector(".game").classList.toggle("missing", !!p.blank || !!p.sym || p.op === "=" || !!p.find || !!p.stacked || "/≈▭▦⌚…◐✓✎↔#$◇⁙REFƒdu∠".includes(p.op));
   padUI(p.spell ? "spell" : p.draw ? "draw" : p.op === "✓" ? "tf" : p.sym ? "cmp" : "num");
+  requestAnimationFrame(fitLine);
   document.querySelector(".game").classList.toggle("cents", p.op === "¢" && !p.find);
   document.querySelector(".game").classList.toggle("find", !!p.find || "▭▦⌚◐✓✎↔#$⁙∠".includes(p.op) || (p.op === "◇" && !p.draw));
   document.querySelector(".game").classList.toggle("shape", p.op === "◇" && !p.draw);
