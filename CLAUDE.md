@@ -512,7 +512,7 @@ See `DESIGN.md` for the full design: audience (ages 5–14) and content bands, t
 Voice, achievements, players and linking copy the sibling project `../sound-box-crosswords` (see its `CLAUDE.md` and `js/speech.js`, `js/achievements.js`, `js/seal.js`, `js/merge.js`, `js/sync.js`, `sync/`). Read the matching code there before building any of these.
 
 ## Roadmap ideas (original seed list, expanded in DESIGN.md)
-- More floors and monsters (π pirate, √ root creature, % gremlin, = twins)
+- More floors and monsters (the Dread Pi-rate Radian π, √ root creature, % gremlin, = twins)
 - ~~Endless mode with scaling HP and a high score~~ (built instead as Endless: a mastered stratum keeps going, DESIGN.md §6.4)
 - Fractions, decimals and negative numbers
 - Monster collection / bestiary screen showing defeated glyphs
