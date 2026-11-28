@@ -202,6 +202,40 @@ const SURPRISE = [
   { id: "holiday:winter", icon: "⛄", title: "Snow Much Fun", detail: "Did math over winter break, snow or no snow", sayDetail: "Math over winter break, snow or no snow!", reward: { items: { shield: 1 } } },
   { id: "holiday:summer", icon: "🏖️", title: "Summer Sums", detail: "Did math in the summer sun", sayDetail: "Math in the summer sun!", reward: { items: { totem: 1 } } }
 ].map((a) => Object.assign({ kind: "surprise", say: a.title + "!" }, a));
+/* ---------- the stratum secrets: the surprises seen in play, once in each stratum ----------
+   The surprises that happen in a fight or at Trollar's stall can be earned once in every stratum:
+   "Exactly Zero in the Counting Cellar", then again in the Balance Hall. Each stratum's copy has
+   its own id, "surprise:zero@cellar" (the stratum is the run's, or for Exact Change the one picked
+   at the stall), and pays the surprise's reward again. The surprise's own id ("surprise:zero")
+   stays as the achievement as a whole: earned with its first stratum, so the ids earned before
+   strata were counted keep their meaning. Those have no stratum: placeOldSurprises puts each in
+   the stratum the player most likely earned it in (their start), once, on load. Piggy Bank, the
+   quips and the holidays aren't tied to a stratum, so they stay one achievement each. */
+export const STRATUM_SURPRISES = ["surprise:zero", "surprise:palindrome", "surprise:triple", "surprise:double", "surprise:allhands", "surprise:seven", "surprise:iceboss", "surprise:lastheart", "surprise:exact"];
+// "in the Counting Cellar": the stratum's part of the title, said and shown the same way.
+export const whereIn = (wingId) => "in " + WINGS.find((w) => w.id === wingId).name.replace(/^The /, "the ");
+// The id of a surprise in a stratum, and the other way round.
+export const inStratum = (id, wingId) => `${id}@${wingId}`;
+export const surpriseOf = (id) => { const i = String(id).indexOf("@"); return i < 0 ? null : { id: id.slice(0, i), wing: id.slice(i + 1) }; };
+const SURPRISE_IN = SURPRISE.filter((a) => STRATUM_SURPRISES.includes(a.id)).flatMap((a) => WINGS.map((w) => Object.assign({}, a, {
+  id: inStratum(a.id, w.id), of: a.id, wing: w.id, name: a.title, where: whereIn(w.id),
+  title: `${a.title} ${whereIn(w.id)}`, say: `${a.say.replace(/!$/, "")} ${whereIn(w.id)}!` })));
+// An old save's surprises (earned before strata were counted, so with no stratum's copy) are put
+// in `wingId`'s, with the same time, and seen if the old one was. Changes `ach`; true if it did.
+// Nothing is paid for them: the surprise's reward was paid when it was earned, and rewardsOf
+// counts the surprise and its first stratum as one.
+export function placeOldSurprises(ach, wingId) {
+  const w = WINGS.some((x) => x.id === wingId) ? wingId : WINGS[0].id;
+  let changed = false;
+  for (const id of STRATUM_SURPRISES) {
+    if (!ach.earned[id] || WINGS.some((x) => ach.earned[inStratum(id, x.id)])) continue;
+    const sid = inStratum(id, w);
+    ach.earned[sid] = ach.earned[id];
+    if (ach.seen.includes(id) && !ach.seen.includes(sid)) ach.seen.push(sid);
+    changed = true;
+  }
+  return changed;
+}
 // The heroes whose quips have all been heard, by digit.
 export function quipHeroes(state) {
   const m = (state && state.moments) || {};
@@ -243,24 +277,40 @@ export function hitSurprises({ ans, typed, dmg, base, hpLeft, team }) {
   return out;
 }
 export const EVENT_IDS = SURPRISE.filter((a) => !a.test).map((a) => a.id);
-// Records a surprise seen in play in earned ({ id: time }); true when it's new.
-export function noteEvent(earned, id, now) {
-  if (!EVENT_IDS.includes(id) || earned[id]) return false;
-  earned[id] = now;
-  return true;
+// Records a surprise seen in play in earned ({ id: time }), in `wingId`'s stratum for the stratum
+// ones (and the surprise as a whole with its first stratum). Returns the id newly earned (for a
+// stratum one, its stratum's copy: its card plays, its reward is paid), or null when it was
+// already earned (there).
+export function noteEvent(earned, id, now, wingId) {
+  if (!EVENT_IDS.includes(id)) return null;
+  if (!STRATUM_SURPRISES.includes(id)) {
+    if (earned[id]) return null;
+    earned[id] = now;
+    return id;
+  }
+  const sid = inStratum(id, WINGS.some((w) => w.id === wingId) ? wingId : WINGS[0].id);
+  if (earned[sid]) return null;
+  earned[sid] = now;
+  if (!earned[id]) earned[id] = now;
+  return sid;
 }
 
-const ALL = [...STRATUM, ...GRAND, ...MASTERY, ...TRACK, ...SURPRISE];
+const ALL = [...STRATUM, ...GRAND, ...MASTERY, ...TRACK, ...SURPRISE, ...SURPRISE_IN];
 const byId = Object.fromEntries(ALL.map((a) => [a.id, a]));
 // An achievement's fixed reward: { cents, items: { id: n }, piece } (missing parts are 0 or none).
 export function rewardOf(id) {
   const r = (byId[id] || {}).reward || {};
   return { cents: r.cents || 0, items: { ...(r.items || {}) }, piece: r.piece || null };
 }
-// The rewards of a set of earned ids, added up: { cents, items: { id: n } } (merge.js).
+// The rewards of a set of earned ids, added up: { cents, items: { id: n } } (merge.js). A stratum
+// surprise pays once for each stratum it's earned in; the surprise as a whole pays only while no
+// stratum's copy is earned (an old save, before placeOldSurprises), so the two never pay twice:
+// max(1 for the surprise, its strata), whatever order they were earned or merged in.
 export function rewardsOf(ids) {
-  const out = { cents: 0, items: {} };
-  for (const id of ids) {
+  const out = { cents: 0, items: {} }, set = new Set(ids);
+  const inSome = new Set([...set].map((id) => (surpriseOf(id) || {}).id).filter(Boolean));
+  for (const id of set) {
+    if (inSome.has(id)) continue;
     const r = rewardOf(id);
     out.cents += r.cents;
     for (const [k, n] of Object.entries(r.items)) out.items[k] = (out.items[k] || 0) + n;
@@ -269,8 +319,8 @@ export function rewardsOf(ids) {
 }
 
 /* ---------- the catalog ---------- */
-// Every achievement: [{ id, icon, title, detail, goal, have, met, secret, kind, wing?, track?,
-// tier?, started?, figure?, progress, reward, spoken }] in the 🏆 sheet's order: the stratum ones
+// Every achievement: [{ id, icon, title, name, where, of, detail, goal, have, met, secret, kind,
+// wing?, track?, tier?, started?, strata?, figure?, progress, reward, spoken }] in the 🏆 sheet's order: the stratum ones
 // (each stratum's Champion, then Legend), the grand ones, the mastery ones, the tracks, then the
 // surprises. kind: "champion", "legend", "grand", "mastery", "track" or "surprise". progress: words
 // for the sheet ("Mega bosses beaten: 0 of 1", "Comebacks: 12 of 25"), for the ones shown ahead and
@@ -309,6 +359,13 @@ export function catalog(state) {
   const earned = ((state && state.ach) || {}).earned || {}, qh = quipHero(state);
   for (const a of SURPRISE) {
     const met = a.test ? a.test(state || {}) : !!earned[a.id];
+    // A stratum secret: each stratum, earned (when) or not, for the 🏆 sheet's card of it.
+    if (STRATUM_SURPRISES.includes(a.id)) {
+      const strata = WINGS.map((w) => ({ wing: w.id, id: inStratum(a.id, w.id), name: SHORT[w.id], at: earned[inStratum(a.id, w.id)] || 0 }));
+      const n = strata.filter((x) => x.at).length;
+      out.push(entry(a, { goal: 1, have: met ? 1 : 0, met, secret: true, strata, progress: `${n} of ${strata.length} strata`, figure: a.figure || null }));
+      continue;
+    }
     // Every Quip counts up once a hero's quips are all heard: "Heroes heard in full: 3 of 10".
     if (a.id === "surprise:allquips") {
       const n = quipHeroes(state).length, all = Object.keys(QUIPS).length;
@@ -317,10 +374,13 @@ export function catalog(state) {
     }
     out.push(entry(a, { goal: 1, have: met ? 1 : 0, met, secret: true, figure: a.id === "surprise:quips" ? (qh != null ? { hero: qh } : null) : a.figure || null }));
   }
+  // Each stratum's copy of the stratum secrets, for its card (the 🏆 sheet shows them on their
+  // surprise's card: `of`).
+  for (const a of SURPRISE_IN) { const met = !!earned[a.id]; out.push(entry(a, { goal: 1, have: met ? 1 : 0, met, secret: true, figure: a.figure || null })); }
   return out;
 }
 function entry(a, o) {
-  return Object.assign({ id: a.id, icon: a.icon, title: a.title, detail: a.detail, kind: a.kind || "mastery", wing: a.wing || null, track: a.track || null, tier: a.tier ?? null, secret: false, reward: rewardOf(a.id), spoken: spokenParts(a), share: Math.min(1, o.have / o.goal) }, o);
+  return Object.assign({ id: a.id, icon: a.icon, title: a.title, name: a.name || a.title, where: a.where || null, of: a.of || null, detail: a.detail, kind: a.kind || "mastery", wing: a.wing || null, track: a.track || null, tier: a.tier ?? null, secret: false, reward: rewardOf(a.id), spoken: spokenParts(a), share: Math.min(1, o.have / o.goal) }, o);
 }
 
 /* ---------- what a card says ---------- */
@@ -372,7 +432,10 @@ export function freshAchievements(saved) {
   const seen = Array.isArray(s.seen) ? [...new Set(s.seen.filter((k) => earned[k]))] : [];
   return { earned, seen, days: keepDays(Array.isArray(s.days) ? s.days : []), comebacks: Math.max(0, Math.floor(Number(s.comebacks) || 0)) };
 }
+// The ids that get a card of their own: all but the stratum secrets as a whole (their strata's
+// copies have the cards).
+export const CARD_IDS = ALL.map((a) => a.id).filter((id) => !STRATUM_SURPRISES.includes(id));
 // The earned ones not yet shown on a card, in the catalog's order (the stratum ones first).
-export function unseen(ach) { return ALL.map((a) => a.id).filter((id) => ach.earned[id] && !ach.seen.includes(id)); }
+export function unseen(ach) { return CARD_IDS.filter((id) => ach.earned[id] && !ach.seen.includes(id)); }
 export const achievementOf = (id) => byId[id] || null;
 export const ACHIEVEMENT_IDS = ALL.map((a) => a.id);

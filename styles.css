@@ -630,11 +630,11 @@ body[data-stratum="forge"] .game,.wing.forge,.d-layer.forge{--wall:var(--wall-fo
 
 /* Each stratum's colors, to go with its wall: panels, borders, background and keys change;
    gold and coral stay the accents. Set by data-stratum on <body> (app.js newRun). */
-body[data-stratum="cellar"],.descent.cellar,.d-layer.cellar,.title-scene{--bg:#1c1411;--panel:#2a1e19;--line:#4a3328;--btn:#3b2a22;--btn2:#4a362c;--edge:#5d4536;--muted:#c9b4a6;--dark:#120c0a}
-body[data-stratum="hall"],.descent.hall,.d-layer.hall{--bg:#141a28;--panel:#1d2537;--line:#33405c;--btn:#2a3550;--btn2:#34415f;--edge:#46557a;--muted:#b0bcd6;--dark:#0d111b}
-body[data-stratum="mines"],.descent.mines,.d-layer.mines{--bg:#111330;--panel:#191c3e;--line:#2f3468;--btn:#222652;--btn2:#2b3062;--edge:#3f4688;--muted:#b6bbe2;--dark:#090a1d}
-body[data-stratum="tower"],.descent.tower,.d-layer.tower{--bg:#151c1e;--panel:#20292c;--line:#36454a;--btn:#2c393d;--btn2:#364549;--edge:#4a5b60;--muted:#b3c0c2;--dark:#0d1213}
-body[data-stratum="forge"],.descent.forge,.d-layer.forge{--bg:#171312;--panel:#231d1b;--line:#3e332e;--btn:#302825;--btn2:#3b312d;--edge:#54453e;--muted:#c4b6ae;--dark:#0e0b0a}
+body[data-stratum="cellar"],.as-pg.cellar,.descent.cellar,.d-layer.cellar,.title-scene{--bg:#1c1411;--panel:#2a1e19;--line:#4a3328;--btn:#3b2a22;--btn2:#4a362c;--edge:#5d4536;--muted:#c9b4a6;--dark:#120c0a}
+body[data-stratum="hall"],.as-pg.hall,.descent.hall,.d-layer.hall{--bg:#141a28;--panel:#1d2537;--line:#33405c;--btn:#2a3550;--btn2:#34415f;--edge:#46557a;--muted:#b0bcd6;--dark:#0d111b}
+body[data-stratum="mines"],.as-pg.mines,.descent.mines,.d-layer.mines{--bg:#111330;--panel:#191c3e;--line:#2f3468;--btn:#222652;--btn2:#2b3062;--edge:#3f4688;--muted:#b6bbe2;--dark:#090a1d}
+body[data-stratum="tower"],.as-pg.tower,.descent.tower,.d-layer.tower{--bg:#151c1e;--panel:#20292c;--line:#36454a;--btn:#2c393d;--btn2:#364549;--edge:#4a5b60;--muted:#b3c0c2;--dark:#0d1213}
+body[data-stratum="forge"],.as-pg.forge,.descent.forge,.d-layer.forge{--bg:#171312;--panel:#231d1b;--line:#3e332e;--btn:#302825;--btn2:#3b312d;--edge:#54453e;--muted:#c4b6ae;--dark:#0e0b0a}
 body{transition:background-color .4s;--hint-empty:var(--edge);--hint-line:var(--edge)}
 
 /* Spell casting: the drawing pad takes the number pad's place, the same box, glowing. It's all
@@ -700,6 +700,34 @@ button.ach-row{cursor:pointer}
 .new-pill{font:400 11px/1 Bungee,sans-serif;font-style:normal;padding:2px 6px;border-radius:8px;background:var(--coral);color:var(--dark);vertical-align:2px}
 .ach-bar{display:block;height:8px;margin:4px 0 1px;border-radius:5px;background:var(--line);overflow:hidden}
 .ach-bar i{display:block;height:100%;background:var(--gold);border-radius:5px}
+/* A stratum secret (DESIGN.md §14.5): one card that swipes through the strata like a monster's
+   looks (scroll-snap, the looks' dots, ← and →). Each page in its stratum's palette (.as-pg.<id>,
+   with the palettes below) over its wall, darkened to stay calm. */
+.ach-strata{display:grid;gap:6px;padding:10px 0 2px}
+.ach-strata .as-head{display:flex;align-items:flex-start;gap:12px;padding:0 12px}
+.ach-strata .as-count{flex:none;align-self:center;padding:2px 8px;border-radius:10px;background:var(--line);color:var(--ink);font-weight:800;font-size:12px;white-space:nowrap}
+.ach-strata.earned .as-count{background:#ffc93c33;color:var(--gold)}
+.ach-strata.secret{opacity:1}
+.ach-strata.secret .as-head{opacity:.7}
+.as-strip{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch;scrollbar-width:none;margin:0 12px;border-radius:14px}
+.as-strip::-webkit-scrollbar{display:none}
+.as-strip:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+.as-pg{flex:0 0 100%;scroll-snap-align:center;scroll-snap-stop:always;display:grid;grid-template-columns:auto 1fr;grid-template-areas:"ico name" "ico when";align-items:center;column-gap:12px;
+  min-height:72px;padding:10px 14px;border-radius:14px;border:2px solid var(--edge);color:var(--ink);text-align:left;font:inherit;
+  background:linear-gradient(90deg,#0c171cd6,#0c171ca6),var(--ach-wall,var(--panel))}
+button.as-pg{cursor:pointer}
+.as-pg.earned{border-color:var(--gold);box-shadow:inset 0 0 18px #ffc93c33}
+.as-pg.new{border-color:var(--coral)}
+.as-pg .as-name{grid-area:name;align-self:end;font:400 15px/1.15 Bungee,sans-serif;color:var(--gold);text-shadow:0 2px 0 #0c171c}
+.as-pg.secret .as-name{color:var(--ink)}
+.as-pg .as-ico{grid-area:ico;width:48px;font-size:34px;line-height:48px;text-align:center;filter:drop-shadow(0 2px 0 #0008)}
+.as-pg.secret .as-ico{width:44px;height:44px;font:400 26px/40px Bungee,sans-serif;color:var(--muted);border:2px dashed var(--muted);border-radius:50%;filter:none}
+.as-pg small{grid-area:when;align-self:start;color:var(--muted);font-weight:800;font-size:13px}
+.as-pg.earned small{color:#f3efe4}
+.as-nav{display:flex;align-items:center;justify-content:center;gap:6px}
+.as-nav .icon-btn{font-size:18px}
+.as-nav .icon-btn:disabled{opacity:.35}
+.ach-title .ach-where{display:block;margin-top:4px;font-size:.52em;line-height:1.15}
 /* An achievement's card (app.js achievementCards), drawn like its share picture (sharecard.js):
    a wall darkened behind (the stratum's, or the one being played; the grand ones purple to
    slate), a warm gold glow, a gold frame with a dark outline set in from the edge, the title in
@@ -709,11 +737,11 @@ button.ach-row{cursor:pointer}
 .ach-card{--ach-wall:var(--wall-plain);position:relative;isolation:isolate;display:grid;justify-items:center;align-content:center;text-align:center;gap:6px;
   padding:22px 18px 20px;border-radius:24px;border:2px solid #0c171c;box-shadow:0 6px 24px #0008;
   background:radial-gradient(ellipse 80% 48% at 50% 42%,#ffd84d4d,#ffd84d00 100%),linear-gradient(#0c171c9e,#0c171c9e),var(--ach-wall)}
-.ach-card[data-stratum="cellar"]{--ach-wall:var(--wall-cellar)}
-.ach-card[data-stratum="hall"]{--ach-wall:var(--wall-hall)}
-.ach-card[data-stratum="mines"]{--ach-wall:var(--wall-mines)}
-.ach-card[data-stratum="forge"]{--ach-wall:var(--wall-forge)}
-.ach-card[data-stratum="tower"]{--ach-wall:var(--wall-tower)}
+.ach-card[data-stratum="cellar"],.as-pg[data-stratum="cellar"]{--ach-wall:var(--wall-cellar)}
+.ach-card[data-stratum="hall"],.as-pg[data-stratum="hall"]{--ach-wall:var(--wall-hall)}
+.ach-card[data-stratum="mines"],.as-pg[data-stratum="mines"]{--ach-wall:var(--wall-mines)}
+.ach-card[data-stratum="forge"],.as-pg[data-stratum="forge"]{--ach-wall:var(--wall-forge)}
+.ach-card[data-stratum="tower"],.as-pg[data-stratum="tower"]{--ach-wall:var(--wall-tower)}
 .ach-card.grand{background:radial-gradient(ellipse 80% 48% at 50% 42%,#ffd84d5c,#ffd84d00 100%),linear-gradient(150deg,#3a2a5a,#12242b)}
 /* The gold frame, set in from the card's edge as on the share picture, outlined dark both sides. */
 .ach-card::before{content:"";position:absolute;inset:7px;z-index:-1;border-radius:18px;border:3px solid var(--gold);pointer-events:none;

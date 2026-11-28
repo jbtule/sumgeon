@@ -47,8 +47,8 @@ import { newKey, keysFor, isKey, linkFor, keyFromLink } from "./seal.js";
 import { syncPlayer, remoteVersion, SYNC_URL } from "./sync.js";
 import { SYNCED_KEYS, canon, pack, unpack } from "./merge.js";
 import { linkQR } from "./linkqr.js";
-import { award as awardAchievements, catalog as achCatalog, freshAchievements, unseen as unseenAchievements, rewardOf, achievementOf, cardLines, ACHIEVEMENT_IDS,
-  isComeback, notePracticeDay, holidaysOn, hitSurprises, noteEvent, keepDays, dayNumber } from "./achievements.js";
+import { award as awardAchievements, catalog as achCatalog, freshAchievements, unseen as unseenAchievements, rewardOf, achievementOf, cardLines,
+  isComeback, notePracticeDay, holidaysOn, hitSurprises, noteEvent, keepDays, dayNumber, placeOldSurprises, CARD_IDS } from "./achievements.js";
 import { renderCard, shareCard } from "./sharecard.js";
 import { installWay, isIPad, safariVersion, iosSteps, ICONS as INSTALL_ICONS } from "./install.js";
 import { achievementLine } from "./lines.js";
@@ -193,6 +193,11 @@ function loadPlayer() {
   }
   // The band a player started in opens its Wing from the start (DESIGN.md §4).
   if (!st.start) { st.start = st.band; saveSettings(); }
+  // Surprises earned before they were counted per stratum (DESIGN.md §14.5) had no stratum: each
+  // goes in the stratum the player started in, the likeliest (done before the Forge's raise just
+  // below, which would move a grade 4 player's to a stratum that wasn't there yet). Once only:
+  // a surprise with any stratum's copy is left alone. Nothing is paid again.
+  if (placeOldSurprises(ach, wingFor(st.start || st.band).id)) saveAch();
   // The Fraction Forge (4th grade) came after grade 4 and 5 players had started in the Tables Tower:
   // their start is raised so the Forge is open to them, but where they're playing (band), their
   // depths, stars, chapters and facts stay: they keep playing the Tower until they pick the Forge.
@@ -232,9 +237,12 @@ function payAchievements(ids) {
 }
 // Surprises seen in play (DESIGN.md §14.5: a hit, a payment, a floor cleared a certain way),
 // recorded as they happen, just as quietly; ?achievements test runs record nothing.
+// The stratum ones (Exactly Zero, Exact Change, …) are earned once in each stratum: the run's, or
+// at Trollar's stall the one picked on the start screen.
 function surprise(...ids) {
   if (LEGEND_TEST) return; // ?legend's practice run saves nothing
-  payAchievements(ids.filter((id) => noteEvent(ach.earned, id, Date.now())));
+  const now = Date.now();
+  payAchievements(ids.map((id) => noteEvent(ach.earned, id, now, wing().id)).filter(Boolean));
 }
 // ?wallet=<cents> sets the wallet, for testing the shop.
 const WALLET_AT = new URLSearchParams(location.search).has("wallet") ? Math.max(0, Math.floor(Number(new URLSearchParams(location.search).get("wallet"))) || 0) : null;
@@ -3009,18 +3017,19 @@ function badgesCopy() {
    them earned on the sheet, without saving or paying anything, for testing. */
 const ACH_TEST = (() => {
   const q = new URLSearchParams(location.search);
-  if (q.get("achievements") === "all") return ACHIEVEMENT_IDS.slice();
+  if (q.get("achievements") === "all") return CARD_IDS.slice();
   const ids = q.getAll("achieve").flatMap((v) => v.split(",")).filter((id) => achievementOf(id));
   return ids.length ? ids : null;
 })();
 let achTestLeft = ACH_TEST ? ACH_TEST.slice() : [];
 const earnedAt = (id) => ach.earned[id] || (ACH_TEST && ACH_TEST.includes(id) ? Date.now() : 0);
-const isNewAch = (id) => !!earnedAt(id) && !ach.seen.includes(id);
+// A stratum secret (achievements.js STRATUM_SURPRISES) is new while any stratum's copy is.
+const isNewAch = (id) => !!earnedAt(id) && !ach.seen.includes(id) && CARD_IDS.includes(id);
 // The cards to play before this descent: the test aid's once, else the unseen ones.
 function achievementQueue() { return achTestLeft.length ? achTestLeft.splice(0) : unseenAchievements(ach); }
 function markSeen(id) { if (ach.earned[id] && !ach.seen.includes(id)) { ach.seen.push(id); saveAch(); } }
 function trophyButton() {
-  const fresh = ACHIEVEMENT_IDS.filter(isNewAch).length;
+  const fresh = CARD_IDS.filter(isNewAch).length;
   return `<button class="icon-btn trophy-btn" id="openTrophies" type="button" aria-label="Achievements${fresh ? `, ${fresh} new` : ""}">🏆${fresh ? '<i class="new-dot" aria-hidden="true"></i>' : ""}</button>`;
 }
 const STRATUM_BOSS = (id) => MON.find((m) => m.n === wingOf(id).boss);
@@ -3075,7 +3084,7 @@ let shareFor = null, shareBlob = null;
 function prepareShare(a) {
   shareFor = a.id; shareBlob = null;
   const btn = $("achShare");
-  renderCard({ icon: a.icon, title: a.title, detail: a.detail, secret: a.secret }, earnedAt(a.id) || Date.now(), figuresOf(a), cardWall(a)).then((b) => {
+  renderCard({ icon: a.icon, title: a.name, where: a.where, detail: a.detail, secret: a.secret }, earnedAt(a.id) || Date.now(), figuresOf(a), cardWall(a)).then((b) => {
     if (shareFor !== a.id || !btn.isConnected) return; // moved on meanwhile
     shareBlob = b; btn.hidden = false;
   }).catch(() => {}); // no canvas: just no Share button
@@ -3105,7 +3114,7 @@ function achievementCards(ids, i, from) {
   show(`<div class="ach-card${big ? " huge" : ""}${wall ? "" : " grand"}"${wall ? ` data-stratum="${wall}"` : ""}>
     <p class="ach-kicker">${a.secret ? "Secret achievement!" : "New achievement!"}</p>
     <div class="ach-icon" aria-hidden="true">${a.icon}</div>
-    <h2 class="ach-title">${esc(a.title)}</h2>
+    <h2 class="ach-title">${esc(a.name)}${a.where ? `<span class="ach-where">${esc(a.where)}</span>` : ""}</h2>
     <p class="ach-detail">${esc(a.detail)}</p>
     ${stage}
     ${from.sheet ? "" : `<p class="ach-got"><span>You got</span> ${esc(rewardWords(r))}</p>`}${when ? `<p class="ach-date">${esc(when)}</p>` : ""}${!from.sheet && ids.length > 1 ? `<p class="ach-count">${i + 1} of ${ids.length}</p>` : ""}</div>
@@ -3136,6 +3145,7 @@ function trophyPage() {
   for (const a of list) if (a.kind === "track" && !earnedAt(a.id) && !(a.track in nextTier)) nextTier[a.track] = a;
   const bar = (a) => `<span class="ach-bar" aria-hidden="true"><i style="width:${Math.round(a.share * 100)}%"></i></span>`;
   const row = (a) => {
+    if (a.strata) return strataCard(a);
     const t = earnedAt(a.id);
     if (t) return `<button type="button" class="ach-row earned${isNewAch(a.id) ? " new" : ""}${isBig(a) ? " top" : ""}" data-ach="${a.id}">
       <span class="ach-ico" aria-hidden="true">${a.icon}</span><span class="ach-txt"><b>${esc(a.title)}${isNewAch(a.id) ? ' <i class="new-pill">New!</i>' : ""}</b><small>${esc(a.detail)}</small><small class="ach-when">Earned ${date(t)}</small><small class="ach-share-hint">${SHARE_ICON} Tap to see it and share</small></span></button>`;
@@ -3154,18 +3164,65 @@ function trophyPage() {
   };
   // Each list puts the earned ones first, newest first, then the rest in their own order. The
   // secrets: the tracks first (they count up), then mastery, then the surprises.
-  const earnedFirst = (as) => [...as.filter((a) => earnedAt(a.id)).sort((x, y) => earnedAt(y.id) - earnedAt(x.id)), ...as.filter((a) => !earnedAt(a.id))];
-  const strata = earnedFirst(list.filter(isBig)), secret = earnedFirst(["track", "mastery", "surprise"].flatMap((k) => list.filter((a) => a.kind === k)));
-  const got = list.filter((a) => earnedAt(a.id)).length;
+  // A stratum secret goes by its latest stratum. Each stratum's copy is on its surprise's card,
+  // not a row of its own.
+  const latest = (a) => (a.strata ? Math.max(0, ...a.strata.map((x) => earnedAt(x.id))) : earnedAt(a.id));
+  const earnedFirst = (as) => [...as.filter(latest).sort((x, y) => latest(y) - latest(x)), ...as.filter((a) => !latest(a))];
+  const shown = list.filter((a) => !a.of);
+  const strata = earnedFirst(shown.filter(isBig)), secret = earnedFirst(["track", "mastery", "surprise"].flatMap((k) => shown.filter((a) => a.kind === k)));
+  const got = shown.filter(latest).length;
   show(`<div class="cardhead"><h2>🏆 Achievements</h2></div>
-  <p class="ach-sum">${got} of ${list.length} earned</p>
+  <p class="ach-sum">${got} of ${shown.length} earned</p>
   <h3 class="book-title">The strata</h3>
   <div class="ach-list">${strata.map(row).join("")}</div>
-  <h3 class="book-title">Secrets <small>${secret.filter((a) => earnedAt(a.id)).length} of ${secret.length} found</small></h3>
+  <h3 class="book-title">Secrets <small>${secret.filter(latest).length} of ${secret.length} found</small></h3>
   <div class="ach-list">${secret.map(row).join("")}</div>
   <div class="btns"><button class="big" id="achBack">Back</button></div>`);
   $("card").querySelectorAll("[data-ach]").forEach((b) => b.onclick = () => achievementCards([b.dataset.ach], 0, { sheet: true, test: !ach.earned[b.dataset.ach] }));
+  for (const c of $("card").querySelectorAll(".ach-strata")) wireStrata(c);
   $("achBack").onclick = () => G.paused ? pause() : menu(); // mid-run, back to the pause card
+}
+// A stratum secret on the 🏆 sheet (DESIGN.md §14.5): one card that swipes sideways through the
+// strata, as a monster's looks do in Monsters & Heroes (scroll-snap, dots under it, ← and →, and
+// the arrow keys). Each stratum's page in its own colors over its wall: earned, the achievement
+// (a tap plays its card); not yet, a "?" and the stratum's name. The card opens on the stratum
+// earned last, else the first, and counts them: "3 of 5 strata".
+function strataCard(a) {
+  const pages = a.strata, n = pages.length, got = pages.filter((x) => earnedAt(x.id)), any = got.length > 0;
+  const date = (t) => new Date(t).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  const last = any ? pages.indexOf(got.reduce((x, y) => (earnedAt(y.id) > earnedAt(x.id) ? y : x))) : 0;
+  const fresh = pages.some((x) => isNewAch(x.id));
+  const page = (x, i) => earnedAt(x.id)
+    ? `<button type="button" class="as-pg ${x.wing} earned${isNewAch(x.id) ? " new" : ""}" data-stratum="${x.wing}" data-ach="${x.id}" aria-label="${i + 1} of ${n}: ${esc(achievementOf(x.id).title)}, earned ${date(earnedAt(x.id))}. Tap to see it and share">
+        <b class="as-name">${esc(x.name)}</b><span class="as-ico" aria-hidden="true">${a.icon}</span><small>Earned ${date(earnedAt(x.id))}${isNewAch(x.id) ? ' <i class="new-pill">New!</i>' : ""}</small></button>`
+    : `<div class="as-pg ${x.wing} secret" data-stratum="${x.wing}" role="group" aria-label="${i + 1} of ${n}: ${esc(x.name)}, not found yet"><b class="as-name">${esc(x.name)}</b><span class="as-ico" aria-hidden="true">?</span><small>Not found yet</small></div>`;
+  const title = any ? a.name : "???";
+  return `<div class="ach-row ach-strata${any ? " earned" : " secret"}${fresh ? " new" : ""}" role="group" aria-label="${esc(title)}: ${got.length} of ${n} strata" data-start="${last}">
+    <div class="as-head"><span class="ach-ico" aria-hidden="true">${any ? a.icon : "❓"}</span><span class="ach-txt"><b>${esc(title)}</b><small>${any ? esc(a.detail) : "A secret achievement, in every stratum"}</small></span><small class="as-count">${got.length} of ${n} strata</small></div>
+    <div class="as-strip" role="region" aria-label="${esc(title)}, stratum by stratum" tabindex="0">${pages.map(page).join("")}</div>
+    <div class="as-nav"><button type="button" class="icon-btn as-prev" aria-label="Previous stratum">←</button>
+      <div class="lv-dots">${pages.map((x, i) => `<button type="button" class="lv-dot${earnedAt(x.id) ? " on" : ""}" aria-label="${esc(x.name)}${earnedAt(x.id) ? ": earned" : ""}"></button>`).join("")}</div>
+      <button type="button" class="icon-btn as-next" aria-label="Next stratum">→</button></div></div>`;
+}
+function wireStrata(c) {
+  const strip = c.querySelector(".as-strip"), dots = [...c.querySelectorAll(".lv-dot")], prev = c.querySelector(".as-prev"), next = c.querySelector(".as-next"), n = dots.length;
+  const current = () => Math.max(0, Math.min(n - 1, Math.round(strip.scrollLeft / (strip.clientWidth || 1))));
+  let t = 0;
+  const showing = () => {
+    const i = current();
+    dots.forEach((d, j) => d.setAttribute("aria-current", j === i ? "true" : "false"));
+    prev.disabled = i === 0; next.disabled = i === n - 1;
+  };
+  const go = (i) => strip.scrollTo({ left: Math.max(0, Math.min(n - 1, i)) * strip.clientWidth, behavior: reduced() ? "auto" : "smooth" });
+  strip.addEventListener("scroll", () => { clearTimeout(t); t = setTimeout(showing, 150); }, { passive: true });
+  strip.addEventListener("scrollend", () => { clearTimeout(t); showing(); });
+  prev.onclick = () => go(current() - 1);
+  next.onclick = () => go(current() + 1);
+  dots.forEach((d, i) => { d.onclick = () => go(i); });
+  strip.onkeydown = (e) => { if (e.key === "ArrowLeft" || e.key === "ArrowRight") { e.preventDefault(); go(current() + (e.key === "ArrowLeft" ? -1 : 1)); } };
+  // Open on the stratum earned last, without the smooth scroll.
+  strip.scrollLeft = Number(c.dataset.start || 0) * strip.clientWidth;
+  showing();
 }
 function bookPage() {
   G.onMenu = false; // an update waits until the start screen
