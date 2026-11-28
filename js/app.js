@@ -4,7 +4,7 @@ import { MON, svg, LOOKS, lookOf, allLooks, CHOMP_SHUT, bossForm, jerseyFrac } f
 import { chompPose, morePose, mouthOf, SNAP, FLIP_MS, SNAP_MS, EAT_MS } from "./chomp.js";
 import { spokenProblem, spokenFact } from "./problems.js";
 import { BANDS, choose, factOf, record as recordAnswer, helpFor, monsterHP, probeKey, tierOf, skipTo, SKIP_PROBES, SKIP_WINDOW, MAX_LEAP, fluentTime, fluentFor, spellKey, RECENT, pool, scratchable, drawHit, openLevels, reachOf, chaptersOf, pathBands, reviewFacts, placeReviews, examKey, examFacts, examRound, hpOf, endlessKey, floorTypical, typicalHit, levelTypical } from "./learn.js";
-import { chargeFor, chargedHit, chargeBadge, chargePop, problemScale, oneHit } from "./charge.js";
+import { chargeFor, chargeIn, chargedHit, chargeBadge, chargePop, problemScale, oneHit } from "./charge.js";
 import { countSvg, readShape, judgeShape, cleanFor, isDrawKey, SHAPE_LINE, SHAPE_CODE, article } from "./shapes.js";
 import { hintFor, STRATEGIES } from "./hints.js";
 import { openStore, displayName, DUNGEON_VERSION, DUNGEON_KEYS, LEARNING_RESETS } from "./store.js";
@@ -1070,7 +1070,7 @@ function newProblem() {
   // The Super Charge: a problem whose level answers far below the floor's typical hit is charged
   // (×N), one whose level, or the biggest number it shows, is 3 times above it finds the monster
   // braced (÷N); never from its own answer (charge.js problemScale, shownMax).
-  const c = chargeFor(problemScale(levelTypical(bk, G.cur.key || key, m), G.cur), G.typical);
+  const c = chargeIn(wing().id, chargeFor(problemScale(levelTypical(bk, G.cur.key || key, m), G.cur), G.typical));
   if (c) G.cur.charge = c;
   superCharge(true);
   G.recent = [key].concat(G.recent).slice(0, RECENT);
