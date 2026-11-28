@@ -23,7 +23,8 @@
 // - "▥T1:torch5,potion7,key3:m.potion.key": a tally chart (T), picture graph (P) or bar graph (B)
 //   at a scale (1, 2, 5, 10), its categories, and the question: "n.potion" how many potions,
 //   "m.potion.key" how many more potions than keys, "f.key.potion" how many fewer keys than
-//   potions, "t.torch.key" torches and keys together, "a" how many in all.
+//   potions, "t.torch.key" torches and keys together, "a" how many in all, "x" how many in the
+//   tallest bar (the longest row; the counts are all different, so there's never a tie).
 // - "▥L2:bone:2-8:2,3,3,5:at.5": a line plot in halves (L2; L4 fourths, L1 whole numbers), its
 //   object, the line's ends and the data in those units, and "at.5" how many at 5 (2½), "gt.4"
 //   how many longer than 4 (2), "mo" the mode, "ra" the range, "me" the median.
@@ -109,6 +110,8 @@ export const CHART_LEVELS = [
 /* ---------- facts and keys ---------- */
 const countOf = (f, o) => (f.cats.find((c) => c[0] === o) || [0, 0])[1];
 const sum = (a) => a.reduce((s, x) => s + x, 0);
+// The thing with the most (a set's counts are all different, so it's one).
+const mostOf = (f) => f.cats.reduce((m, c) => (c[1] > m[1] ? c : m))[0];
 // The mode of a list (the game only asks lists with one).
 const modeOf = (vals) => { const n = {}; vals.forEach((v) => (n[v] = (n[v] || 0) + 1)); const top = Math.max(...Object.values(n)); return Object.keys(n).filter((v) => n[v] === top).map(Number); };
 function answerOf(f) {
@@ -118,6 +121,7 @@ function answerOf(f) {
     if (q.k === "m") return countOf(f, q.a) - countOf(f, q.b);
     if (q.k === "f") return countOf(f, q.b) - countOf(f, q.a);
     if (q.k === "t") return countOf(f, q.a) + countOf(f, q.b);
+    if (q.k === "x") return Math.max(...f.cats.map((c) => c[1]));
     return sum(f.cats.map((c) => c[1]));
   }
   if (f.form === "L") {
@@ -206,6 +210,22 @@ function catQuestions(d, qs, rnd) {
   }
   return out;
 }
+// 2nd grade's questions of one data set (four things): each kind in qs, "x" the tallest, "n" a
+// thing that isn't the tallest (that's "x"'s), and "t", "m" and "f" each on its own pair, so "more
+// keys than gems" never comes with "fewer gems than keys".
+function secondQuestions(d, qs, rnd) {
+  const things = d.cats.map((c) => c[0]), most = mostOf(d);
+  const pairs = pickN(things.flatMap((a, i) => things.slice(i + 1).map((b) => [a, b])), 6, rnd);
+  const by = (a, b) => countOf(d, a) - countOf(d, b);
+  return qs.map((k) => {
+    if (k === "x") return { k };
+    if (k === "n") return { k, a: pickN(things.filter((o) => o !== most), 1, rnd)[0] };
+    const [a, b] = pairs.shift();
+    if (k === "t") return { k, a, b };
+    const [big, small] = by(a, b) > 0 ? [a, b] : [b, a];
+    return k === "m" ? { k, a: big, b: small } : { k, a: small, b: big };
+  });
+}
 // Lengths or counts for a line plot: n values from..to, at most cap at one place, optionally with
 // one mode.
 function plotVals(from, to, n, cap, oneMode, rnd) {
@@ -224,9 +244,16 @@ export function chartFacts() {
   // 1st grade: three things, totals within 20.
   cats(6, () => catData("T", 1, 3, 2, 10, 1, 20, rnd), (i) => ["n", "n", i % 2 ? "f" : "m", "a"]);
   cats(6, () => catData("P", 1, 3, 1, 8, 1, 20, rnd), (i) => ["n", "n", i % 2 ? "f" : "m", "a"]);
-  // 2nd grade: four things, scale 1.
-  cats(5, () => catData("P", 1, 4, 1, 9, 1, 30, rnd), () => ["n", "t", "m", "f", "a"]);
-  cats(5, () => catData("B", 1, 4, 1, 9, 1, 30, rnd), () => ["n", "t", "m", "f", "a"]);
+  // 2nd grade: four things, scale 1, put together and compare (2.MD.D.10): two together, how many
+  // more, how many fewer, and how many in the tallest bar (the longest row). Never "in all" (a
+  // count of every picture, not reading the graph), and "how many" only on bar graphs, read off
+  // the scale (on a picture graph it's only counting pictures). The questions come from their own
+  // seed: the data sets come from the main one as before, which still makes the draws the old
+  // questions made, so every other grade's data (and keys) stay as they were.
+  const rnd2 = seeded(2028);
+  const second = (form, qs) => { for (let i = 0; i < 5; i++) { const d = catData(form, 1, 4, 1, 9, 1, 30, rnd); catQuestions(d, ["n", "t", "m", "f", "a"], rnd); for (const q of secondQuestions(d, qs, rnd2)) add({ ...d, ask: q }); } };
+  second("P", ["x", "t", "m", "f"]);
+  second("B", ["n", "x", "t", "m", "f"]);
   // 3rd grade: each picture = 2 (halves for the odd ones) or 5; bars by 2s or 5s.
   cats(6, (i) => (i < 3 ? catData("P", 2, 3 + (i % 2), 2, 18, 1, 99, rnd) : catData("P", 5, 3, 5, 40, 5, 99, rnd)), () => ["n", "n", "m", "f", "t"]);
   cats(6, (i) => (i < 3 ? catData("B", 2, 4, 2, 18, 2, 99, rnd) : catData("B", 5, 4, 5, 45, 5, 999, rnd)), () => ["n", "m", "f", "t"]);
@@ -295,6 +322,7 @@ export function chartQuestion(f) {
     if (q.k === "m") return `How many more ${many(q.a)} than ${many(q.b)}?`;
     if (q.k === "f") return `How many fewer ${many(q.a)} than ${many(q.b)}?`;
     if (q.k === "t") return `How many ${many(q.a)} and ${many(q.b)} in all?`;
+    if (q.k === "x") return f.form === "B" ? "How many in the tallest bar?" : "How many in the longest row?";
     return "How many in all?";
   }
   if (q.k === "mo") return "What is the mode?";
@@ -316,6 +344,7 @@ export function spokenChartAnswer(f) {
   if (f.cats) {
     if (q.k === "n") return `${N} ${thing(q.a)}.`;
     if (q.k === "m" || q.k === "f") return `${N} ${q.k === "m" ? "more" : "fewer"} ${thing(q.a)}.`;
+    if (q.k === "x") return `The most is ${n} ${thing(mostOf(f))}.`;
     return `${N} in all.`;
   }
   if (q.k === "mo" || q.k === "ra" || q.k === "me") return `The ${{ mo: "mode", ra: "range", me: "median" }[q.k]} is ${n}.`;
@@ -328,7 +357,7 @@ export function spokenChartAnswer(f) {
 export function chartLine(f) {
   const q = f.ask, M = (o) => cap(many(o));
   let t;
-  if (f.cats) t = q.k === "n" ? `${M(q.a)}:` : q.k === "m" ? `More ${many(q.a)} than ${many(q.b)}:` : q.k === "f" ? `Fewer ${many(q.a)} than ${many(q.b)}:` : q.k === "t" ? `${M(q.a)} and ${many(q.b)}:` : "In all:";
+  if (f.cats) t = q.k === "n" ? `${M(q.a)}:` : q.k === "m" ? `More ${many(q.a)} than ${many(q.b)}:` : q.k === "f" ? `Fewer ${many(q.a)} than ${many(q.b)}:` : q.k === "t" ? `${M(q.a)} and ${many(q.b)}:` : q.k === "x" ? (f.form === "B" ? "Tallest bar:" : "Longest row:") : "In all:";
   else if (q.k === "mo" || q.k === "ra" || q.k === "me") t = `${{ mo: "Mode", ra: "Range", me: "Median" }[q.k]}:`;
   else if (f.form === "F") t = `${cap(PLACES[f.obj][1])} in all:`;
   else if (f.form === "L") t = f.den > 1 ? (q.k === "at" ? `${lenLabel(q.v, f.den)} inches:` : `Longer than ${lenLabel(q.v, f.den)} in:`) : `${cap(PLACES[f.obj][1])} with ${q.v}:`;
@@ -436,8 +465,8 @@ function rowsSvg(f, o) {
   if (o.hint) {
     const rowBand = (i) => band(8, g.y(i) + 2, W - 16, g.rowH - 4);
     const label = (x, i, v) => text(x, g.y(i) + g.rowH - 3, v, { size: 12, color: GOLD, halo: true });
-    if (q.k === "n") {
-      const i = idx(q.a), st = rowSteps(f, g, i), k = shownOf(st.length, o.worked);
+    if (q.k === "n" || q.k === "x") {
+      const i = idx(q.k === "x" ? mostOf(f) : q.a), st = rowSteps(f, g, i), k = shownOf(st.length, o.worked);
       back += rowBand(i);
       st.forEach((p, j) => { if (j < k) over += label(p.x, i, p.v); });
       if (!o.worked) over += label(st[st.length - 1].x, i, "?");
@@ -500,8 +529,8 @@ function barsSvg(f, o) {
     // Guide lines from bar tops across to the numbers.
     const read = (i) => guide(cx(i) - bw / 2, top(i), g.x0, top(i));
     const value = (i) => text(cx(i), top(i) - 6, f.cats[i][1], { size: 13, color: GOLD, halo: true });
-    if (q.k === "n") {
-      const i = idx(q.a), v = f.cats[i][1], ups = upTo(v, f.scale), k = shownOf(ups.length, o.worked);
+    if (q.k === "n" || q.k === "x") {
+      const i = idx(q.k === "x" ? mostOf(f) : q.a), v = f.cats[i][1], ups = upTo(v, f.scale), k = shownOf(ups.length, o.worked);
       back += ring(cx(i) - bw / 2 - 4, top(i) - 4, bw + 8, g.y0 - top(i) + 8);
       over += read(i);
       ups.forEach((u, j) => { if (j < k) over += dot(g.x0, g.yOf(u)); });
@@ -658,6 +687,12 @@ export function chartHint(f, worked) {
       if (f.form === "T") return { say: counted(n >= 5 ? "Count the tallies, the slanted one too" : "Count each mark", steps, worked, n >= 5 ? (n % 5 ? " by 5s, then 1s" : " by 5s") : "") + done };
       const half = f.scale > 1 && n % f.scale ? ` Half a picture is ${f.scale / 2}.` : "";
       return { say: (f.scale > 1 ? `Each picture is ${f.scale}.${half} ` + counted("Count the pictures", steps, worked, ` by ${f.scale}s`) : counted(`Count the ${many(q.a)}`, steps, worked)) + done };
+    }
+    if (q.k === "x") {
+      const o = mostOf(f), them = A === 1 ? OBJECTS[o].one : many(o);
+      if (worked) return { say: `The ${many(o)} ${rows ? "row is longest" : "bar is tallest"}. ${A} ${them}, the most.` };
+      if (!rows) return { say: counted("Find the tallest bar. Follow its top across", upTo(A, f.scale), false, `. Count up${by}`) };
+      return { say: counted(`Find the longest row. Count the ${many(o)}`, rowSteps(f, g, idx(o)).map((p) => p.v), false) };
     }
     if (q.k === "m" || q.k === "f") {
       const big = Math.max(countOf(f, q.a), countOf(f, q.b)), small = Math.min(countOf(f, q.a), countOf(f, q.b));
