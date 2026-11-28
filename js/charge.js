@@ -33,6 +33,10 @@ export function friendly(r) {
 // The charge for a problem from its scale (problemScale: its level's typical answer, or the
 // biggest number it shows) and the floor's typical hit: { up: N } (Super Charge, ×N, at CHARGE_AT
 // apart), { down: N } (the monster braces, ÷N, at BRACE_AT), or null.
+// No braces in the Counting Cellar or the Balance Hall (decided 2026-11-28): kindergarten and 1st
+// grade never see a ÷, and with no one-shot without help (oneHit) they aren't needed there.
+export const NO_BRACE = ["cellar", "hall"];
+export const chargeIn = (wingId, c) => (c && c.down && NO_BRACE.includes(wingId) ? null : c);
 export function chargeFor(scale, floorTypical, at = CHARGE_AT, braceAt = BRACE_AT) {
   if (!(scale > 0 && floorTypical > 0)) return null;
   const r = floorTypical / scale;

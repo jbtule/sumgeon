@@ -1,7 +1,7 @@
 // The Super Charge (js/charge.js, learn.js levelTypical and floorTypical): a problem's hit put on
 // the floor's scale, from its level's typical answer, never its own.
 import assert from "node:assert/strict";
-import { FRIENDLY, CHARGE_AT, BRACE_AT, friendly, chargeFor, chargedHit, chargeBadge, chargePop, shownMax, problemScale, oneHit } from "../js/charge.js";
+import { FRIENDLY, CHARGE_AT, BRACE_AT, friendly, chargeFor, chargedHit, chargeBadge, chargePop, shownMax, problemScale, oneHit, chargeIn } from "../js/charge.js";
 import { pool, levelTypical, floorTypical, typicalHit, hpOf, monsterHP, openLevels, factOf, BANDS } from "../js/learn.js";
 import { missingOf } from "../js/missing.js";
 import { stackOf } from "../js/twodigit.js";
@@ -101,14 +101,14 @@ assert.equal(oneHit(100, 100, 100, false), 99);
 assert.equal(oneHit(99, 100, 100, false), 99);
 assert.equal(oneHit(500, 100, 100, true), 500);
 assert.equal(oneHit(500, 60, 100, false), 500);
-// Kindergarten: never a Super Charge, and at most a little brace (÷2 or ÷5: counting on by 10s
-// beside counting by 1s), with every monster of the Cellar and any one step or all of them open.
+// Kindergarten: never a Super Charge, and no brace (chargeIn: none in the Cellar or the Hall), with
+// every monster of the Cellar and any one step or all of them open.
 {
   const w = WINGS.find((x) => x.id === "cellar"), path = PATHS.cellar;
   const opens = path.map((_, i) => [i]).concat([path.map((_, i) => i)]);
   for (const open of opens) for (const name of stepMonsters(path, open, false).concat([w.boss])) {
     const m = MON.find((x) => x.n === name), bk = bandOf(w, m), lv = openLevels(path, open, bk).levels, t = floorTypical(m, bk, {}, lv);
-    for (const f of pool(bk).filter((x) => lv.includes(x.level))) { const c = chargeFor(problemScale(levelTypical(bk, f.key, m), factOf(f.key)), t); assert.ok(!c || (!c.up && c.down <= 5), `${name}: ${f.key} ${JSON.stringify(c)}`); }
+    for (const f of pool(bk).filter((x) => lv.includes(x.level))) { const c = chargeIn("cellar", chargeFor(problemScale(levelTypical(bk, f.key, m), factOf(f.key)), t)); assert.ok(!c, `${name}: ${f.key} ${JSON.stringify(c)}`); }
   }
 }
 
@@ -127,3 +127,10 @@ assert.ok(PHRASE.chargeHow.split(/\s+/).length <= 12);
   assert.match(file(PHRASE.chargeHow), /^phrases-explain/);
 }
 console.log("charge ok");
+
+// No braces in the Cellar or the Hall; charges up, and braces elsewhere, stay.
+assert.equal(chargeIn("cellar", { down: 5 }), null);
+assert.equal(chargeIn("hall", { down: 2 }), null);
+assert.deepEqual(chargeIn("hall", { up: 10 }), { up: 10 });
+assert.deepEqual(chargeIn("mines", { down: 5 }), { down: 5 });
+assert.equal(chargeIn("tower", null), null);

@@ -33,7 +33,7 @@ export const TRAITS = {
   "Slimelipsis": { icon: "🫧", name: "What's Next", text: "Counts in patterns" },
   // Batch 3: reading charts. Like Tick Tock, the trait is what it asks; its back plates show the
   // chart's data (monsters.js, charts.js platesOf).
-  "Graphzilla": { icon: "📊", name: "Chart Stomp", text: "The chart kaiju asks what its chart shows" },
+  "Graphzilla": { icon: "📊", name: "Chart Stomp", text: "Read the kaiju's chart!" },
   // Measuring length. Like Chompers' Big Bite, its rule is the hit: a Longer, Yes or More hits
   // for the longest thing's length (length.js lengthHit), a measurement for itself.
   "Rulerpillar": { icon: "📏", name: "Inch by Inch", text: "How long? The longest is your hit" },
