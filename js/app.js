@@ -22,7 +22,7 @@ import { lineSvg } from "./numberline.js";
 import { pvSvg, pvLine } from "./placevalue.js";
 import { dollarSvg, dollarLine, moneyText } from "./dollars.js";
 import { coinsSvg, pileOf, coinOf } from "./coins.js";
-import { stackOf } from "./twodigit.js";
+import { stackOf, markable, toggleCarry, regroup, regroupView } from "./twodigit.js";
 import { read as readSigil, judge as judgeSigil, offEdge } from "./sigil.js";
 import { HANDWRITING } from "./handwriting.js";
 import { traitOf, charged, fourthDown, prefers, hitBy, atHalf, asks, flipOf, flashOf, dieSvg, mega } from "./traits.js";
@@ -507,6 +507,8 @@ function probUI() {
   else box.textContent = p.q + " =";
   document.querySelector(".game").classList.toggle("missing", !!p.blank || !!p.sym || p.op === "=" || !!p.find || !!p.stacked || "/≈▭▦⌚…◐✓✎↔#$◇⁙REFƒdu∠PD".includes(p.op));
   padUI(p.spell ? "spell" : p.draw ? "draw" : p.op === "✓" ? "tf" : p.op === "P" ? "pc" : p.sym ? "cmp" : "num");
+  // Typed ones first (stacked): delete takes back the leftmost digit, so its icon points right.
+  $("pad").classList.toggle("rtl", onesFirst(p) && $("pad").dataset.mode === "num");
   requestAnimationFrame(fitLine);
   document.querySelector(".game").classList.toggle("cents", p.op === "¢" && !p.find);
   document.querySelector(".game").classList.toggle("find", !!p.find || "▭▦⌚◐✓✎↔#$⁙∠P".includes(p.op) || (p.op === "◇" && !p.draw));
@@ -566,9 +568,39 @@ function stackHTML(p) {
   // ones line up under ones whatever the font: Bungee's digits aren't all the same width, and
   // long numbers drifted out of their columns.
   const cols = (n) => `<span class="scols">${[...String(n)].map((d) => `<span class="scell">${d}</span>`).join("")}</span>`;
-  const rows = nums.map((n, i) => `<span class="sop">${i === nums.length - 1 ? (p.op === "-" ? "−" : "+") : ""}</span><span class="snum">${cols(n)}</span>`).join("");
-  return `<span class="stacked${nums.length > 2 ? " rows" + nums.length : ""}" style="--w:${w}" role="img" aria-label="${esc(p.q)}">${rows}<span class="sbar"></span><span class="sop"></span><span class="snum sans"><span class="blank scells" id="blank" aria-label="Answer, typed from the ones">${stackCells(p, "")}</span></span></span>`;
+  // Marking regrouping (three-digit numbers and bigger, twodigit.js markable): a row above the numbers,
+  // always there so a mark never moves anything, and the top number's digits tappable to regroup.
+  const mk = markable(p), M = G.marks || { carry: [], gives: [] };
+  const view = mk && p.op === "-" ? regroupView(p.x, M.gives) : null;
+  const top = (n) => `<span class="scols">${view.slice().reverse().map((v, i, a) => {
+    const c = a.length - 1 - i;
+    return `<span class="scell${c ? " tap" : ""}${v.crossed ? " x" : ""}" data-col="${c}">${v.front ? '<i class="f1">1</i>' : ""}${v.d}</span>`;
+  }).join("")}</span>`;
+  const marks = !mk ? "" : `<span class="sop"></span><span class="snum smarks" aria-hidden="true"><span class="scols">${Array.from({ length: w }, (_, i) => {
+    const c = w - 1 - i;
+    if (p.op !== "-") return `<span class="scell smark${c ? " tap" : ""}" data-col="${c}">${M.carry.includes(c) ? "1" : ""}</span>`;
+    const v = view[c], can = !!v && c > 0;
+    return `<span class="scell smark${can ? " tap" : ""}"${can ? ` data-col="${c}"` : ""}>${v ? v.above : ""}</span>`;
+  }).join("")}</span></span>`;
+  const rows = nums.map((n, i) => `<span class="sop">${i === nums.length - 1 ? (p.op === "-" ? "−" : "+") : ""}</span><span class="snum${i ? "" : " stop"}">${i === 0 && view ? top(n) : cols(n)}</span>`).join("");
+  return `<span class="stacked${nums.length > 2 ? " rows" + nums.length : ""}${mk ? " mk" : ""}" style="--w:${w}" role="img" aria-label="${esc(p.q)}">${marks}${rows}<span class="sbar"></span><span class="sop"></span><span class="snum sans"><span class="blank scells" id="blank" aria-label="Answer, typed from the ones">${stackCells(p, "")}</span></span></span>`;
 }
+// A tap on the marking row or the top number's digits (markable problems): a carried 1 toggled
+// above a column, or a digit regrouped (or the regroup undone). A scratch mark only: nothing about
+// the answer, its time or its record changes. Not while busy (an attack) or after a miss.
+function markTap(e) {
+  const p = G.cur, cell = e.target.closest(".stacked.mk [data-col]");
+  if (!cell || !p || !markable(p) || G.busy || G.next || G.paused) return;
+  const col = Number(cell.dataset.col), M = G.marks || (G.marks = { carry: [], gives: [] });
+  const before = JSON.stringify(M);
+  if (p.op !== "-") M.carry = toggleCarry(M.carry, col, stackWidth(p));
+  else M.gives = regroup(p.x, M.gives, col);
+  if (JSON.stringify(M) === before) return;
+  sfx.tick();
+  $("prob").innerHTML = stackHTML(p);
+  ansUI();
+}
+$("prob").addEventListener("click", markTap);
 // A shape problem (Polly-Gon): what to draw (the voice says it too; the body flashes it), or the
 // shape to count over its line, with the hint drawn on it once it's open.
 function shapeHTML(p) {
@@ -925,6 +957,7 @@ function newProblem() {
 // into its answer time; Judo Judy's throw isn't played again (it's already thrown).
 function presentProblem(key, flipped, restored, elapsed) {
   G.input = ""; G.busy = false; G.hinted = false; G.t0 = performance.now() - (elapsed || 0);
+  G.marks = { carry: [], gives: [] }; // regrouping marks clear with each problem
   G.slot = G.cur.slots ? { at: 0, vals: G.cur.slots.map(() => "") } : null;
   G.tfDone = false;
   // The dot flash: shown, then hidden after FLASH_DOTS_MS (flashHide).
@@ -962,6 +995,11 @@ function presentProblem(key, flipped, restored, elapsed) {
   // Typed ones first (a stacked problem, or across on Margot-Rythm's floor): the cursor blinks in the
   // ones column, and the first 3 times it's said.
   if (onesFirst(G.cur) && once("onesFirst", 3)) { setMsg("Start with the ones!", "good"); say("p", PHRASE.onesFirst, false, asked(G.cur)); }
+  // Marking regrouping (three-digit numbers and bigger): the first time each, how to mark it.
+  if (markable(G.cur)) {
+    if (G.cur.op === "-") { if (once("regroupMark")) say("p", PHRASE.regroupHow, false, asked(G.cur)); }
+    else if (once("carryMark")) say("p", PHRASE.carryHow, false, asked(G.cur));
+  }
   if (G.cur.spell) {
     setMsg("Cast a spell! Draw the answer.", "good"); say("p", PHRASE.spell);
     if (once("spell", 3)) say("p", PHRASE.spellHow, false, asked(G.cur)); // the first few spells

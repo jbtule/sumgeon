@@ -532,6 +532,8 @@ h1 b{color:var(--coral);font-weight:400}
 .prob .pnum{font-size:1.6em;line-height:1}
 .pad.tfpad .pressed{transform:translateY(3px) scale(.97);box-shadow:0 1px 0 var(--dark);filter:brightness(1.3)}
 .pad.locked{pointer-events:none}
+/* Typed ones first (a stacked problem, app.js probUI): delete takes back the leftmost digit, so it points right. */
+.pad.rtl .del svg{transform:scaleX(-1)}
 /* A two- or three-digit sum stacked in columns (app.js stackHTML): the sign in its own column,
    the numbers right-aligned in a column --w digits wide, a line, and the answer's □ under it,
    right-aligned. Smaller than a one-line problem, so three rows fit an iPhone SE. */
@@ -554,6 +556,15 @@ h1 b{color:var(--coral);font-weight:400}
 /* Three or four numbers added (Triceraplus in the Mines): more rows, so smaller and tighter. */
 .prob .stacked.rows3{font-size:.6em}
 .prob .stacked.rows4{font-size:.5em}
+/* Marking regrouping (three-digit numbers and bigger, app.js stackHTML, .mk): a row above the numbers for
+   the carried 1s, or a regrouped digit's new value, always there so a mark moves nothing, and at
+   least 36px tall to tap. Its cells are the columns' width in a smaller font (.82em / .6). A
+   regrouped digit is crossed out; one that took a ten has a small 1 in front of it. */
+.prob .stacked .smarks .scell{font-size:.6em;width:1.367em;height:max(36px,1.6em);display:inline-flex;align-items:flex-end;justify-content:center;padding-bottom:.1em;box-sizing:border-box;color:var(--gold)}
+.prob .stacked .tap{cursor:pointer;-webkit-tap-highlight-color:transparent}
+.prob .stacked .stop .scell.x{color:var(--muted)}
+.prob .stacked .stop .scell.x::before{content:"";position:absolute;left:.06em;right:.06em;top:50%;height:.11em;margin-top:-.055em;border-radius:.04em;background:var(--coral);transform:rotate(-58deg)}
+.prob .stacked .stop .f1{position:absolute;right:calc(100% - .3em);top:-.12em;font-size:.55em;font-style:normal;color:var(--gold);text-shadow:0 0 2px var(--dark),0 0 2px var(--dark),0 0 3px var(--dark);z-index:1}
 
 /* Deeper in a Wing, the room gets darker (--murk, set by app.js from the depth). */
 .game{--murk:0}

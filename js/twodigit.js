@@ -148,3 +148,61 @@ export const stackShare = (p) => (sums(p) || Math.max(p.x || 0, p.y || 0, p.ans 
 // across one line), else its share.
 export const BIG_STACK = 1000;
 export function stackOf(p, always, rnd) { return stackable(p) && (always || Math.max(p.x || 0, p.y || 0, p.ans || 0) >= BIG_STACK || (rnd || Math.random)() < stackShare(p)) ? Object.assign({}, p, { stacked: true }) : p; }
+
+/* ---------- marking regrouping on a stacked problem ----------
+   On paper a 4th grader marks the standard algorithm's regrouping: a carried 1 above a column, or
+   a digit crossed out with one less above it and a 1 in front of the digit to its right. On a
+   stacked problem with a number of MARK_AT or more (100: the Mines' and the Tower's three-digit +
+   and −, 2nd and 3rd grade's "algorithms based on place value", and 4th grade's big numbers) the
+   child can tap those marks in: a scratch mark only, never graded, and it changes no answer,
+   damage, timing, record or hint (the hints stay the place-value strategies). Two-digit problems
+   have none, and numbers added up (Triceraplus) only when every one is that big. Widening or
+   narrowing it is this one constant. */
+export const MARK_AT = 100;
+export function markable(p) {
+  if (!p || !p.stacked) return false;
+  if (p.op === "Σ") return Array.isArray(p.nums) && p.nums.every((n) => n >= MARK_AT);
+  return (p.op === "+" || p.op === "-") && Math.max(p.x, p.y) >= MARK_AT;
+}
+// Adding: a carried 1 above column `col` (counted from the right, the ones 0), toggled. Nothing
+// carries into the ones, nor past the answer's widest column. Returns the new columns, sorted.
+export function toggleCarry(carries, col, width) {
+  if (!Number.isInteger(col) || col < 1 || col >= width) return carries.slice();
+  return carries.includes(col) ? carries.filter((c) => c !== col) : carries.concat(col).sort((a, b) => a - b);
+}
+// Subtracting: `gives` lists the top number's columns (from the right) regrouped, each giving a ten
+// to the column on its right. A column's value is its digit, plus 10 if the column to its left gave,
+// less 1 if it gave: never below 0, so the marks always add up to the top number.
+const digitsOf = (top) => [...String(top)].reverse().map(Number);
+const valueAt = (ds, gives, c) => ds[c] + (gives.includes(c + 1) ? 10 : 0) - (gives.includes(c) ? 1 : 0);
+const sorted = (g) => [...new Set(g)].sort((a, b) => a - b);
+// Tapping column `col` of the top number: undo its regroup if it has one (and any regroup to its
+// right that only worked because of it), or regroup it. A column at 0 can't give a ten by itself, so
+// the regroup passes through it from the nearest column to its left that can: 5006 − 2758, tapping
+// the tens, takes the thousands to 4 and each 0 on the way to 9 (10, less the one it gave). Never
+// the ones (nothing to their right). With nothing to the left to take from, nothing changes.
+export function regroup(top, gives, col) {
+  const ds = digitsOf(top);
+  let g = gives.filter((c) => Number.isInteger(c) && c >= 1 && c < ds.length);
+  if (!Number.isInteger(col) || col < 1 || col >= ds.length) return sorted(g);
+  if (g.includes(col)) {
+    g = g.filter((c) => c !== col);
+    for (let c = col - 1; c >= 1; c--) if (g.includes(c) && valueAt(ds, g, c) < 0) g = g.filter((x) => x !== c);
+    return sorted(g);
+  }
+  let k = col;
+  while (k < ds.length && valueAt(ds, g, k) < 1) { if (g.includes(k)) return sorted(g); k++; }
+  if (k >= ds.length) return sorted(g);
+  for (let c = col; c <= k; c++) g.push(c);
+  return sorted(g);
+}
+// How the top number reads with its regroups, column by column from the right: its digit, crossed
+// out with its new value above when it gave, or a small 1 in front when it only took a ten (2 reads
+// as 12).
+export function regroupView(top, gives) {
+  const ds = digitsOf(top);
+  return ds.map((d, c) => {
+    const gave = gives.includes(c), took = gives.includes(c + 1);
+    return { d, value: valueAt(ds, gives, c), crossed: gave, above: gave ? String(valueAt(ds, gives, c)) : "", front: took && !gave };
+  });
+}

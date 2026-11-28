@@ -102,4 +102,46 @@ assert.equal(hintFor({ op: "-", x: 405, y: 10, ans: 395 }, true).say, "10 less: 
   // 4th grade's numbers of 1000 or more are always stacked: the standard algorithm is in columns.
   for (const p of [{ op: "+", x: 32957, y: 16603, ans: 49560 }, { op: "-", x: 4012, y: 1587, ans: 2425 }]) assert.ok(stackOf(p, false, () => 0.99).stacked, `${p.x} ${p.op} ${p.y} is stacked`);
 }
+// Marking regrouping on a stacked problem (a scratch mark only): which problems, carried 1s, and
+// regroups that always add up to the top number.
+{
+  const { markable, MARK_AT, toggleCarry, regroup, regroupView } = await import("../js/twodigit.js"), { sumFact } = await import("../js/three.js");
+  assert.equal(MARK_AT, 100);
+  assert.ok(markable({ op: "+", x: 287, y: 359, ans: 646, stacked: true }) && markable({ op: "-", x: 4012, y: 1587, ans: 2425, stacked: true }));
+  assert.ok(!markable({ op: "+", x: 287, y: 359, ans: 646 }), "only stacked");
+  assert.ok(!markable({ op: "+", x: 68, y: 45, ans: 113, stacked: true }), "two-digit numbers have no marks, even past 100");
+  assert.ok(!markable(Object.assign(sumFact([23, 14, 31, 12]), { stacked: true })), "two-digit numbers added up: none");
+  assert.ok(markable(Object.assign(sumFact([123, 214, 331]), { stacked: true })), "three-digit numbers added up: marks");
+  assert.ok(!markable({ op: "×", x: 4, y: 300, ans: 1200, stacked: true }));
+  // Carries: toggled, never into the ones or past the widest column.
+  assert.deepEqual(toggleCarry([], 0, 4), []);
+  assert.deepEqual(toggleCarry([], 4, 4), []);
+  assert.deepEqual(toggleCarry([2], 1, 4), [1, 2]);
+  assert.deepEqual(toggleCarry([1, 2], 2, 4), [1]);
+  // Regroups: the sum of each column's value × its place is always the top number, and no value is
+  // below 0, whatever is tapped.
+  const total = (top, g) => regroupView(top, g).reduce((s, v, c) => s + v.value * 10 ** c, 0);
+  const read = (top, g) => regroupView(top, g).reverse().map((v) => (v.front ? "1" : "") + (v.crossed ? `${v.d}>${v.above}` : v.d)).join(" ");
+  assert.deepEqual(regroup(5006, [], 0), [], "never the ones");
+  let g = regroup(5006, [], 1);
+  assert.deepEqual(g, [1, 2, 3], "a regroup from a 0 passes through the zeros");
+  assert.equal(read(5006, g), "5>4 0>9 0>9 16");
+  assert.deepEqual(regroup(5006, g, 2), [3], "undoing a 0 undoes what depended on it");
+  assert.deepEqual(regroup(5006, g, 3), [], "undoing the leftmost undoes the chain");
+  assert.equal(read(403, regroup(403, [], 1)), "4>3 0>9 13", "403 − 158");
+  assert.equal(read(8372, regroup(8372, [], 2)), "8 3>2 17 2", "the column to the right takes a ten: 7 reads 17");
+  assert.equal(read(8372, regroup(8372, regroup(8372, [], 1), 2)), "8 3>2 7>16 12");
+  assert.deepEqual(regroup(4000, regroup(4000, [], 3), 3), [], "tapped again, undone");
+  assert.deepEqual(regroup(1000, regroup(1000, [], 3), 3), [], "");
+  assert.deepEqual(regroup(1000, [3], 4), [3], "past the leftmost: nothing");
+  let r = 7; const rnd = () => ((r = (r * 16807) % 2147483647) / 2147483647);
+  for (const top of [5006, 403, 1000, 8372, 9002, 70030, 100]) {
+    let gg = [];
+    for (let i = 0; i < 300; i++) {
+      gg = regroup(top, gg, Math.floor(rnd() * (String(top).length + 1)));
+      assert.equal(total(top, gg), top, `${top} ${gg}`);
+      assert.ok(regroupView(top, gg).every((v) => v.value >= 0 && v.value <= 19) && !gg.includes(0));
+    }
+  }
+}
 console.log("✓ two-digit");
