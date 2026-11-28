@@ -21,6 +21,7 @@ import { pvFacts } from "./placevalue.js";
 import { dollarFacts } from "./dollars.js";
 import { shapeFacts, squawkLine } from "./shapes.js";
 import { flashFacts, spokenFlash } from "./flash.js";
+import { chartFacts } from "./charts.js";
 import { traitOf } from "./traits.js";
 import { bigCompareFacts, roundFacts4, addSub4, times10s, timesOne, timesTwo, divideOne, remFacts, exprFacts, factorFacts, equivFacts4, fracCompare4, fracOpFacts, fracTimesFacts, decimalFacts, decCompareFacts, unitFacts, rect4Facts, primeFacts, moneyFacts } from "./fourth.js";
 import { angleFacts, shapeAngleFacts } from "./angles.js";
@@ -149,7 +150,10 @@ var SAY_AS = [[/\bTwodini\b/g, "Toodini"], [/\bJr\./g, "Junior"], [/\bMr\./g, "M
   [/\bbows\b/g, "bowse"],
   [/\bTriceraplus\b/g, "Trisaira-plus"], [/\bTriceracool\b/g, "Trisaira-cool"], [/\bTricera-tot\b/g, "Trisaira-tot"],
   // The plushie Tricerafluff, the same way.
-  [/\bTricerafluff\b/g, "Trisaira-fluff"]];
+  [/\bTricerafluff\b/g, "Trisaira-fluff"],
+  // Graphzilla's look Bar-oness Graphzilla is a bar chart pun, written with its hyphen and said as
+  // the plain word.
+  [/\bBar-oness\b/g, "Baroness"]];
 function sayAs(t) { return SAY_AS.reduce(function (s, r) { return s.replace(r[0], r[1]); }, t); }
 // A Hero Moment's quip (moments.js), as the voice says it.
 export function quipLine(q) { return sayAs(q); }
@@ -194,6 +198,7 @@ export var TRAIT_LINE = {
   "Halves": "Fractions! Find the one that's the same size.",
   "Tick Tock": "What time is it? Read the clock!",
   "What's Next": "What comes next? Count the pattern!",
+  "Chart Stomp": "Read the chart! Count along it.",
   "Fourth Down": "Every fourth problem, a right answer scores a touchdown!",
   "On the Dot": "Answers that end in zero hit double!",
   "Leftovers": "Leftovers! The remainder hits too.",
@@ -384,7 +389,7 @@ export function achievementLine(a, k) { return cardLines(a)[k]; }
 
 // [{ kind, text }], each once.
 // The groups the listen check (review/listen/) plays lines in.
-export var GROUPS = ["Phrases", "Monsters & heroes", "Add & subtract", "Times & divide", "Missing numbers", "Which is more", "Coins", "Two-digit", "Three-digit", "Balance Hall", "Compare to 1000", "Three numbers", "Up to four numbers", "Arrays", "Time", "Patterns", "True or false", "Place value", "Dollars", "Number line", "Shapes", "Fractions", "Compare fractions", "Rounding", "Area & perimeter", "Dot flash", "Big numbers", "Big × and ÷", "Remainders", "Steps & factors", "Fraction work", "Decimals", "Angles & shapes", "Measurement", "Prime or composite", "Hero quips", "Team-ups", "Captain lines", "Boss forms", "Chests & items", "Money", "Shop", "Clothing", "Plushies", "Achievements"];
+export var GROUPS = ["Phrases", "Monsters & heroes", "Add & subtract", "Times & divide", "Missing numbers", "Which is more", "Coins", "Two-digit", "Three-digit", "Balance Hall", "Compare to 1000", "Three numbers", "Up to four numbers", "Arrays", "Time", "Patterns", "True or false", "Place value", "Dollars", "Number line", "Charts", "Shapes", "Fractions", "Compare fractions", "Rounding", "Area & perimeter", "Dot flash", "Big numbers", "Big × and ÷", "Remainders", "Steps & factors", "Fraction work", "Decimals", "Angles & shapes", "Measurement", "Prime or composite", "Hero quips", "Team-ups", "Captain lines", "Boss forms", "Chests & items", "Money", "Shop", "Clothing", "Plushies", "Achievements"];
 
 // [{ kind, text, group, sprite? }], each once.
 export function spokenLines() {
@@ -464,6 +469,12 @@ export function spokenLines() {
   [[tfFacts, "True or false"], [pvFacts, "Place value"], [dollarFacts, "Dollars"], [lineFacts, "Number line"]].forEach(function (set) {
     set[0]().forEach(function (f) { add("q", spokenProblem(f), set[1]); add("q", spokenFact(f), set[1]); });
   });
+  // Batch 3: reading charts (Graphzilla), asked and answered: the ones a stratum's strand asks (5th
+  // grade's, for the Parenthesis Pyramid, aren't in the game yet). Their sprites go by band and
+  // level (spriteFor).
+  var inGame = {};
+  Object.keys(BANDS).forEach(function (b) { if (/^charts/.test(b)) pool(b).forEach(function (f) { inGame[f.key] = true; }); });
+  chartFacts().filter(function (f) { return inGame[f.key]; }).forEach(function (f) { add("q", spokenProblem(f), "Charts"); add("q", spokenFact(f), "Charts"); });
   // Shapes (Polly-Gon): "Draw a triangle!", "How many sides does this hexagon have?", and what the
   // shape is or how many after a miss; and its squawks, in its monster sprite ("names").
   shapeFacts().forEach(function (f) { add("q", spokenProblem(f), "Shapes"); add("q", spokenFact(f), "Shapes"); add("m", squawk(f), "Shapes", "names"); });
@@ -548,7 +559,7 @@ export function estSeconds(text) { return text.length / CHARS_PER_S + SPRITE_GAP
 // (runSprites).
 export var ALWAYS = ["phrases-start", "phrases-fight", "phrases-explain", "heroes", "quips", "captains", "bosses", "loot", "money", "depths", "shop", "change", "clothes", "achievements"];
 var slug = function (t) { return t.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, ""); };
-var KIND = { "+": "add", "-": "sub", "×": "mul", "÷": "div", "□": "bonds", "○": "cmp", "=": "bal", "¢": "coins", "M": "more", "/": "frac", "≈": "round", "▭": "rect", "Σ": "three", "▦": "arrays", "✓": "tf", "✎": "fix", "↔": "line", "#": "pv", "$": "dollars", "◇": "shapes", "⁙": "flash", "R": "rem", "E": "steps", "F": "factors", "ƒ": "fracops", "d": "dec", "u": "units", "∠": "angles", "P": "prime", "D": "money4" };
+var KIND = { "+": "add", "-": "sub", "×": "mul", "÷": "div", "□": "bonds", "○": "cmp", "=": "bal", "¢": "coins", "M": "more", "/": "frac", "≈": "round", "▭": "rect", "Σ": "three", "▦": "arrays", "✓": "tf", "✎": "fix", "↔": "line", "#": "pv", "$": "dollars", "◇": "shapes", "⁙": "flash", "▥": "charts", "R": "rem", "E": "steps", "F": "factors", "ƒ": "fracops", "d": "dec", "u": "units", "∠": "angles", "P": "prime", "D": "money4" };
 var memo = null;
 function index() {
   if (memo) return memo;

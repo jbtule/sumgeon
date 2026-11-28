@@ -31,19 +31,19 @@ const mon = (n) => MON.find((m) => m.n === n);
 export const WINGS = [
   { id: "cellar", name: "The Counting Cellar", band: "kinder", strands: { Trollar: "coinsK", Chompers: "more", Slimelipsis: "patK", "Polly-Gon": "shapesK", Pipsqueak: "flashK" },
     pool: ["Plusquito", "Minustaur", "Pipsqueak", "Chompers", "Trollar", "Slimelipsis", "Polly-Gon"], floors: ["Plusquito", "Pipsqueak", "rescue", "Chompers", "Trollar"], boss: "Make-Ten Golem" },
-  { id: "hall", name: "The Balance Hall", band: "first", after: "cellar", strands: { Triceraplus: "three", "Tick-Tockus": "timeH", Slimelipsis: "patH", "Polly-Gon": "shapesH", Trollar: "coinsH" },
-    pool: ["Plusquito", "Minustaur", "Quizard", "Chompers", "Equal Twins", "Doublet", "Triceraplus", "Haberhasher", "Tick-Tockus", "Slimelipsis", "Polly-Gon", "Trollar"], floors: ["Quizard", "Equal Twins", "rescue", "Tick-Tockus", "Triceraplus"], boss: "Judo Judy" },
-  { id: "mines", name: "The Crystal Mines", band: "second", after: "hall", strands: { Trollar: "coins", Squaresquatch: "arrays", Slimelipsis: "patM", "Tick-Tockus": "timeM", Chompers: "cmpM", Triceraplus: "sumsM", "Polly-Gon": "shapesM" },
-    pool: ["Haberhasher", "Margot-Rythm", "Trollar", "Squaresquatch", "Slimelipsis", "Tick-Tockus", "Chompers", "Triceraplus", "Polly-Gon"], floors: ["Haberhasher", "Squaresquatch", "rescue", "Trollar", "Polly-Gon"], boss: "The Centipede" },
-  { id: "tower", name: "The Tables Tower", band: "third", after: "mines", strands: { "Tick-Tockus": "timeT", "Margot-Rythm": "addT", "Polly-Gon": "shapesT" },
-    pool: ["Timesaur", "Divvy", "Starbot", "Halfling", "Tick-Tockus", "Margot-Rythm", "Polly-Gon", "Chompers"], floors: ["Timesaur", "Divvy", "rescue", "Tick-Tockus", "Halfling"], boss: "Sigma Rex" },
+  { id: "hall", name: "The Balance Hall", band: "first", after: "cellar", strands: { Triceraplus: "three", "Tick-Tockus": "timeH", Slimelipsis: "patH", "Polly-Gon": "shapesH", Trollar: "coinsH", Graphzilla: "chartsH" },
+    pool: ["Plusquito", "Minustaur", "Quizard", "Chompers", "Equal Twins", "Doublet", "Triceraplus", "Haberhasher", "Tick-Tockus", "Slimelipsis", "Polly-Gon", "Trollar", "Graphzilla"], floors: ["Quizard", "Equal Twins", "rescue", "Tick-Tockus", "Triceraplus"], boss: "Judo Judy" },
+  { id: "mines", name: "The Crystal Mines", band: "second", after: "hall", strands: { Trollar: "coins", Squaresquatch: "arrays", Slimelipsis: "patM", "Tick-Tockus": "timeM", Chompers: "cmpM", Triceraplus: "sumsM", "Polly-Gon": "shapesM", Graphzilla: "chartsM" },
+    pool: ["Haberhasher", "Margot-Rythm", "Trollar", "Squaresquatch", "Slimelipsis", "Tick-Tockus", "Chompers", "Triceraplus", "Polly-Gon", "Graphzilla"], floors: ["Haberhasher", "Squaresquatch", "rescue", "Trollar", "Polly-Gon"], boss: "The Centipede" },
+  { id: "tower", name: "The Tables Tower", band: "third", after: "mines", strands: { "Tick-Tockus": "timeT", "Margot-Rythm": "addT", "Polly-Gon": "shapesT", Graphzilla: "chartsT" },
+    pool: ["Timesaur", "Divvy", "Starbot", "Halfling", "Tick-Tockus", "Margot-Rythm", "Polly-Gon", "Chompers", "Graphzilla"], floors: ["Timesaur", "Divvy", "rescue", "Tick-Tockus", "Halfling"], boss: "Sigma Rex" },
   // The Fraction Forge (4th grade, DESIGN.md §4.4), under the Tower: its three new monsters
   // (Quarterjack's fractions, Dotty's decimals, Boomainder's remainders) and returning ones
   // visiting. Slimelipsis brings patterns from a rule (its strand, patF); Polly-Gon asks the band's
   // angles and shapes, Tick-Tockus its measurement, Squaresquatch its area and perimeter, Chompers
   // its < = > (big numbers, fractions, decimals), Margot-Rythm adding and subtracting to a million.
-  { id: "forge", name: "The Fraction Forge", band: "fourth", after: "tower", strands: { Slimelipsis: "patF" },
-    pool: ["Timesaur", "Divvy", "Boomainder", "Quarterjack", "Dotty", "Chompers", "Haberhasher", "Margot-Rythm", "Slimelipsis", "Polly-Gon", "Squaresquatch", "Tick-Tockus", "Trollar"], floors: ["Timesaur", "Boomainder", "rescue", "Quarterjack", "Dotty"], boss: "The Denominator" }
+  { id: "forge", name: "The Fraction Forge", band: "fourth", after: "tower", strands: { Slimelipsis: "patF", Graphzilla: "chartsF" },
+    pool: ["Timesaur", "Divvy", "Boomainder", "Quarterjack", "Dotty", "Chompers", "Haberhasher", "Margot-Rythm", "Slimelipsis", "Polly-Gon", "Squaresquatch", "Tick-Tockus", "Trollar", "Graphzilla"], floors: ["Timesaur", "Boomainder", "rescue", "Quarterjack", "Dotty"], boss: "The Denominator" }
 ];
 /* ---------- paths (DESIGN.md §4.3) ----------
    Each stratum's single path of steps, in its grade's teaching order (the school's i-Ready guides).
@@ -59,6 +59,13 @@ export const WINGS = [
    repeat an earlier stratum's), and a band's levels come in its path's order (scripts/paths.test.mjs). */
 const step = (name, parts, monsters, chapter, flags = {}) => Object.assign({ name, parts, monsters, chapter, priority: false, ongoing: false, review: false }, flags);
 const P = { priority: true };
+// Reading charts (Graphzilla, batch 3, DESIGN.md §4.5): its grade's charts in each stratum, opening
+// with the stratum's last chapter (where the school's guides put data, with measurement and
+// shapes). Data isn't one of the guides' priority standards in any of these grades, so it doesn't
+// count toward opening the next stratum. Ongoing, so it opens with its chapter beside the window
+// of new steps rather than taking a place in it: the steps a player has joined (saved as a count,
+// wings[id].steps) stay the same steps.
+const CHARTS = (band, levels, chapter) => step("Reading charts", levels.map((l) => [band, l]), ["Graphzilla"], chapter, { ongoing: true });
 export const PATHS = {
   cellar: [
     step("How many, and which is more, to 5", [["flashK", "How many dots? To 3"], ["flashK", "How many dots? To 5"], ["flashK", "Dots any way"], ["more", "Which is more, to 5"]], ["Pipsqueak", "Chompers"], 1, { priority: true, ongoing: true }),
@@ -89,6 +96,7 @@ export const PATHS = {
     // Two-digit plus one-digit, then plus two-digit, with and without regrouping (moved from the
     // Mines' first levels; the same keys).
     step("Add two-digit numbers", [["first", "Add two-digit numbers"], ["first", "Add two-digit numbers, regrouping"]], ["Haberhasher", "Plusquito"], 2, P),
+    CHARTS("chartsH", ["Tally charts", "Picture charts"], 3),
     step("Shapes", [["shapesH", "Sides and corners"], ["shapesH", "Halves and fourths"]], ["Polly-Gon"], 3, P),
     step("Time to the hour and half hour", [["timeH", "Hours"], ["timeH", "Half hours"]], ["Tick-Tockus"], 3, P),
     // Coin values (1.GM.C.9, new in the Hall): Trollar visits with the Cellar's "each coin".
@@ -106,6 +114,7 @@ export const PATHS = {
     step("10 and 100 more or less", [["second", "10 and 100 more or less"]], ["Haberhasher"], 2, P),
     step("Add and subtract within 1000", [["second", "Add within 1000"], ["second", "Add within 1000, regrouping"], ["second", "Subtract within 1000"], ["second", "Subtract within 1000, regrouping"]], ["Margot-Rythm", "Haberhasher"], 2, P),
     step("Up to four numbers", [["sumsM", "Three two-digit numbers"], ["sumsM", "Four two-digit numbers"]], ["Triceraplus"], 2),
+    CHARTS("chartsM", ["Picture graphs", "Bar graphs"], 3),
     step("Shapes and equal shares", [["shapesM", "Sides, corners and faces"], ["shapesM", "Equal shares"], ["shapesM", "Rows and columns of squares"]], ["Polly-Gon"], 3, P),
     step("Arrays", [["arrays", "Arrays of 2 and 3 rows"], ["arrays", "Arrays of 4 and 5 rows"]], ["Squaresquatch"], 3, P),
     step("Even and odd, count by 2s", [["patM", "Count by 2s"], ["patM", "Odd and even to 20"], ["patM", "Odd and even to 100"]], ["Slimelipsis"], 3)
@@ -119,6 +128,7 @@ export const PATHS = {
     step("× tens and rounding", [["third", "× tens"], ["third", "Rounding"]], ["Timesaur", "Starbot"], 2, P),
     step("Fractions", [["third", "Fractions on a number line"], ["third", "Equal fractions"], ["third", "Compare fractions"]], ["Halfling", "Chompers"], 2, P),
     step("Time to the minute", [["timeT", "To the minute"], ["timeT", "How long? In the hour"], ["timeT", "Minutes later, in the hour"], ["timeT", "How long? Across the hour"], ["timeT", "Minutes later, across the hour"]], ["Tick-Tockus"], 2),
+    CHARTS("chartsT", ["Scaled picture graphs", "Scaled bar graphs"], 3),
     step("Area and perimeter", [["third", "Area and perimeter"]], ["Starbot", "Divvy"], 3, P),
     step("Shapes", [["shapesT", "Quadrilaterals"], ["shapesT", "Unit fractions"]], ["Polly-Gon"], 3),
     step("× and ÷ 11 and 12", [["third", "× and ÷ 11 and 12"]], ["Timesaur", "Divvy"], 3)
@@ -152,6 +162,7 @@ export const PATHS = {
     step("A fraction times a whole", [["fourth", "A fraction times a whole"]], ["Quarterjack"], 4, P),
     step("Decimals", [["fourth", "Tenths and hundredths"], ["fourth", "Compare decimals"]], ["Dotty", "Chompers"], 4),
     step("Angles and shapes", [["fourth", "Angles"], ["fourth", "Classify shapes"]], ["Polly-Gon"], 4, P),
+    CHARTS("chartsF", ["Frequency tables", "Line plots: mode, range", "Graphs by 10s"], 5),
     step("Area and perimeter", [["fourth", "Area and perimeter"]], ["Squaresquatch"], 5, P),
     step("Measurement", [["fourth", "Measurement"]], ["Tick-Tockus"], 5, P),
     // Money with a decimal point (4.GM.C.7, ★: the four operations with money), Trollar's.

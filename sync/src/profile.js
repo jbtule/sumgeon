@@ -23,7 +23,7 @@
 // The limits are low on purpose: this Worker shares the Cloudflare account's free-plan quotas
 // (Durable Object requests and storage) with Sound Box's sync service.
 //   SPACE_BYTES 10 MB: about 640 school-year players (one 16 KB block each), or about 210 of the
-//     biggest (three blocks; a record is at most 39 KB, api.js MAX_BYTES); a fifth of Sound Box's
+//     biggest (three blocks; a record is at most 44 KB, api.js MAX_BYTES); a fifth of Sound Box's
 //     50 MB, and nothing near the account's 5 GB.
 //   NEW_PER_NETWORK 3 a day: a family linking its children's players in one evening; more waits
 //     a day. NEW_PER_DAY 50: a busy day of new families; a script making players fills it and

@@ -21,6 +21,7 @@ import { patternSvg, oddEvenSvg, patternFactHint } from "./patterns.js";
 import { tfSvg, tiltOf, fixParts } from "./truefalse.js";
 import { lineSvg } from "./numberline.js";
 import { pvSvg, pvLine } from "./placevalue.js";
+import { chartSvg, chartLine, platesOf } from "./charts.js";
 import { dollarSvg, dollarLine, moneyText } from "./dollars.js";
 import { coinsSvg, pileOf, coinOf } from "./coins.js";
 import { stackOf, markable, toggleCarry, regroup, regroupMove, regroupView } from "./twodigit.js";
@@ -465,6 +466,9 @@ function probUI() {
   else if (p.op === "#") box.innerHTML = pvSvg(p, { hint: G.hinted }) + `<span class="find pvline">${pvLine(p).map((x) => (x === null ? BLANK : esc(x))).join("")}</span>`;
   // Dollars (Trollar): the bills (and coins), and "$□" or "$□ and □¢" in two slots.
   else if (p.op === "$") box.innerHTML = dollarSvg(p, { hint: G.hinted }) + `<span class="find tline">${dollarLine(p).map((x, i, a) => (x !== null ? esc(x) : slotHTML(a.slice(0, i).filter((y) => y === null).length, p))).join("")}</span>`;
+  // Reading charts (Graphzilla, batch 3): the chart, the hint drawn on it once it's open, and the
+  // question's line under it ("More potions than keys: □").
+  else if (p.op === "▥") box.innerHTML = chartSvg(p, { hint: G.hinted }) + `<span class="find chline">${chartLine(p).map((x) => (x === null ? BLANK : esc(x))).join("")}</span>`;
   // Shapes (Polly-Gon): "Draw a triangle" over the drawing pad, or the shape to count over its
   // line ("Sides = □", "Each part = 1/□"), the hint drawn on the shape.
   else if (p.op === "◇") box.innerHTML = shapeHTML(p);
@@ -519,17 +523,18 @@ function probUI() {
   else if ("+-×÷".includes(p.op) && Math.max(p.x, p.y, p.ans) >= 1000) box.innerHTML = `<span class="wide3 wide4">${esc(bigText(p.q))} =</span>`;
   else if ((p.op === "+" || p.op === "-") && Math.max(p.x, p.y) >= 100) box.innerHTML = `<span class="wide3">${esc(p.q)} =</span>`;
   else box.textContent = p.q + " =";
-  document.querySelector(".game").classList.toggle("missing", !!p.blank || !!p.sym || p.op === "=" || !!p.find || !!p.stacked || "/≈▭▦⌚…◐✓✎↔#$◇⁙REFƒdu∠PD".includes(p.op));
+  document.querySelector(".game").classList.toggle("missing", !!p.blank || !!p.sym || p.op === "=" || !!p.find || !!p.stacked || "/≈▭▦⌚…◐✓✎↔#$◇⁙REFƒdu∠PD▥".includes(p.op));
   padUI(p.spell ? "spell" : p.draw ? "draw" : p.op === "✓" ? "tf" : p.op === "P" ? "pc" : p.sym ? "cmp" : "num");
   // Typed ones first (stacked): delete takes back the leftmost digit, so its icon points right.
   $("pad").classList.toggle("rtl", onesFirst(p) && $("pad").dataset.mode === "num");
   requestAnimationFrame(fitLine);
   document.querySelector(".game").classList.toggle("cents", p.op === "¢" && !p.find);
-  document.querySelector(".game").classList.toggle("find", !!p.find || "▭▦⌚◐✓✎↔#$⁙∠P".includes(p.op) || (p.op === "◇" && !p.draw));
+  document.querySelector(".game").classList.toggle("find", !!p.find || "▭▦⌚◐✓✎↔#$⁙∠P▥".includes(p.op) || (p.op === "◇" && !p.draw));
   document.querySelector(".game").classList.toggle("shape", p.op === "◇" && !p.draw);
   document.querySelector(".game").classList.toggle("stack", !!p.stacked);
   // A wide picture over its line (batch 2's): on phones the 🔊 and 💡 buttons stack beside it.
-  document.querySelector(".game").classList.toggle("pic", "✓✎↔#$⁙".includes(p.op));
+  document.querySelector(".game").classList.toggle("pic", "✓✎↔#$⁙▥".includes(p.op));
+  document.querySelector(".game").classList.toggle("chart", p.op === "▥");
   document.querySelector(".game").classList.toggle("slimes", p.op === "…" || p.op === "◐");
   document.querySelector(".game").classList.toggle("hinted", !!G.hinted); // a hint drawn on the picture (iPad keeps it short)
 }
@@ -658,11 +663,13 @@ function clockArt(layer) {
   $("mon").innerHTML = monsterArt(Object.assign({}, G.floors[G.floor], { at: { h: p.h, m: p.m, layer } }));
 }
 // Quarterjack wearing the problem's fraction on its jersey (monsters.js jerseyFrac; ¼ with none),
-// as Tick-Tockus shows the time asked.
+// as Tick-Tockus shows the time asked; Graphzilla's back plates rising as the chart's bars
+// (charts.js platesOf; its own plates for anything else).
 function jerseyArt() {
-  const m = G.floors && G.floors[G.floor];
-  if (!m || (m.base || m.n) !== "Quarterjack" || !G.cur) return;
-  $("mon").innerHTML = monsterArt(Object.assign({}, m, { frac: jerseyFrac(G.cur) }));
+  const m = G.floors && G.floors[G.floor], k = m && (m.base || m.n);
+  if (!m || !G.cur) return;
+  if (k === "Quarterjack") $("mon").innerHTML = monsterArt(Object.assign({}, m, { frac: jerseyFrac(G.cur) }));
+  else if (k === "Graphzilla") $("mon").innerHTML = monsterArt(Object.assign({}, m, { plates: G.cur.op === "▥" ? platesOf(G.cur) : null }));
 }
 // The picture over a time problem's line: elapsed time's clocks (with the open number line or
 // the sweep once the hint is open), or a plain clock when the monster isn't Tick-Tockus.
@@ -727,6 +734,8 @@ function shownFact(p, ans) {
   if (p.op === "⌚") return p.kind === "long" ? `${esc(p.q)}: ${b(clockAnswer(p))}` : p.kind === "add" ? `${esc(p.q)} = ${b(clockAnswer(p))}` : b(clockAnswer(p));
   if (p.op === "…") return p.nums.map((n, i) => (i === p.blank ? b(n) : n)).join(", ");
   if (p.op === "◐") return `${b(p.ans)} ${p.ask} number${p.ans === 1 ? "" : "s"}`;
+  // A chart: its line with the answer, "More potions than keys: 4".
+  if (p.op === "▥") return `${esc(chartLine(p)[0])}${b(p.ans)}`;
   // Batch 2: "4 + 2 = 7 is False", fix it filled in ("4 + 2 = 6"), "3/4", "4 equal parts",
   // "34 tens and 3 ones = 343", "$26", "$11 and 37¢".
   if (p.op === "✓") return `${esc(p.q)} is ${b(p.sym === "T" ? "True" : "False")}`;
@@ -1052,7 +1061,7 @@ function presentProblem(key, flipped, restored, elapsed) {
   // shapes ("Draw a triangle!", "How many sides?").
   // The dot flash: "How many dots?", and the first time "Look quick! How many dots?".
   if (G.cur.op === "⁙" && once("flash")) say("p", PHRASE.flashHow, false, asked(G.cur));
-  else if ("¢○⌚…◐✓✎↔#$◇⁙∠PD".includes(G.cur.op) || G.cur.op === "more") say("q", spokenProblem(G.cur), false, asked(G.cur));
+  else if ("¢○⌚…◐✓✎↔#$◇⁙∠PD▥".includes(G.cur.op) || G.cur.op === "more") say("q", spokenProblem(G.cur), false, asked(G.cur));
   // Pipsqueak's dice: "How many dots in all?", and the first 2 times how.
   if (G.cur.dice) { if (once("dice", 2)) say("p", PHRASE.diceHow, false, asked(G.cur)); say("p", PHRASE.diceAll, false, asked(G.cur)); }
   // Drawing a shape: how, the first few times.
@@ -1283,7 +1292,7 @@ function openHint() {
   // Time and patterns draw the hint on the problem's own picture (Tick-Tockus's clock, the
   // slimes), so only its words open here.
   // (A shape to count too; a shape to draw shows its dots to join in the hint.)
-  const inline = "⌚…◐✓✎↔#$⁙".includes(G.cur.op) || (G.cur.op === "◇" && !G.cur.draw);
+  const inline = "⌚…◐✓✎↔#$⁙▥".includes(G.cur.op) || (G.cur.op === "◇" && !G.cur.draw);
   if (G.flash) G.flash.grouped = true; // the dots come back, grouped
   if (inline) { probUI(); ansUI(); clockArt(h.layer); }
   else if (G.cur.dice) probUI(); // Pipsqueak's dice get their numbers beside them

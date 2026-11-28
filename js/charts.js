@@ -1,7 +1,8 @@
 // Reading charts, for Graphzilla (DESIGN.md §4.5): tally charts, picture graphs, bar graphs, line
 // plots, frequency tables and line graphs, each grade's kind, drawn with dungeon things (torches,
-// potions, keys…). A prototype for the review page (review/proto/); nothing in the game reads it
-// yet. No DOM: the drawings are SVG strings, so the tests run in Node.
+// potions, keys…). In the game (batch 3): Graphzilla's strand in each stratum of its grade
+// (learn.js chartsH, chartsM, chartsT, chartsF; 5th grade's wait for the Parenthesis Pyramid), and
+// on the review page (review/proto/). No DOM: the drawings are SVG strings, so the tests run in Node.
 //
 // Missouri Learning Standards (Data Analysis and Statistics, DS):
 // - 1st: organize and read data in up to three categories: how many in each, in all, how many
@@ -17,7 +18,7 @@
 //
 // Every problem is a fixed fact (chartFacts), so every spoken line can be recorded: a few data
 // sets per level, each asked a few ways. Answers are whole numbers typed on the pad, and the
-// damage is the answer, as everywhere. A fact: { op: "▥", set (its level), form, …its data, q
+// damage is the answer, as everywhere. A fact: { op: "▥", set (its level), form, …its data, ask
 // (the question), ans, key }. Keys (stable, the data and the question, so a key is the problem):
 // - "▥T1:torch5,potion7,key3:m.potion.key": a tally chart (T), picture graph (P) or bar graph (B)
 //   at a scale (1, 2, 5, 10), its categories, and the question: "n.potion" how many potions,
@@ -89,8 +90,8 @@ export const iconSvg = (id, x, y, size) => `<g transform="translate(${f1(x)} ${f
 const halfIcon = (id, x, y, size) => `<svg x="${f1(x - size / 2)}" y="${f1(y - size / 2)}" width="${f1(size / 2)}" height="${f1(size)}" viewBox="-20 -20 20 40">${ICON[id]()}</svg><line x1="${f1(x)}" y1="${f1(y - size / 2 + 2)}" x2="${f1(x)}" y2="${f1(y + size / 2 - 2)}" stroke="${DK}" stroke-width="2.5" stroke-dasharray="3 3"/>`;
 
 /* ---------- the levels ---------- */
-// In teaching order, each with the stratum Graphzilla would visit for it (4th and 5th grade's
-// strata, the Fraction Forge and the Parenthesis Pyramid, aren't built yet).
+// In teaching order, each with the stratum Graphzilla visits for it (5th grade's, the Parenthesis
+// Pyramid, isn't built yet, so its two levels are on the review page only).
 export const CHART_LEVELS = [
   { id: "tally", name: "Tally charts", grade: "1st", stratum: "hall" },
   { id: "pic1", name: "Picture charts", grade: "1st", stratum: "hall" },
@@ -111,7 +112,7 @@ const sum = (a) => a.reduce((s, x) => s + x, 0);
 // The mode of a list (the game only asks lists with one).
 const modeOf = (vals) => { const n = {}; vals.forEach((v) => (n[v] = (n[v] || 0) + 1)); const top = Math.max(...Object.values(n)); return Object.keys(n).filter((v) => n[v] === top).map(Number); };
 function answerOf(f) {
-  const q = f.q;
+  const q = f.ask;
   if (f.cats) {
     if (q.k === "n") return countOf(f, q.a);
     if (q.k === "m") return countOf(f, q.a) - countOf(f, q.b);
@@ -141,15 +142,15 @@ function setOf(f) {
     if (f.scale > 1) return f.form === "P" ? "spic3" : "sbar3";
     return f.form === "B" ? "bar2" : f.cats.length > 3 ? "pic2" : "pic1";
   }
-  if (f.form === "L") return f.q.k === "me" ? "med5" : "plot4";
+  if (f.form === "L") return f.ask.k === "me" ? "med5" : "plot4";
   return f.form === "F" ? "freq4" : "line5";
 }
 const qText = (q) => [q.k, q.a, q.b, q.v, q.d, q.d2].filter((x) => x !== undefined).join(".");
 function keyOf(f) {
-  if (f.cats) return `▥${f.form}${f.scale}:${f.cats.map(([o, n]) => o + n).join(",")}:${qText(f.q)}`;
-  if (f.form === "L") return `▥L${f.den}:${f.obj}:${f.from}-${f.to}:${f.vals.join(",")}:${qText(f.q)}`;
-  if (f.form === "F") return `▥F:${f.obj}:${f.rows.map(([v, n]) => v + "x" + n).join(",")}:${qText(f.q)}`;
-  return `▥G${f.scale}:${f.obj}:${f.vals.join(",")}:${qText(f.q)}`;
+  if (f.cats) return `▥${f.form}${f.scale}:${f.cats.map(([o, n]) => o + n).join(",")}:${qText(f.ask)}`;
+  if (f.form === "L") return `▥L${f.den}:${f.obj}:${f.from}-${f.to}:${f.vals.join(",")}:${qText(f.ask)}`;
+  if (f.form === "F") return `▥F:${f.obj}:${f.rows.map(([v, n]) => v + "x" + n).join(",")}:${qText(f.ask)}`;
+  return `▥G${f.scale}:${f.obj}:${f.vals.join(",")}:${qText(f.ask)}`;
 }
 // A fact from its data and question: its level, answer and key.
 export function chartFact(spec) {
@@ -157,6 +158,9 @@ export function chartFact(spec) {
   f.set = setOf(f);
   f.ans = answerOf(f);
   f.key = keyOf(f);
+  // The line under the chart with the answer's □, as text (the game's progress page and Oops card
+  // read a fact's q): "More potions than keys: □".
+  f.q = chartLine(f)[0] + "□";
   return f;
 }
 function parseQ(s, form) {
@@ -169,10 +173,10 @@ function parseQ(s, form) {
 export function chartFactOf(key) {
   const parts = key.slice(1).split(":"), head = parts[0], form = head[0], scale = Number(head.slice(1));
   const q = parseQ(parts[parts.length - 1], form);
-  if (form === "L") { const [from, to] = parts[2].split("-").map(Number); return chartFact({ form, den: scale, obj: parts[1], from, to, vals: parts[3].split(",").map(Number), q }); }
-  if (form === "F") return chartFact({ form, obj: parts[1], rows: parts[2].split(",").map((r) => r.split("x").map(Number)), q });
-  if (form === "G") return chartFact({ form, scale, obj: parts[1], vals: parts[2].split(",").map(Number), q });
-  return chartFact({ form, scale, cats: parts[1].split(",").map((c) => { const m = /^([a-z]+)(\d+)$/.exec(c); return [m[1], Number(m[2])]; }), q });
+  if (form === "L") { const [from, to] = parts[2].split("-").map(Number); return chartFact({ form, den: scale, obj: parts[1], from, to, vals: parts[3].split(",").map(Number), ask: q }); }
+  if (form === "F") return chartFact({ form, obj: parts[1], rows: parts[2].split(",").map((r) => r.split("x").map(Number)), ask: q });
+  if (form === "G") return chartFact({ form, scale, obj: parts[1], vals: parts[2].split(",").map(Number), ask: q });
+  return chartFact({ form, scale, cats: parts[1].split(",").map((c) => { const m = /^([a-z]+)(\d+)$/.exec(c); return [m[1], Number(m[2])]; }), ask: q });
 }
 
 /* ---------- the fixed samples ---------- */
@@ -216,7 +220,7 @@ export function chartFacts() {
   if (factCache) return factCache;
   const rnd = seeded(2027), out = [], seen = new Set();
   const add = (spec) => { const f = chartFact(spec); if (!seen.has(f.key) && f.ans > 0) { seen.add(f.key); out.push(f); } };
-  const cats = (n, make, qs) => { for (let i = 0; i < n; i++) { const d = make(i); for (const q of catQuestions(d, qs(i), rnd)) add({ ...d, q }); } };
+  const cats = (n, make, qs) => { for (let i = 0; i < n; i++) { const d = make(i); for (const q of catQuestions(d, qs(i), rnd)) add({ ...d, ask: q }); } };
   // 1st grade: three things, totals within 20.
   cats(6, () => catData("T", 1, 3, 2, 10, 1, 20, rnd), (i) => ["n", "n", i % 2 ? "f" : "m", "a"]);
   cats(6, () => catData("P", 1, 3, 1, 8, 1, 20, rnd), (i) => ["n", "n", i % 2 ? "f" : "m", "a"]);
@@ -233,29 +237,29 @@ export function chartFacts() {
     do {
       rows = pickN([1, 2, 3, 4, 5, 6, 7, 8, 9], int(4, 6, rnd), rnd).sort((a, b) => a - b).map((v) => [v, int(1, 6, rnd)]);
     } while (rows.filter((r) => r[1] === Math.max(...rows.map((x) => x[1]))).length > 1);
-    for (const k of ["mo", "ra", "to"]) add({ form: "F", obj, rows, q: { k } });
+    for (const k of ["mo", "ra", "to"]) add({ form: "F", obj, rows, ask: { k } });
   }
   for (let i = 0; i < 6; i++) {
     const obj = Object.keys(PLACES)[(i + 1) % 4], from = int(1, 3, rnd), to = from + int(6, 8, rnd);
     const vals = plotVals(from, to, int(9, 14, rnd), 6, true, rnd);
-    for (const q of [{ k: "mo" }, { k: "ra" }, { k: "at", v: pickN([...new Set(vals)], 1, rnd)[0] }]) add({ form: "L", den: 1, obj, from, to, vals, q });
+    for (const q of [{ k: "mo" }, { k: "ra" }, { k: "at", v: pickN([...new Set(vals)], 1, rnd)[0] }]) add({ form: "L", den: 1, obj, from, to, vals, ask: q });
   }
   cats(6, (i) => (i < 3 ? catData("B", 10, 4, 10, 90, 10, 999, rnd) : catData("P", 10, 3, 10, 90, 5, 999, rnd)), () => ["n", "m", "f", "t"]);
   // 5th grade: the median of a line plot (an odd number of values), and line graphs.
   for (let i = 0; i < 10; i++) {
     const obj = Object.keys(PLACES)[i % 4], from = int(1, 4, rnd), to = from + int(6, 8, rnd);
-    add({ form: "L", den: 1, obj, from, to, vals: plotVals(from, to, [7, 9, 11, 13][i % 4], 6, false, rnd), q: { k: "me" } });
+    add({ form: "L", den: 1, obj, from, to, vals: plotVals(from, to, [7, 9, 11, 13][i % 4], 6, false, rnd), ask: { k: "me" } });
   }
   for (let i = 0; i < 6; i++) {
     const scale = [2, 5, 10][i % 3], obj = Object.keys(DAILY)[i % 4];
     let vals;
     do vals = Array.from({ length: 6 }, () => int(1, 9, rnd) * scale); while (new Set(vals).size < 5);
     const days = pickN([1, 2, 3, 4, 5, 6], 2, rnd);
-    for (const d of days) add({ form: "G", scale, obj, vals, q: { k: "v", d } });
+    for (const d of days) add({ form: "G", scale, obj, vals, ask: { k: "v", d } });
     for (let j = 0; j < 2; j++) {
       let d, d2;
       do [d, d2] = pickN([1, 2, 3, 4, 5, 6], 2, rnd).sort((a, b) => a - b); while (vals[d - 1] === vals[d2 - 1]);
-      add({ form: "G", scale, obj, vals, q: { k: "c", d, d2 } });
+      add({ form: "G", scale, obj, vals, ask: { k: "c", d, d2 } });
     }
   }
   return (factCache = out);
@@ -285,7 +289,7 @@ function intro(f) {
 }
 // The question alone (12 words at most, lines.test's limit for what a pre-reader hears).
 export function chartQuestion(f) {
-  const q = f.q;
+  const q = f.ask;
   if (f.cats) {
     if (q.k === "n") return `How many ${many(q.a)}?`;
     if (q.k === "m") return `How many more ${many(q.a)} than ${many(q.b)}?`;
@@ -307,7 +311,7 @@ export function chartQuestion(f) {
 export const spokenChart = (f) => `${intro(f)} ${chartQuestion(f)}`;
 // After a miss: "Seven potions.", "Four more potions.", "The mode is four."
 export function spokenChartAnswer(f) {
-  const q = f.q, n = spoken(f.ans), N = cap(n);
+  const q = f.ask, n = spoken(f.ans), N = cap(n);
   const thing = (o) => (f.ans === 1 ? OBJECTS[o].one : many(o));
   if (f.cats) {
     if (q.k === "n") return `${N} ${thing(q.a)}.`;
@@ -322,7 +326,7 @@ export function spokenChartAnswer(f) {
 }
 // The problem's line under the chart (null is the answer's □).
 export function chartLine(f) {
-  const q = f.q, M = (o) => cap(many(o));
+  const q = f.ask, M = (o) => cap(many(o));
   let t;
   if (f.cats) t = q.k === "n" ? `${M(q.a)}:` : q.k === "m" ? `More ${many(q.a)} than ${many(q.b)}:` : q.k === "f" ? `Fewer ${many(q.a)} than ${many(q.b)}:` : q.k === "t" ? `${M(q.a)} and ${many(q.b)}:` : "In all:";
   else if (q.k === "mo" || q.k === "ra" || q.k === "me") t = `${{ mo: "Mode", ra: "Range", me: "Median" }[q.k]}:`;
@@ -393,7 +397,9 @@ function extraSteps(f, g, big, small) {
   if (f.form === "T") {
     for (let k = small; k < big;) {
       if (k % 5 === 0 && k + 5 <= big) { out.push({ x: g.x0 + (k / 5) * TG + 19, v: (v += 5), w: 44 }); k += 5; }
-      else { out.push({ x: tallyX(g, k), v: ++v, w: 10 }); k++; }
+      // A bundle's slanted fifth is counted at its right end, past the four it crosses, so the
+      // counts read left to right.
+      else { out.push({ x: k % 5 === 4 ? g.x0 + Math.floor(k / 5) * TG + 44 : tallyX(g, k), v: ++v, w: 10 }); k++; }
     }
     return out;
   }
@@ -408,7 +414,7 @@ function extraSteps(f, g, big, small) {
   return out;
 }
 function rowsSvg(f, o) {
-  const g = rowsGeom(f), q = f.q, idx = (t) => f.cats.findIndex((c) => c[0] === t);
+  const g = rowsGeom(f), q = f.ask, idx = (t) => f.cats.findIndex((c) => c[0] === t);
   let back = "", s = "", over = "";
   f.cats.forEach(([obj, n], i) => {
     const y = g.y(i), m = g.mid(i);
@@ -479,7 +485,7 @@ function axisSvg(g, scale) {
 // The counts up the axis to v, by the scale (scale, 2 × scale, … v).
 const upTo = (v, s) => Array.from({ length: v / s }, (_, i) => (i + 1) * s);
 function barsSvg(f, o) {
-  const most = Math.max(...f.cats.map((c) => c[1])), g = axisGeom(f, most), q = f.q, R = f.cats.length;
+  const most = Math.max(...f.cats.map((c) => c[1])), g = axisGeom(f, most), q = f.ask, R = f.cats.length;
   const slot = (W - 16 - (g.x0 + 6)) / R, bw = Math.min(46, slot * 0.6), cx = (i) => g.x0 + 6 + slot * (i + 0.5);
   const idx = (t) => f.cats.findIndex((c) => c[0] === t);
   let back = "", s = axisSvg(g, f.scale), over = "";
@@ -518,7 +524,7 @@ function barsSvg(f, o) {
   return frame(back + s + over, `a bar graph of ${f.cats.map((c) => many(c[0])).join(", ")}`);
 }
 function lineGraphSvg(f, o) {
-  const g = axisGeom(f, Math.max(...f.vals)), q = f.q, N = f.vals.length;
+  const g = axisGeom(f, Math.max(...f.vals)), q = f.ask, N = f.vals.length;
   const xOf = (d) => g.x0 + 24 + ((d - 1) * (W - 34 - (g.x0 + 24))) / (N - 1), pt = (d) => [xOf(d), g.yOf(f.vals[d - 1])];
   let s = text(20, 22, `${cap(many(f.obj))} ${DAILY[f.obj]} each day`, { size: 13, color: MUTED, anchor: "start" }) + axisSvg(g, f.scale), over = "";
   for (let d = 1; d <= N; d++) s += text(xOf(d), g.y0 + 17, d, { size: 12 });
@@ -558,7 +564,7 @@ function plotXs(f, g) {
 }
 const X = (x, y, c = INK, op) => chalk(`M${f1(x - 5.5)} ${f1(y - 5.5)} L${f1(x + 5.5)} ${f1(y + 5.5)} M${f1(x + 5.5)} ${f1(y - 5.5)} L${f1(x - 5.5)} ${f1(y + 5.5)}`, 3, c, op);
 function plotSvg(f, o) {
-  const g = plotGeom(f), q = f.q, xs = plotXs(f, g), N = xs.length;
+  const g = plotGeom(f), q = f.ask, xs = plotXs(f, g), N = xs.length;
   let back = "", s = "", over = "";
   s += chalk(`M18 ${g.y} H${W - 18}`, 3);
   for (let u = f.from; u <= f.to; u++) {
@@ -601,7 +607,7 @@ function plotSvg(f, o) {
 
 /* ---------- frequency tables ---------- */
 function freqSvg(f, o) {
-  const R = f.rows.length, top = 58, rowH = Math.min(34, (H - top - 10) / R), q = f.q;
+  const R = f.rows.length, top = 58, rowH = Math.min(34, (H - top - 10) / R), q = f.ask;
   const C1 = 80, C2 = 186, C3 = 296, place = PLACES[f.obj];
   let back = "", s = text(W / 2, 22, `${cap(many(f.obj))} ${eachPlace(f.obj)}`, { size: 13, color: MUTED });
   s += iconSvg(f.obj, C1 - 32, 42, 20) + text(C1 + 6, 47, cap(many(f.obj)), { size: 13, color: GOLD }) + text(C2, 47, "Tally", { size: 13, color: GOLD }) + text(C3, 47, cap(place[1]), { size: 13, color: GOLD });
@@ -641,7 +647,7 @@ export function chartSvg(f, opt = {}) {
 /* ---------- the hint's words ---------- */
 // Never the answer before answering: counting goes about halfway, then "?".
 export function chartHint(f, worked) {
-  const q = f.q, A = f.ans;
+  const q = f.ask, A = f.ans;
   if (f.cats) {
     const rows = f.form !== "B", g = rows ? rowsGeom(f) : null, idx = (t) => f.cats.findIndex((c) => c[0] === t);
     const by = f.scale > 1 ? ` by ${f.scale}s` : "";

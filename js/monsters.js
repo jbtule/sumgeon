@@ -399,8 +399,8 @@ function denominator(c, eyes = EMBER) {
    +rivets([[67,29],[133,29],[67,76],[133,76]]);
 }
 MON.push({n:'The Denominator',op:'mix',sym:'▭/▭',stratum:'forge',c:'#8e9aa6',hits:6,boss:1,quip:'clanks to pieces, every piece the same size.',d:(c)=>denominator(c)});
-// Graphzilla (reading charts, js/charts.js; on the prototype page, not in the game yet): a friendly
-// kaiju standing upright, its back plates a bar chart rising behind it, in the colors of the chart's
+// Graphzilla (reading charts, js/charts.js; in the game since batch 3, its trait in traits.js): a
+// friendly kaiju standing upright, its back plates a bar chart rising behind it, in the colors of the chart's
 // things. The plates take the problem's data (m.plates, [{ v, c }], up to four; charts.js platesOf),
 // as Tick-Tockus's clock shows the time asked. A round body, a striped belly, a short tail, round feet.
 const GZ_PLATES = [{ v: 3, c: GOLD }, { v: 5, c: CORAL }, { v: 2, c: '#45d6e6' }, { v: 4, c: '#9a7bff' }];
@@ -423,9 +423,8 @@ function graphzilla(c, plates) {
   +`<ellipse cx="74" cy="130" rx="7" ry="4" fill="#ff7a6e" opacity=".6"/><ellipse cx="126" cy="130" rx="7" ry="4" fill="#ff7a6e" opacity=".6"/>`
   +`<path d="M90 130 Q100 138 110 130" ${ds}/>`;
 }
-NEW_MON.push(
- {n:'Graphzilla',op:'▥',sym:'📊',stratum:"every stratum, its grade's charts",c:'#2fa37a',hits:3,
-  trait:{icon:'📊',name:'Chart Stomp',text:"Asks reading charts, its stratum's grade of them; its back plates are the chart's bars"},
+MON.push(
+ {n:'Graphzilla',op:'▥',sym:'📊',stratum:'hall, mines, tower, forge',c:'#2fa37a',hits:3,
   quip:'stomps off to draw a bigger chart.',
   d:(c,m)=>graphzilla(c,m&&m.plates)});
 
@@ -491,8 +490,8 @@ export const ANCHOR = {
   Boomainder: { eyes: [[94, 54, 9], [124, 54, 9]], mouth: [110, 82], top: [100, 12], neck: [100, 104], ground: 192 },
   // Polly-Gon (NEW_MON): its mouth is the beak, its top the head under the crest.
   "Polly-Gon": { eyes: [[86, 40, 11], [114, 40, 11]], mouth: [100, 62], top: [100, 12], neck: [100, 80], ground: 196 },
-  // Graphzilla (NEW_MON): upright, its head the top of its round body; no neck, so it's under the smile.
-  Graphzilla: { eyes: [[86, 114, 10], [114, 114, 10]], mouth: [100, 132], top: [100, 88], neck: [100, 144], ground: 205 },
+  // Graphzilla: upright, its head the top of its round body; no neck, so it's under the smile.
+  Graphzilla: { eyes: [[86, 114, 10], [114, 114, 10]], mouth: [100, 132], top: [100, 88], neck: [100, 149], ground: 205 },
   // Rulerpillar (NEW_MON): its head is the front end of the arch.
   Rulerpillar: { eyes: [[151, 136, 9], [173, 136, 9]], mouth: [162, 156], top: [162, 118], neck: [162, 178], ground: 196 }
 };
@@ -553,7 +552,10 @@ export const LOOKS = {
   Dotty: [["Tiny Dot", ["mini"]], ["Polka Dotty", ["sparkles", "blush"]], ["Dizzy Dotty", ["spiral"]], ["Dotty in Shades", ["sunglasses", "medal"]]],
   Boomainder: [["Little Boo", ["mini"]], ["Count Boomainder", ["tophat", "monocle"], "he"], ["Sleepy Boo", ["nightcap", "lids"]], ["Boomainder Belle", ["bow", "lashes"], "she"]],
   // Shapes: a pirate's parrot, of course.
-  "Polly-Gon": [["Captain Squawkbeard", ["bandana", "eyepatch"], "he"], ["Baby Polly", ["mini"]], ["Queen Polly-Gon", ["crown", "lashes"], "she"], ["Disco Polly", ["sunglasses", "sparkles"]]]
+  "Polly-Gon": [["Captain Squawkbeard", ["bandana", "eyepatch"], "he"], ["Baby Polly", ["mini"]], ["Queen Polly-Gon", ["crown", "lashes"], "she"], ["Disco Polly", ["sunglasses", "sparkles"]]],
+  // Reading charts (batch 3). Its back plates rise behind its head and are the chart's bars, so
+  // its looks keep to the face and neck (no hats to hide a plate), and the names are chart puns.
+  Graphzilla: [["Tiny Tally", ["mini"]], ["Professor Plot", ["glasses", "bowtie"], "he"], ["Bar-oness Graphzilla", ["lashes", "blush", "medal"], "she"], ["Snoozilla", ["lids", "scarf"]]]
 };
 // A monster in look i (0 is itself): the same monster, renamed, with its base name kept for its
 // trait and kind of math.

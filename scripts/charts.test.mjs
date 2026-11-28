@@ -3,10 +3,14 @@
 // it's answered, and spoken lines a pre-reader can follow.
 import assert from "node:assert/strict";
 import { CHART_LEVELS, chartFacts, chartFactOf, chartProblem, chartSvg, chartHint, chartLine, chartQuestion, spokenChart, spokenChartAnswer, platesOf, OBJECTS, W, H, lenLabel, lenWords, shownOf } from "../js/charts.js";
-import { NEW_MON, svg } from "../js/monsters.js";
+import { MON, LOOKS, svg } from "../js/monsters.js";
+import { traitOf, asks } from "../js/traits.js";
+import { BANDS, pool } from "../js/learn.js";
+import { WINGS, PATHS } from "../js/wings.js";
 import { spoken } from "../js/problems.js";
 
 const facts = chartFacts();
+const factOfKey = (k) => chartFactOf(k);
 const labels = (s) => [...s.matchAll(/class="lab">([^<]*)</g)].map((m) => m[1]);
 const nums = (t) => (String(t).match(/\d+/g) || []).map(Number);
 const words = (t) => t.split(/\s+/).filter(Boolean).length;
@@ -34,7 +38,7 @@ const of = (id) => facts.filter((f) => f.set === id);
 for (const f of [...of("tally"), ...of("pic1")]) {
   assert.equal(f.cats.length, 3, "1st grade: three things");
   assert.ok(f.cats.reduce((s, c) => s + c[1], 0) <= 20, "1st grade: within 20");
-  assert.ok(["n", "m", "f", "a"].includes(f.q.k));
+  assert.ok(["n", "m", "f", "a"].includes(f.ask.k));
 }
 for (const f of [...of("pic2"), ...of("bar2")]) assert.ok(f.cats.length === 4 && f.scale === 1 && f.cats.every((c) => c[1] <= 9), "2nd grade: four things, scale 1");
 for (const f of [...of("spic3"), ...of("sbar3")]) {
@@ -44,8 +48,8 @@ for (const f of [...of("spic3"), ...of("sbar3")]) {
 }
 assert.ok(!chartFacts().some((f) => f.form === "L" && f.den > 1), "no line plots in halves or fourths (left out for now)");
 for (const f of of("graph4")) assert.equal(f.scale, 10);
-for (const f of [...of("plot4"), ...of("freq4")]) assert.ok(["mo", "ra", "at", "to"].includes(f.q.k), "4th grade: mode and range");
-for (const f of facts.filter((f) => f.q.k === "mo")) {
+for (const f of [...of("plot4"), ...of("freq4")]) assert.ok(["mo", "ra", "at", "to"].includes(f.ask.k), "4th grade: mode and range");
+for (const f of facts.filter((f) => f.ask.k === "mo")) {
   // One mode.
   const counts = f.form === "F" ? f.rows.map((r) => r[1]) : [...new Set(f.vals)].map((v) => f.vals.filter((x) => x === v).length);
   assert.equal(counts.filter((c) => c === Math.max(...counts)).length, 1, `${f.key}: one mode`);
@@ -53,7 +57,7 @@ for (const f of facts.filter((f) => f.q.k === "mo")) {
 for (const f of of("med5")) { assert.equal(f.vals.length % 2, 1, "an odd count, so the median is one of them"); assert.equal(f.ans, [...f.vals].sort((a, b) => a - b)[(f.vals.length - 1) / 2]); }
 for (const f of of("line5")) assert.ok(f.vals.length === 6 && f.vals.every((v) => v % f.scale === 0), "5th grade line graphs");
 // Every question kind comes up.
-for (const k of ["n", "m", "f", "t", "a", "at", "mo", "ra", "me", "to", "v", "c"]) assert.ok(facts.some((f) => f.q.k === k), k);
+for (const k of ["n", "m", "f", "t", "a", "at", "mo", "ra", "me", "to", "v", "c"]) assert.ok(facts.some((f) => f.ask.k === k), k);
 
 // The drawings: clean, inside the chart, every word a label, and nothing given away.
 for (const f of facts) {
@@ -112,8 +116,25 @@ assert.deepEqual([chartFactOf("▥T1:torch5,potion7,key3:m.potion.key").ans, cha
 assert.deepEqual([lenLabel(5, 2), lenLabel(7, 4), lenLabel(8, 4), lenWords(4, 4), lenWords(9, 4)], ["2½", "1¾", "2", "one inch", "two and one fourth inches"]);
 
 // Graphzilla: drawn with shapes, its back plates the chart's data.
-const gz = NEW_MON.find((m) => m.n === "Graphzilla");
-assert.ok(gz && gz.op === "▥" && gz.trait && /every stratum/.test(gz.stratum), "Graphzilla is drawn, for every stratum");
+const gz = MON.find((m) => m.n === "Graphzilla");
+assert.ok(gz && gz.op === "▥" && traitOf(gz).name === "Chart Stomp" && gz.stratum === "hall, mines, tower, forge", "Graphzilla is in the game, in the Hall, the Mines, the Tower and the Forge");
+// Batch 3: in the game. Graphzilla asks only charts, and no one else does; a strand in each
+// stratum of its grade, opening with the stratum's last chapter, never a priority step (data isn't
+// one of the guides' priority standards), and the Pyramid's two levels (5th grade) not yet asked.
+for (const m of MON) assert.equal(asks(m)("▥", "▥T1:torch5,potion7,key3:n.key"), m.n === "Graphzilla" || m.n === "Judo Judy", `${m.n} and charts`);
+assert.ok(!asks(gz)("+", "+3,4") && !asks(gz)("⌚", "⌚h3"));
+const strandOf = { hall: "chartsH", mines: "chartsM", tower: "chartsT", forge: "chartsF" };
+for (const [id, b] of Object.entries(strandOf)) {
+  const w = WINGS.find((x) => x.id === id), steps = PATHS[id].filter((s) => s.monsters.includes("Graphzilla"));
+  assert.equal(w.strands.Graphzilla, b);
+  assert.ok(steps.length === 1 && !steps[0].priority && steps[0].ongoing && steps[0].chapter === Math.max(...PATHS[id].map((s) => s.chapter)), `${id}: one step, in the last chapter, not a priority`);
+  assert.deepEqual(BANDS[b].levels.map((l) => l.name), CHART_LEVELS.filter((l) => l.stratum === id).map((l) => l.name));
+  assert.ok(pool(b).every((f) => CHART_LEVELS.find((l) => l.id === factOfKey(f.key).set).stratum === id));
+}
+const inGame = new Set(Object.values(strandOf).flatMap((b) => pool(b).map((f) => f.key)));
+assert.ok(facts.filter((f) => f.set === "med5" || f.set === "line5").every((f) => !inGame.has(f.key)), "5th grade's charts wait for the Pyramid");
+assert.equal(LOOKS.Graphzilla.length, 4);
+assert.ok(LOOKS.Graphzilla.every(([, kit]) => !kit.some((k) => ["crown", "tophat", "nightcap", "bandana", "bow"].includes(k))), "its looks keep off its head, so no plate is hidden");
 for (const f of facts.slice(0, 60)) {
   const p = platesOf(f);
   assert.ok(p.length >= 1 && p.length <= 4 && p.every((x) => Number.isFinite(x.v) && /^#[0-9a-f]{6}$/i.test(x.c)), f.key);
