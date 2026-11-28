@@ -102,12 +102,12 @@ export var PHRASE = {
 //   out right (checked with its espeak phonemes).
 //   "Jr." and "Mr." are said in full, not letter by letter.
 //   "Plusington" (Kokoro: PLOOS-ington) is "Plussington"; "Chompette" (chum-PET) is
-//   "Chomp-ette"; "Nine-ja" (nine-ya) is "Nine-jah".
+//   "Chomp-ette"; "Nine-ja" is "Nineja" (NINE-juh, ending like "ninja"; "Nine-jah" was NINE-JAH, espeak nˈaɪndʒˈɑː, and "Nine-ja" alone nine-YAH).
 //   Sevenstein's "Six, seven" gets pauses for its sing-song, in his monster line and his quip.
 //   The quips' other names and puns read right as written ("Bon appe-eight" is bahn uh-PEH-EIGHT,
 //   "Zeroic" zee-ROH-ic, "Abraca-double", "Four-ward"; checked with Kokoro's espeak phonemes).
 var SAY_AS = [[/\bTwodini\b/g, "Toodini"], [/\bJr\./g, "Junior"], [/\bMr\./g, "Mister"],
-  [/\bPlusington\b/g, "Plussington"], [/\bChompette\b/g, "Chomp-ette"], [/\bNine-ja\b/g, "Nine-jah"],
+  [/\bPlusington\b/g, "Plussington"], [/\bChompette\b/g, "Chomp-ette"], [/\bNine-ja\b/g, "Nineja"],
   [/Six, seven, gone\./g, "Six... seven! Gone."], [/^Six, seven!$/g, "Six... seven!"],
   [/\bBon appe-eight!/g, "Bon appa-eight!"],
   // Margot-Rythm rhymes with "algorithm": MAR-go-rith-um, the t silent, and so is plain "Margot"

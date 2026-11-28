@@ -56,7 +56,7 @@ for (const t of Object.values(BARK)) { assert.ok(ids.has("p:" + t), t); assert.o
 // Names are said the way the puns need: Twodini as "Toodini" (too-DEE-nee), Jr. as "Junior".
 assert.ok(ids.has("m:Toodini!") && ids.has("m:Trollar Junior!") && ids.has("m:Mister Moneybags!"));
 assert.ok(![...ids].some((id) => /Twodini|Jr\.|Mr\./.test(id)), "no line says Twodini, Jr. or Mr. as written");
-assert.ok(ids.has("m:Sir Plussington!") && ids.has("m:Chomp-ette!") && ids.has("m:Nine-jah!"));
+assert.ok(ids.has("m:Sir Plussington!") && ids.has("m:Chomp-ette!") && ids.has("m:Nineja!"));
 assert.ok(ids.has("p:Minustaur's Mom loses her footing and her horns.") && ids.has("p:King Minus loses his footing and his horns."));
 assert.ok(ids.has("p:Sevenstein comes unbolted. Six... seven! Gone."));
 // After a spell that was right but hard to read, for every digit (an eight).
@@ -82,7 +82,7 @@ assert.ok(heroQuips.has(quipLine(TEAM_NUMBERS[67])) && spokenLines().filter((l) 
 const captainLines = CAPTAIN_LINES.concat(HEROES.flatMap((h) => captainNames(h.d)));
 assert.deepEqual([CAPTAIN_LINES.length, captainLines.length], [5, 45]);
 for (const q of captainLines) assert.ok(ids.has("h:" + quipLine(q)), `captain line recorded: ${q}`);
-assert.ok(ids.has("h:Captain Toodini, reporting for duty!") && ids.has("h:Make way for Captain Nine-jah!"), "captain names through SAY_AS");
+assert.ok(ids.has("h:Captain Toodini, reporting for duty!") && ids.has("h:Make way for Captain Nineja!"), "captain names through SAY_AS");
 assert.ok(![...ids].some((id) => /Follow the leader/i.test(id)), "no \"Follow the leader!\"");
 const capSaid = new Set(captainLines.map(quipLine));
 assert.ok(GROUPS.includes("Captain lines") && spokenLines().filter((l) => l.group === "Captain lines").every((l) => l.kind === "h" && capSaid.has(l.text)));
