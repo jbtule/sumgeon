@@ -11,7 +11,7 @@ import { PHRASE, monsterName, monsterCleared, monsterWon, heroJoins, heroCursed,
 import { WINGS, wingOf, runFloors, bossAt, cursedMonster, openWings, toOpen, floorStars, wingStars, depthScale, depthHP, deepest, MAP_DEPTHS, GRADES, gradeLabel, gradeName, withGrade, bandOf, gradeBand, OLD_BANDS, PATHS, chapterOf, stepsOpen, bossStage, isMega, BOSS_HP, MEGA_EVERY, megasOf, stepMonsters, legendDue, openLegend, beatLegend, legendBeaten, legendProgress, LEGEND_HP } from "./wings.js";
 import { missingOf, pickBlank, filled, spokenMissing, MISSING_SHARE, canHide } from "./missing.js";
 import { rectSvg } from "./third.js";
-import { bigText, fourthLine } from "./fourth.js";
+import { bigText, fourthLine, commas } from "./fourth.js";
 import { angleSvg } from "./angles.js";
 import { arraySvg } from "./arrays.js";
 import { flashSvg, FLASH_DOTS_MS } from "./flash.js";
@@ -395,8 +395,13 @@ function flipCells(done) {
   });
   setTimeout(done, SWAP_MS + 120);
 }
+// The typed answer as shown: commas from 10,000 (as the problems write big numbers), and smaller
+// type once it's long, so 100,000 fits the box on a phone. Never on a stacked problem (its columns).
+function shownInput(t) { return /^\d{5,}$/.test(t) ? commas(Number(t)) : t; }
+function fitAns(el, text) { el.classList.toggle("long", text.length >= 6); el.classList.toggle("longer", text.length >= 8); }
 function ansUI() {
-  $("ans").textContent = G.input;
+  const shown = shownInput(G.input);
+  $("ans").textContent = shown; fitAns($("ans"), shown);
   // A whole time in two slots (Tick-Tockus): the one being typed glows, the one to come waits,
   // and Hit! says which: "Hour ✓", then "Minutes!".
   const go = $("pad").dataset.mode === "num" ? $("pad").querySelector('[data-k="go"]') : null;
@@ -417,7 +422,7 @@ function ansUI() {
   if (G.cur && G.cur.op === "…") $("prob").innerHTML = slimeRow(G.cur);
   // A missing-number problem fills its □ as you type.
   if (G.cur && G.cur.stacked && $("blank")) { $("blank").innerHTML = stackCells(G.cur, G.input); $("blank").classList.toggle("typed", !!G.input); }
-  else if ($("blank")) { $("blank").textContent = G.input || "?"; $("blank").classList.toggle("typed", !!G.input); }
+  else if ($("blank")) { $("blank").textContent = shown || "?"; $("blank").classList.toggle("typed", !!G.input); fitAns($("blank"), shown); }
 }
 // The problem as shown: "3 + 4 =", or with a glowing □ for a missing number ("3 + □ = 7").
 const BLANK = '<span class="blank" id="blank">?</span>';

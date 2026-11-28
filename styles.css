@@ -1531,3 +1531,9 @@ body.on-scene>.top,body.on-scene>.who,body.on-scene>.game,body.on-scene>.badges{
 .wing b .endless-mark{font-style:normal;color:var(--gold);margin-left:4px}
 /* A ones-first answer typed backwards: its digits glow gold as they swap places (flipCells). */
 .prob .stacked .scell.flipglow{color:var(--gold);text-shadow:0 0 .3em #ffc93caa;z-index:2}
+
+/* A long typed answer (100,000) gets smaller type so it fits its box on every size (ansUI). */
+.game .ans.long{font-size:clamp(20px,6.4vw,30px)}
+.game .ans.longer{font-size:clamp(16px,5vw,24px)}
+.prob .blank.long{font-size:.74em}
+.prob .blank.longer{font-size:.6em}
