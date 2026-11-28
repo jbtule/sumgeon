@@ -194,7 +194,7 @@ for (const a of none.filter((x) => x.kind === "track" || x.kind === "surprise"))
 // linked player's wallet.
 assert.deepEqual(rewardsOf(none.filter((x) => x.kind === "track").map((a) => a.id)).items, { pie: 8, shield: 9, totem: 9, magnet: 9 });
 // Every Quip (surprise:allquips, 2026-11-27) added one of every item; the others are unchanged.
-assert.deepEqual(rewardsOf(none.filter((x) => x.kind === "surprise" && !x.of && x.id !== "surprise:allquips" && x.id !== "surprise:plushies").map((a) => a.id)).items, { pie: 3, shield: 5, totem: 3, magnet: 3 });
+assert.deepEqual(rewardsOf(none.filter((x) => x.kind === "surprise" && !x.of && x.id !== "surprise:allquips" && x.id !== "surprise:plushies" && x.id !== "surprise:clothes").map((a) => a.id)).items, { pie: 3, shield: 5, totem: 3, magnet: 3 });
 assert.deepEqual(rewardsOf(["surprise:allquips"]).items, { pie: 1, shield: 1, totem: 1, magnet: 1 });
 
 // What the cards say: "New achievement!" (or "Secret achievement!"), the title, what it took and
@@ -248,7 +248,7 @@ console.log(`✓ achievements (${ACHIEVEMENT_IDS.length})`);
   // Which: the ones that happen in a fight or at Trollar's stall. Piggy Bank, the quips and the
   // holidays aren't tied to a stratum.
   assert.deepEqual(STRATUM_SURPRISES, ["surprise:zero", "surprise:palindrome", "surprise:triple", "surprise:double", "surprise:allhands", "surprise:seven", "surprise:iceboss", "surprise:lastheart"]);
-  for (const id of ["surprise:piggy", "surprise:quips", "surprise:allquips", "surprise:plushies", "holiday:thanksgiving", "holiday:winter", "holiday:summer"]) {
+  for (const id of ["surprise:piggy", "surprise:quips", "surprise:allquips", "surprise:plushies", "surprise:clothes", "holiday:thanksgiving", "holiday:winter", "holiday:summer"]) {
     assert.ok(!STRATUM_SURPRISES.includes(id), id);
     assert.ok(!ids.has(id + "@cellar"), id);
   }
@@ -326,4 +326,17 @@ console.log(`✓ achievements (${ACHIEVEMENT_IDS.length})`);
   assert.ok(catalog(full).find((a) => a.id === "surprise:plushies").met);
   assert.ok(awardAchievements(full, {}, 5).some((a) => a.id === "surprise:plushies"));
   console.log("✓ Snuggle Squad");
+}
+
+// Laundry Day: every findable piece of clothing (wardrobe.owned), never the special ones.
+{
+  const { catalog, clothesOf, award } = await import("../js/achievements.js");
+  const { findable, CLOTHES } = await import("../js/clothes.js");
+  const all = findable().map((p) => p.id), special = CLOTHES.filter((p) => p.tier === "special").map((p) => p.id);
+  const some = { wardrobe: { owned: all.slice(0, 3).concat(special) }, ach: { earned: {} } };
+  assert.equal(clothesOf(some), 3, "special pieces don't count");
+  assert.equal(catalog(some).find((a) => a.id === "surprise:clothes").progress, `Clothes: 3 of ${all.length}`);
+  const full = { wardrobe: { owned: all }, ach: { earned: {} } };
+  assert.ok(award(full, {}, 5).some((a) => a.id === "surprise:clothes"));
+  console.log("✓ Laundry Day");
 }

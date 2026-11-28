@@ -1941,7 +1941,7 @@ function takeLoot(C) {
   if (what.kind === "clothing") {
     // A piece not owned yet, into the bag; shown on the captain, with Put it on beside Next.
     const p = clothesById[what.piece];
-    addPiece(wardrobe, p.id); saveWardrobe();
+    addPiece(wardrobe, p.id); saveWardrobe(); checkAchievements(); // every piece (Laundry Day)
     say("p", clothingName(p.id));
     C.piece = hasCaptain() ? p.id : null;
     C.lootMsg = `<b class="loot-name">${esc(p.name)}</b>${hasCaptain() ? "Put it on?" : "It's in your 👕 wardrobe."}`;
@@ -2176,7 +2176,7 @@ function shopCard(view) {
       const r = payMany(S.purse, S.counter, c, n, t);
       if (!r.ok) return; // never pays for you
       wallet = r.wallet; S.purse = r.purse; saveWallet();
-      if (t.kind === "item") { gain(inv, t.id, r.n); saveItems(); } else if (t.kind === "plush") { addPlush(wardrobe, t.id); saveWardrobe(); checkAchievements(); } else { addPiece(wardrobe, t.id); saveWardrobe(); }
+      if (t.kind === "item") { gain(inv, t.id, r.n); saveItems(); } else if (t.kind === "plush") { addPlush(wardrobe, t.id); saveWardrobe(); checkAchievements(); } else { addPiece(wardrobe, t.id); saveWardrobe(); checkAchievements(); }
       S.paid = r;
       sfx.chestOpen();
       if (r.exact) { say("p", SHOP.exact, true); surprise("surprise:exact"); } else say("p", changeLine(r.change), true);
