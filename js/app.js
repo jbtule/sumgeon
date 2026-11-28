@@ -1400,6 +1400,10 @@ function submit() {
     const mo = momentFor(typed, critsNow, !!m.boss && G.hp - dmg <= 0), boost = momentBoost(mo);
     if (boost) dmg += Math.round(G.max * MOMENT_HP * boost);
     if (dmg > guardCap) { dmg = guardCap; guarded = true; }
+    // Insta-banish: a hit that takes a monster from full HP to nothing is announced first, echoing
+    // like "Now entering the Sumgeon!" (a boss can't be: its Guard).
+    const banish = G.hp >= G.max && dmg >= G.hp;
+    if (banish) say("p", PHRASE.banish, true, null, ENTER_FX);
     const momentName = mo ? HEROES[mo.hero].n + (mo.partner != null ? " & " + HEROES[mo.partner].n : "") : "";
     // The run as it will be once this hit lands, in case the app is closed mid-attack: the next
     // problem, or the monster beaten.
@@ -1420,7 +1424,7 @@ function submit() {
       surprise(...hitSurprises({ ans: G.cur.sym || G.cur.draw || G.cur.slots || G.cur.spell ? null : G.cur.ans, typed, dmg, base: Math.round(G.cur.ans * (G.cur.reversed ? 0.5 : 1)) || 0, hpLeft: G.hp, team: [...new Set([team.captain, ...team.rescued])].filter((d) => d != null) }));
       // A charge goes on its own line over the hit ("×100!" over "−400").
       if (guarded) { sfx.clang(); if (once("guarded", 2)) say("p", PHRASE.guarded); }
-      pop((guarded ? "Guarded!\n" : G.cur.charge ? chargePop(G.cur.charge).trim() + "\n" : "") + (boost ? "Hero! " : bonus.power ? "Power! " : crit ? "Crit! " : "") + "−" + dmg, crit || bonus.power || !!boost);
+      pop((banish ? "Insta-banish!\n" : guarded ? "Guarded!\n" : G.cur.charge ? chargePop(G.cur.charge).trim() + "\n" : "") + (boost ? "Hero! " : bonus.power ? "Power! " : crit ? "Crit! " : "") + "−" + dmg, crit || bonus.power || !!boost);
       restartAnim($("mon"), "hit");
       if (crit && !mo) restartAnim($("arena"), "shake");
       setMsg(totem > 1 ? `Times Two Totem! Double hit for ${dmg}!` : G.cur.reversed ? `Your ${G.cur.ans} is facing backwards. It faces this way → Half damage: ${dmg}` : G.cur.howTo ? `Here's how to write it. Hit for ${dmg}!` : level ? level : trait.note ? `${trait.note}: ${dmg}!` : boost ? `${momentName} hero hit for ${dmg}!` : bonus.power ? `${HEROES[team.captain].n} power hit for ${dmg}!` : crit ? `Critical hit for ${dmg}!` : G.cur.charge ? (G.cur.charge.up ? `Super charge! Hit for ${dmg}!` : `Braced! Hit for ${dmg}.`) : `Hit for ${dmg}!`, "good");

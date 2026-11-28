@@ -95,6 +95,8 @@ export var PHRASE = {
   braced: "The monster braces!",
   // A boss's Guard held a big hit back (app.js BOSS_GUARD), the first 2 times.
   guarded: "Guarded! A boss takes at least three hits.",
+  // A monster taken from full HP to nothing in one hit, said first with an echo (app.js).
+  banish: "Insta-banish!",
   chargeHow: "Small numbers get a super charge to hit big monsters!",
   crackTwo: "Two more to go!",
   heart: "You found a heart!",
