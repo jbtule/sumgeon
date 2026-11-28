@@ -244,3 +244,7 @@ console.log("✓ loot");
   assert.deepEqual(fewest(135), { bills: 1, q: 1, d: 1, n: 0, p: 0 });
   assert.deepEqual(fewest(135, false), { bills: 0, q: 5, d: 1, n: 0, p: 0 });
 }
+
+// A lock is one line, so never a + or − with a number of 1000 or more (stacked in a fight).
+assert.ok(!lockable("+2459,3164") && !lockable("-4000,1368") && lockable("+27,15") && lockable("-403,158") && lockable("×20,70"), "big sums stay out of locks");
+for (let i = 0; i < 200; i++) { const k = lockKey("fourth", {}, { rnd: Math.random }); assert.ok(lockable(k), k); }

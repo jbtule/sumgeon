@@ -9,6 +9,7 @@
 // clothing the player doesn't have yet (money once they have every piece). Now and then (PLUSH_SHARE)
 // a plushie the player doesn't have yet instead (plushie.js), a rare prize.
 import { pool, factOf, learned, notRecent } from "./learn.js";
+import { BIG_STACK } from "./twodigit.js";
 import { CLOTHES, clothesById, findable, SPOTS } from "./clothes.js";
 import { PLUSHIES, isPlush, FIRST } from "./plushie.js";
 
@@ -21,9 +22,11 @@ export function chestAfter(m, rnd) {
 }
 
 // The kinds of fact a lock can hold: ones that read as one line of text (no coin pile, rectangle
-// or array to draw). The key's first character says the kind (learn.js keyOf).
+// or array to draw). The key's first character says the kind (learn.js keyOf). Not a + or − with a
+// number of 1000 or more: in a fight it's always stacked in columns (BIG_STACK), and a lock has
+// room only for one line.
 const LOCKABLE = "+-×÷□○=MΣ/≈";
-export const lockable = (key) => LOCKABLE.includes(key[0]);
+export const lockable = (key) => LOCKABLE.includes(key[0]) && !((key[0] === "+" || key[0] === "-") && (String(key).match(/\d+/g) || []).some((n) => Number(n) >= BIG_STACK));
 // A lock's fact key: a learned one (box 3+) from the band, not one asked lately (recent), not
 // `not` (the lock that just jammed). With none learned yet, one answered right before; with none
 // of those, the band's easiest.
