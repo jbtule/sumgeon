@@ -71,6 +71,18 @@ for (const band of Object.keys(BANDS)) {
       else assert.ok(new RegExp(`\\b${f.ans}\\b`).test(after.say), `${p.key}: ${after.say}`);
       continue;
     }
+    // Prime or composite (4th grade): never the word before answering, and the right one after.
+    if (f.op === "P") {
+      assert.ok(before.say.endsWith("?") && !/prime|composite/i.test(before.say + before.model), `${p.key}: ${before.say}`);
+      assert.ok(after.say.endsWith(f.sym === "P" ? "is prime." : "is composite."), `${p.key}: ${after.say}`);
+      continue;
+    }
+    // Money with a decimal point (4th grade): "?" before, the amount after.
+    if (f.op === "D") {
+      const amt = f.kind === "cents" ? String(f.ans) : "$" + Math.floor(f.ans / 100) + "." + String(f.ans % 100).padStart(2, "0");
+      assert.ok(before.say.endsWith("?") && !before.say.includes(amt) && after.say.includes(amt), `${p.key}: ${before.say} / ${after.say}`);
+      continue;
+    }
     // 4th grade's two-slot answers (a remainder, a mixed number): questions before, both numbers
     // after ("7 R 1", "5 and 3/3").
     if (f.slots && (f.op === "R" || f.op === "ƒ")) {

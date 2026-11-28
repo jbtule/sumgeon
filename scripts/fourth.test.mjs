@@ -37,4 +37,26 @@ assert.equal(fourthLine(m, String).join(""), "3 1/3 + 2 2/3 = 5 3/3");
 assert.equal(factOf("○45312,45231").sym, ">");
 assert.equal(factOf("○0.5,0.45").sym, ">");
 assert.equal(factOf("○0.7,0.70").sym, "=");
+// Prime or composite: half each, within 100, answered P or C (an A or B answer), hitting for the number.
+{
+  const ps = pool("fourth").filter((f) => f.op === "P").map((f) => factOf(f.key));
+  assert.ok(ps.length >= 40 && ps.every((f) => f.n >= 2 && f.n <= 100 && "PC".includes(f.sym) && f.ans === f.n));
+  assert.equal(ps.filter((f) => f.sym === "P").length * 2, ps.length);
+  assert.equal(factOf("P91").sym, "C", "91 = 7 × 13");
+  assert.equal(factOf("P97").sym, "P");
+}
+// Money with a decimal point: dollars then two-digit cents ($4.05), keys of their own ("D…"), so
+// no Mines dollar fact ("$20,5,1") changes.
+{
+  const m = factOf("D3.25+1.40");
+  assert.deepEqual(m.slots, [4, 65]);
+  assert.equal(m.ans, 465);
+  assert.equal(fourthLine(m, String).join(""), "$3.25 + $1.40 = $4.65");
+  assert.equal(fourthLine(factOf("D5.00-0.95"), String).join(""), "$5.00 − $0.95 = $4.05");
+  assert.deepEqual(factOf("D5.00-0.95").slotDigits, [0, 2], "cents typed as two digits");
+  assert.equal(factOf("D7.09:c").ans, 709);
+  assert.ok(pool("fourth").filter((f) => f.op === "D").every((f) => f.key[0] === "D"));
+  const { pool: p2 } = await import("../js/learn.js");
+  assert.ok(p2("coins").filter((f) => f.key[0] === "$").every((f) => !f.key.includes(".")), "the Mines' dollar keys are untouched");
+}
 console.log("✓ 4th grade facts");

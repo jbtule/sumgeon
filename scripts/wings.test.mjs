@@ -8,7 +8,7 @@ const [cellar, hall, mines, tower, forge] = ["cellar", "hall", "mines", "tower",
 assert.deepEqual(WINGS.map((w) => w.id), ["cellar", "hall", "mines", "tower", "forge"]);
 assert.deepEqual(WINGS.map((w) => BANDS[w.band].grade), [0, 1, 2, 3, 4]);
 assert.deepEqual(WINGS.map((w) => w.after || null), [null, "cellar", "hall", "mines", "tower"], "each opens only the next");
-assert.deepEqual(forge.pool.concat([forge.boss]), ["Timesaur", "Divvy", "Boomainder", "Quarterjack", "Dotty", "Chompers", "Haberhasher", "Margot-Rythm", "Slimelipsis", "Polly-Gon", "Squaresquatch", "Tick-Tockus", "The Denominator"], "the Forge's three, and returning monsters visiting");
+assert.deepEqual(forge.pool.concat([forge.boss]), ["Timesaur", "Divvy", "Boomainder", "Quarterjack", "Dotty", "Chompers", "Haberhasher", "Margot-Rythm", "Slimelipsis", "Polly-Gon", "Squaresquatch", "Tick-Tockus", "Trollar", "The Denominator"], "the Forge's three, and returning monsters visiting");
 assert.equal(bandOf(forge, { n: "Slimelipsis" }), "patF", "Slimelipsis brings patterns from a rule");
 assert.equal(mines.name, "The Crystal Mines");
 // Each stratum's monsters, and what they ask there.

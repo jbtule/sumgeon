@@ -22,7 +22,7 @@ import { dollarFacts } from "./dollars.js";
 import { shapeFacts, squawkLine } from "./shapes.js";
 import { flashFacts, spokenFlash } from "./flash.js";
 import { traitOf } from "./traits.js";
-import { bigCompareFacts, roundFacts4, addSub4, times10s, timesOne, timesTwo, divideOne, remFacts, exprFacts, factorFacts, equivFacts4, fracCompare4, fracOpFacts, fracTimesFacts, decimalFacts, decCompareFacts, unitFacts, rect4Facts } from "./fourth.js";
+import { bigCompareFacts, roundFacts4, addSub4, times10s, timesOne, timesTwo, divideOne, remFacts, exprFacts, factorFacts, equivFacts4, fracCompare4, fracOpFacts, fracTimesFacts, decimalFacts, decCompareFacts, unitFacts, rect4Facts, primeFacts, moneyFacts } from "./fourth.js";
 import { angleFacts, shapeAngleFacts } from "./angles.js";
 import { QUIPS, FINALS, CRIT, TEAM_LINES, TEAM_NUMBERS, CAPTAIN_LINES, captainNames } from "./moments.js";
 import { fewest, ITEMS } from "./loot.js";
@@ -57,6 +57,8 @@ export var PHRASE = {
   nowNumerator: "Now the numerator!",
   // True or false (the Equal Twins): the two big keys, the first couple of times.
   tfHow: "Is it true? Tap True or False!",
+  // Prime or composite (4th grade), the first couple of times.
+  primeHow: "Only one rectangle? Prime! More than one? Composite!",
   // Drawing a shape (Polly-Gon), the first few times; and when a drawing can't be read twice,
   // a counting problem takes its place.
   drawHow: "Draw the shape with your finger, then tap Cast!",
@@ -354,7 +356,7 @@ export function achievementLine(a, k) { return cardLines(a)[k]; }
 
 // [{ kind, text }], each once.
 // The groups the listen check (review/listen/) plays lines in.
-export var GROUPS = ["Phrases", "Monsters & heroes", "Add & subtract", "Times & divide", "Missing numbers", "Which is more", "Coins", "Two-digit", "Three-digit", "Balance Hall", "Compare to 1000", "Three numbers", "Up to four numbers", "Arrays", "Time", "Patterns", "True or false", "Place value", "Dollars", "Number line", "Shapes", "Fractions", "Compare fractions", "Rounding", "Area & perimeter", "Dot flash", "Big numbers", "Big × and ÷", "Remainders", "Steps & factors", "Fraction work", "Decimals", "Angles & shapes", "Measurement", "Hero quips", "Team-ups", "Captain lines", "Boss forms", "Chests & items", "Money", "Shop", "Clothing", "Achievements"];
+export var GROUPS = ["Phrases", "Monsters & heroes", "Add & subtract", "Times & divide", "Missing numbers", "Which is more", "Coins", "Two-digit", "Three-digit", "Balance Hall", "Compare to 1000", "Three numbers", "Up to four numbers", "Arrays", "Time", "Patterns", "True or false", "Place value", "Dollars", "Number line", "Shapes", "Fractions", "Compare fractions", "Rounding", "Area & perimeter", "Dot flash", "Big numbers", "Big × and ÷", "Remainders", "Steps & factors", "Fraction work", "Decimals", "Angles & shapes", "Measurement", "Prime or composite", "Hero quips", "Team-ups", "Captain lines", "Boss forms", "Chests & items", "Money", "Shop", "Clothing", "Achievements"];
 
 // [{ kind, text, group, sprite? }], each once.
 export function spokenLines() {
@@ -462,7 +464,7 @@ export function spokenLines() {
   var turn = function (f) { return (f.op === "+" || f.op === "×") && f.x !== f.y ? [f, { op: f.op, x: f.y, y: f.x, ans: f.ans }] : [f]; };
   [[bigCompareFacts, "Big numbers"], [roundFacts4, "Rounding"], [addSub4, "Big numbers"], [times10s, "Big × and ÷"], [timesOne, "Big × and ÷"], [timesTwo, "Big × and ÷"], [divideOne, "Big × and ÷"],
     [remFacts, "Remainders"], [exprFacts, "Steps & factors"], [factorFacts, "Steps & factors"], [equivFacts4, "Fractions"], [fracCompare4, "Compare fractions"], [fracOpFacts, "Fraction work"],
-    [fracTimesFacts, "Fraction work"], [decimalFacts, "Decimals"], [decCompareFacts, "Decimals"], [angleFacts, "Angles & shapes"], [shapeAngleFacts, "Angles & shapes"], [rect4Facts, "Area & perimeter"], [unitFacts, "Measurement"]].forEach(function (set) {
+    [fracTimesFacts, "Fraction work"], [decimalFacts, "Decimals"], [decCompareFacts, "Decimals"], [angleFacts, "Angles & shapes"], [shapeAngleFacts, "Angles & shapes"], [rect4Facts, "Area & perimeter"], [unitFacts, "Measurement"], [primeFacts, "Prime or composite"], [moneyFacts, "Money"]].forEach(function (set) {
     set[0]().forEach(function (f) { turn(f).forEach(function (g) { add("q", spokenProblem(g), set[1]); add("q", spokenFact(g), set[1]); }); });
   });
   // Hero Moments (moments.js): every hero's quips, and the two for the big moments.
@@ -514,7 +516,7 @@ export function estSeconds(text) { return text.length / CHARS_PER_S + SPRITE_GAP
 // (runSprites).
 export var ALWAYS = ["phrases-start", "phrases-fight", "phrases-explain", "heroes", "quips", "captains", "bosses", "loot", "money", "depths", "shop", "change", "clothes", "achievements"];
 var slug = function (t) { return t.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, ""); };
-var KIND = { "+": "add", "-": "sub", "×": "mul", "÷": "div", "□": "bonds", "○": "cmp", "=": "bal", "¢": "coins", "M": "more", "/": "frac", "≈": "round", "▭": "rect", "Σ": "three", "▦": "arrays", "✓": "tf", "✎": "fix", "↔": "line", "#": "pv", "$": "dollars", "◇": "shapes", "⁙": "flash", "R": "rem", "E": "steps", "F": "factors", "ƒ": "fracops", "d": "dec", "u": "units", "∠": "angles" };
+var KIND = { "+": "add", "-": "sub", "×": "mul", "÷": "div", "□": "bonds", "○": "cmp", "=": "bal", "¢": "coins", "M": "more", "/": "frac", "≈": "round", "▭": "rect", "Σ": "three", "▦": "arrays", "✓": "tf", "✎": "fix", "↔": "line", "#": "pv", "$": "dollars", "◇": "shapes", "⁙": "flash", "R": "rem", "E": "steps", "F": "factors", "ƒ": "fracops", "d": "dec", "u": "units", "∠": "angles", "P": "prime", "D": "money4" };
 var memo = null;
 function index() {
   if (memo) return memo;

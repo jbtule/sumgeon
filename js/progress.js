@@ -2,6 +2,7 @@
 // changes nothing. Everything here is pure data from the saved records (learn.js: a fact record is
 // { b: box 0–4, n: seen, c: right, ms: average answer time, t: last seen }) and the stratum's
 // progress (wings.js); app.js draws it. No DOM: runs in Node for scripts/progress.test.mjs.
+import { fourthLine } from "./fourth.js";
 import { BANDS, pool, keyOf, factOf, learned, topBox, stepFacts, fluentTime, TIER_KNOWN, chaptersOf } from "./learn.js";
 import { WINGS, PATHS, stepsOpen, chapterOf, megasOf, MEGA_EVERY, OPEN_AT, learnedShare, legendShare, legendDue, legendBeaten, deepest } from "./wings.js";
 import { spokenFact } from "./problems.js";
@@ -50,6 +51,9 @@ export function factText(key) {
   else if (f.op === "$") text = said.replace(/\.$/, "");
   else if (f.op === "≈") text = `${f.n} ≈ ${a} (nearest ${f.to})`;
   // 4th grade's rectangles with a side to find, and angles and shapes (fourth.js, angles.js).
+  // 4th grade's lines with their answers in place: "29 ÷ 4 = 7 R 1", "$3.25 + $1.40 = $4.65".
+  else if (f.parts && f.op !== "∠") text = fourthLine(f, String).join("");
+  else if (f.op === "P") text = `${f.n} is ${f.sym === "P" ? "prime" : "composite"}`;
   else if (f.op === "▭" && (f.kind === "s" || f.kind === "q")) text = `${f.kind === "s" ? "Area " + f.area : "Perimeter " + f.per}, sides ${f.h} and ${a}`;
   else if (f.op === "∠" && f.name) text = `${fill(f.q, a)} (${f.name})`;
   else if (f.op === "▭") text = `${f.kind === "a" ? "Area" : "Perimeter"} of ${f.w} by ${f.h} = ${a}`;
@@ -198,7 +202,7 @@ export function kindOf(key) {
   if (op === "¢" || op === "$") return "coins";
   if (op === "/" || op === "↔") return "fractions";
   if (op === "○" && key.includes("/")) return "fractions";
-  return { "□": "missing", "M": "more", "○": "compare", "=": "balance", "✓": "truefalse", "✎": "truefalse", "Σ": "sums", "▦": "arrays", "⌚": "time", "…": "patterns", "◐": "oddeven", "#": "placevalue", "◇": "shapes", "⁙": "dots", "≈": "rounding", "▭": "area", "R": "remainders", "E": "steps", "F": "steps", "ƒ": "fracops", "d": "decimals", "∠": "angles", "u": "units" }[op] || "other";
+  return { "□": "missing", "M": "more", "○": "compare", "=": "balance", "✓": "truefalse", "✎": "truefalse", "Σ": "sums", "▦": "arrays", "⌚": "time", "…": "patterns", "◐": "oddeven", "#": "placevalue", "◇": "shapes", "⁙": "dots", "≈": "rounding", "▭": "area", "R": "remainders", "E": "steps", "F": "steps", "ƒ": "fracops", "d": "decimals", "∠": "angles", "u": "units", "P": "primes", "D": "coins" }[op] || "other";
 }
 export const KIND_NAMES = {
   dots: "Dot flash", more: "Which is more", missing: "Missing numbers", teens: "Teen facts (13 + 4)", compare: "Comparing", balance: "Balancing (equal sign)",
@@ -206,7 +210,7 @@ export const KIND_NAMES = {
   coins: "Coins and money", time: "Telling time", patterns: "Counting patterns", oddeven: "Odd and even", arrays: "Arrays", shapes: "Shapes",
   tens: "× tens", big: "÷ past 12", rounding: "Rounding", fractions: "Fractions", area: "Area and perimeter",
   million: "+ and − to a million", mul4: "Multi-digit ×", div4: "Multi-digit ÷", remainders: "Remainders", steps: "Multi-step and factors", fracops: "Adding and multiplying fractions",
-  decimals: "Decimals", angles: "Angles and shapes", units: "Measurement", other: "Other"
+  decimals: "Decimals", primes: "Prime or composite", angles: "Angles and shapes", units: "Measurement", other: "Other"
 };
 // The other kinds the open strata ask, in the order they first come up: { id, name, keys, total,
 // seen, learned, mastered } (learned counts box 3 and 4).

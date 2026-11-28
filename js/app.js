@@ -470,6 +470,7 @@ function probUI() {
   else if (p.op === "◐") box.innerHTML = oddEvenSvg(p, { hint: G.hinted, perRow: p.nums.length <= 6 ? p.nums.length : 4 }) + `<span class="find">${p.ask === "even" ? "Even" : "Odd"} numbers = ${BLANK}</span>`;
   // 4th grade's (fourth.js, angles.js): a line of parts with the answer's □ (or two slots: a
   // remainder, a mixed number) in place, fractions stacked; an angle or a shape drawn over it.
+  else if (p.op === "P") box.innerHTML = `<span class="pnum">${p.n}</span><span class="tfask">Prime or composite?</span>`;
   else if (p.parts) box.innerHTML = (p.op === "∠" ? angleSvg(p, { hint: G.hinted }) : "") + `<span class="${p.op === "∠" ? "find " : ""}fline${p.parts.join("").length > 15 ? " wide4" : ""}">${partsHTML(p)}</span>`;
   // A comparison: each side in its own box, so Chompers can eat the bigger one (chompAct).
   // Fractions (the Tower) stacked, as the Tower shows them: 3/8 ○ 5/8. Big numbers (the Forge)
@@ -504,11 +505,11 @@ function probUI() {
   else if ("+-×÷".includes(p.op) && Math.max(p.x, p.y, p.ans) >= 1000) box.innerHTML = `<span class="wide3 wide4">${esc(bigText(p.q))} =</span>`;
   else if ((p.op === "+" || p.op === "-") && Math.max(p.x, p.y) >= 100) box.innerHTML = `<span class="wide3">${esc(p.q)} =</span>`;
   else box.textContent = p.q + " =";
-  document.querySelector(".game").classList.toggle("missing", !!p.blank || !!p.sym || p.op === "=" || !!p.find || !!p.stacked || "/≈▭▦⌚…◐✓✎↔#$◇⁙REFƒdu∠".includes(p.op));
-  padUI(p.spell ? "spell" : p.draw ? "draw" : p.op === "✓" ? "tf" : p.sym ? "cmp" : "num");
+  document.querySelector(".game").classList.toggle("missing", !!p.blank || !!p.sym || p.op === "=" || !!p.find || !!p.stacked || "/≈▭▦⌚…◐✓✎↔#$◇⁙REFƒdu∠PD".includes(p.op));
+  padUI(p.spell ? "spell" : p.draw ? "draw" : p.op === "✓" ? "tf" : p.op === "P" ? "pc" : p.sym ? "cmp" : "num");
   requestAnimationFrame(fitLine);
   document.querySelector(".game").classList.toggle("cents", p.op === "¢" && !p.find);
-  document.querySelector(".game").classList.toggle("find", !!p.find || "▭▦⌚◐✓✎↔#$⁙∠".includes(p.op) || (p.op === "◇" && !p.draw));
+  document.querySelector(".game").classList.toggle("find", !!p.find || "▭▦⌚◐✓✎↔#$⁙∠P".includes(p.op) || (p.op === "◇" && !p.draw));
   document.querySelector(".game").classList.toggle("shape", p.op === "◇" && !p.draw);
   document.querySelector(".game").classList.toggle("stack", !!p.stacked);
   // A wide picture over its line (batch 2's): on phones the 🔊 and 💡 buttons stack beside it.
@@ -656,6 +657,7 @@ function shownFact(p, ans) {
   // Batch 2: "4 + 2 = 7 is False", fix it filled in ("4 + 2 = 6"), "3/4", "4 equal parts",
   // "34 tens and 3 ones = 343", "$26", "$11 and 37¢".
   if (p.op === "✓") return `${esc(p.q)} is ${b(p.sym === "T" ? "True" : "False")}`;
+  if (p.op === "P") return `${p.n} is ${b(p.sym === "P" ? "prime" : "composite")}`;
   if (p.op === "✎") return fixParts(p).map((x) => (x !== null ? esc(x) : b(p.ans))).join("");
   if (p.op === "↔") return p.kind === "parts" ? `${b(p.d)} equal parts` : `${b(p.n)}/${p.d}`;
   if (p.op === "#") return pvLine(p).map((x) => (x !== null ? esc(x) : b(p.ans))).join("");
@@ -943,13 +945,14 @@ function presentProblem(key, flipped, restored, elapsed) {
   // shapes ("Draw a triangle!", "How many sides?").
   // The dot flash: "How many dots?", and the first time "Look quick! How many dots?".
   if (G.cur.op === "⁙" && once("flash")) say("p", PHRASE.flashHow, false, asked(G.cur));
-  else if ("¢○⌚…◐✓✎↔#$◇⁙∠".includes(G.cur.op) || G.cur.op === "more") say("q", spokenProblem(G.cur), false, asked(G.cur));
+  else if ("¢○⌚…◐✓✎↔#$◇⁙∠PD".includes(G.cur.op) || G.cur.op === "more") say("q", spokenProblem(G.cur), false, asked(G.cur));
   // Pipsqueak's dice: "How many dots in all?", and the first 2 times how.
   if (G.cur.dice) { if (once("dice", 2)) say("p", PHRASE.diceHow, false, asked(G.cur)); say("p", PHRASE.diceAll, false, asked(G.cur)); }
   // Drawing a shape: how, the first few times.
   if (G.cur.draw) { setMsg(`Draw ${article(G.cur.shape)}${G.cur.shape}!`, "good"); if (once("draw", 3)) say("p", PHRASE.drawHow, false, asked(G.cur)); }
   // The first true or false problems: how the two big keys work.
   if (G.cur.op === "✓" && once("truefalse", 2)) say("p", PHRASE.tfHow, false, asked(G.cur));
+  if (G.cur.op === "P" && once("prime", 2)) say("p", PHRASE.primeHow, false, asked(G.cur));
   // The first comparison: how the < = > keys work.
   if (G.cur.op === "○" && once("compare")) { say("p", PHRASE.cmpHow, false, asked(G.cur)); say("p", PHRASE.cmpSame, false, asked(G.cur)); }
   // Typed ones first (a stacked problem, or across on Margot-Rythm's floor): the cursor blinks in the
@@ -1254,7 +1257,7 @@ function submit() {
   if (G.cur.op === "✓") { G.tfDone = true; probUI(); }
   // A comparison's answer is its symbol (<, = or >); everything else is a number.
   // A drawn shape was judged as it was cast (castShape).
-  const right = G.cur.draw ? G.drawn === "right" : G.cur.slots ? G.slot.vals.every((v, i) => v !== "" && Number(v) === G.cur.slots[i]) : G.cur.sym ? G.input === G.cur.sym : Number(G.input) === G.cur.ans;
+  const right = G.cur.draw ? G.drawn === "right" : G.cur.slots ? G.slot.vals.every((v, i) => v !== "" && Number(v) === G.cur.slots[i] && (!G.cur.slotDigits || !G.cur.slotDigits[i] || v.length === G.cur.slotDigits[i])) : G.cur.sym ? G.input === G.cur.sym : Number(G.input) === G.cur.ans;
   if (right && G.fix) { G.fix.done = true; probUI(); ansUI(); }
   if (right) {
     G.busy = true; G.solved++;
@@ -3814,7 +3817,7 @@ function press(k) {
   }
   if (G.cur && G.cur.slots && G.slot) return slotPress(k);
   // True or false: a tap answers at once, after a brief press on the key (no Hit!, no delete).
-  if (G.cur && G.cur.op === "✓") return tfPress(k);
+  if (G.cur && (G.cur.op === "✓" || G.cur.op === "P")) return tfPress(k);
   if (G.fix && !G.fix.swapped && k !== "go") fixSwap();
   if (k === "go") return submit();
   const cmp = !!(G.cur && G.cur.sym), sym = "<=>".includes(k);
@@ -3834,7 +3837,7 @@ function press(k) {
 // more taps, then it's answered.
 const TF_PRESS_MS = 160;
 function tfPress(k) {
-  if (k !== "T" && k !== "F") return;
+  if (!(G.cur.op === "P" ? "PC" : "TF").includes(k) || k.length !== 1) return;
   sfx.tick();
   G.input = k; G.busy = true;
   const pad = $("pad"), key = pad.querySelector(`[data-k="${k}"]`);
@@ -4136,9 +4139,16 @@ const KEY_LABEL = { del: [DEL_ICON, "Delete"], go: ["Hit!", "Attack"], "<": ["<"
 function padUI(mode) {
   const pad = $("pad"), cmp = mode === "cmp", drawn = mode === "spell" || mode === "draw";
   if (pad.dataset.mode === mode) { if (drawn) sigilReset(); return; }
-  pad.dataset.mode = mode; pad.classList.toggle("cmp", cmp); pad.classList.toggle("spell", drawn); pad.classList.toggle("tfpad", mode === "tf");
+  pad.dataset.mode = mode; pad.classList.toggle("cmp", cmp); pad.classList.toggle("spell", drawn); pad.classList.toggle("tfpad", mode === "tf"); pad.classList.toggle("pcpad", mode === "pc");
   if (mode === "tf") {
     pad.innerHTML = `<button type="button" data-k="T" class="tfk yes" aria-label="True"><b>✓</b>True</button><button type="button" data-k="F" class="tfk no" aria-label="False"><b>✗</b>False</button>`;
+    return;
+  }
+  // Prime or composite (4th grade): the same two big keys, an A or B answer. Prime's mark is one
+  // long row (one rectangle), Composite's a grid (more than one).
+  if (mode === "pc") {
+    pad.classList.add("tfpad");
+    pad.innerHTML = `<button type="button" data-k="P" class="tfk yes" aria-label="Prime"><b>▬</b>Prime</button><button type="button" data-k="C" class="tfk no" aria-label="Composite"><b>▦</b>Composite</button>`;
     return;
   }
   if (drawn) {
@@ -4174,6 +4184,8 @@ document.addEventListener("keydown", (e) => {
   else if (e.key === "Enter") { e.preventDefault(); press("go"); }
   // True or false on a keyboard: T and F.
   else if (/^[tf]$/i.test(e.key)) { if (G.cur && G.cur.op === "✓") press(e.key.toUpperCase()); }
+  // Prime or composite: P or C.
+  else if (/^[pc]$/i.test(e.key)) { if (G.cur && G.cur.op === "P") press(e.key.toUpperCase()); }
   // ":" after the hour moves on to the minutes, as on a clock.
   else if (e.key === ":") { if (G.cur && G.slot && G.slot.at === 0) press("go"); }
   // R after the quotient moves on to the remainder (29 ÷ 4 = 7 R 1), as it's written.

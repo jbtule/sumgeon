@@ -22,7 +22,8 @@ import { shapeFacts, shapeFactOf, SHAPE_STRANDS, isDrawKey } from "./shapes.js";
 import { flashFacts, flashFactOf, FLASH_LEVELS } from "./flash.js";
 import { asks as asksOf } from "./traits.js";
 import { bigCompareFacts, roundFacts4, addSub4, times10s, timesOne, timesTwo, divideOne, remFacts, remFactOf, exprFacts, exprFact, factorFacts, factorFactOf,
-  equivFacts4, fracCompare4, fracOpFacts, fracTimesFacts, fracOpFact, decimalFacts, decFact, decCompareFacts, unitFacts, unitFact, rect4Facts } from "./fourth.js";
+  equivFacts4, fracCompare4, fracOpFacts, fracTimesFacts, fracOpFact, decimalFacts, decFact, decCompareFacts, unitFacts, unitFact, rect4Facts,
+  primeFacts, primeFactOf, moneyFacts, moneyFact } from "./fourth.js";
 import { angleFacts, shapeAngleFacts, angleFact } from "./angles.js";
 
 // One band per grade, K to 3rd (DESIGN.md §2, §4.1), each the facts of one stratum, with its
@@ -141,14 +142,14 @@ export const BANDS = {
   fourth: {
     label: "4th grade", grade: 4, hearts: 5, fluentMs: 8000,
     facts: () => bigCompareFacts().concat(roundFacts4(), addSub4(), times10s(), timesOne(), timesTwo(), divideOne(), remFacts(), exprFacts(), factorFacts(),
-      equivFacts4(), fracCompare4(), fracOpFacts(), fracTimesFacts(), decimalFacts(), decCompareFacts(), angleFacts(), shapeAngleFacts(), rect4Facts(), unitFacts()),
+      equivFacts4(), fracCompare4(), fracOpFacts(), fracTimesFacts(), decimalFacts(), decCompareFacts(), angleFacts(), shapeAngleFacts(), rect4Facts(), unitFacts(), primeFacts(), moneyFacts()),
     levels: [
       ["Compare to a million", "cmp1m"], ["Round to any place", "round4"], ["Add and subtract to a million", "addsub4"],
       ["× 10, 100 and 1000", "x10"], ["Multiply by one digit", "x1"], ["Two-digit × two-digit", "x2"],
-      ["Divide by one digit", "div1"], ["Remainders", "rem"], ["Multi-step and variables", "expr"], ["Factors and multiples", "factors"],
+      ["Divide by one digit", "div1"], ["Remainders", "rem"], ["Multi-step and variables", "expr"], ["Factors and multiples", "factors"], ["Prime or composite", "prime"],
       ["Equivalent fractions", "equiv4"], ["Compare fractions", "cmpfrac"], ["Add and subtract fractions", "fracops"], ["A fraction times a whole", "fractimes"],
       ["Tenths and hundredths", "dec"], ["Compare decimals", "cmpdec"],
-      ["Angles", "angles"], ["Classify shapes", "classify"], ["Area and perimeter", "rect4"], ["Measurement", "units"]
+      ["Angles", "angles"], ["Classify shapes", "classify"], ["Area and perimeter", "rect4"], ["Measurement", "units"], ["Money with a decimal point", "money4"]
     ].map(([name, set]) => ({ name, has: (f) => f.set === set }))
   },
   // Coins in the Cellar (K): find the coin, and what each is worth.
@@ -248,7 +249,7 @@ export function keyOf(f) {
 // A problem for a key, turned around half the time for + and ×.
 export function factOf(key, rnd) {
   const own = { "¢": coinFactOf, "○": balanceFactOf, "=": balanceFactOf, "□": hiddenFactOf, "M": moreFactOf, "/": fractionFactOf, "≈": roundFactOf, "▭": rectFactOf, "Σ": threeFactOf, "▦": arrayFactOf, "⌚": clockFactOf, "…": patternFactOf, "◐": oddEvenFactOf, "✓": tfFactOf, "✎": tfFactOf, "↔": lineFactOf, "#": pvFactOf, "$": dollarFactOf, "◇": shapeFactOf, "⁙": flashFactOf,
-    "R": remFactOf, "E": exprFact, "F": factorFactOf, "ƒ": fracOpFact, "d": decFact, "u": unitFact, "∠": angleFact }[key[0]];
+    "R": remFactOf, "E": exprFact, "F": factorFactOf, "ƒ": fracOpFact, "d": decFact, "u": unitFact, "∠": angleFact, "P": primeFactOf, "D": moneyFact }[key[0]];
   if (own) return own(key, rnd);
   const op = key[0], [a, b] = key.slice(1).split(",").map(Number);
   const flip = (op === "+" || op === "×") && (rnd || Math.random)() < 0.5;

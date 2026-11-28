@@ -352,6 +352,7 @@ _The fifth stratum, under the Tables Tower. Its curriculum follows the school's 
 | Remainders ★ | 29 ÷ 4 = □ R □ | **two slots**: the quotient, then the remainder | `R29,4` |
 | Multi-step and variables ★ | 6 × 4 + 5 = □; n − 15 = 27, n = □; 4 × n = 36 | typed | `E6×4+5`, `En-15=27` |
 | Factors and multiples | 72 = 8 × □; 96 = 4 × □ | typed | `F72,8` |
+| Prime or composite | 51: prime or composite? | **two big keys, Prime and Composite** (an A or B answer, like true or false) | `P51` |
 | Equivalent fractions ★ | 3/4 = □/8, 2/5 = □/10, 4/12 = □/3, 3/10 = □/100 | the hidden numerator, stacked | `/3,4,8` (3rd grade's keys, more denominators) |
 | Compare fractions ★ | 2/3 ○ 3/4, 5/8 ○ 1/2, 3/5 ○ 6/10 | < = > keys | `○2/3,3/4` (3rd grade's) |
 | Add and subtract fractions ★ | 3/8 + 2/8 = □/8; 7/10 − 4/10; 5/8 = 1/8 + 2/8 + □/8; 2 1/8 + 3/8 = □ □/8; 3 1/3 + 2 2/3 = □ □/3 | the numerator; a mixed number in **two slots** (the whole, then the numerator) | `ƒ3/8+2/8`, `ƒ2 1/8+3/8` |
@@ -362,6 +363,7 @@ _The fifth stratum, under the Tables Tower. Its curriculum follows the school's 
 | Classify shapes ★ | How many right angles? How many pairs of parallel sides? How many lines of symmetry? (a drawn shape) | typed | `∠R:trap`, `∠P:para`, `∠S:rect` |
 | Area and perimeter ★ | a 12 by 7 rectangle's area; a perimeter; Area = 48, one side 6, the other □ | typed | `▭a12,7`, `▭p15,8`, `▭s48,6`, `▭q30,6` |
 | Measurement ★ | 3 ft = □ in; 4 hr = □ min; 5 kg = □ g; 3 gal = □ qt; 2 m = □ cm; $4 = □¢ | typed | `u3ft:in` |
+| Money with a decimal point ★ (4.GM.C.7) | $3.25 + $1.40 = $□.□□; $5.00 − $3.25 (change); $7.09 = □¢ | two slots, dollars then two-digit cents | `D3.25+1.40`, `D5.00-3.25`, `D7.09:c` |
 
 **The earlier plan against the guide.** §4.1's first row for the Forge was written before the school's 4th grade guide; the guide decides the order now, and the names (the Forge, Quarterjack, Dotty, Boomainder, The Denominator) and §7's answer ideas stay:
 
@@ -407,7 +409,7 @@ What changed: the order follows the guide's units; four priority standards the r
 - Multi-step: one step at a time ("First 6 × 4 = 24. Then 24 + 5 = ?"); a variable as its inverse ("n − 15 = 27: 27 + 15 = ?").
 - Factors: the area model with a missing side, "8 × □ = 72: how many 8s make 72?".
 
-**The path** (★ priority; the guide's unit order; 4 chapters of 4 new steps, a mega boss every 5 depths opening the next):
+**The path** (★ priority; the guide's unit order; 5 chapters of 3 or 4 new steps, a mega boss every 5 depths opening the next):
 
 | Chapter | Step | Levels | Monsters |
 |---|---|---|---|
@@ -419,18 +421,20 @@ What changed: the order follows the guide's units; four priority standards the r
 | 2 | ★ Two-digit × two-digit | that level | Timesaur |
 | 2 | ★ Divide by one digit | that level | **Boomainder**, Divvy |
 | 2 | ★ Remainders | that level | **Boomainder** |
-| 2 | ★ Multi-step problems and factors | Multi-step and variables, Factors and multiples | Divvy, Timesaur |
-| 2 | Patterns from a rule (Slimelipsis's strand, `patF`) | "Add 6": 3, 9, 15, 21, □ | Slimelipsis |
+| 2 | ★ Multi-step problems | Multi-step and variables | Divvy, Timesaur |
+| 2 | Patterns from a rule (Slimelipsis's strand, `patF`; ongoing) | "Add 6": 3, 9, 15, 21, □ | Slimelipsis |
+| 3 | Factors, prime or composite | Factors and multiples, Prime or composite | Squaresquatch, Divvy |
 | 3 | ★ Equivalent fractions | that level | **Quarterjack** |
 | 3 | ★ Compare fractions | that level | **Quarterjack**, Chompers |
 | 3 | ★ Add and subtract fractions | that level | **Quarterjack** |
-| 3 | ★ A fraction times a whole | that level | **Quarterjack** |
+| 4 | ★ A fraction times a whole | that level | **Quarterjack** |
 | 4 | Decimals | Tenths and hundredths, Compare decimals | **Dotty**, Chompers |
 | 4 | ★ Angles and shapes | Angles, Classify shapes | Polly-Gon |
-| 4 | ★ Area and perimeter | that level | Squaresquatch |
-| 4 | ★ Measurement | that level | Tick-Tockus |
+| 5 | ★ Area and perimeter | that level | Squaresquatch |
+| 5 | ★ Measurement | that level | Tick-Tockus |
+| 5 | ★ Money with a decimal point | that level | Trollar |
 
-- Factors and multiples aren't a priority standard but share the algebraic-thinking unit with the multi-step problems, so they're one step.
+- Factors and multiples, and prime or composite, aren't priority standards, so they're a step of their own after the multi-step problems.
 - Patterns from a rule is Slimelipsis's strand, so it never holds up the Legend.
 - **Band levels vs strands:** everything the guide's priority standards cover is in the band, so it counts toward the Legend (and toward opening a 5th grade stratum, once there is one); patterns, being one monster's kind, are a strand, as in the Cellar, the Hall and the Mines. Comparing and decimals stay in the band (Chompers asks the band's < = > here, as in the Tower).
 
@@ -454,14 +458,14 @@ What changed: the order follows the guide's units; four priority standards the r
 
 **Achievements and clothing.** *Fraction Forge* **Champion** (beat the mega boss that opens the Forge's last chapter) with the Forge's champion badge (an ember-orange rosette with a ¼ emblem), and *Fraction Forge* **Legend** with its golden Legend crown, its band in the Forge's color. Champion of Champions and Legend of Legends count every stratum, the Forge too (an earned one stays earned). Mastery (secret): **Multiplier** (every × by one digit and two digits mastered), **Remainder Ranger** (remainders), **Fraction Smith** (adding, subtracting and times a whole), **Angle Ace** (angles and shapes), **Unit Converter** (measurement).
 
+**Added after the plan (the user's call, 2026-11-27):** prime or composite, as an A or B answer like true or false (two big keys, Prime and Composite; Squaresquatch asks it, its rectangles of squares the hint), in a step with factors (not a priority standard); and money with a decimal point (★ 4.GM.C.7, the four operations with money), typed as dollars and cents in two slots around the printed point, Trollar's. With them the path is 5 chapters.
+
 **Left out, and why:**
 - **Data** (frequency tables, line plots, bar and picture graphs, mode and range): reading a graph doesn't fit a quick typed answer in a fight; maybe a picture-graph kind later.
 - **Points, lines, segments and rays; naming parallel and perpendicular lines**: naming a figure is multiple choice by nature. Counting right angles and parallel sides in a shape is in.
 - **Measuring an angle to the nearest degree**: the protractor is read to the nearest 10° on a phone-sized drawing; single degrees would need a bigger picture.
 - **Word problems, and interpreting remainders in context** ("29 kids, 4 to a car: how many cars?"): long text to read, and the voice would carry most of it. The remainder itself is in.
-- **Prime or composite**: a yes or no.
 - **Reading and writing numbers in word form**: reading, not math typed on a pad.
-- **Money with a decimal point** ($3.25): waits for the **.** key in 5th grade. Money as cents ($4 = 400¢) is in Measurement.
 - **Multiplicative comparison** ("3 times as many"): word problems; the facts themselves are the multiplication levels.
 
 ## 5. The learning engine (how the game teaches)

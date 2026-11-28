@@ -43,7 +43,7 @@ export const WINGS = [
   // angles and shapes, Tick-Tockus its measurement, Squaresquatch its area and perimeter, Chompers
   // its < = > (big numbers, fractions, decimals), Margot-Rythm adding and subtracting to a million.
   { id: "forge", name: "The Fraction Forge", band: "fourth", after: "tower", strands: { Slimelipsis: "patF" },
-    pool: ["Timesaur", "Divvy", "Boomainder", "Quarterjack", "Dotty", "Chompers", "Haberhasher", "Margot-Rythm", "Slimelipsis", "Polly-Gon", "Squaresquatch", "Tick-Tockus"], floors: ["Timesaur", "Boomainder", "rescue", "Quarterjack", "Dotty"], boss: "The Denominator" }
+    pool: ["Timesaur", "Divvy", "Boomainder", "Quarterjack", "Dotty", "Chompers", "Haberhasher", "Margot-Rythm", "Slimelipsis", "Polly-Gon", "Squaresquatch", "Tick-Tockus", "Trollar"], floors: ["Timesaur", "Boomainder", "rescue", "Quarterjack", "Dotty"], boss: "The Denominator" }
 ];
 /* ---------- paths (DESIGN.md §4.3) ----------
    Each stratum's single path of steps, in its grade's teaching order (the school's i-Ready guides).
@@ -127,7 +127,7 @@ export const PATHS = {
   // units: base ten (numbers to a million, adding and subtracting, multiplying, dividing),
   // algebraic thinking (multi-step problems, factors, patterns), fractions (equivalent, compared,
   // added and subtracted, times a whole, decimals), then geometry and measurement. ★ is the guide's
-  // priority standards. Four chapters of four new steps.
+  // priority standards. Five chapters of three or four new steps.
   forge: [
     step("Review: × and ÷", [["third", "× 0, 1, 2, 5 and 10"], ["third", "× 3, 4 and 6"], ["third", "× 7, 8 and 9"], ["third", "÷ 1, 2, 5 and 10"], ["third", "÷ 3, 4 and 6"], ["third", "÷ 7, 8 and 9"]], ["Timesaur", "Divvy"], 1, { review: true }),
     step("Place value to a million", [["fourth", "Compare to a million"], ["fourth", "Round to any place"]], ["Chompers", "Haberhasher"], 1),
@@ -141,15 +141,21 @@ export const PATHS = {
     step("Patterns from a rule", [["patF", "Patterns from a rule"]], ["Slimelipsis"], 2, { ongoing: true }),
     // Multi-step problems (4.RA.A.2, ★) share the algebraic-thinking unit with factors and
     // multiples (not a priority), so they're one step.
-    step("Multi-step problems and factors", [["fourth", "Multi-step and variables"], ["fourth", "Factors and multiples"]], ["Divvy", "Timesaur"], 2, P),
+    // Multi-step problems (4.RA.A.2, ★); then factors and multiples and prime or composite (4.RA.B,
+    // not priority standards), as the guide's algebraic-thinking unit goes on. Squaresquatch asks
+    // prime or composite: a number's squares make one rectangle, or more.
+    step("Multi-step problems", [["fourth", "Multi-step and variables"]], ["Divvy", "Timesaur"], 2, P),
+    step("Factors, prime or composite", [["fourth", "Factors and multiples"], ["fourth", "Prime or composite"]], ["Squaresquatch", "Divvy"], 3),
     step("Equivalent fractions", [["fourth", "Equivalent fractions"]], ["Quarterjack"], 3, P),
     step("Compare fractions", [["fourth", "Compare fractions"]], ["Quarterjack", "Chompers"], 3, P),
     step("Add and subtract fractions", [["fourth", "Add and subtract fractions"]], ["Quarterjack"], 3, P),
-    step("A fraction times a whole", [["fourth", "A fraction times a whole"]], ["Quarterjack"], 3, P),
+    step("A fraction times a whole", [["fourth", "A fraction times a whole"]], ["Quarterjack"], 4, P),
     step("Decimals", [["fourth", "Tenths and hundredths"], ["fourth", "Compare decimals"]], ["Dotty", "Chompers"], 4),
     step("Angles and shapes", [["fourth", "Angles"], ["fourth", "Classify shapes"]], ["Polly-Gon"], 4, P),
-    step("Area and perimeter", [["fourth", "Area and perimeter"]], ["Squaresquatch"], 4, P),
-    step("Measurement", [["fourth", "Measurement"]], ["Tick-Tockus"], 4, P)
+    step("Area and perimeter", [["fourth", "Area and perimeter"]], ["Squaresquatch"], 5, P),
+    step("Measurement", [["fourth", "Measurement"]], ["Tick-Tockus"], 5, P),
+    // Money with a decimal point (4.GM.C.7, ★: the four operations with money), Trollar's.
+    step("Money", [["fourth", "Money with a decimal point"]], ["Trollar"], 5, P)
   ]
 };
 // Level names to indexes ([band, index]), checked: a name that isn't a level is a mistake.

@@ -87,8 +87,12 @@ export function asks(m) {
   if (k === "Boomainder") return (op) => op === "÷" || op === "R";
   // True or false and fix it are the Equal Twins' (and Judo Judy's, who asks the Hall's whole mix).
   // Angles and shapes are Polly-Gon's, measurement Tick-Tockus's (the Forge's: see above).
-  if (k === "Quizard") return (op) => !"○Σ⌚…◐✓✎◇⁙∠u".includes(op);
-  return (op) => !"○=Σ⌚…◐✓✎◇⁙∠u".includes(op);
+  // Prime or composite is Squaresquatch's (its rectangles of squares), and money with a decimal
+  // point Trollar's.
+  if (k === "Trollar") return (op) => op === "¢" || op === "$" || op === "D";
+  if (k === "Squaresquatch") return (op) => op === "▦" || op === "▭" || op === "P";
+  if (k === "Quizard") return (op) => !"○Σ⌚…◐✓✎◇⁙∠uPD".includes(op);
+  return (op) => !"○=Σ⌚…◐✓✎◇⁙∠uPD".includes(op);
 }
 
 // A monster's trait, or null. Cursed digits have Lucky Number (DESIGN.md §6.6). A boss's forms

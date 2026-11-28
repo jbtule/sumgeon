@@ -5,7 +5,7 @@
 // grownups }, the drawing an SVG string; worked false never shows the answer.
 import { angleSvg, angleHint } from "./angles.js";
 import { rectSvg } from "./third.js";
-import { UNITS } from "./fourth.js";
+import { UNITS, factorPairs, moneyText4 } from "./fourth.js";
 
 const C = { a: "var(--gold)", b: "var(--coral)", line: "var(--hint-line)", ink: "var(--ink)", muted: "var(--muted)", empty: "var(--hint-empty)" };
 const SCALE = 1.5;
@@ -302,9 +302,74 @@ function rect4Hint(f, worked) {
   return { model, say: `Perimeter = length + width + length + width: ${f.w} + ${f.h} + ${f.w} + ${f.h} = ${end}`, grownups: "The perimeter formula: all four sides, P = l + w + l + w, or 2 × l + 2 × w." };
 }
 
+
+/* ---------- prime or composite (4.RA.B) ----------
+   Factor pairs as rectangles of the same area: n squares as 1 row of n, and every other way to make
+   equal rows. Before answering, only the 1 × n rectangle, and the question whether another can be
+   made (never "prime" or "composite"); worked, every rectangle, and which it is. */
+function primeHint(f, worked) {
+  const pairs = factorPairs(f.n), shown = worked ? pairs : pairs.slice(0, 1), k = 170 / f.n;
+  let s = "", y = 4;
+  for (const [a, b] of shown) {
+    const w = Math.max(4, b * k), h = Math.max(5, a * k);
+    s += `<rect x="6" y="${f1(y)}" width="${f1(w)}" height="${f1(h)}" fill="${C.a}" fill-opacity=".3" stroke="${C.a}" stroke-width="2"/>`;
+    s += txt(w + 14, y + h / 2 + 5, `${a} × ${b}`, 12, C.ink, "start");
+    y += h + 8;
+  }
+  if (!worked) { s += `<rect x="6" y="${f1(y)}" width="40" height="18" fill="none" stroke="${C.b}" stroke-width="2" stroke-dasharray="4 3"/>` + txt(26, y + 14, "?", 13, C.b); y += 26; }
+  const ds = [2, 3, 5, 7].filter((d) => d < f.n), smalls = ds.length > 1 ? ds.slice(0, -1).join(", ") + " or " + ds[ds.length - 1] : ds.join("");
+  const say = worked
+    ? (f.sym === "P" ? `${f.n} is only 1 × ${f.n}: one rectangle. ${f.n} is prime.` : `${f.n} is ${pairs.slice(1).map(([a, b]) => `${a} × ${b}`).join(", ")} too: more than one rectangle. ${f.n} is composite.`)
+    : `1 × ${f.n} makes one rectangle. Can ${smalls || "another number"} make equal rows too?`;
+  return { model: svg(250, Math.max(y, 30), s, `factor pairs of ${f.n} as rectangles`), say,
+    grownups: "Prime or composite: a prime number has exactly two factors, 1 and itself, so its squares make only one rectangle (1 row). A composite number has more factor pairs, so it makes more than one rectangle. 1 is neither." };
+}
+
+/* ---------- money with a decimal point (4.GM.C.7) ----------
+   Count on, as with the Mines' dollars: from the first amount, the dollars, then the cents (hops on
+   an open line). Making change counts up from the price to the next dollar, then to what was paid.
+   Before answering the last stop is "?"; worked, every stop. */
+const M = (c) => moneyText4(c);
+const C$ = (c) => (c >= 100 ? M(c) : c + "¢");
+function moneyHint(f, worked) {
+  const why = "Money with a decimal point: dollars before the point, cents after it, and 100 cents make a dollar. Kids count on from the biggest amount, the dollars first, then the cents; for change they count up from the price to the next dollar, then to what was paid.";
+  if (f.kind === "cents") {
+    const d = Math.floor(f.a / 100), k = f.a % 100;
+    return { model: svg(200, 40, txt(100, 26, `${M(f.a)} = ${worked ? f.ans : "□"}¢`, 18, C.a), "dollars as cents"),
+      say: `$1 is 100¢, so $${d} is ${d * 100}¢. ${d * 100} + ${k} = ${worked ? f.ans : "?"}`, grownups: why };
+  }
+  let stops, labels;
+  if (f.kind === "change" && f.a % 100 === 0) {
+    const next = Math.ceil(f.b / 100) * 100;
+    stops = [f.b, next, f.a].filter((v, i, a) => i === 0 || v !== a[i - 1]);
+    labels = stops.slice(1).map((v, i) => "+" + C$(v - stops[i]));
+  } else if (f.kind === "change") {
+    const mid = f.a - Math.floor(f.b / 100) * 100;
+    stops = [f.a, mid, f.ans]; labels = ["−" + C$(Math.floor(f.b / 100) * 100), "−" + C$(f.b % 100)];
+  } else {
+    const mid = f.a + Math.floor(f.b / 100) * 100;
+    stops = [f.a, mid, f.ans]; labels = ["+" + C$(Math.floor(f.b / 100) * 100), "+" + C$(f.b % 100)];
+  }
+  const n = stops.length, W = 230, x = (i) => 20 + i * (W - 40) / (n - 1);
+  let s = `<line x1="10" y1="40" x2="${W - 10}" y2="40" stroke="${C.line}" stroke-width="3" stroke-linecap="round"/>`;
+  stops.forEach((v, i) => {
+    const last = i === n - 1, t = last && !worked ? "?" : M(v);
+    s += `<circle cx="${f1(x(i))}" cy="40" r="4.5" fill="${last ? C.b : C.a}"/>` + txt(x(i), 62, t, 12, last ? C.b : C.ink);
+    if (i) s += `<path d="M${f1(x(i - 1) + 6)} 34 Q${f1((x(i - 1) + x(i)) / 2)} 6 ${f1(x(i) - 6)} 34" fill="none" stroke="${C.a}" stroke-width="2"/>` + txt((x(i - 1) + x(i)) / 2, 14, labels[i - 1], 11, C.a);
+  });
+  let say;
+  if (f.kind === "change" && f.a % 100 === 0) {
+    const parts = labels.map((l) => l.slice(1));
+    say = `Count up from ${M(f.b)}: ${stops.slice(1).map((v, i) => `${labels[i]} is ${M(v)}`).join(", ")}. ${parts.join(" and ")} is ${worked ? M(f.ans) : "?"}`;
+  } else {
+    say = `Start at ${M(f.a)}. ${labels[0]} is ${M(stops[1])}. ${labels[1]} is ${worked ? M(f.ans) : "?"}`;
+  }
+  return { model: svg(W, 70, s, "counting on with money"), say, grownups: why };
+}
+
 /* ---------- which of 4th grade's facts this module hints ---------- */
 export function isFourthHint(f) {
-  if ("REFƒdu∠".includes(f.op)) return true;
+  if ("REFƒdu∠PD".includes(f.op)) return true;
   if (f.op === "○") return !!(f.big || f.dec || (f.frac && f.frac === "eq" && f.sym !== "=" && !(f.l === "2/4" || f.r === "2/4")) || (f.frac && /\/(5|9|10|12)\b/.test(f.l + "," + f.r)));
   if (f.op === "/") return [5, 9, 10, 12, 100].includes(f.d) || [5, 9, 10, 12, 100].includes(f.b);
   if (f.op === "▭") return f.kind === "s" || f.kind === "q" || Math.max(f.w, f.h) > 9;
@@ -317,6 +382,8 @@ export function isFourthHint(f) {
 export function fourthHint(f, worked) {
   if (f.op === "∠") { const h = angleHint(f, worked); return { model: fitted(angleSvg(f, { hint: true, worked }), 120, "the hint, drawn on the picture"), say: h.say, grownups: h.grownups }; }
   if (f.op === "R") return remHint(f, worked);
+  if (f.op === "P") return primeHint(f, worked);
+  if (f.op === "D") return moneyHint(f, worked);
   if (f.op === "E") return exprHint(f, worked);
   if (f.op === "F") return factorHint(f, worked);
   if (f.op === "ƒ") return fracOpHint(f, worked);

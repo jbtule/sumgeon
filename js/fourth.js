@@ -356,6 +356,8 @@ const OPW = { "+": "plus", "-": "minus", "×": "times", "÷": "divided by" };
 // "two and one eighth", "three eighths".
 const fracWords = (t) => { const { w, n, d } = typeof t === "string" ? readMixed(t) : t; return (w ? spoken(w) + " and " : "") + fractionWords(n, d, spoken); };
 export function spokenFourth(p) {
+  if (p.op === "P") return spokenPrime(p);
+  if (p.op === "D") return spokenMoney4(p);
   if (p.op === "R") return `${cap(spoken(p.x))} divided by ${spoken(p.y)} is what, remainder what?`;
   if (p.op === "E" && p.kind === "n") return p.vop === "×" ? `${cap(spoken(p.a))} times n equals ${spoken(p.b)}. What is n?` : `n ${OPW[p.vop]} ${spoken(p.a)} equals ${spoken(p.b)}. What is n?`;
   if (p.op === "E") return `${spoken(p.a)} ${OPW[p.o1]} ${spoken(p.b)}, ${OPW[p.o2]} ${spoken(p.c)}`;
@@ -375,6 +377,8 @@ export function spokenFourth(p) {
 }
 const CMPW = { "<": "is less than", ">": "is greater than", "=": "is equal to" };
 export function spokenFourthAnswer(p) {
+  if (p.op === "P") return spokenPrimeAnswer(p);
+  if (p.op === "D") return spokenMoney4Answer(p);
   if (p.op === "R") return `${cap(spoken(p.x))} divided by ${spoken(p.y)} is ${spoken(p.quo)}, remainder ${spoken(p.rem)}.`;
   if (p.op === "E" && p.kind === "n") return `n is ${spoken(p.ans)}.`;
   if (p.op === "E") return `${spokenFourth(p)}, is ${spoken(p.ans)}`;
@@ -395,5 +399,73 @@ export function spokenFourthAnswer(p) {
 // What the Oops card and a miss show, with the answer in place: "29 ÷ 4 = 7 R 1", "2 1/8 + 3/8 = 2 4/8".
 export function fourthLine(p, fill) {
   let k = 0;
-  return p.parts.map((x) => (x !== null ? x : fill(p.slots ? p.slots[k++] : p.ans)));
+  // (Money's cents are always two digits: 4.05 dollars.)
+  return p.parts.map((x) => { if (x !== null) return x; const i = k++, v = p.slots ? p.slots[i] : p.ans; return fill(p.slotDigits && p.slotDigits[i] ? String(v).padStart(p.slotDigits[i], "0") : v); });
+}
+
+/* ---------- prime or composite (4.RA.B) ----------
+   A number within 100: is it prime (only 1 × itself) or composite (another factor pair too)? Two
+   big keys, Prime and Composite, in the pad's place, as the Equal Twins' true or false: an A or B
+   answer, not multiple choice. Its sym is "P" or "C" (as a comparison's); it hits for the number
+   itself. Key "P17". */
+export const factorPairs = (n) => { const out = []; for (let a = 1; a * a <= n; a++) if (n % a === 0) out.push([a, n / a]); return out; };
+export const isPrime = (n) => n > 1 && factorPairs(n).length === 1;
+export function primeFact(n) {
+  return { op: "P", n, sym: isPrime(n) ? "P" : "C", ans: n, q: String(n), key: "P" + n };
+}
+export const primeFactOf = (key) => primeFact(Number(key.slice(1)));
+// Half prime, half composite: the primes to 97, and composites with few factor pairs (odd ones like
+// 51 = 3 × 17 and 91 = 7 × 13, squares like 49), not only the even ones.
+export function primeFacts() {
+  const primes = [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97];
+  const comps = [4, 9, 15, 21, 25, 27, 33, 35, 39, 49, 51, 57, 63, 69, 77, 81, 85, 87, 91, 93, 95, 12, 18, 24, 36];
+  return primes.concat(comps).map((n) => tag(primeFact(n), "prime"));
+}
+export const spokenPrime = (p) => "Is " + spoken(p.n) + " prime or composite?";
+export const spokenPrimeAnswer = (p) => cap(spoken(p.n)) + " is " + (p.sym === "P" ? "prime." : "composite.");
+
+/* ---------- money with a decimal point (4.GM.C.7) ----------
+   Dollars and cents written with the point (3.25 dollars), and the four operations with money:
+   adding two amounts, taking away and making change, and an amount in cents. The answer is typed
+   in two slots, the dollars then the cents, the cents always two digits (5 cents is 05), or as
+   cents. It hits for its value in cents. Keys "D3.25+1.40", "D5.00-3.25", "D3.25:c". The Mines'
+   dollars (keys starting with the dollar sign) are unchanged. */
+const DOLLAR = String.fromCharCode(36);
+export const moneyText4 = (c) => DOLLAR + Math.floor(c / 100) + "." + String(c % 100).padStart(2, "0");
+const centsOf = (t) => Math.round(Number(t) * 100);
+export function moneyFact(key) {
+  const t = key.slice(1);
+  if (t.endsWith(":c")) {
+    const c = centsOf(t.slice(0, -2));
+    return { op: "D", kind: "cents", a: c, ans: c, q: moneyText4(c) + " = □¢", parts: [moneyText4(c) + " = ", null, "¢"], key };
+  }
+  const m = t.match(/^([\d.]+)([+-])([\d.]+)$/), a = centsOf(m[1]), b = centsOf(m[3]), sub = m[2] === "-", c = sub ? a - b : a + b;
+  const lead = moneyText4(a) + (sub ? " − " : " + ") + moneyText4(b) + " = " + DOLLAR;
+  return { op: "D", kind: sub ? "change" : "add", a, b, ans: c, slots: [Math.floor(c / 100), c % 100], slotNames: ["Dollars", "Cents"], slotMax: [2, 2], slotDigits: [0, 2], slotSay: "nowCents",
+    q: lead + "□.□□", parts: [lead, null, ".", null], key };
+}
+export function moneyFacts() {
+  const keys = [
+    // Adding: without and with the cents making a dollar.
+    "3.25+1.40", "2.10+4.65", "5.30+2.45", "1.05+3.70", "6.20+1.15", "4.50+2.35",
+    "2.75+1.50", "3.60+2.85", "1.95+4.25", "4.45+3.80", "2.65+2.65", "7.40+1.75",
+    // Making change from whole dollars, by counting up.
+    "5.00-3.25", "10.00-6.40", "5.00-1.85", "2.00-0.65", "10.00-7.15", "20.00-12.50", "5.00-2.60", "10.00-4.35",
+    // Taking away, without and with regrouping.
+    "6.75-2.50", "8.90-3.45", "7.25-4.60", "9.10-5.35",
+    // In cents.
+    "3.25:c", "1.05:c", "4.60:c", "7.09:c", "2.50:c", "6.38:c", "9.99:c", "5.75:c"
+  ];
+  return keys.map((k) => tag(moneyFact("D" + k), "money4"));
+}
+const dollarsWords = (c) => { const d = Math.floor(c / 100), k = c % 100, ds = d === 1 ? "one dollar" : spoken(d) + " dollars"; return k ? (d ? ds + " and " : "") + (k === 1 ? "one cent" : spoken(k) + " cents") : ds; };
+export function spokenMoney4(p) {
+  if (p.kind === "cents") return cap(dollarsWords(p.a)) + ". How many cents?";
+  if (p.kind === "change") return p.a % 100 === 0 ? "You pay " + dollarsWords(p.a) + " for " + dollarsWords(p.b) + ". How much change?" : cap(dollarsWords(p.a)) + " minus " + dollarsWords(p.b) + ".";
+  return cap(dollarsWords(p.a)) + " plus " + dollarsWords(p.b) + ".";
+}
+export function spokenMoney4Answer(p) {
+  if (p.kind === "cents") return cap(dollarsWords(p.a)) + " is " + spoken(p.ans) + " cents.";
+  if (p.kind === "change" && p.a % 100 === 0) return "The change is " + dollarsWords(p.ans) + ".";
+  return spokenMoney4(p).replace(/\.$/, "") + " is " + dollarsWords(p.ans) + ".";
 }

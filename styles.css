@@ -522,6 +522,8 @@ h1 b{color:var(--coral);font-weight:400}
 .pad.tfpad .tfk b{font:900 clamp(40px,12vw,64px)/1 Nunito,sans-serif}
 .pad.tfpad .yes{background:#2b4f3a}.pad.tfpad .yes b{color:#7fdc8a}
 .pad.tfpad .no{background:#4f2b2f}.pad.tfpad .no b{color:#ff8a7f}
+.pad.pcpad .tfk{font-size:clamp(15px,4.6vw,24px)}
+.prob .pnum{font-size:1.6em;line-height:1}
 .pad.tfpad .pressed{transform:translateY(3px) scale(.97);box-shadow:0 1px 0 var(--dark);filter:brightness(1.3)}
 .pad.locked{pointer-events:none}
 /* A two- or three-digit sum stacked in columns (app.js stackHTML): the sign in its own column,
