@@ -310,3 +310,19 @@ import { patternFacts } from "../js/patterns.js";
   assert.equal(record(null, { ok: true, ms: 18000, hinted: false, now: 1, fluentMs: fluentFor("fourth", sum.key, sum.ans) }).b, 3, "placed at 18 s");
   console.log("✓ learn: new facts from every open step; a level's own fluent time");
 }
+
+// Patterns that are nearly the same (sliding windows of one count) don't come one after another.
+{
+  const { similarRow, notNear } = await import("../js/learn.js");
+  assert.ok(similarRow("…95,96,97,□", "…96,97,98,□") && !similarRow("…95,96,97,□", "…20,19,18,17,□") && !similarRow("+2,3", "+3,4"));
+  assert.deepEqual(notNear([{ key: "…96,97,98,□" }, { key: "…5,10,15,20,□" }], ["…95,96,97,□"]).map((f) => f.key), ["…5,10,15,20,□"]);
+  assert.equal(notNear([{ key: "…96,97,98,□" }], ["…95,96,97,□"]).length, 1, "only near ones left: one of them");
+  let r = 7; const rnd = () => ((r = (r * 16807) % 2147483647) / 2147483647), recent = []; let near = 0;
+  for (let i = 0; i < 300; i++) {
+    const k = choose("patH", {}, { now: 0, rnd, recent, open: [0, 1, 2] });
+    if (recent.length && similarRow(k, recent[0])) near++;
+    recent.unshift(k); recent.length = Math.min(recent.length, 12);
+  }
+  assert.equal(near, 0, `no near-duplicate patterns in a row (${near})`);
+  console.log("✓ pattern variety");
+}

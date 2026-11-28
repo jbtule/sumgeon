@@ -482,7 +482,7 @@ export function endlessKey(path, bandKey, recs, opts = {}) {
   const seen = (f) => recs[f.key] && recs[f.key].n;
   let list = pathFacts(path).filter((f) => f.band === bandKey && seen(f) && (!opts.asks || opts.asks(f.op, f.key)));
   if (!list.length) return null;
-  list = notRecent(list, recent);
+  list = notNear(notRecent(list, recent), recent);
   const varied = list.filter((f) => !(opts.avoidAns || []).includes(f.op + " " + f.ans));
   if (varied.length) list = varied;
   if (opts.like) { const liked = list.filter((f) => opts.like(f.key)); if (liked.length && rnd() < 0.7) list = liked; }
@@ -636,6 +636,23 @@ export function notRecent(list, recent, keyOf = (f) => f.key) {
   }
   return list;
 }
+// Patterns that are nearly the same: two "what comes next" rows sharing two or more of their numbers
+// (…95,96,97,□ and …96,97,98,□ are one count, a step apart). The Hall's counting facts are such
+// sliding windows, so one came 1 higher after another (2026-11-28). Not among the last NEAR asked,
+// when that leaves any.
+export const NEAR = 6;
+const rowNums = (k) => (String(k).startsWith("…") ? String(k).slice(1).split(",").filter((x) => x !== "□").map(Number) : null);
+export function similarRow(a, b) {
+  const x = rowNums(a), y = rowNums(b);
+  if (!x || !y || a === b) return false;
+  return x.filter((n) => y.includes(n)).length >= 2;
+}
+export function notNear(list, recent, keyOf = (f) => f.key) {
+  const r = (recent || []).slice(0, NEAR).filter((k) => rowNums(k));
+  if (!r.length) return list;
+  const left = list.filter((f) => !r.some((k) => similarRow(keyOf(f), k)));
+  return left.length ? left : list;
+}
 // reach: the last level the player's chapter reaches (reachOf): probes go no further, so skipping
 // ahead runs a fluent player along the path, but not past a mega boss.
 export function probeKey(bandKey, recs, rnd, recent, avoidAns, leap, asks, reach) {
@@ -644,7 +661,7 @@ export function probeKey(bandKey, recs, rnd, recent, avoidAns, leap, asks, reach
   const i = Math.min(n - 1, fr + Math.max(1, leap || 1));
   const factAt = (k) => pool(bandKey).find((x) => x.key === k) || {};
   const ansOf = (k) => { const f = factAt(k); return f.op + " " + f.ans; };
-  let fresh = notRecent(t[i].filter((k) => !learned(recs[k]) && (!asks || asks(factAt(k).op, k))), recent, (k) => k);
+  let fresh = notNear(notRecent(t[i].filter((k) => !learned(recs[k]) && (!asks || asks(factAt(k).op, k))), recent, (k) => k), recent, (k) => k);
   const varied = fresh.filter((k) => !(avoidAns || []).includes(ansOf(k)));
   if (varied.length) fresh = varied;
   return fresh.length ? fresh[Math.floor((rnd || Math.random)() * fresh.length)] : null;
@@ -699,7 +716,7 @@ export function choose(bandKey, recs, opts) {
   if (opts.retry) return opts.retry;
   const seen = (f) => recs[f.key] && recs[f.key].n;
   const extra = (opts.reviews || []).filter((f) => seen(f) && (!opts.asks || opts.asks(f.op, f.key)));
-  let open = notRecent(asked(bandKey, recs, opts.open, opts.asks, opts.review).concat(extra), recent);
+  let open = notNear(notRecent(asked(bandKey, recs, opts.open, opts.asks, opts.review).concat(extra), recent), recent);
   // Not the same kind of problem with the same answer as the last couple (opts.avoidAns, as
   // "op ans" like "- 10"), when there's anything else: the teen subtraction facts (17 − 7,
   // 15 − 5, 12 − 2) all equal 10 and came up in a row. A different kind (3 + 7) is fine.
