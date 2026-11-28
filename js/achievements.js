@@ -50,6 +50,7 @@ const tableKeys = (n) => pool("third").filter((f) => f.op === "×" && /^×\d+,\d
 const bonds = (test) => levelKeys("kinder", "Make 10 and number bonds", (k) => test(nums(k)[0] + nums(k)[1]));
 const strand = (band, test = () => true) => pool(band).filter((f) => !isDrawKey(f.key) && test(f)).map((f) => f.key);
 const thirdKeys = (...names) => names.flatMap((n) => levelKeys("third", n));
+const fourthKeys = (...names) => names.flatMap((n) => levelKeys("fourth", n));
 
 // [{ id, icon, title, say (the title as said), detail, sayDetail, sets: [[keys]], reward }]
 const plural = (n) => (n === 6 ? "sixes" : spoken(n) + "s"); // "the sevens", "the twelves"
@@ -75,7 +76,18 @@ export const MASTERY = [
   { id: "master:rounding", icon: "🎯", title: "Rounder", say: "Rounder!", detail: "Every rounding problem, mastered", sayDetail: "Every rounding problem, mastered.",
     sets: [thirdKeys("Rounding")], reward: { cents: 50 } },
   { id: "master:area", icon: "▭", title: "Area Ace", say: "Area Ace!", detail: "Every area and perimeter problem, mastered", sayDetail: "Every area and perimeter problem, mastered.",
-    sets: [thirdKeys("Area and perimeter")], reward: { items: { magnet: 1 } } }
+    sets: [thirdKeys("Area and perimeter")], reward: { items: { magnet: 1 } } },
+  // The Fraction Forge's (4th grade, DESIGN.md §4.4).
+  { id: "master:multiply", icon: "✖️", title: "Multiplier", say: "Multiplier!", detail: "Every multiplication by one digit and two digits, mastered", sayDetail: "Every big multiplication, mastered.",
+    sets: [fourthKeys("Multiply by one digit", "Two-digit × two-digit")], reward: { items: { totem: 1 } } },
+  { id: "master:remainders", icon: "👻", title: "Remainder Ranger", say: "Remainder Ranger!", detail: "Every remainder problem, mastered", sayDetail: "Every remainder problem, mastered.",
+    sets: [fourthKeys("Remainders")], reward: { cents: 50 } },
+  { id: "master:fracsmith", icon: "🔨", title: "Fraction Smith", say: "Fraction Smith!", detail: "Every fraction added, taken away and multiplied, mastered", sayDetail: "Every fraction added, taken away and multiplied, mastered.",
+    sets: [fourthKeys("Add and subtract fractions", "A fraction times a whole")], reward: { items: { pie: 1 } } },
+  { id: "master:angles", icon: "📐", title: "Angle Ace", say: "Angle Ace!", detail: "Every angle and shape to classify, mastered", sayDetail: "Every angle and shape, mastered.",
+    sets: [fourthKeys("Angles", "Classify shapes")], reward: { items: { shield: 1 } } },
+  { id: "master:units", icon: "📏", title: "Unit Converter", say: "Unit Converter!", detail: "Every measurement conversion, mastered", sayDetail: "Every measurement conversion, mastered.",
+    sets: [fourthKeys("Measurement")], reward: { items: { magnet: 1 } } }
 ];
 
 /* ---------- the stratum ones (§14.2) ---------- */

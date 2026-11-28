@@ -63,15 +63,17 @@ for (const w of WINGS) {
   for (const s of steps) assert.ok(got.has(s), `${w.id}: step ${path[s].name || s} asked`);
   if (steps.size > 1) for (let i = 1; i < run.length; i++) assert.notEqual(run[i].step, run[i - 1].step, `${w.id}: kinds mixed`);
   // In the first round of steps, each step once before any twice.
-  const firstRound = run.slice(0, steps.size).map((f) => f.step);
-  assert.equal(new Set(firstRound).size, steps.size, `${w.id}: every kind before any twice`);
+  // (Steps are counted over the recent problems, RECENT of them: the Forge has more steps than
+  // that, so its round is the first RECENT.)
+  const round = Math.min(steps.size, RECENT), firstRound = run.slice(0, round).map((f) => f.step);
+  assert.equal(new Set(firstRound).size, round, `${w.id}: every kind before any twice`);
 
   // Weighting: a struggled fact (missed a lot, slow) comes up far more often than a plain one of
   // its step; a due one more than one not due.
   const step0 = own.filter((f) => f.step === own[0].step);
   if (step0.length >= 6) {
     const hard = step0[1].key, dueK = step0[3].key, plain = step0[5].key;
-    const tally = (r, keys) => { const c = Object.fromEntries(keys.map((k) => [k, 0])); for (let i = 0; i < 6000; i++) { const k = endlessKey(path, band, r, { now: NOW, rnd }); if (k in c) c[k]++; } return c; };
+    const tally = (r, keys) => { const c = Object.fromEntries(keys.map((k) => [k, 0])); for (let i = 0; i < 6000 * Math.ceil(path.length / 9); i++) { const k = endlessKey(path, band, r, { now: NOW, rnd }); if (k in c) c[k]++; } return c; }; // (more draws for a long path, whose facts come up less each)
     const r2 = mastered(path);
     r2[hard] = { b: 4, n: 14, c: 8, ms: 9000, t: NOW - HOUR };
     const c2 = tally(r2, [hard, plain]);

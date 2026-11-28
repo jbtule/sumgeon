@@ -192,6 +192,10 @@ function loadPlayer() {
   }
   // The band a player started in opens its Wing from the start (DESIGN.md §4).
   if (!st.start) { st.start = st.band; saveSettings(); }
+  // The Fraction Forge (4th grade) came after grade 4 and 5 players had started in the Tables Tower:
+  // their start is raised so the Forge is open to them, but where they're playing (band), their
+  // depths, stars, chapters and facts stay: they keep playing the Tower until they pick the Forge.
+  if (st.grade >= 4 && st.start === "third") { st.start = "fourth"; saveSettings(); }
   if (!openWings(progress, recs, st.start).includes(wingFor(st.band).id)) { st.band = WINGS[0].band; saveSettings(); }
   sfx.setSfx(st.sfx);
   setVoice(st.voice);

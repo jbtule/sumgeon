@@ -73,7 +73,7 @@ assert.deepEqual(award({ facts: {}, wings }, earned, 300).map((a) => a.id), ["le
 // The grand ones: every stratum.
 const all = Object.fromEntries(WINGS.map((w) => [w.id, { megas: megasNeeded(w.id), legend: 9 }]));
 assert.deepEqual(award({ facts: {}, wings: all }, earned, 400).map((a) => a.id).sort(),
-  ["champion:hall", "champion:mines", "champion:tower", "grand:champion", "grand:legend", "legend:hall", "legend:mines", "legend:tower"]);
+  ["champion:forge", "champion:hall", "champion:mines", "champion:tower", "grand:champion", "grand:legend", "legend:forge", "legend:hall", "legend:mines", "legend:tower"]);
 // The Legend's progress: the share of its facts mastered.
 const halfCellar = legendFacts(WINGS[0]).slice(0, Math.floor(legendFacts(WINGS[0]).length / 2)).map((f) => f.key);
 assert.match(catalog({ facts: top(halfCellar), wings: {} }).find((a) => a.id === "legend:cellar").progress, /^(49|50)% of its facts mastered$/);

@@ -36,7 +36,14 @@ export const WINGS = [
   { id: "mines", name: "The Crystal Mines", band: "second", after: "hall", strands: { Trollar: "coins", Squaresquatch: "arrays", Slimelipsis: "patM", "Tick-Tockus": "timeM", Chompers: "cmpM", Triceraplus: "sumsM", "Polly-Gon": "shapesM" },
     pool: ["Haberhasher", "Margot-Rythm", "Trollar", "Squaresquatch", "Slimelipsis", "Tick-Tockus", "Chompers", "Triceraplus", "Polly-Gon"], floors: ["Haberhasher", "Squaresquatch", "rescue", "Trollar", "Polly-Gon"], boss: "The Centipede" },
   { id: "tower", name: "The Tables Tower", band: "third", after: "mines", strands: { "Tick-Tockus": "timeT", "Margot-Rythm": "addT", "Polly-Gon": "shapesT" },
-    pool: ["Timesaur", "Divvy", "Starbot", "Halfling", "Tick-Tockus", "Margot-Rythm", "Polly-Gon", "Chompers"], floors: ["Timesaur", "Divvy", "rescue", "Tick-Tockus", "Halfling"], boss: "Sigma Rex" }
+    pool: ["Timesaur", "Divvy", "Starbot", "Halfling", "Tick-Tockus", "Margot-Rythm", "Polly-Gon", "Chompers"], floors: ["Timesaur", "Divvy", "rescue", "Tick-Tockus", "Halfling"], boss: "Sigma Rex" },
+  // The Fraction Forge (4th grade, DESIGN.md §4.4), under the Tower: its three new monsters
+  // (Quarterjack's fractions, Dotty's decimals, Boomainder's remainders) and returning ones
+  // visiting. Slimelipsis brings patterns from a rule (its strand, patF); Polly-Gon asks the band's
+  // angles and shapes, Tick-Tockus its measurement, Squaresquatch its area and perimeter, Chompers
+  // its < = > (big numbers, fractions, decimals), Margot-Rythm adding and subtracting to a million.
+  { id: "forge", name: "The Fraction Forge", band: "fourth", after: "tower", strands: { Slimelipsis: "patF" },
+    pool: ["Timesaur", "Divvy", "Boomainder", "Quarterjack", "Dotty", "Chompers", "Haberhasher", "Margot-Rythm", "Slimelipsis", "Polly-Gon", "Squaresquatch", "Tick-Tockus"], floors: ["Timesaur", "Boomainder", "rescue", "Quarterjack", "Dotty"], boss: "The Denominator" }
 ];
 /* ---------- paths (DESIGN.md §4.3) ----------
    Each stratum's single path of steps, in its grade's teaching order (the school's i-Ready guides).
@@ -128,18 +135,18 @@ export const PATHS = {
     step("× 10, 100 and 1000", [["fourth", "× 10, 100 and 1000"]], ["Timesaur"], 1),
     step("Multiply by one digit", [["fourth", "Multiply by one digit"]], ["Timesaur"], 1, P),
     step("Two-digit × two-digit", [["fourth", "Two-digit × two-digit"]], ["Timesaur"], 2, P),
-    step("Divide by one digit", [["fourth", "Divide by one digit"]], ["Divvy"], 2, P),
-    step("Remainders", [["fourth", "Remainders"]], ["Divvy"], 2, P),
+    step("Divide by one digit", [["fourth", "Divide by one digit"]], ["Boomainder", "Divvy"], 2, P),
+    step("Remainders", [["fourth", "Remainders"]], ["Boomainder"], 2, P),
     // Patterns from a rule (4.RA.C): Slimelipsis's strand, open with the algebraic-thinking unit.
     step("Patterns from a rule", [["patF", "Patterns from a rule"]], ["Slimelipsis"], 2, { ongoing: true }),
     // Multi-step problems (4.RA.A.2, ★) share the algebraic-thinking unit with factors and
     // multiples (not a priority), so they're one step.
     step("Multi-step problems and factors", [["fourth", "Multi-step and variables"], ["fourth", "Factors and multiples"]], ["Divvy", "Timesaur"], 2, P),
-    step("Equivalent fractions", [["fourth", "Equivalent fractions"]], ["Halfling"], 3, P),
-    step("Compare fractions", [["fourth", "Compare fractions"]], ["Halfling", "Chompers"], 3, P),
-    step("Add and subtract fractions", [["fourth", "Add and subtract fractions"]], ["Halfling"], 3, P),
-    step("A fraction times a whole", [["fourth", "A fraction times a whole"]], ["Halfling"], 3, P),
-    step("Decimals", [["fourth", "Tenths and hundredths"], ["fourth", "Compare decimals"]], ["Halfling", "Chompers"], 4),
+    step("Equivalent fractions", [["fourth", "Equivalent fractions"]], ["Quarterjack"], 3, P),
+    step("Compare fractions", [["fourth", "Compare fractions"]], ["Quarterjack", "Chompers"], 3, P),
+    step("Add and subtract fractions", [["fourth", "Add and subtract fractions"]], ["Quarterjack"], 3, P),
+    step("A fraction times a whole", [["fourth", "A fraction times a whole"]], ["Quarterjack"], 3, P),
+    step("Decimals", [["fourth", "Tenths and hundredths"], ["fourth", "Compare decimals"]], ["Dotty", "Chompers"], 4),
     step("Angles and shapes", [["fourth", "Angles"], ["fourth", "Classify shapes"]], ["Polly-Gon"], 4, P),
     step("Area and perimeter", [["fourth", "Area and perimeter"]], ["Squaresquatch"], 4, P),
     step("Measurement", [["fourth", "Measurement"]], ["Tick-Tockus"], 4, P)
@@ -321,7 +328,7 @@ export function learnedShare(wing, recs) {
 // 60% of its path's priority steps learned (DESIGN.md §4.3). Starting in a band opens every Wing
 // at that grade or below: a 3rd grader starting in the Tower has all four open from the start. A
 // Wing once opened stays open (unlocked, saved), even if a miss takes a fact back out of learned.
-const GRADE = { kinder: 0, first: 1, second: 2, third: 3 };
+const GRADE = { kinder: 0, first: 1, second: 2, third: 3, fourth: 4 };
 // Bands saved before the grade strata (dungeon version 5), as today's.
 export const OLD_BANDS = { sprout: "kinder", balance: "first", apprentice: "third" };
 export function openWings(progress, recs, start) {
@@ -335,10 +342,10 @@ export function openWings(progress, recs, start) {
 }
 
 // The grade a player picks (0 = K … 5), saved as settings.grade (DESIGN.md §2, §4.1): K starts in
-// the Counting Cellar, 1st in the Balance Hall, 2nd in the Crystal Mines, and 3rd and up in the
-// Tables Tower, each with every stratum above it open.
+// the Counting Cellar, 1st in the Balance Hall, 2nd in the Crystal Mines, 3rd in the Tables Tower,
+// and 4th and 5th in the Fraction Forge, each with every stratum above it open.
 export const GRADES = [0, 1, 2, 3, 4, 5];
-export const gradeBand = (g) => ["kinder", "first", "second"][g] || "third";
+export const gradeBand = (g) => ["kinder", "first", "second", "third"][g] || "fourth";
 export const gradeLabel = (g) => (g === 0 ? "K" : String(g));
 export const gradeName = (g) => (g === 0 ? "Kindergarten" : `Grade ${g}`);
 // Settings with a grade picked: { ...st, grade, start, band }. Only settings change: what's been

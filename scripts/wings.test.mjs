@@ -3,11 +3,13 @@ import assert from "node:assert/strict";
 import { WINGS, runFloors, nextRescue, openWings, learnedShare, toOpen, bandOf, priorityFacts } from "../js/wings.js";
 import { pool, BANDS } from "../js/learn.js";
 
-const [cellar, hall, mines, tower] = ["cellar", "hall", "mines", "tower"].map((id) => WINGS.find((w) => w.id === id));
-// One stratum per grade, K to 3rd, in a straight chain (DESIGN.md §4.1).
-assert.deepEqual(WINGS.map((w) => w.id), ["cellar", "hall", "mines", "tower"]);
-assert.deepEqual(WINGS.map((w) => BANDS[w.band].grade), [0, 1, 2, 3]);
-assert.deepEqual(WINGS.map((w) => w.after || null), [null, "cellar", "hall", "mines"], "each opens only the next");
+const [cellar, hall, mines, tower, forge] = ["cellar", "hall", "mines", "tower", "forge"].map((id) => WINGS.find((w) => w.id === id));
+// One stratum per grade, K to 4th, in a straight chain (DESIGN.md §4.1, §4.4).
+assert.deepEqual(WINGS.map((w) => w.id), ["cellar", "hall", "mines", "tower", "forge"]);
+assert.deepEqual(WINGS.map((w) => BANDS[w.band].grade), [0, 1, 2, 3, 4]);
+assert.deepEqual(WINGS.map((w) => w.after || null), [null, "cellar", "hall", "mines", "tower"], "each opens only the next");
+assert.deepEqual(forge.pool.concat([forge.boss]), ["Timesaur", "Divvy", "Boomainder", "Quarterjack", "Dotty", "Chompers", "Haberhasher", "Margot-Rythm", "Slimelipsis", "Polly-Gon", "Squaresquatch", "Tick-Tockus", "The Denominator"], "the Forge's three, and returning monsters visiting");
+assert.equal(bandOf(forge, { n: "Slimelipsis" }), "patF", "Slimelipsis brings patterns from a rule");
 assert.equal(mines.name, "The Crystal Mines");
 // Each stratum's monsters, and what they ask there.
 const M = (w) => w.pool.concat([w.boss]);
@@ -27,7 +29,8 @@ assert.deepEqual(WINGS.map((w) => w.floors), [
   ["Plusquito", "Pipsqueak", "rescue", "Chompers", "Trollar"],
   ["Quizard", "Equal Twins", "rescue", "Tick-Tockus", "Triceraplus"],
   ["Haberhasher", "Squaresquatch", "rescue", "Trollar", "Polly-Gon"],
-  ["Timesaur", "Divvy", "rescue", "Tick-Tockus", "Halfling"]]);
+  ["Timesaur", "Divvy", "rescue", "Tick-Tockus", "Halfling"],
+  ["Timesaur", "Boomainder", "rescue", "Quarterjack", "Dotty"]]);
 for (const w of WINGS) {
   assert.ok(w.floors.every((f) => f === "rescue" || f === "pool" || w.pool.includes(f)), `${w.id}: every floor is in the pool`);
   for (const depth of [1, 2, 3, 5, 9]) for (let seed = 1; seed < 40; seed++) {
@@ -64,7 +67,7 @@ assert.deepEqual(mines.floors.filter((n) => n !== "rescue").sort(), ["Haberhashe
 assert.ok(["Tick-Tockus", "Slimelipsis", "Margot-Rythm"].every((n) => mines.pool.includes(n)));
 // Shapes (Polly-Gon): a strand in each stratum, each its grade's; shapes aren't a priority in K,
 // 1st or 3rd grade, so it visits the Cellar, the Hall and the Tower from their pools.
-assert.deepEqual(WINGS.map((w) => bandOf(w, named("Polly-Gon"))), ["shapesK", "shapesH", "shapesM", "shapesT"]);
+assert.deepEqual(WINGS.map((w) => bandOf(w, named("Polly-Gon"))), ["shapesK", "shapesH", "shapesM", "shapesT", "fourth"], "in the Forge, the band's angles and shapes");
 assert.equal(bandOf(cellar, { n: "Baby Polly", base: "Polly-Gon" }), "shapesK");
 for (const w of [cellar, hall, tower]) assert.ok(w.pool.includes("Polly-Gon") && !w.floors.includes("Polly-Gon"), `Polly-Gon visits ${w.id} from the pool`);
 // Only the path's priority steps (DESIGN.md §4.3) count toward opening the next stratum: not
@@ -184,15 +187,20 @@ console.log("✓ stars");
   assert.ok(DESCENT.hold >= 2000, "long enough to read the title");
 }
 
-// The grade (DESIGN.md §2, §4.1): K starts in the Cellar, 1st in the Hall, 2nd in the Mines, and
-// 3rd and up in the Tower, each with every stratum above it open.
+// The grade (DESIGN.md §2, §4.1): K starts in the Cellar, 1st in the Hall, 2nd in the Mines, 3rd in
+// the Tower, and 4th and 5th in the Forge, each with every stratum above it open.
 {
   const { GRADES, gradeBand, withGrade, OLD_BANDS } = await import("../js/wings.js");
-  assert.deepEqual(GRADES.map(gradeBand), ["kinder", "first", "second", "third", "third", "third"]);
+  assert.deepEqual(GRADES.map(gradeBand), ["kinder", "first", "second", "third", "fourth", "fourth"]);
   assert.deepEqual(openWings({}, {}, gradeBand(0)), ["cellar"]);
   assert.deepEqual(openWings({}, {}, gradeBand(1)), ["cellar", "hall"]);
   assert.deepEqual(openWings({}, {}, gradeBand(2)), ["cellar", "hall", "mines"]);
-  assert.deepEqual(openWings({}, {}, gradeBand(5)), ["cellar", "hall", "mines", "tower"]);
+  assert.deepEqual(openWings({}, {}, gradeBand(3)), ["cellar", "hall", "mines", "tower"]);
+  assert.deepEqual(openWings({}, {}, gradeBand(5)), ["cellar", "hall", "mines", "tower", "forge"], "4th and 5th start in the Forge");
+  assert.equal(withGrade({ band: "kinder", start: "kinder" }, 4, { first: true, fresh: true }).band, "fourth");
+  // A grade 4 or 5 player who started in the Tower before the Forge (start "third"): app.js raises
+  // their start to "fourth" on load, so the Forge opens, and their band (where they play) stays.
+  assert.deepEqual(openWings({}, {}, "fourth"), ["cellar", "hall", "mines", "tower", "forge"]);
   assert.deepEqual(OLD_BANDS, { sprout: "kinder", balance: "first", apprentice: "third" });
   const base = { band: "kinder", start: "kinder", sfx: true };
   // A new player starts in their grade's stratum.

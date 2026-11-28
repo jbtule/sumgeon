@@ -113,7 +113,8 @@ export const MONEY = {
   cellar: { coins: ONE_COIN, boss: CELLAR_BOSS, big: CELLAR_BIG },
   hall: { min: 2, max: 50, bossMin: 40, bossMax: 99, bigMin: 75, bigMax: 99 },
   mines: { min: 6, max: 75, bossMin: 50, bossMax: 99, bigMin: 80, bigMax: 99 },
-  tower: { min: 6, max: 75, bossMin: 50, bossMax: 99, bigMin: 80, bigMax: 99 }
+  tower: { min: 6, max: 75, bossMin: 50, bossMax: 99, bigMin: 80, bigMax: 99 },
+  forge: { min: 6, max: 75, bossMin: 50, bossMax: 99, bigMin: 80, bigMax: 99 }
 };
 // Cents found in a chest in wing `wingId` (a boss's when boss; a mega boss's big chest when big).
 // Always under a dollar, so its line is recorded.

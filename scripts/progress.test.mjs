@@ -155,8 +155,9 @@ const rec = (b, extra = {}) => Object.assign({ b, n: 3, c: 3, ms: 1500, t: NOW -
   assert.equal(stratumSummary(cellar, {}, all, ["cellar"]).legend.state, "open");
   assert.equal(stratumSummary(cellar, {}, all, ["cellar"]).legend.share, 1);
   assert.equal(stratumSummary(cellar, { cellar: { legend: NOW } }, all, ["cellar"]).legend.state, "beaten");
-  // The Tower is last: no next stratum.
-  assert.equal(stratumSummary(tower, {}, {}, ["tower"]).next, null);
+  // The Forge is last: no next stratum.
+  assert.equal(stratumSummary(WINGS[4], {}, {}, ["forge"]).next, null);
+  assert.equal(stratumSummary(tower, {}, {}, ["tower"]).next.name, "The Fraction Forge");
   // The current stratum comes first.
   assert.deepEqual(strataOrder(["cellar", "hall", "mines"], "hall").map((w) => w.id), ["hall", "cellar", "mines"]);
 }
