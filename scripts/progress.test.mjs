@@ -107,7 +107,7 @@ const rec = (b, extra = {}) => Object.assign({ b, n: 3, c: 3, ms: 1500, t: NOW -
   assert.ok(fresh.every((r) => r.share === 0 && r.seen === 0));
   // The first chapter's steps are open at the start (two ongoing and three new: the window);
   // chapter 2's aren't.
-  assert.deepEqual(fresh.map((r) => r.state), ["now", "now", "now", "now", "now", "later", "later", "later"]);
+  assert.deepEqual(fresh.map((r) => r.state), ["now", "now", "now", "now", "now", "later", "later", "later", "later"]);
   assert.ok(fresh[0].ongoing && fresh[0].priority && !fresh[2].priority);
   // Learn all of "Add and take away within 5": learned, with its share and counts.
   const recs = {};

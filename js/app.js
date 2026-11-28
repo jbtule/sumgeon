@@ -22,6 +22,7 @@ import { tfSvg, tiltOf, fixParts } from "./truefalse.js";
 import { lineSvg } from "./numberline.js";
 import { pvSvg, pvLine } from "./placevalue.js";
 import { chartSvg, chartLine, platesOf } from "./charts.js";
+import { lengthSvg, lengthLine, keysOf as lengthKeys, keyWord } from "./length.js";
 import { dollarSvg, dollarLine, moneyText } from "./dollars.js";
 import { coinsSvg, pileOf, coinOf } from "./coins.js";
 import { stackOf, markable, toggleCarry, regroup, regroupMove, regroupView } from "./twodigit.js";
@@ -469,6 +470,10 @@ function probUI() {
   // Reading charts (Graphzilla, batch 3): the chart, the hint drawn on it once it's open, and the
   // question's line under it ("More potions than keys: □").
   else if (p.op === "▥") box.innerHTML = chartSvg(p, { hint: G.hinted }) + `<span class="find chline">${chartLine(p).map((x) => (x === null ? BLANK : esc(x))).join("")}</span>`;
+  // Measuring length (Rulerpillar, batch 3): the thing against its ruler or units, its hint drawn
+  // on it, and the line under it: "About □ in", "□ cubes", or a two-key question's "The pencil is
+  // ?" (answered on the Longer and Shorter keys, as true or false is).
+  else if (p.op === "ℓ") box.innerHTML = lengthSvg(p, { hint: G.hinted }) + `<span class="find lenline">${lengthLine(p).map((x) => (x === null ? (p.sym ? '<span class="blank">?</span>' : BLANK) : esc(x))).join("")}</span>`;
   // Shapes (Polly-Gon): "Draw a triangle" over the drawing pad, or the shape to count over its
   // line ("Sides = □", "Each part = 1/□"), the hint drawn on the shape.
   else if (p.op === "◇") box.innerHTML = shapeHTML(p);
@@ -523,17 +528,17 @@ function probUI() {
   else if ("+-×÷".includes(p.op) && Math.max(p.x, p.y, p.ans) >= 1000) box.innerHTML = `<span class="wide3 wide4">${esc(bigText(p.q))} =</span>`;
   else if ((p.op === "+" || p.op === "-") && Math.max(p.x, p.y) >= 100) box.innerHTML = `<span class="wide3">${esc(p.q)} =</span>`;
   else box.textContent = p.q + " =";
-  document.querySelector(".game").classList.toggle("missing", !!p.blank || !!p.sym || p.op === "=" || !!p.find || !!p.stacked || "/≈▭▦⌚…◐✓✎↔#$◇⁙REFƒdu∠PD▥".includes(p.op));
-  padUI(p.spell ? "spell" : p.draw ? "draw" : p.op === "✓" ? "tf" : p.op === "P" ? "pc" : p.sym ? "cmp" : "num");
+  document.querySelector(".game").classList.toggle("missing", !!p.blank || !!p.sym || p.op === "=" || !!p.find || !!p.stacked || "/≈▭▦⌚…◐✓✎↔#$◇⁙REFƒdu∠PD▥ℓ".includes(p.op));
+  padUI(p.spell ? "spell" : p.draw ? "draw" : p.op === "✓" ? "tf" : p.op === "P" ? "pc" : p.op === "ℓ" && p.sym ? "len:" + lengthKeys(p).map((k) => k[0]).join("") : p.sym ? "cmp" : "num");
   // Typed ones first (stacked): delete takes back the leftmost digit, so its icon points right.
   $("pad").classList.toggle("rtl", onesFirst(p) && $("pad").dataset.mode === "num");
   requestAnimationFrame(fitLine);
   document.querySelector(".game").classList.toggle("cents", p.op === "¢" && !p.find);
-  document.querySelector(".game").classList.toggle("find", !!p.find || "▭▦⌚◐✓✎↔#$⁙∠P▥".includes(p.op) || (p.op === "◇" && !p.draw));
+  document.querySelector(".game").classList.toggle("find", !!p.find || "▭▦⌚◐✓✎↔#$⁙∠P▥ℓ".includes(p.op) || (p.op === "◇" && !p.draw));
   document.querySelector(".game").classList.toggle("shape", p.op === "◇" && !p.draw);
   document.querySelector(".game").classList.toggle("stack", !!p.stacked);
   // A wide picture over its line (batch 2's): on phones the 🔊 and 💡 buttons stack beside it.
-  document.querySelector(".game").classList.toggle("pic", "✓✎↔#$⁙▥".includes(p.op));
+  document.querySelector(".game").classList.toggle("pic", "✓✎↔#$⁙▥ℓ".includes(p.op));
   document.querySelector(".game").classList.toggle("chart", p.op === "▥");
   document.querySelector(".game").classList.toggle("slimes", p.op === "…" || p.op === "◐");
   document.querySelector(".game").classList.toggle("hinted", !!G.hinted); // a hint drawn on the picture (iPad keeps it short)
@@ -736,6 +741,8 @@ function shownFact(p, ans) {
   if (p.op === "◐") return `${b(p.ans)} ${p.ask} number${p.ans === 1 ? "" : "s"}`;
   // A chart: its line with the answer, "More potions than keys: 4".
   if (p.op === "▥") return `${esc(chartLine(p)[0])}${b(p.ans)}`;
+  // Length: its line with the answer, "About 6 in", "The pencil is longer", "The longest? No".
+  if (p.op === "ℓ") return esc(p.q).replace("□", p.sym ? b(/^[YN]$/.test(p.sym) ? keyWord(p, p.sym) : keyWord(p, p.sym).toLowerCase()) : b(p.ans));
   // Batch 2: "4 + 2 = 7 is False", fix it filled in ("4 + 2 = 6"), "3/4", "4 equal parts",
   // "34 tens and 3 ones = 343", "$26", "$11 and 37¢".
   if (p.op === "✓") return `${esc(p.q)} is ${b(p.sym === "T" ? "True" : "False")}`;
@@ -1061,7 +1068,7 @@ function presentProblem(key, flipped, restored, elapsed) {
   // shapes ("Draw a triangle!", "How many sides?").
   // The dot flash: "How many dots?", and the first time "Look quick! How many dots?".
   if (G.cur.op === "⁙" && once("flash")) say("p", PHRASE.flashHow, false, asked(G.cur));
-  else if ("¢○⌚…◐✓✎↔#$◇⁙∠PD▥".includes(G.cur.op) || G.cur.op === "more") say("q", spokenProblem(G.cur), false, asked(G.cur));
+  else if ("¢○⌚…◐✓✎↔#$◇⁙∠PD▥ℓ".includes(G.cur.op) || G.cur.op === "more") say("q", spokenProblem(G.cur), false, asked(G.cur));
   // Pipsqueak's dice: "How many dots in all?", and the first 2 times how.
   if (G.cur.dice) { if (once("dice", 2)) say("p", PHRASE.diceHow, false, asked(G.cur)); say("p", PHRASE.diceAll, false, asked(G.cur)); }
   // Drawing a shape: how, the first few times.
@@ -1069,6 +1076,13 @@ function presentProblem(key, flipped, restored, elapsed) {
   // The first true or false problems: how the two big keys work.
   if (G.cur.op === "✓" && once("truefalse", 2)) say("p", PHRASE.tfHow, false, asked(G.cur));
   if (G.cur.op === "P" && once("prime", 2)) say("p", PHRASE.primeHow, false, asked(G.cur));
+  // Length's two big keys, the first couple of times each.
+  if (G.cur.op === "ℓ" && G.cur.sym) {
+    const keys = lengthKeys(G.cur)[0][0];
+    if (keys === "L" && once("longer", 2)) say("p", PHRASE.longerHow, false, asked(G.cur));
+    else if (keys === "Y" && once("yesno", 2)) say("p", PHRASE.yesNoHow, false, asked(G.cur));
+    else if (keys === "M" && once("moreFewer", 2)) say("p", PHRASE.moreFewerHow, false, asked(G.cur));
+  }
   // The first comparison: how the < = > keys work.
   if (G.cur.op === "○" && once("compare")) { say("p", PHRASE.cmpHow, false, asked(G.cur)); say("p", PHRASE.cmpSame, false, asked(G.cur)); }
   // Typed ones first (a stacked problem, or across on Margot-Rythm's floor): the cursor blinks in the
@@ -1292,7 +1306,7 @@ function openHint() {
   // Time and patterns draw the hint on the problem's own picture (Tick-Tockus's clock, the
   // slimes), so only its words open here.
   // (A shape to count too; a shape to draw shows its dots to join in the hint.)
-  const inline = "⌚…◐✓✎↔#$⁙▥".includes(G.cur.op) || (G.cur.op === "◇" && !G.cur.draw);
+  const inline = "⌚…◐✓✎↔#$⁙▥ℓ".includes(G.cur.op) || (G.cur.op === "◇" && !G.cur.draw);
   if (G.flash) G.flash.grouped = true; // the dots come back, grouped
   if (inline) { probUI(); ansUI(); clockArt(h.layer); }
   else if (G.cur.dice) probUI(); // Pipsqueak's dice get their numbers beside them
@@ -1383,7 +1397,8 @@ function submit() {
   if (G.cur.op === "✓") { G.tfDone = true; probUI(); }
   // A comparison's answer is its symbol (<, = or >); everything else is a number.
   // A drawn shape was judged as it was cast (castShape).
-  const right = G.cur.draw ? G.drawn === "right" : G.cur.slots ? G.slot.vals.every((v, i) => v !== "" && Number(v) === G.cur.slots[i] && (!G.cur.slotDigits || !G.cur.slotDigits[i] || v.length === G.cur.slotDigits[i])) : G.cur.sym ? G.input === G.cur.sym : Number(G.input) === G.cur.ans;
+  // An estimate (length) is right within its near: 1 inch, or 2 centimeters.
+  const right = G.cur.draw ? G.drawn === "right" : G.cur.near != null ? G.input !== "" && Math.abs(Number(G.input) - G.cur.ans) <= G.cur.near : G.cur.slots ? G.slot.vals.every((v, i) => v !== "" && Number(v) === G.cur.slots[i] && (!G.cur.slotDigits || !G.cur.slotDigits[i] || v.length === G.cur.slotDigits[i])) : G.cur.sym ? G.input === G.cur.sym : Number(G.input) === G.cur.ans;
   if (right && G.fix) { G.fix.done = true; probUI(); ansUI(); }
   if (right) {
     G.busy = true; G.solved++;
@@ -4049,7 +4064,7 @@ function press(k) {
   }
   if (G.cur && G.cur.slots && G.slot) return slotPress(k);
   // True or false: a tap answers at once, after a brief press on the key (no Hit!, no delete).
-  if (G.cur && (G.cur.op === "✓" || G.cur.op === "P")) return tfPress(k);
+  if (G.cur && (G.cur.op === "✓" || G.cur.op === "P" || (G.cur.op === "ℓ" && G.cur.sym))) return tfPress(k);
   if (G.fix && !G.fix.swapped && k !== "go") fixSwap();
   if (k === "go") return submit();
   const cmp = !!(G.cur && G.cur.sym), sym = "<=>".includes(k);
@@ -4069,7 +4084,7 @@ function press(k) {
 // more taps, then it's answered.
 const TF_PRESS_MS = 160;
 function tfPress(k) {
-  if (!(G.cur.op === "P" ? "PC" : "TF").includes(k) || k.length !== 1) return;
+  if (!(G.cur.op === "P" ? "PC" : G.cur.op === "ℓ" ? lengthKeys(G.cur).map((x) => x[0]).join("") : "TF").includes(k) || k.length !== 1) return;
   sfx.tick();
   G.input = k; G.busy = true;
   const pad = $("pad"), key = pad.querySelector(`[data-k="${k}"]`);
@@ -4383,6 +4398,13 @@ function padUI(mode) {
     pad.innerHTML = `<button type="button" data-k="P" class="tfk yes" aria-label="Prime"><b>▬</b>Prime</button><button type="button" data-k="C" class="tfk no" aria-label="Composite"><b>▦</b>Composite</button>`;
     return;
   }
+  // Length's two keys (Longer and Shorter, Yes and No, More and Fewer), the same two big keys.
+  if (mode.startsWith("len:")) {
+    pad.classList.add("tfpad");
+    const icon = { L: "▬▬", S: "▬", Y: "✓", N: "✗", M: "▮▮▮", F: "▮" }, word = { L: "Longer", S: "Shorter", Y: "Yes", N: "No", M: "More", F: "Fewer" };
+    pad.innerHTML = [...mode.slice(4)].map((k, i) => `<button type="button" data-k="${k}" class="tfk ${k === "Y" ? "yes" : k === "N" ? "no" : "len" + (i ? " two" : "")}" aria-label="${word[k]}"><b>${icon[k]}</b>${word[k]}</button>`).join("");
+    return;
+  }
   if (drawn) {
     const shape = mode === "draw";
     pad.innerHTML = `<canvas id="sigil" class="sigil" aria-label="${shape ? "Draw the shape here" : "Draw the answer here"}"></canvas><button type="button" data-k="clear" class="del" aria-label="Clear the drawing">Clear</button><button type="button" data-k="go" class="go" aria-label="${shape ? "Cast the shape" : "Cast the spell"}">Cast!</button>`;
@@ -4414,6 +4436,8 @@ document.addEventListener("keydown", (e) => {
   else if (e.key === ".") press(">");
   else if (e.key === "Backspace") press("del");
   else if (e.key === "Enter") { e.preventDefault(); press("go"); }
+  // Length's two keys on a keyboard: L and S, Y and N, M and F.
+  else if (G.cur && G.cur.op === "ℓ" && G.cur.sym && /^[lsynmf]$/i.test(e.key)) press(e.key.toUpperCase());
   // True or false on a keyboard: T and F.
   else if (/^[tf]$/i.test(e.key)) { if (G.cur && G.cur.op === "✓") press(e.key.toUpperCase()); }
   // Prime or composite: P or C.

@@ -10,16 +10,18 @@ assert.deepEqual(WINGS.map((w) => BANDS[w.band].grade), [0, 1, 2, 3, 4]);
 assert.deepEqual(WINGS.map((w) => w.after || null), [null, "cellar", "hall", "mines", "tower"], "each opens only the next");
 assert.deepEqual(forge.pool.concat([forge.boss]), ["Timesaur", "Divvy", "Boomainder", "Quarterjack", "Dotty", "Chompers", "Haberhasher", "Margot-Rythm", "Slimelipsis", "Polly-Gon", "Squaresquatch", "Tick-Tockus", "Trollar", "Graphzilla", "The Denominator"], "the Forge's three, and returning monsters visiting");
 assert.deepEqual([hall, mines, tower, forge].map((w) => bandOf(w, { n: "Graphzilla" })), ["chartsH", "chartsM", "chartsT", "chartsF"], "Graphzilla reads its grade's charts in each stratum");
+assert.deepEqual([cellar, hall, mines].map((w) => bandOf(w, { n: "Rulerpillar" })), ["lengthK", "lengthH", "lengthM"], "Rulerpillar measures its grade's lengths");
+assert.ok(hall.floors.includes("Rulerpillar") && !cellar.floors.includes("Rulerpillar") && !mines.floors.includes("Rulerpillar"), "a depth-1 floor in the Hall; visiting the Cellar and the Mines");
 assert.equal(bandOf(cellar, { n: "Graphzilla" }), "kinder", "no charts in the Cellar (K's data is sorting, left out)");
 assert.equal(bandOf(forge, { n: "Slimelipsis" }), "patF", "Slimelipsis brings patterns from a rule");
 assert.equal(mines.name, "The Crystal Mines");
 // Each stratum's monsters, and what they ask there.
 const M = (w) => w.pool.concat([w.boss]);
-assert.deepEqual(M(cellar), ["Plusquito", "Minustaur", "Pipsqueak", "Chompers", "Trollar", "Slimelipsis", "Polly-Gon", "Make-Ten Golem"]);
-assert.deepEqual(M(hall), ["Plusquito", "Minustaur", "Quizard", "Chompers", "Equal Twins", "Doublet", "Triceraplus", "Haberhasher", "Tick-Tockus", "Slimelipsis", "Polly-Gon", "Trollar", "Graphzilla", "Judo Judy"], "the Hall gets Plusquito and Minustaur (within 20, crossing 10), Haberhasher visiting (tens) and Trollar (coin values)");
+assert.deepEqual(M(cellar), ["Plusquito", "Minustaur", "Pipsqueak", "Chompers", "Trollar", "Slimelipsis", "Polly-Gon", "Rulerpillar", "Make-Ten Golem"]);
+assert.deepEqual(M(hall), ["Plusquito", "Minustaur", "Quizard", "Chompers", "Equal Twins", "Doublet", "Triceraplus", "Haberhasher", "Tick-Tockus", "Slimelipsis", "Polly-Gon", "Trollar", "Graphzilla", "Rulerpillar", "Judo Judy"], "the Hall gets Plusquito and Minustaur (within 20, crossing 10), Haberhasher visiting (tens) and Trollar (coin values)");
 assert.equal(bandOf(hall, { n: "Trollar" }), "coinsH", "Trollar says what each coin is worth in the Hall");
 assert.deepEqual(pool("coinsH").map((f) => f.key).sort(), pool("coinsK").filter((f) => f.level === 1).map((f) => f.key).sort(), "the Cellar's each coin, the same keys");
-assert.deepEqual(M(mines), ["Haberhasher", "Margot-Rythm", "Trollar", "Squaresquatch", "Slimelipsis", "Tick-Tockus", "Chompers", "Triceraplus", "Polly-Gon", "Graphzilla", "The Centipede"], "the Mines' own monsters, with Chompers and Triceraplus visiting");
+assert.deepEqual(M(mines), ["Haberhasher", "Margot-Rythm", "Trollar", "Squaresquatch", "Slimelipsis", "Tick-Tockus", "Chompers", "Triceraplus", "Polly-Gon", "Graphzilla", "Rulerpillar", "The Centipede"], "the Mines' own monsters, with Chompers and Triceraplus visiting");
 assert.deepEqual(M(tower), ["Timesaur", "Divvy", "Starbot", "Halfling", "Tick-Tockus", "Margot-Rythm", "Polly-Gon", "Chompers", "Graphzilla", "Sigma Rex"], "Margot-Rythm, Chompers and Graphzilla visit the Tower");
 // Three-digit numbers: Chompers compares them in the Mines and Triceraplus adds up to four
 // two-digit numbers there; Margot-Rythm brings 3rd grade's adding and subtracting to the Tower.
@@ -29,7 +31,7 @@ function named0(n) { return { n }; }
 // its pool, and no monster comes twice in a row.
 assert.deepEqual(WINGS.map((w) => w.floors), [
   ["Plusquito", "Pipsqueak", "rescue", "Chompers", "Trollar"],
-  ["Quizard", "Equal Twins", "rescue", "Tick-Tockus", "Triceraplus"],
+  ["Quizard", "Equal Twins", "rescue", "Tick-Tockus", "Rulerpillar"],
   ["Haberhasher", "Squaresquatch", "rescue", "Trollar", "Polly-Gon"],
   ["Timesaur", "Divvy", "rescue", "Tick-Tockus", "Halfling"],
   ["Timesaur", "Boomainder", "rescue", "Quarterjack", "Dotty"]]);

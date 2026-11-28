@@ -3,6 +3,7 @@
 import assert from "node:assert/strict";
 import { hintFor } from "../js/hints.js";
 import { chartSvg } from "../js/charts.js";
+import { lengthSvg } from "../js/length.js";
 import { BANDS, pool, factOf } from "../js/learn.js";
 import { missingOf, canHide } from "../js/missing.js";
 
@@ -89,6 +90,13 @@ for (const band of Object.keys(BANDS)) {
       const shown = new Set([...(f.q.match(/\d+/g) || []).map(Number), ...(f.form === "P" && f.scale > 1 ? [f.scale] : [])]);
       assert.ok(shown.has(f.ans) || !new RegExp(`(^|[^\\d])${f.ans}([^\\d]|$)`).test(before.say), `${p.key}: ${before.say}`);
       assert.ok(new RegExp(`\\b${f.ans}\\b`).test(after.say), `${p.key}: ${after.say}`);
+      continue;
+    }
+    // Measuring length (Rulerpillar): a measurement's worked hint says it; a two-key answer's
+    // word is never in the hint before answering. (length.test.mjs checks the drawings.)
+    if (f.op === "ℓ") {
+      if (f.sym) assert.ok(before.say !== after.say && !/^(Yes|No|More|Fewer)\b/.test(before.say), `${p.key}: ${before.say}`);
+      else assert.ok(new RegExp(`\\b${f.ans}\\b`).test(after.say), `${p.key}: ${after.say}`);
       continue;
     }
     // Prime or composite (4th grade): never the word before answering, and the right one after.
@@ -221,6 +229,9 @@ for (const band of Object.keys(BANDS)) {
     // A chart's own numbers (a bar graph's axis, a line plot's line, a table's counts) are on it:
     // reading them is what's asked (charts.test.mjs checks what the hint adds).
     if (f.op === "▥") numbersIn(chartSvg(f).replace(/<[^>]*>/g, " ")).forEach((n) => known.add(n));
+    // A ruler's or a tape's numbers are on it (reading it is what's asked); length.test.mjs checks
+    // the hint's own counts stop short.
+    if (f.op === "ℓ") numbersIn(lengthSvg(f).replace(/<[^>]*>/g, " ")).forEach((n) => known.add(n));
     // and so are their digits and tens (73 is 7 tens and 3 ones).
     for (const n of [...known]) if (n >= 10) for (const part of [n % 10, Math.floor(n / 10) % 10, n - (n % 10), Math.floor(n / 10)]) known.add(part);
     // 10 is every + and − strategy's landmark (make 10, 11 is 10 and 1, back to 10), so it may show.
@@ -274,12 +285,14 @@ const opening = { "Ten-frame": /^Put together/, "Draw and cross out": /^Take awa
   "Rows and columns of squares": /^4 \+ 4 \+ 4 = 12$/, "Unit fractions": /^Count the equal parts: 1, 2, 3, 4\. Each part is 1\/4\.$/,
   // Reading charts (Graphzilla).
   "Tally charts": /5, 6, 7\. 7 potions\.$/, "How many more on a chart": /^7 − 3 = 4\. 4 more potions\.$/, "Bar graphs": /^25 − 10 = 15\. 15 fewer torches\.$/,
-  "Line plots: the mode": /The mode is 3\.$/ };
+  "Line plots: the mode": /The mode is 3\.$/,
+  // Measuring length (Rulerpillar).
+  "Longer or shorter": /it's longer\.$/, "Measuring with cubes": /^1, 2, 3, 4, 5\. 5 cubes long\.$/, "Inches on a ruler": /7\. 7 in\.$/, "Not from 0": /6 − 1 = 5 in\.$/ };
 assert.equal(STRATEGIES.length, Object.keys(opening).length);
 for (const s of STRATEGIES) {
   const h = hintFor(s.f, true);
   assert.match(h.say, opening[s.title], s.title);
-  assert.ok(h.grownups && (TALKS.includes(s.f.op) || s.f.op === "⁙" || s.f.op === "▥" || BATCH2.includes(s.f.op) || s.f.op === "◇" || "…".includes(s.f.op) && h.say.endsWith("= " + s.f.ans) || h.say.endsWith(s.f.sym ? s.f.l + " " + s.f.sym + " " + s.f.r : "= " + s.f.ans)), s.title);
+  assert.ok(h.grownups && (TALKS.includes(s.f.op) || s.f.op === "⁙" || s.f.op === "▥" || s.f.op === "ℓ" || BATCH2.includes(s.f.op) || s.f.op === "◇" || "…".includes(s.f.op) && h.say.endsWith("= " + s.f.ans) || h.say.endsWith(s.f.sym ? s.f.l + " " + s.f.sym + " " + s.f.r : "= " + s.f.ans)), s.title);
 }
 console.log("✓ hint strategies");
 

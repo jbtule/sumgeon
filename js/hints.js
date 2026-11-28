@@ -14,6 +14,7 @@ import { countSvg, countHint, drawHintSvg, drawHint, shapeFactOf } from "./shape
 import { flashSvg, flashHint, flashFactOf } from "./flash.js";
 import { fourthHint, isFourthHint } from "./hints4.js";
 import { chartSvg, chartHint, chartFactOf } from "./charts.js";
+import { lengthSvg, lengthHint, lengthGameFactOf } from "./length.js";
 
 // Hints (DESIGN.md §5.3): the models classrooms use now, with the classroom's words, and a line
 // for grown-ups who learned it another way. No DOM: returns { model, say, grownups } where model
@@ -799,9 +800,27 @@ function chartHintFor(f, worked) {
   return { model: fitted(chartSvg(f, { hint: true, worked }), 150, "the chart, with the hint on it"), say: chartHint(f, worked).say, grownups: why };
 }
 
+// Measuring length (Rulerpillar, js/length.js): drawn on the thing and its ruler or units. In a
+// fight on the problem's own picture (app.js); here for the Oops card and the grown-ups' page.
+const LENGTH_WHY = {
+  compare: "Comparing lengths: line the ends up, then look at the other ends. The one that goes past is longer.",
+  string: "Comparing with a string: two things that can't be put side by side are each held to the same string. Longer than the string and shorter than it: the first is longer.",
+  units: "Measuring with units: lay the cubes or paper clips end to end from one end, with no gaps and no overlaps, and count them.",
+  ruler: "A ruler: start at 0 and count the jumps to the end (each jump is 1 inch or 1 centimeter). Not from 0? Count the jumps, or take the start from the end.",
+  which: "Smaller units, more of them: a centimeter is smaller than an inch, so the same pencil is more centimeters long than inches.",
+  estimate: "Estimating: picture the unit laid along it again and again. About how many fit?",
+  diff: "How much longer: count on from the shorter one's end to the longer one's, or subtract.",
+  add: "Adding and subtracting lengths: put the pieces end to end on a number line and jump."
+};
+function lengthHintFor(f, worked) {
+  const why = { compare: "compare", order: "compare", indirect: "string", units: "units", gaps: "units", ruler: "ruler", which: "which", estimate: "estimate", diff: "diff", addsub: "add" }[f.kind];
+  return { model: fitted(lengthSvg(f, { hint: true, worked }), 150, "the length, with the hint on it"), say: lengthHint(f, worked).say, grownups: LENGTH_WHY[why] };
+}
+
 export function hintFor(f, worked) {
   // 4th grade (hints4.js): its own models, the area model, partial quotients and the rest.
   if (isFourthHint(f)) return fourthHint(f, worked);
+  if (f.op === "ℓ") return lengthHintFor(f, worked);
   if (f.op === "▥") return chartHintFor(f, worked);
   if (f.op === "⁙") return flashHintFor(f, worked);
   if (f.op === "◇") return shapeHintFor(f, worked);
@@ -1064,6 +1083,10 @@ export const STRATEGIES = [
   { title: "How many more on a chart", grade: "1st–2nd", f: chartFactOf("▥T1:torch5,potion7,key3:m.potion.key") },
   { title: "Bar graphs", grade: "2nd–3rd", f: chartFactOf("▥B5:torch10,potion25:f.torch.potion") },
   { title: "Line plots: the mode", grade: "4th", f: chartFactOf("▥F:potion:1x2,3x4,4x1:mo") },
+  { title: "Longer or shorter", grade: "K", f: lengthGameFactOf("ℓc:pencil8,toothbrush6") },
+  { title: "Measuring with cubes", grade: "1st", f: lengthGameFactOf("ℓu:cube,marker5") },
+  { title: "Inches on a ruler", grade: "2nd", f: lengthGameFactOf("ℓin:pencil7") },
+  { title: "Not from 0", grade: "2nd", f: lengthGameFactOf("ℓin:toothbrush1-6") },
   { title: "Rounding", grade: "3rd", f: roundFact(47, 10) },
   { title: "Area", grade: "3rd", f: rectFact("a", 4, 3) },
   { title: "Perimeter", grade: "3rd", f: rectFact("p", 4, 3) }

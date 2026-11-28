@@ -1,5 +1,6 @@
-// Measuring length, for Rulerpillar (a prototype on the review page, review/proto/; not in the
-// game yet). No DOM: runs in Node. DESIGN.md §4.6 has the plan per grade.
+// Measuring length, for Rulerpillar: in the game since batch 3 (learn.js lengthK, lengthH,
+// lengthM; the game's form of a fact is gameFact, below), and on the review page (review/proto/).
+// No DOM: runs in Node. DESIGN.md §4.6 has the plan per grade.
 //
 // The object is always drawn against what measures it, so the answer comes from looking:
 // - K (K.GM.A.2): two things lined up at one end, "Is the pencil longer or shorter than the
@@ -222,6 +223,7 @@ const countLabels = (n, worked, fmt = (k) => k) => Array.from({ length: n }, (_,
 
 // The whole picture for a problem. opt.hint draws the hint on it; opt.worked, the worked one.
 export function lengthSvg(p, opt = {}) {
+  p = own(p);
   const h = !!opt.hint, wk = !!opt.worked;
   let s = "", H = 120;
   if (p.kind === "compare" || p.kind === "order") {
@@ -349,6 +351,7 @@ const brace = (x0, x1, y, text) => `<path d="M${f1(x0 + 2)} ${y - 6} V${y} H${f1
 /* ---------- words ---------- */
 const the = (n) => `the ${n}`;
 export function ariaOf(p) {
+  p = own(p);
   if (p.kind === "compare" || p.kind === "order") return `${p.things.map((t) => t.name).join(", ")}, lined up at one end`;
   if (p.kind === "indirect") return `a ${p.things[0].name} and a ${p.things[1].name}, each with a string`;
   if (p.kind === "units" || p.kind === "gaps") return `a ${p.name} with ${UNITS[p.unit].many} under it`;
@@ -360,6 +363,7 @@ const say = (n) => spoken(n);
 const unitSaid = (u, n) => `${say(n)} ${unitWord(u, n)}`;
 // What the voice says as the problem appears (a pre-reader can't read "How many inches long?").
 export function spokenLength(p) {
+  p = own(p);
   const [a, b] = p.things || [];
   switch (p.kind) {
     case "compare": return `Is the ${a.name} longer or shorter than the ${b.name}?`;
@@ -379,6 +383,7 @@ export function spokenLength(p) {
 }
 // After a miss: the answer, said whole.
 export function spokenLengthAnswer(p) {
+  p = own(p);
   const [a, b] = p.things || [];
   switch (p.kind) {
     case "compare": return `The ${a.name} is ${p.ans === "L" ? "longer" : "shorter"} than the ${b.name}.`;
@@ -399,6 +404,7 @@ export function spokenLengthAnswer(p) {
 // The hint's words; the drawing is on the picture (lengthSvg with opt.hint). Before answering
 // they never give the answer: a count stops partway, a subtraction ends "= ?".
 export function lengthHint(p, worked) {
+  p = own(p);
   const [a, b] = p.things || [];
   const ab = UNITS[p.unit] && UNITS[p.unit].ab;
   const count = (n, fmt = (k) => k) => Array.from({ length: counted(n, worked) }, (_, i) => fmt(i + 1)).join(", ");
@@ -436,6 +442,7 @@ export const KEYS = {
 export const keysOf = (p) => (p.kind === "compare" || p.kind === "indirect" ? KEYS.LS : p.kind === "order" || p.kind === "gaps" ? KEYS.YN : p.kind === "which" ? KEYS.MF : null);
 // Is the typed answer right? (An estimate is right within 1 inch or 2 centimeters.)
 export function lengthRight(p, typed) {
+  p = own(p);
   const ans = [].concat(p.ans);
   if (p.kind === "estimate") return Math.abs(Number(typed[0]) - p.len) <= (p.unit === "cm" ? 2 : 1);
   return ans.every((x, i) => (typeof x === "string" ? typed[i] === x : typed[i] !== "" && Number(typed[i]) === x));
@@ -572,3 +579,23 @@ export function lengthProblem(id, rnd = Math.random) {
   const all = lengthFacts().filter((f) => f.set === id);
   return all[Math.floor(rnd() * all.length)];
 }
+
+/* ---------- in the game (batch 3) ----------
+   The game's form of a fact (learn.js, app.js): a two-key answer (Longer/Shorter, Yes/No,
+   More/Fewer) moves to sym, as true or false's does, and ans is what it hits for (lengthHit), so
+   a monster's HP and the damage are numbers; an estimate is right within near (1 in, 2 cm); and
+   every fact carries its line as text in q ("About □ in"), as the game reads a fact's q. The
+   functions above take either form (own). */
+const own = (p) => (p && p.sym ? Object.assign({}, p, { ans: p.sym }) : p);
+export function gameFact(f) {
+  const g = Object.assign({}, f);
+  if (keysOf(f)) { g.sym = f.ans; g.ans = lengthHit(f); }
+  if (f.kind === "estimate") g.near = f.unit === "cm" ? 2 : 1;
+  g.q = lengthLine(f).map((x) => (x === null ? "□" : x)).join("");
+  return g;
+}
+let gameCache = null;
+export const lengthGameFacts = () => gameCache || (gameCache = lengthFacts().map(gameFact));
+export const lengthGameFactOf = (key) => lengthGameFacts().find((f) => f.key === key) || null;
+// The word a two-key answer stands for: "L" is "Longer".
+export const keyWord = (p, k) => ((keysOf(own(p)) || []).find((x) => x[0] === k) || [null, k])[1];

@@ -21,6 +21,7 @@ import { dollarFacts, dollarFactOf, DOLLAR_GAME_LEVELS } from "./dollars.js";
 import { shapeFacts, shapeFactOf, SHAPE_STRANDS, isDrawKey } from "./shapes.js";
 import { flashFacts, flashFactOf, FLASH_LEVELS } from "./flash.js";
 import { chartFacts, chartFactOf, CHART_LEVELS } from "./charts.js";
+import { lengthGameFacts, lengthGameFactOf, LENGTH_LEVELS } from "./length.js";
 import { asks as asksOf } from "./traits.js";
 import { bigCompareFacts, roundFacts4, addSub4, times10s, timesOne, timesTwo, divideOne, remFacts, remFactOf, exprFacts, exprFact, factorFacts, factorFactOf,
   equivFacts4, fracCompare4, fracOpFacts, fracTimesFacts, fracOpFact, decimalFacts, decFact, decCompareFacts, unitFacts, unitFact, rect4Facts,
@@ -223,7 +224,15 @@ export const BANDS = {
   chartsH: { label: "Charts: tally and picture", strand: true, hearts: 7, fluentMs: 7000, facts: chartFacts, levels: levelsOf(CHART_LEVELS, "hall") },
   chartsM: { label: "Charts: bar graphs", strand: true, hearts: 5, fluentMs: 7000, facts: chartFacts, levels: levelsOf(CHART_LEVELS, "mines") },
   chartsT: { label: "Charts: scaled graphs", strand: true, hearts: 5, fluentMs: 8000, facts: chartFacts, levels: levelsOf(CHART_LEVELS, "tower") },
-  chartsF: { label: "Charts: line plots", strand: true, hearts: 5, fluentMs: 9000, facts: chartFacts, levels: levelsOf(CHART_LEVELS, "forge") }
+  chartsF: { label: "Charts: line plots", strand: true, hearts: 5, fluentMs: 9000, facts: chartFacts, levels: levelsOf(CHART_LEVELS, "forge") },
+  // Measuring length (Rulerpillar, js/length.js, batch 3), a strand in each stratum of its grade:
+  // longer or shorter in the Cellar (K); the longest and shortest, a string, cubes and paper clips,
+  // measured right? in the Hall (1st, a priority standard); rulers and tapes, not from 0, more or
+  // fewer units, estimating, how much longer, adding and subtracting lengths in the Mines (2nd,
+  // priority standards). Reading a ruler takes a moment longer than a fact from memory.
+  lengthK: { label: "Length: longer or shorter", strand: true, hearts: 7, fluentMs: 5000, facts: lengthGameFacts, levels: levelsOf(LENGTH_LEVELS, "cellar") },
+  lengthH: { label: "Length: units", strand: true, hearts: 7, fluentMs: 6000, facts: lengthGameFacts, levels: levelsOf(LENGTH_LEVELS, "hall") },
+  lengthM: { label: "Length: rulers", strand: true, hearts: 5, fluentMs: 7000, facts: lengthGameFacts, levels: levelsOf(LENGTH_LEVELS, "mines") }
 };
 // A shape strand's levels (shapes.js SHAPE_STRANDS), each holding its keys.
 function shapeLevels(strand) { return SHAPE_STRANDS[strand].map((l) => ({ name: l.name, has: (f) => l.keys.includes(f.key) })); }
@@ -261,7 +270,7 @@ export function keyOf(f) {
 }
 // A problem for a key, turned around half the time for + and ×.
 export function factOf(key, rnd) {
-  const own = { "¢": coinFactOf, "○": balanceFactOf, "=": balanceFactOf, "□": hiddenFactOf, "M": moreFactOf, "/": fractionFactOf, "≈": roundFactOf, "▭": rectFactOf, "Σ": threeFactOf, "▦": arrayFactOf, "⌚": clockFactOf, "…": patternFactOf, "◐": oddEvenFactOf, "✓": tfFactOf, "✎": tfFactOf, "↔": lineFactOf, "#": pvFactOf, "$": dollarFactOf, "◇": shapeFactOf, "⁙": flashFactOf, "▥": chartFactOf,
+  const own = { "¢": coinFactOf, "○": balanceFactOf, "=": balanceFactOf, "□": hiddenFactOf, "M": moreFactOf, "/": fractionFactOf, "≈": roundFactOf, "▭": rectFactOf, "Σ": threeFactOf, "▦": arrayFactOf, "⌚": clockFactOf, "…": patternFactOf, "◐": oddEvenFactOf, "✓": tfFactOf, "✎": tfFactOf, "↔": lineFactOf, "#": pvFactOf, "$": dollarFactOf, "◇": shapeFactOf, "⁙": flashFactOf, "▥": chartFactOf, "ℓ": lengthGameFactOf,
     "R": remFactOf, "E": exprFact, "F": factorFactOf, "ƒ": fracOpFact, "d": decFact, "u": unitFact, "∠": angleFact, "P": primeFactOf, "D": moneyFact }[key[0]];
   if (own) return own(key, rnd);
   const op = key[0], [a, b] = key.slice(1).split(",").map(Number);
