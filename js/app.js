@@ -585,6 +585,15 @@ function stackHTML(p) {
   const rows = nums.map((n, i) => `<span class="sop">${i === nums.length - 1 ? (p.op === "-" ? "−" : "+") : ""}</span><span class="snum${i ? "" : " stop"}">${i === 0 && view ? top(n) : cols(n)}</span>`).join("");
   return `<span class="stacked${nums.length > 2 ? " rows" + nums.length : ""}${mk ? " mk" : ""}" style="--w:${w}" role="img" aria-label="${esc(p.q)}">${marks}${rows}<span class="sbar"></span><span class="sop"></span><span class="snum sans"><span class="blank scells" id="blank" aria-label="Answer, typed from the ones">${stackCells(p, "")}</span></span></span>`;
 }
+// Whether to say how to mark this markable problem: the first 2 times for each (carrying,
+// regrouping), and in each of the first 3 markable problems while nothing has been marked yet
+// (saved in told: markSeen, marked).
+function markTell() {
+  const told = store.player(PID).get("told", {}) || {}, n = (told.markSeen || 0) + 1;
+  if (n <= 3) { told.markSeen = n; store.player(PID).set("told", told); }
+  const first = once(G.cur.op === "-" ? "regroupMark" : "carryMark", 2);
+  return first || (n <= 3 && !told.marked);
+}
 // A tap on the marking row or the top number's digits (markable problems): a carried 1 toggled
 // above a column, or a digit regrouped (or the regroup undone). A scratch mark only: nothing about
 // the answer, its time or its record changes. Not while busy (an attack) or after a miss.
@@ -599,6 +608,9 @@ function markTap(e) {
   sfx.tick();
   $("prob").innerHTML = stackHTML(p);
   ansUI();
+  // They've found it: the voice stops reminding them (markTell).
+  const told = store.player(PID).get("told", {}) || {};
+  if (!told.marked) { told.marked = 1; store.player(PID).set("told", told); }
 }
 $("prob").addEventListener("click", markTap);
 // A shape problem (Polly-Gon): what to draw (the voice says it too; the body flashes it), or the
@@ -995,10 +1007,11 @@ function presentProblem(key, flipped, restored, elapsed) {
   // Typed ones first (a stacked problem, or across on Margot-Rythm's floor): the cursor blinks in the
   // ones column, and the first 3 times it's said.
   if (onesFirst(G.cur) && once("onesFirst", 3)) { setMsg("Start with the ones!", "good"); say("p", PHRASE.onesFirst, false, asked(G.cur)); }
-  // Marking regrouping (three-digit numbers and bigger): the first time each, how to mark it.
-  if (markable(G.cur)) {
-    if (G.cur.op === "-") { if (once("regroupMark")) say("p", PHRASE.regroupHow, false, asked(G.cur)); }
-    else if (once("carryMark")) say("p", PHRASE.carryHow, false, asked(G.cur));
+  // Marking regrouping (three-digit numbers and bigger): how to mark it, the first 2 times each, and
+  // again in each of the first 3 markable problems while nothing has been marked yet.
+  if (markable(G.cur) && markTell()) {
+    if (G.cur.op === "-") say("p", PHRASE.regroupHow, false, asked(G.cur));
+    else say("p", PHRASE.carryHow, false, asked(G.cur));
   }
   if (G.cur.spell) {
     setMsg("Cast a spell! Draw the answer.", "good"); say("p", PHRASE.spell);

@@ -562,6 +562,10 @@ h1 b{color:var(--coral);font-weight:400}
    regrouped digit is crossed out; one that took a ten has a small 1 in front of it. */
 .prob .stacked .smarks .scell{font-size:.6em;width:1.367em;height:max(36px,1.6em);display:inline-flex;align-items:flex-end;justify-content:center;padding-bottom:.1em;box-sizing:border-box;color:var(--gold)}
 .prob .stacked .tap{cursor:pointer;-webkit-tap-highlight-color:transparent}
+/* Each spot that takes a mark shows a faint dashed box where the mark goes (over a column that can
+   carry, or a top digit that can regroup), so the row reads as tappable; a mark takes its place.
+   The whole cell, the column's full width, is the target. */
+.prob .stacked .smark.tap:empty::before{content:"";position:absolute;left:.16em;right:.16em;bottom:.1em;height:1.3em;border:1.5px dashed var(--muted);border-radius:.3em;opacity:.55;box-sizing:border-box}
 .prob .stacked .stop .scell.x{color:var(--muted)}
 .prob .stacked .stop .scell.x::before{content:"";position:absolute;left:.06em;right:.06em;top:50%;height:.11em;margin-top:-.055em;border-radius:.04em;background:var(--coral);transform:rotate(-58deg)}
 .prob .stacked .stop .f1{position:absolute;right:calc(100% - .3em);top:-.12em;font-size:.55em;font-style:normal;color:var(--gold);text-shadow:0 0 2px var(--dark),0 0 2px var(--dark),0 0 3px var(--dark);z-index:1}
