@@ -101,7 +101,7 @@ The dungeon is a map of **Wings**, shown in the game as **strata**. Each Wing ha
 ### 4.1 The grade strata (plan, 2026-11-25)
 One stratum per grade, in a **straight chain**: each opens only the next. The levels inside each follow the school's teaching order. The audience stops at 5th grade, but one **stretch stratum** of 6th-grade math, Pirate Cavern, sits under the Pyramid so a 5th grader who finishes it can keep going, and the game ends there. Its content follows the school's 6th-grade guide.
 
-**Left out of fights** (they don't fit a quick typed answer): naming shapes from a list (shapes are drawn and counted instead: Polly-Gon, below), angles and symmetry, graphs and line plots, the coordinate plane, inequalities, days and seasons, sorting, word problems, and measurement conversions (for now). Writing numerals is practiced by spell casting.
+**Left out of fights** (they don't fit a quick typed answer): naming shapes from a list (shapes are drawn and counted instead: Polly-Gon, below), angles and symmetry, the coordinate plane, inequalities, days and seasons (the K calendar), sorting, word problems, and measurement conversions (for now). Graphs and line plots were left out too, until Graphzilla (§4.4, a prototype); word problems and the K calendar are left out for good (decided 2026-11-27: recording every prompt isn't practical). Writing numerals is practiced by spell casting.
 
 | Stratum | Grade | Levels (in order) | Monsters | Boss |
 |---|---|---|---|---|
@@ -183,6 +183,7 @@ Every Wing also has one **rescue floor** holding a cursed digit (§6.6). The pro
 - **Shoutandcomma (!)**: a mummy whose tall wrapped body is the !, with the dot as its feet. The name is a pun on Tutankhamun. The Parenthesis Pyramid's boss (5th grade): like every boss it mixes its stratum's problems, and its boss roars are the mummy rising from its tomb. *Unwrap*: at half HP its wrappings come off and its problems turn to big numbers, powers of ten and place value (10³ = □; how many zeros in 10⁵).
 - **Slimelipsis (…)**: three little slimes in a row, in the Crystal Mines (2nd grade). *What comes next*: skip counting by 2s, 5s and 10s (2, 4, 6, □; 15, 20, □).
 - **Doublet (+ + twins)**: two plus signs who do everything together, in the Balance Hall. *Doubles*: doubles facts and doubles to subtract (8 + 8, 16 − 8).
+- **Graphzilla (📊)**: a friendly kaiju standing upright, its back plates a bar chart rising behind it (the bars take each problem's data). *Chart Stomp*: reading charts, its stratum's grade of them (§4.4).
 - **Tick-Tockus**: a clock monster whose hands are its arms. *Tell the time*: hours and half hours in the Hall, 5 minutes in the Mines, the minute in the Tower; the answer is the minutes or the hour, typed.
 - **Judo Judy (⇄)**: the Balance Hall's boss, a judo fighter whose body is a big ⇄ (turnaround arrows): the top arrow (→) is the arms in a white gi sleeve, its head an open hand reaching to grab; the bottom arrow (←) is the legs in white gi pants, its head a bare foot sweeping in a throw; the black belt between them is a fraction bar; a round head with a red headband and a top-knot sits on top. *Flip*: an addition with the smaller number first (3 + 8) is thrown so it shows 8 + 3, the commutative property as a judo throw: same answer, the same fact. Everything else comes as the Hall's mix. Beaten, Judo Judy taps out and bows. Game text always uses the name, never a pronoun.
 - **The Unknown (x)** (retired): the Hall's first boss, *Shapeshift* (switching between comparing and balancing). Replaced by Judo Judy; its art stays in `RETIRED` for the gallery.
@@ -323,6 +324,42 @@ Three-digit numbers (2nd 5–9) and four addends are done (PR #111).
 - **No dungeon version bump:** runs and depths stay.
 - **Tests:** every fact is in exactly one step; every path's steps open in order; no monster appears before its step; and the balance sim per path.
 - **Order:** this plan first, then the progression itself, then the remaining gap batches (shapes, comparing fractions, the dot flash, the Hall changes) slotted into their steps.
+
+### 4.4 Reading charts: Graphzilla (prototype, 2026-11-27)
+Graphs and data were the one strand of every grade's standards with nothing in the game. Graphzilla fills it: **one monster for charts in every grade**, as Tick-Tockus is for time and Trollar for money, with charts of dungeon things. A prototype on the review page (`review/proto/`, 📊), not in the game yet; `js/charts.js`, tested by `scripts/charts.test.mjs`.
+
+**Decisions (the user, 2026-11-27):**
+- Word problems and the K calendar (days, months, seasons) are **left out for good**: every prompt would have to be recorded, and there are too many of them.
+- Measuring length is prototyped separately (`js/length.js`, another branch).
+- Graphzilla is **one monster for charts in every grade**, with dungeon things, not a monster per kind of chart.
+
+**The things** (`OBJECTS`): torches, potions, keys, gems, bats, slimes, mushrooms, shields and bones, nine small icons in the house style (outline, color, sheen), each its own color, so a bar is its thing's color. Coins are left out (Trollar's), and candles and scrolls (a candle reads as a torch at icon size). Lengths are measured on bones, keys and torches; counts are things in a place (gems in each chest, bats in each cave); a line graph's things are found each day.
+
+**The charts by grade** (Missouri's data standards), a strand per stratum like Tick-Tockus's time, in the stratum of its grade:
+
+| Grade (stratum) | Charts | Questions |
+|---|---|---|
+| 1st (the Balance Hall) | Tally charts and picture charts, three things, totals within 20 | How many potions? How many more (or fewer) potions than keys? How many in all? |
+| 2nd (the Crystal Mines) | Picture graphs and bar graphs, four things, scale 1 | How many? Torches and keys together; how many more, how many fewer; in all |
+| 3rd (the Tables Tower) | Scaled picture graphs (each picture = 2, with halves, or 5), scaled bar graphs (by 2s, 5s) | How many; how many more or fewer; two together |
+| 4th (the Fraction Forge) | Frequency tables (value, tally, how many), line plots of counts, bar and picture graphs by 10s | The mode, the range, how many in all, how many at a value; more, fewer, together |
+| 5th (the Parenthesis Pyramid) | Line plots with an odd number of values; line graphs over six days, by 2s, 5s or 10s | The median; a day's value; how many more (or fewer) on one day than another |
+
+- **Answers** are always a whole number typed on the pad: a count, a difference, a total, the mode, range or median, or a value read off a line graph. No multiple choice. (A 3rd grade length is only ever asked as a count of Xs, never as the answer.)
+- **Damage:** the answer, as everywhere. Fights stay even because a monster's HP comes from its facts' answers.
+- **Decided (2026-11-27):** its trait is 📊 Chart Stomp, only what it asks (as Tick-Tockus's 🕒 Tick Tock), since its plates already show the data; 2nd grade's take apart ("how many are not keys?") stays out, needing word-problem phrasing; 3rd grade's line plots in halves and fourths of an inch are left out for now (the school's 3rd grade guide doesn't ask for them, as with Rulerpillar's half inches; the keys and drawing still take them, for 4th grade).
+- **Fixed facts** (245 in 11 levels, from a fixed seed): a few data sets per level, each asked a few ways, so every line can be recorded. Keys are the problem: `▥T1:torch5,potion7,key3:m.potion.key` (a tally chart, scale 1, how many more potions than keys), `▥P2:…` and `▥B5:…` (picture and bar graphs at a scale), `▥L2:bone:2-8:…:at.5` (a line plot in halves: how many at 2½), `▥F:gem:1x2,3x4:mo` (a frequency table's mode), `▥G5:gem:10,15,…:c.2.5` (a line graph's change from day 2 to day 5).
+- **Spoken for a pre-reader:** the things in the chart first, since the labels can't be read, then the question in 12 words or fewer: "Torches, potions, keys. How many more potions than keys?", "Each picture is two. Bats, keys, gems. How many gems?", "Bone lengths, in inches. How many bones are two and a half inches long?", "Potions on each shelf. What is the mode?", "Gems found each day. How many more gems on day five than day two?". After a miss: "Four more potions.", "The median is seven."
+- **Hints**, drawn on the chart, never the answer before answering (tested):
+  - Reading a bar or a line graph's dot: a guide line from its top across to the axis, and the axis counted up by the scale partway (dots on the ticks), then "?".
+  - Pictures and tallies: counted along the row partway (tallies by 5s, then 1s; pictures by their worth, half a picture by half), then "?" on the last.
+  - How many more or fewer: lined up. Rows: a line where the smaller row stops, the extra pictures shaded and counted partway. Bars: a guide from the shorter bar's top to the taller one, the gap shaded and bracketed, counted partway by the scale.
+  - Together and in all: count one row, then count on (bars: read each bar, then add).
+  - Line plots: the column at the value outlined, or the part longer than the value shaded, its Xs counted partway; the mode, each stack outlined ("find the tallest stack"); the range, both ends ringed with an arrow between, "?"; the median, Xs crossed off one from each end, halfway, then worked to the last one, ringed.
+  - Frequency tables: the column to read outlined; the range's smallest and biggest rows ringed; in all, the first numbers to add.
+  - Worked: the whole count, and the answer in words ("9 − 3 = 6. 6 more shields.").
+- **Graphzilla** (`NEW_MON` in `monsters.js`, in the gallery): its drawing takes the problem, as Tick-Tockus's clock does: its back plates are the chart's bars (up to four, `platesOf`), in the things' colors. The chart itself is drawn big in the monster's box (a plate is too small to read a value from); Graphzilla stands in the nameplate with the data on its back. It reads at 26 px as a green kaiju with colored plates. Its anchors are set for looks later.
+- **Where it goes, once approved:** a strand per stratum (`chartsH`, `chartsM`, `chartsT`, then the Forge's and the Pyramid's), Graphzilla visiting each stratum's pool; data isn't one of the guides' priority standards, so it doesn't count toward a stratum's 60%.
 
 ## 5. The learning engine (how the game teaches)
 
